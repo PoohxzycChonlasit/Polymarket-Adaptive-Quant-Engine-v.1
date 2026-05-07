@@ -1,0 +1,224 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: #000000;
+  font-family: 'Space Grotesk', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+#__next, body > div { height: 100%; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,80,0.15); border-radius: 2px; }
+
+/* ── DESIGN TOKENS ── */
+:root {
+  --bg:         #000000;
+  --bg2:        #050a06;
+  --neon:       oklch(0.72 0.22 142);
+  --neon-dim:   oklch(0.72 0.22 142 / 0.13);
+  --neon-glow:  oklch(0.72 0.22 142 / 0.20);
+  --neon-line:  oklch(0.72 0.22 142 / 0.50);
+  --green2:     oklch(0.58 0.18 148);
+  --green2-dim: oklch(0.58 0.18 148 / 0.11);
+  --lime:       oklch(0.80 0.18 130);
+  --amber:      oklch(0.72 0.16 83);
+  --amber-dim:  oklch(0.72 0.16 83 / 0.11);
+  --rose:       oklch(0.62 0.20 15);
+  --rose-dim:   oklch(0.62 0.20 15 / 0.11);
+  --indigo:     oklch(0.64 0.18 268);
+  --blue:       oklch(0.62 0.22 253);
+  --blue-dim:   oklch(0.62 0.22 253 / 0.14);
+  --blue-glow:  oklch(0.62 0.22 253 / 0.22);
+  --glass:      rgba(0,210,80,0.025);
+  --glass-b:    rgba(0,210,80,0.072);
+  --t1:         rgba(225,255,232,0.92);
+  --t2:         rgba(160,220,175,0.55);
+  --t3:         rgba(110,170,130,0.30);
+}
+
+/* ── FONTS ── */
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* ── GLASS CARD ── */
+.gc {
+  background: rgba(0,255,80,0.028);
+  border: 1px solid rgba(0,255,80,0.10);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.gc::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0,255,80,0.04) 0%, transparent 60%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* ── ANIMATIONS ── */
+@keyframes fade-up    { from { opacity:0; transform:translateY(18px) } to { opacity:1; transform:translateY(0) } }
+@keyframes fade-in    { from { opacity:0 } to { opacity:1 } }
+@keyframes slide-r    { from { opacity:0; transform:translateX(14px) } to { opacity:1; transform:translateX(0) } }
+@keyframes glow-pulse { 0%,100% { opacity:.45 } 50% { opacity:1 } }
+@keyframes breathe    { 0%,100% { transform:scale(1) } 50% { transform:scale(1.06) } }
+@keyframes spin-slow  { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
+@keyframes spin-rev   { from { transform:rotate(0deg) } to { transform:rotate(-360deg) } }
+@keyframes pdot       { 0%,100% { opacity:1; transform:scale(1) } 50% { opacity:.3; transform:scale(.65) } }
+@keyframes ticker     { from { transform:translateX(0) } to { transform:translateX(-50%) } }
+@keyframes draw       { to { stroke-dashoffset:0 } }
+@keyframes float      { 0%,100% { transform:translateY(0px) } 50% { transform:translateY(-6px) } }
+@keyframes tap-pop    { 0% { transform:scale(1) } 40% { transform:scale(0.93) } 100% { transform:scale(1) } }
+@keyframes gpulse     { 0%,100% { opacity:.5 } 50% { opacity:1 } }
+@keyframes shimmer    { 0% { opacity:.4 } 50% { opacity:.8 } 100% { opacity:.4 } }
+
+.fade-up { animation: fade-up .5s cubic-bezier(.16,1,.3,1) forwards; }
+.slide-r { animation: slide-r .4s cubic-bezier(.16,1,.3,1) forwards; }
+
+/* ── LAYOUT ── */
+.app-shell {
+  width: 100%;
+  height: 100vh;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: var(--t1);
+}
+
+/* Desktop sidebar layout */
+.desktop-shell {
+  display: flex;
+  height: 100%;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  position: relative;
+  z-index: 10;
+  border-right: 1px solid rgba(0,255,80,0.08);
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.topbar {
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid rgba(0,255,80,0.07);
+}
+
+.page-content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+/* Mobile specific */
+.mobile-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.scroll-area {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 10px 14px 90px;
+}
+
+/* ── TICKER ── */
+.ticker-bar {
+  height: 28px;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(0,255,80,0.08);
+  background: rgba(0,255,80,0.02);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── SIGNAL BAR ── */
+.signal-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(0,255,80,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── NAV BUTTON ── */
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  padding: 6px 0;
+  border-radius: 15px;
+  transition: all .22s cubic-bezier(.16,1,.3,1);
+  flex: 1;
+}
+
+.nav-btn.active {
+  background: rgba(0,255,80,0.10);
+  border-color: rgba(0,255,80,0.20);
+}
+
+/* ── SIDEBAR NAV ── */
+.side-nav-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 11px;
+  margin-bottom: 2px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.18s;
+  background: none;
+  color: var(--t2);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.side-nav-btn.active {
+  background: rgba(0,255,80,0.08);
+  border-color: rgba(0,255,80,0.18);
+  color: var(--neon);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+}
+@media (min-width: 769px) {
+  .mobile-only { display: none !important; }
+}
