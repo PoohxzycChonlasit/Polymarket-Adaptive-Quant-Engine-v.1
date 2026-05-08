@@ -3,6 +3,9 @@ from __future__ import annotations
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from datetime import datetime
+import os
+import sys
 import threading
 import requests
 from requests.adapters import HTTPAdapter
@@ -99,23 +102,55 @@ class ColoredEmojiFormatter(logging.Formatter):
         record_copy.name = f"\033[36m{record_copy.name}\033[0m" # Cyan for module name
         return super().format(record_copy)
 
+def _run_id() -> str:
+    return f"{datetime.now():%Y%m%d_%H%M%S}_{os.getpid()}"
+
+
+def _warn_console(message: str) -> None:
+    print(f"WARNING | logging | {message}", file=sys.stderr)
+
+
+class SafeRotatingFileHandler(RotatingFileHandler):
+    """Rotating file handler that disables itself on Windows file locks."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.disabled_for_session = False
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if self.disabled_for_session:
+            return
+        try:
+            super().emit(record)
+        except PermissionError as exc:
+            self._disable_for_session(exc)
+        except OSError as exc:
+            if getattr(exc, "errno", None) == 13:
+                self._disable_for_session(exc)
+            else:
+                raise
+
+    def handleError(self, record: logging.LogRecord) -> None:
+        exc = sys.exc_info()[1]
+        if isinstance(exc, PermissionError) or getattr(exc, "errno", None) == 13:
+            self._disable_for_session(exc)
+            return
+        super().handleError(record)
+
+    def _disable_for_session(self, exc: BaseException | None) -> None:
+        self.disabled_for_session = True
+        try:
+            self.close()
+        except Exception:
+            pass
+        _warn_console(
+            "file log disabled for this session after PermissionError/OSError "
+            f"on {getattr(self, 'baseFilename', 'unknown')}: {exc}"
+        )
+
+
 def setup_logger(log_level: str = "INFO", log_dir: str = "logs") -> logging.Logger:
     resolved_dir = Path(log_dir)
-    resolved_dir.mkdir(parents=True, exist_ok=True)
-
-    log_file = resolved_dir / "polytrade_bot.log"
-    file_formatter = logging.Formatter(
-        fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
-    file_handler = RotatingFileHandler(
-        filename=log_file,
-        maxBytes=2_000_000,
-        backupCount=5,
-        encoding="utf-8",
-    )
-    file_handler.setFormatter(file_formatter)
 
     # Console Handler with Color and Emojis
     console_formatter = ColoredEmojiFormatter(
@@ -125,7 +160,32 @@ def setup_logger(log_level: str = "INFO", log_dir: str = "logs") -> logging.Logg
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(console_formatter)
 
-    handlers: list[logging.Handler] = [file_handler, console_handler]
+    handlers: list[logging.Handler] = [console_handler]
+
+    try:
+        resolved_dir.mkdir(parents=True, exist_ok=True)
+        log_file = resolved_dir / f"polytrade_bot_{_run_id()}.log"
+        file_formatter = logging.Formatter(
+            fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+        file_handler = SafeRotatingFileHandler(
+            filename=log_file,
+            maxBytes=2_000_000,
+            backupCount=5,
+            encoding="utf-8",
+            delay=True,
+        )
+        file_handler.setFormatter(file_formatter)
+        handlers.insert(0, file_handler)
+    except PermissionError as exc:
+        _warn_console(f"file logging unavailable; continuing console-only: {exc}")
+    except OSError as exc:
+        if getattr(exc, "errno", None) == 13:
+            _warn_console(f"file logging unavailable; continuing console-only: {exc}")
+        else:
+            raise
 
     # Attach telegram handler if settings are present
     from config.settings import get_settings

@@ -1,64 +1,50 @@
 # Agent Index
 
-## Required Agent System
+> Last synced: 2026-05-08.
 
-Use these agents in ChatGPT Project and Codex.
+Use these role docs for planning, implementation boundaries, review, and test design. They are operating instructions, not runtime proof that an agent module exists.
 
-## Phase 1 - Must Build First
+## Safety/Core Agents
 
-1. Project Manager Agent
-2. Code Architect Agent
-3. Risk Manager Agent
-4. Exit Execution Agent
-5. Market Data Agent
-6. Position Reconciliation Agent
-7. Test CI Agent
+1. Project Manager Agent - scope, sequencing, handoffs.
+2. Code Architect Agent - module placement, interfaces, files to touch/avoid.
+3. Risk Manager Agent - entry approval, sizing, drawdown, exposure, floor.
+4. Exit Execution Agent - TP/SL, forced/panic exits, runner behavior.
+5. Market Data Agent - orderbooks, token IDs, feed freshness, spread/depth.
+6. Position Reconciliation Agent - true inventory, open orders, fills, mismatch handling.
+7. Test CI Agent - test plan, regression coverage, CI gate.
 
-## Phase 2 - After Safety Works
+## Research/Validation/Observability Agents
 
-1. Research Quant Agent
-2. Signal Strategy Agent
-3. Backtest Replay Agent
-4. Observability Incident Agent
-5. Review Learning Agent
+1. Research Quant Agent - offline research only.
+2. Signal Strategy Agent - signal changes only when explicitly scoped.
+3. Backtest Replay Agent - replay/backtest validation.
+4. Observability Incident Agent - logs, alerts, health, incidents.
+5. Review Learning Agent - postmortems and improvement notes.
 
 ## How To Use
 
-- ChatGPT Project = analysis, planning, review, specs.
-- Codex = code implementation, refactor, tests.
-- Repo markdown files = permanent operating manual.
+- ChatGPT Project: analysis, planning, review, specs.
+- Codex: scoped implementation, tests, docs updates.
+- Repo markdown files: permanent operating manual.
+
+## Current Runtime Boundaries
+
+- Paper mode is default.
+- Live mode is blocked until readiness passes.
+- Do not bypass Risk, ExitAgent, Reconciliation, or OrderIntent.
+- Do not treat HFT as canonical live execution.
+- Do not claim planned observability systems are implemented.
 
 ## Folder Layout
 
 ```text
-docs/agents/
+docs/quant_agent_setup_md/
   README.md
   00_MASTER_CONTEXT.md
   01_QUANT_OPERATING_SYSTEM.md
   02_AGENT_INDEX.md
-
   roles/
-    01_PROJECT_MANAGER_AGENT.md
-    02_CODE_ARCHITECT_AGENT.md
-    03_RISK_MANAGER_AGENT.md
-    04_EXIT_EXECUTION_AGENT.md
-    05_MARKET_DATA_AGENT.md
-    06_POSITION_RECONCILIATION_AGENT.md
-    07_TEST_CI_AGENT.md
-    08_RESEARCH_QUANT_AGENT.md
-    09_SIGNAL_STRATEGY_AGENT.md
-    10_BACKTEST_REPLAY_AGENT.md
-    11_OBSERVABILITY_INCIDENT_AGENT.md
-    12_REVIEW_LEARNING_AGENT.md
-
   playbooks/
-    CODEX_WORKFLOW.md
-    DAILY_WORKFLOW.md
-    INCIDENT_RESPONSE.md
-
   templates/
-    AGENT_PROMPT_PACK.md
-    BUGS_AND_FIXES_TEMPLATE.md
-    CURRENT_STATUS_TEMPLATE.md
-    TRADE_REVIEW_TEMPLATE.md
 ```

@@ -2,6 +2,8 @@
 
 Date: 2026-05-05
 
+Documentation sync update: 2026-05-08
+
 ## Scope
 
 This cleanup pass focused on structure, documentation, and reducing root-level confusion. It did not change trading strategy logic, order sizing, exits, wallet configuration, runtime logs, trade logs, backtest results, or paper/live execution code.
@@ -11,6 +13,10 @@ The operating reference for future project work is:
 - `docs/quant_agent_setup_md/`
 - `AGENTS.md`
 - `CURRENT_PROJECT_STATUS.md`
+- `CODEX_START_HERE.md`
+- `PROJECT_RULES.md`
+- `docs/KNOWN_ISSUES.md`
+- `docs/OBSERVABILITY_PLAN.md`
 - latest real daily note in `research/daily/`
 
 ## Actions Taken
@@ -21,6 +27,8 @@ The operating reference for future project work is:
 - Added `docs/PROJECT_STRUCTURE.md`.
 - Updated `AGENTS.md` to reflect current safety-first cleanup rules and active paths.
 - Updated `README.md` with the canonical operating docs and main runtime path.
+- 2026-05-08 documentation sync rewrote current root docs to reflect the real paper-first implementation, Terminal UI V2, Windows logging resilience, order intent/risk mode/bankroll rank protections, and live blockers.
+- 2026-05-08 documentation sync added `docs/OBSERVABILITY_PLAN.md`, `docs/KNOWN_ISSUES.md`, and root `PROJECT_STRUCTURE.md`.
 
 ## Moved Files
 
@@ -35,7 +43,10 @@ No Python modules, configs, logs, runtime state, trade logs, or backtest results
 
 | Entrypoint | Status | Purpose |
 |------------|--------|---------|
-| `main.py --mode polymarket-realtime --interval 60` | Canonical | Main Polymarket live/paper trading loop. |
+| `python main.py` | Canonical safe default | Main Polymarket paper trading loop with real market/orderbook data and simulated execution. |
+| `main.py --mode paper --interval 60` | Canonical paper | Explicit main Polymarket paper loop. |
+| `main.py --mode polymarket-realtime --interval 60` | Legacy alias | Routed to safe paper mode; retained for compatibility. |
+| `main.py --mode live --interval 60` | Blocked until ready | Runs verify preflight first; do not use until allowance/execution/reconciliation are validated. |
 | `main.py --mode polymarket-backtest --days N --asset BTC/ETH` | Active | 5-minute Polymarket strategy backtest. |
 | `main.py --mode polymarket-5m-dashboard` | Active | Streamlit dashboard for Polymarket 5-minute backtests. |
 | `daily_report.py` | Active | Reads scan/trade logs and reports daily P&L. |
@@ -105,7 +116,7 @@ These look legacy, duplicated, or stale, but were not moved because they may sti
 | File/Folder | Why it looks legacy or unclear | Recommendation |
 |-------------|--------------------------------|----------------|
 | `CLAUDE.md` | Duplicates old agent guidance and may conflict with `AGENTS.md`; could be auto-read by Claude tooling. | Manual review before moving. |
-| `PROJECT_RULES.md` | Older rules overlap with `AGENTS.md` and current status. | Keep until owner confirms whether it is canonical. |
+| `PROJECT_RULES.md` | Refreshed on 2026-05-08 to match paper-first runtime and current safety gates. | Keep as current rules companion to `AGENTS.md`. |
 | `ROADMAP.md` | May be stale versus `CURRENT_PROJECT_STATUS.md`. | Keep as historical roadmap; review dates/status. |
 | `research/OVERVIEW.md` | Contains strategy history that may conflict with current v4/HFT docs. | Keep; mark as research history if stale. |
 | `research/FOR_OTHER_AI.md` | AI handoff style doc, likely superseded by quant-agent docs. | Manual review before archive. |
@@ -156,10 +167,11 @@ Recommendation: keep the separation for now, but document `utils/risk_manager.py
 These are real operational concerns found during cleanup, but no trading code was changed in this task:
 
 1. Recent runtime status showed balance near or below the `$5` floor. Live execution must stay blocked until balance/floor state is reconciled.
-2. Local `.env` may have `PAPER_TRADING=false` and `DRY_RUN=false`, while project notes still say paper mode is required. Confirm before running any live command.
-3. Recent VPS logs showed `NO` entries going through a `SELL` order path and failing with insufficient balance/allowance. In binary markets, buying the NO token is not the same operational action as selling without inventory. This needs a dedicated execution-safety fix and tests.
-4. `CURRENT_PROJECT_STATUS.md`, `README.md`, and older research docs disagree on whether the active strategy is counter-momentum or v4 HFT/window-delta. Resolve this in a strategy-status task, not a cleanup task.
-5. HFT paper results show strong win rate but high drawdown; do not promote HFT live path without risk review.
+2. Always confirm `.env` before running any live-risk command.
+3. Older live `NO` SELL-without-inventory concerns were addressed by order intent guard tests, but live execution remains unvalidated.
+4. Older research docs may still disagree on whether the active strategy is counter-momentum or v4 HFT/window-delta. Current docs now treat the Polymarket BTC/ETH 5M path as canonical and HFT as experimental.
+5. HFT paper results must not promote HFT live path without risk review.
+6. `daily_report.py` and `utils/telegram_reporter.py` still need updating for per-run `scan_log_*.csv` files.
 
 ## Recommended Final Project Structure
 
@@ -172,6 +184,8 @@ polytrade-crypto-scalper-main/
   docs/
     PROJECT_CLEANUP_REPORT.md
     PROJECT_STRUCTURE.md
+    OBSERVABILITY_PLAN.md
+    KNOWN_ISSUES.md
     quant_agent_setup_md/
   polymarket/
   utils/

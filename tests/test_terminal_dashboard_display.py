@@ -101,3 +101,82 @@ def test_cycle_and_footer_show_skip_reason_and_session_summary() -> None:
     assert "SKIP no_orderbook" in cycle_text
     assert "EV=+0.008" in cycle_text
     assert "Session: scanned=48 opps=5 entered=1 skipped=47 canceled=0" in footer_text
+
+
+def test_dashboard_auto_layout_modes_by_terminal_size() -> None:
+    cases = [
+        ((82, 22), "compact"),
+        ((118, 30), "standard"),
+        ((150, 38), "wide"),
+        ((190, 52), "fullscreen"),
+    ]
+
+    for size, expected_mode in cases:
+        display = PolymarketRealtimeDisplay(terminal_size_provider=lambda s=size: s)
+        spec = display._resolve_layout()
+        assert spec.active_mode == expected_mode
+
+
+def test_dashboard_small_terminal_warns_and_falls_back_to_compact() -> None:
+    display = PolymarketRealtimeDisplay(
+        ui_mode="fullscreen",
+        terminal_size_provider=lambda: (70, 18),
+    )
+
+    spec = display._resolve_layout()
+    text = _render_text(display._header(spec))
+
+    assert spec.active_mode == "compact"
+    assert "Terminal too small" in text
+    assert "Minimum" in text
+
+
+def test_dashboard_long_log_message_is_clipped_inside_rolling_window() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (96, 28))
+    long_message = "locked csv flush failed " + ("x" * 260)
+
+    display.add_log(long_message, level="WARN", redraw=False)
+    text = _render_text(display._rolling_logs_panel(display._resolve_layout()))
+
+    assert "locked csv flush failed" in text
+    assert "..." in text
+    assert "x" * 180 not in text
+
+
+def test_dashboard_resize_event_is_recorded_without_duplicate_panels() -> None:
+    size = [118, 30]
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: tuple(size))
+
+    first = display._resolve_layout()
+    display._render()
+    size[:] = [150, 38]
+    second = display._resolve_layout()
+    display._render()
+    logs = _render_text(display._rolling_logs_panel(second))
+
+    assert first.active_mode == "standard"
+    assert second.active_mode == "wide"
+    assert "resize 118x30/standard -> 1" in logs
+    assert any(
+        message == "resize 118x30/standard -> 150x38/wide"
+        for _ts, _level, message in display._rolling_logs
+    )
+
+
+def test_dashboard_bottom_status_line_contains_required_health_fields() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_ws_status("Synced")
+    display.update_realtime_batch({
+        "BTC": {"current_price": 100000.0, "bid": 0.51, "ask": 0.53, "spread": 0.02},
+        "ETH": {"current_price": 3000.0, "bid": 0.49, "ask": 0.52, "spread": 0.03},
+    })
+
+    footer = str(display._footer())
+
+    assert "WS Synced" in footer
+    assert "ORACLE OK" in footer
+    assert "ORDERBOOK OK" in footer
+    assert "MODE PAPER" in footer
+    assert "RISK NORMAL" in footer
+    assert "LATENCY" in footer
+    assert "LOGGING SAFE" in footer

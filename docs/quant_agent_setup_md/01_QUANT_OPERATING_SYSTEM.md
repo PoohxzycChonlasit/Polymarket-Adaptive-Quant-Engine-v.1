@@ -1,4 +1,6 @@
-# QUANT_OPERATING_SYSTEM
+# Quant Operating System
+
+> Last synced: 2026-05-08.
 
 ## Purpose
 This document defines how the project should be operated like a small quant trading desk, even if only one person is working on it.
@@ -22,16 +24,17 @@ Real quant teams split responsibilities clearly. For this project, each role bec
 
 ## Daily Loop
 ```text
-1. Read CURRENT_STATUS.md
-2. Review yesterday's trades
-3. Pick one problem only
-4. Ask the correct agent
-5. Write the fix spec
-6. Let Codex implement
-7. Run tests
-8. Run paper/replay
-9. Update docs
-10. Only then consider live small
+1. Read CURRENT_PROJECT_STATUS.md
+2. Read CODEX_START_HERE.md, AGENTS.md, and docs/KNOWN_ISSUES.md
+3. Review latest paper/live evidence if relevant
+4. Pick one problem only
+5. Use the correct role doc
+6. Write the scoped fix spec
+7. Let Codex implement with tests
+8. Run targeted tests
+9. Run paper/replay when behavior changed
+10. Update docs
+11. Only then consider live validation, and only after readiness passes
 ```
 
 ## Rule: One Problem Per Session
@@ -63,3 +66,6 @@ If any of these happen, stop live trading:
 - Daily loss limit hit
 - Kill switch active
 - Unknown exception in execution loop
+- Missing allowance
+- Live fill/cancel/reconcile unknown
+- OrderIntent guard blocks the order

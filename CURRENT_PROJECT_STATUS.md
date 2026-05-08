@@ -1,6 +1,6 @@
 # PolyTrade Bot / Polymarket 5M Binary BTC-ETH Quant Scalper - Current Project Status
 
-> Updated: 2026-05-07
+> Updated: 2026-05-08
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -40,7 +40,11 @@ Live mode is still blocked by readiness checks while allowance/execution validat
 
 The following parts are currently working or present in the project:
 
-- Terminal UI works.
+- Terminal UI works and has been upgraded in place to Terminal UI V2 responsive dashboard mode.
+- Terminal UI V2 supports `--ui auto|compact|standard|wide|fullscreen`; default is `auto`.
+- Terminal UI V2 supports `--fps low|medium|high`; default is `medium`.
+- Terminal UI V2 detects terminal width/height, falls back to compact mode when the terminal is too small, and shows minimum/recommended terminal size guidance.
+- Terminal UI V2 keeps long messages inside bounded rolling log panels with safe truncation.
 - BTC/ETH 5-minute market scanner works.
 - Binance/price oracle feed works.
 - WebSocket status shows `Synced`.
@@ -49,6 +53,12 @@ The following parts are currently working or present in the project:
 - Paper mode is now the default runtime unless `--mode live` is explicitly passed.
 - Paper mode uses real Polymarket market data/orderbooks but simulates orders and fills locally.
 - Paper mode never connects to live wallet balance, never requires allowance, and never sends live orders.
+- Paper mode logging is now fail-soft on Windows file locks:
+  - File logs use unique per-run filenames.
+  - Realtime CSV logs use unique per-run filenames.
+  - If Windows locks a log or CSV file, that file logger is disabled for the session and paper mode continues.
+- Documentation Sync Phase was performed on 2026-05-08 before new feature work:
+  - `README.md`, `CURRENT_PROJECT_STATUS.md`, `CODEX_START_HERE.md`, `PROJECT_RULES.md`, `AGENTS.md`, `docs/PROJECT_STRUCTURE.md`, `PROJECT_STRUCTURE.md`, `docs/OBSERVABILITY_PLAN.md`, and `docs/KNOWN_ISSUES.md` were aligned to the current implementation.
 - Market window timing works.
 - Portfolio panel displays values.
 - AI cycle panel displays decisions.
@@ -68,6 +78,31 @@ Strategy and risk modules exist:
 - Risk floor.
 
 These working parts are meaningful. Future assistants should build on them instead of replacing the architecture.
+
+Stability classification:
+
+- Stable enough for continued paper validation:
+  - Paper mode default.
+  - Terminal UI V2 rendering and responsive layout tests.
+  - Paper/live mode separation tests.
+  - Windows logging PermissionError resilience tests.
+  - OrderIntent guard tests.
+  - Bankroll rank hysteresis tests.
+  - Risk mode transition tests.
+- Implemented but needs ongoing live-data monitoring:
+  - BTC/ETH active market scanner.
+  - Live CLOB orderbook display path.
+  - Binance/oracle/PTB feed path.
+  - Portfolio source labeling.
+- Partially implemented / live-risky:
+  - Live order placement path.
+  - Live balance/allowance readiness.
+  - Fill/cancel/reconcile lifecycle.
+  - Telegram daily reporting.
+- Planned:
+  - JSONL quant event logging.
+  - Telegram cooldown/dedup.
+  - Daily report aggregation over per-run CSV logs.
 
 ---
 
@@ -123,6 +158,20 @@ Observed terminal evidence:
 - The paper session summary reported `cycles_scanned=6`, `total_markets_scanned=12`, `total_opportunities_found=3`, `paper_orders_created=0`, `paper_fills=0`, `paper_exits=0`, `simulated_pnl=0.0`, and `max_drawdown=0.0`.
 - Top paper skip reasons in that run were `confidence_too_low` (4), `Risk plan returned zero position size -- skipping.` (3), entry cutoff near market close (4 total), and `ev_below_threshold` (1).
 - The strategy/orderbook path moved beyond the old `no_orderbook` failure: live orderbook EV evaluation produced an EV-level `decision=ENTER` candidate, but the risk/sizing layer blocked it with zero size. This indicates the observed no-trade result was caused by current risk/strategy thresholds and tiny bankroll sizing, not missing orderbook data.
+- Windows logging finding on 2026-05-08:
+  - Paper mode could start correctly but crash if `RotatingFileHandler` could not write/roll over a locked log file, or if `polymarket/realtime_logger.py` hit `PermissionError` during CSV `flush()`.
+  - This is a runtime logging resilience issue, not a strategy/orderbook/wallet/execution issue.
+  - Code now catches `PermissionError`/Windows errno 13 on log setup, CSV open, write, flush, close, and daily summary save. The affected file logger is disabled for the session and the trading loop should continue safely.
+- Terminal UI V2 finding on 2026-05-08:
+  - The old terminal dashboard could overflow, compress panels in fullscreen, and let important messages scroll away.
+  - `utils/display.py` now contains a responsive Polymarket dashboard renderer with System Status, Portfolio, Risk, BTC Market, ETH Market, AI Decision, Execution, Skip Reasons, and Rolling Logs panels.
+  - The bottom status line now shows `WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING`.
+  - This is a UI/display-layer change only. It does not change strategy, risk, wallet, orderbook, or execution behavior.
+- Documentation/observability finding on 2026-05-08:
+  - Older docs still described stale HFT/live-ready assumptions and fixed `scan_log.csv` daily reporting.
+  - Runtime logging now writes per-run CSV files named `scan_log_<timestamp>_<pid>.csv`.
+  - `daily_report.py` and `utils/telegram_reporter.py` still read fixed `scan_log.csv`, so daily Telegram summaries may miss current realtime data until updated.
+  - Telegram alert builders and async send path exist, but a central cooldown/dedup/spam-control system is not implemented yet.
 
 Interpretation:
 
@@ -167,7 +216,11 @@ Important project areas:
 - `utils/risk_manager.py` - canonical Polymarket risk policy.
 - `utils/position_tracker.py` - position and drawdown state.
 - `utils/display.py` - terminal display.
+- `utils/display.py` now includes Terminal UI V2 responsive layout logic for the Polymarket realtime dashboard.
 - `utils/telegram_reporter.py` - Telegram alerts and reports.
+- `daily_report.py` - daily summary/report sender; currently needs per-run CSV reader update.
+- `docs/OBSERVABILITY_PLAN.md` - logging/Telegram/JSONL observability roadmap.
+- `docs/KNOWN_ISSUES.md` - current bugs, technical debt, and unfinished systems.
 
 Secondary or experimental paths:
 
@@ -258,6 +311,7 @@ Current outcome:
 - Legacy `--mode polymarket-realtime` and `--mode polymarket-paper` route to paper mode.
 - Live runtime requires explicit `--mode live`.
 - Paper order APIs are blocked from calling live CLOB order placement directly.
+- Windows locked log/CSV files no longer crash paper mode. Future assistants should not alter strategy/risk/execution to fix logging `PermissionError`; inspect `utils/logger.py` and `polymarket/realtime_logger.py` first.
 - Paper logs include `[PAPER ORDER]`, `[PAPER FILL]`, `[PAPER EXIT]`, and `[PAPER PNL]`.
 - Paper session summary logs include cycles scanned, markets scanned, opportunities found, paper orders, fills, exits, PnL, max drawdown, and top skip reasons.
 
@@ -268,12 +322,29 @@ Latest paper validation:
 - The run found opportunities, including one EV-level `ENTER`, but all entries were blocked before execution by entry cutoff, low confidence, low EV, or zero-size risk planning.
 - Result: no paper orders/fills/exits occurred in that short session; simulated cash/equity stayed at `$8.70`, exposure stayed `$0.00`, PnL stayed `0.0`.
 
+### 5. Observability / Telegram Drift - open
+
+Current status:
+
+- App file logging and realtime CSV logging are fail-soft on Windows file locks.
+- Terminal UI V2 has a bounded rolling log panel.
+- Optional Telegram notifier exists and sends asynchronously.
+- Telegram message builders exist for startup, trade, exit, settlement, risk, and error alerts.
+
+Known gap:
+
+- `daily_report.py` and `utils/telegram_reporter.py` still read `runtime/realtime_logs/YYYY-MM-DD/scan_log.csv`.
+- `polymarket/realtime_logger.py` now writes per-run `scan_log_<timestamp>_<pid>.csv`.
+- Until this is fixed, daily reports/Telegram summaries can miss current scan data.
+- Telegram has no central alert cooldown/dedup layer yet.
+- JSONL event logging is planned but not implemented.
+
 ---
 
 ## 7. Do Not Rebuild Rules
 
 - Do not tell the user to rebuild the bot from scratch.
-- Do not replace the terminal UI, scanner, feed, strategy, or risk modules unless the user explicitly asks.
+- Do not replace the terminal UI, scanner, feed, strategy, or risk modules unless the user explicitly asks. Terminal UI V2 was added in place and should be extended, not rebuilt from scratch.
 - Do not delete runtime logs, trade logs, scan logs, backtest results, config files, wallet helpers, or research records.
 - Do not rewrite strategy logic during cleanup or documentation tasks.
 - Do not bypass floor balance, single-trade cap, daily drawdown, reconciliation, or unknown-state guards.
@@ -326,6 +397,12 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
    - Update `docs/PROJECT_CLEANUP_REPORT.md` for cleanup decisions.
    - Update `README.md` only for user-facing command/path changes.
 
+7. Fix observability drift.
+   - Update daily report readers to load `scan_log_*.csv`.
+   - Add JSONL event logging for structured quant/runtime events.
+   - Add Telegram cooldown/dedup before expanding alerts.
+   - Keep logging changes isolated from strategy/risk/execution behavior.
+
 ---
 
 ## 9. Codex Working Instructions
@@ -337,6 +414,7 @@ Before modifying code:
 3. Read `docs/PROJECT_STRUCTURE.md`.
 4. Read `docs/PROJECT_CLEANUP_REPORT.md` if the task touches structure or cleanup.
 5. Inspect `.env` and `config/settings.py` before any live-risk work.
+6. For observability tasks, read `docs/OBSERVABILITY_PLAN.md` and `docs/KNOWN_ISSUES.md`.
 
 Testing guidance:
 

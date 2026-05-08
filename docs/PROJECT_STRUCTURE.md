@@ -1,250 +1,395 @@
 # Project Structure
 
-This document describes the current working path of the Polymarket BTC/ETH 5-minute bot without changing strategy or execution logic.
+> Last synced: 2026-05-08.
+> Scope: current implementation map for the Polymarket BTC/ETH 5-minute bot.
 
-## Main Path
+This document describes the current working structure without changing strategy, risk, orderbook, wallet, or execution logic.
 
-The canonical safe paper runtime path is:
+## Canonical Runtime
+
+Safe default paper loop:
 
 ```bash
 python main.py
 ```
 
-Explicit paper runtime:
+Explicit paper loop:
 
 ```bash
 python main.py --mode paper --interval 60
 ```
 
-Explicit live runtime:
+Legacy paper aliases:
+
+```bash
+python main.py --mode polymarket-paper --interval 60
+python main.py --mode polymarket-realtime --interval 60
+```
+
+Read-only verification:
+
+```bash
+python main.py --mode verify
+```
+
+Explicit live loop:
 
 ```bash
 python main.py --mode live --interval 60
 ```
 
-Paper mode is the default. Legacy `--mode polymarket-realtime` and `--mode polymarket-paper` route to safe paper mode. Live runtime requires explicit `--mode live` and a passing readiness preflight.
+Live mode must pass `run_verify_mode()` first. Current status still includes live allowance/execution validation blockers.
 
-Runtime safety still depends on `.env` and `config/settings.py`, especially:
+## Runtime Folders
 
-- `PAPER_TRADING`
-- `DRY_RUN`
-- wallet/API variables
-- balance and risk settings
+| Path | Status | Purpose |
+|------|--------|---------|
+| `runtime/` | generated | Runtime state and reports; do not treat as source code. |
+| `runtime/bot_status.json` | generated | Current bot state for dashboards/API consumers. |
+| `runtime/realtime_logs/YYYY-MM-DD/` | generated | Realtime scan CSV and daily summary output. |
+| `logs/` | generated | Main per-run application logs. |
+| `logs_vps/` | generated/evidence | VPS operational logs; preserve for incident review. |
+| `backtest_results/` | generated/evidence | Backtest artifacts; preserve. |
+| `archive/legacy/` | historical | Archived/stale docs or code from cleanup passes. |
+| `research/daily/` | manual/agent notes | Daily work notes and project history. |
 
-Before live operation, always confirm `.env` explicitly.
+Do not delete runtime/log/backtest evidence during normal cleanup.
 
-## Startup Flow
+## Main Startup Flow
 
-1. `main.py` builds the CLI parser.
-2. Default mode, `--mode paper`, `--mode polymarket-paper`, or legacy `--mode polymarket-realtime` enters the paper realtime runner.
-3. Settings load from `config/settings.py` and `.env`.
-4. The runtime creates `PolymarketTrader`, `RealtimeLogger`, and the terminal display.
-5. The loop runs at the requested interval.
-6. Each cycle calls the trader, logs scan/trade state, settles expired positions, checks exits, and writes status.
+```text
+main.py
+  -> build_parser()
+  -> get_settings()
+  -> setup_logger()
+  -> mode dispatcher
+```
+
+Paper runtime:
+
+```text
+run_polymarket_paper()
+  -> run_polymarket_realtime(force_paper=True)
+  -> settings.paper_trading=True
+  -> settings.dry_run=True
+  -> PAPER MODE banner
+```
+
+Live runtime:
+
+```text
+run_polymarket_live()
+  -> run_verify_mode()
+  -> block if readiness fails
+  -> run_polymarket_realtime(force_paper=False)
+```
 
 ## Main Trading Loop
 
 ```text
-main.py
-  -> PolymarketTrader.run_single_cycle()
-     -> load active market
-     -> load price/market data
-     -> compute signal
-     -> build risk plan
-     -> submit paper/live order if allowed
-     -> update open positions
-  -> settle expired positions
-  -> check panic/take-profit/stop-loss exits
-  -> update runtime status and logs
+run_polymarket_realtime()
+  -> PolymarketTrader()
+  -> RealtimeLogger()
+  -> PolymarketRealtimeDisplay()
+  -> loop:
+       refresh portfolio/session display
+       update PTB/oracle/countdown
+       refresh market display metrics/orderbooks
+       panic/forced exit checks
+       run_single_cycle()
+       write scan records
+       update terminal dashboard
 ```
 
 ## Market Data Flow
 
+Implemented:
+
 ```text
-Binance/Coinbase price feeds
+Binance / crypto feed
   -> polymarket/market_feed.py
   -> polymarket/oracle_price_feed.py
   -> polymarket/virtual_ptb.py
+  -> PolymarketTrader
 
 Polymarket Gamma API
   -> polymarket/gamma_fetcher.py
-  -> active market, event, token IDs, prices
+  -> market slug, condition_id, YES/NO token IDs
 
 Polymarket CLOB
   -> polymarket/client.py
-  -> balances, allowances, order placement, redemption helpers
+  -> get_orderbook(token_id)
+  -> normalized best bid/ask/spread
 ```
 
-The realtime trader combines market metadata, token IDs, spot price, price-to-beat, and orderbook/price information before evaluating a trade.
+Orderbook path status:
 
-## Signal Flow
+- Implemented and verified in read-only mode for BTC/ETH in latest evidence.
+- Rejects stale books older than 3 seconds in the trader/display metrics path.
+- Logs token flow and best bid/ask.
+- Must be monitored for regression; do not claim orderbook works if terminal lacks `BID`, `ASK`, and `SPREAD`.
+
+## Signal And Model Flow
 
 ```text
 market snapshot
   -> polymarket/signal.py
-  -> side / confidence / edge
+  -> polymarket/probability_model.py
+  -> polymarket/expected_value.py
+  -> polymarket/opportunity_scanner.py
   -> polymarket/order_manager.py
 ```
 
-Backtest signal behavior lives in `polymarket/backtester_5m.py`.
+Implemented strategy modules include Counter-Momentum, Markov Bounds, Kelly Sizing, Micro-Grinder mode, ExitAgent protection, and risk floor.
 
-Do not change realtime signal logic without updating the matching backtest path and running the required backtest. Cleanup tasks must not modify signal behavior.
+Rule: Do not change realtime signal logic without updating `polymarket/backtester_5m.py` and running an appropriate backtest.
 
 ## Risk Flow
 
-Canonical Polymarket risk policy is split between hard account safety and rank-based sizing:
-
-- `utils/risk_manager.py` keeps hard safety helpers such as the floor balance and drawdown state.
-- `polymarket/bankroll_tiers.py` defines the bankroll ranks and smooth base-risk interpolation.
-- `polymarket/position_sizing.py` applies the Bankroll Rank Engine multipliers and block conditions.
-
 ```text
 PolymarketTrader
+  -> utils/risk_manager.py
+  -> polymarket/bankroll_tiers.py
   -> polymarket/position_sizing.py
+  -> polymarket/risk_modes.py
   -> polymarket/order_manager.py
   -> RiskPlan
 ```
 
-Important safety constraints:
+Implemented:
 
-- Stop trading below `FLOOR_BALANCE`.
-- Respect tier-based single-trade sizing; do not use fixed 20% bankroll risk.
-- Respect daily drawdown checks.
-- Reduce sizing when drawdown, spread, liquidity, confidence, EV, delta, time-to-settlement, or trade frequency are unfavorable.
-- Keep paper mode safe by default.
-- Do not bypass `RiskPlan` for live orders.
+- Hard floor balance.
+- Max risk / single-trade caps from settings and risk code.
+- Bankroll Rank Lock / hysteresis.
+- Risk Mode Ladder: NORMAL, DEFENSIVE, MICRO_RECOVERY, LOCKDOWN.
+- Daily drawdown and loss-cluster controls.
+- Reconciliation gate before new entries.
+- Risk-mode sizing multiplier.
 
-The HFT path has a separate manager in `hft/risk_manager.py`. Treat it as HFT-only unless a dedicated risk unification task is opened.
+Do not increase live size or bypass risk caps.
+
+## Reconciliation Flow
+
+```text
+PolymarketTrader.run_single_cycle()
+  -> _ensure_connected()
+  -> reconcile_live_positions()
+  -> _block_on_reconciliation_if_needed()
+  -> manage/exit existing positions
+  -> only then analyze new markets
+```
+
+Implemented:
+
+- Local position tracking in `utils/position_tracker.py`.
+- Reconciliation report classification in `polymarket/trader.py`.
+- LOCKDOWN on unsafe reconciliation/order failures.
+- Tests for position reconciliation and order intent guards.
+
+Live readiness still requires confirmed fill/cancel/reconcile behavior against real exchange state.
 
 ## Execution Flow
 
+Entry:
+
 ```text
-RiskPlan approved
-  -> PolymarketTrader._submit_order()
-  -> paper branch OR live branch
+Signal / EV
+  -> RiskPlan
+  -> PositionSizing
+  -> Risk approval
+  -> Reconciliation gate
+  -> OrderIntent ENTRY
+  -> _submit_order()
 ```
+
+Exit:
+
+```text
+Tracked local inventory
+  -> ExitAgent / TP / SL / panic / forced exit
+  -> OrderIntent EXIT
+  -> _submit_order()
+```
+
+Implemented protections:
+
+- ENTRY must be BUY.
+- NO entry buys the NO token.
+- SELL without tracked inventory is blocked.
+- EXIT SELL requires tracked existing inventory.
+- LOCKDOWN blocks ENTRY but allows EXIT/management.
+- Paper mode enforces the same order intent guard.
 
 Paper branch:
 
 ```text
-default runtime OR settings.paper_trading == True
-  -> no CLOB order
-  -> synthetic/paper order receipt
-  -> trade logged as paper
-  -> local cash/equity/exposure/PnL simulation
-  -> no wallet collateral or allowance access
+settings.paper_trading=True
+  -> no live CLOB order
+  -> synthetic OrderReceipt
+  -> [PAPER ORDER]
+  -> [PAPER FILL]
+  -> virtual cash/equity/exposure/PnL update
 ```
 
 Live branch:
 
 ```text
---mode live only, with readiness preflight passed
-  -> settings.paper_trading == False
-  -> polymarket/client.py
-  -> CLOB API order
-  -> order response logged
+settings.paper_trading=False
+  -> CLOB orderbook price adjustment
+  -> PolymarketClient.place_limit_order()
+  -> balance/allowance preflight
+  -> order response
+  -> reconcile after attempt
 ```
 
-Manual review needed: recent logs suggest `NO` entries can route through a `SELL` order path and fail when the wallet has no inventory. That is an execution-safety issue and should be fixed in a separate task with tests.
+Current live status: not validated end to end.
 
-## Exit Flow
-
-Exit and protection logic is coordinated by `PolymarketTrader`:
-
-```text
-open positions
-  -> expired window settlement
-  -> panic sell checks
-  -> take-profit / stop-loss checks
-  -> auto close / redeem path when eligible
-```
-
-Position and drawdown state is supported by:
-
-- `utils/position_tracker.py`
-- `utils/risk_manager.py`
-- `polymarket/realtime_logger.py`
-- `utils/telegram_reporter.py`
-
-Risk and exit safety have higher priority than new strategy work.
-
-## Logging Flow
-
-```text
-trading cycle
-  -> polymarket/realtime_logger.py
-  -> logs/
-  -> runtime/bot_status.json
-  -> daily_report.py
-  -> optional Telegram messages
-```
-
-Do not delete or archive runtime evidence during cleanup:
-
-- `runtime/`
-- `logs/`
-- `logs_vps/`
-- `backtest_results/`
-
-These folders are used to debug missed trades, rejected orders, balance drift, and strategy performance.
-
-## Paper Mode Vs Live Mode
-
-Paper mode is the default command behavior and is also controlled by settings.
+## Paper Mode Flow
 
 Paper mode:
 
-- `PAPER_TRADING=true`
-- should avoid real CLOB order placement
-- should still log decisions, exits, and simulated receipts
-- is required before live promotion
-- uses real Polymarket market data and orderbooks
-- simulates fills locally only
-- logs `[PAPER ORDER]`, `[PAPER FILL]`, `[PAPER EXIT]`, and `[PAPER PNL]`
-- must not require allowance or touch wallet collateral
+- Is default.
+- Uses real market data and orderbooks.
+- Simulates fills locally.
+- Never sends live orders.
+- Never requires allowance.
+- Never touches wallet collateral.
+- Uses virtual starting balance and paper portfolio state.
+- Logs paper orders/fills/exits/PnL.
+- Produces paper session summary.
+
+## Portfolio Flow
+
+Paper mode:
+
+```text
+settings.account_balance
+  -> BankrollState
+  -> virtual cash/equity/exposure/PnL
+  -> dashboard_portfolio_state(balance_source=paper_virtual)
+```
 
 Live mode:
 
-- `PAPER_TRADING=false`
-- must be requested with `--mode live`
-- requires valid wallet/API credentials
-- requires enough USDC and MATIC
-- requires allowance readiness
-- requires risk floor and daily drawdown checks to pass
-- must not be used while execution-safety findings are unresolved
+```text
+PolymarketClient.get_usdc_balance_snapshot()
+  -> CLOB collateral primary
+  -> on-chain wallet diagnostic fallback
+  -> dashboard_portfolio_state(balance_source=clob_collateral or onchain_wallet)
+```
+
+Do not claim wallet sync unless terminal/logs show real live balance source.
+
+## Terminal UI Flow
+
+```text
+PolymarketRealtimeDisplay
+  -> Terminal UI V2
+  -> --ui auto|compact|standard|wide|fullscreen
+  -> --fps low|medium|high
+```
+
+Implemented panels:
+
+- System Status
+- Portfolio
+- Risk
+- BTC Market
+- ETH Market
+- AI Decision
+- Execution
+- Skip Reasons
+- Rolling Logs
+
+Bottom status line:
+
+```text
+WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING
+```
+
+## Logging Flow
+
+Application logs:
+
+```text
+utils/logger.py
+  -> console handler
+  -> SafeRotatingFileHandler
+  -> logs/polytrade_bot_<timestamp>_<pid>.log
+  -> optional TelegramLogHandler for ERROR/CRITICAL
+```
+
+Realtime scan logs:
+
+```text
+polymarket/realtime_logger.py
+  -> runtime/realtime_logs/YYYY-MM-DD/scan_log_<timestamp>_<pid>.csv
+  -> runtime/realtime_logs/YYYY-MM-DD/daily_summary_<timestamp>_<pid>.json
+```
+
+Implemented resilience:
+
+- Windows `PermissionError` on log setup, rollover, CSV open/write/flush/close disables only that file logger for the session.
+- Trading loop should continue safely.
+
+Known observability mismatch:
+
+- `daily_report.py` and `utils/telegram_reporter.py` still read fixed `scan_log.csv`.
+- They need to read latest/all `scan_log_*.csv` files before daily Telegram summaries can be considered accurate.
+
+## Notifier Flow
+
+```text
+setup_logger()
+  -> TelegramNotifier if token/chat_id configured
+  -> TelegramLogHandler for ERROR/CRITICAL
+
+PolymarketTrader
+  -> startup alert
+  -> trade/exit/settlement/risk alerts where called
+
+daily_report.py
+  -> build_daily_message()
+  -> TelegramNotifier.send_message()
+```
+
+Implemented:
+
+- Async Telegram send via one-worker thread pool.
+- Retry adapter for HTTP failures.
+- HTML message builders.
+
+Missing:
+
+- Central alert cooldown/dedup.
+- Structured alert event store.
+- Accurate daily report reader for per-run CSV names.
 
 ## Secondary Paths
 
-| Path | Purpose |
-|------|---------|
-| `hft_paper_run.py` | Standalone HFT paper simulation. |
-| `main.py --mode hft` | Experimental HFT engine. |
-| `main.py --mode scalper` | Separate crypto scalper path. |
-| `dashboard/live_dashboard.py` | Standalone live dashboard. |
-| `web-dashboard/` | Separate Next.js dashboard. |
-| `polymarket/five_min_monitor.py` | Market monitor without full trade loop ownership. |
+| Path | Status | Notes |
+|------|--------|-------|
+| `hft_paper_run.py` | experimental utility | Paper simulation; not canonical live Polymarket execution. |
+| `main.py --mode hft` | experimental | Keep paper-first. |
+| `main.py --mode scalper` | secondary | Separate crypto scalper product line. |
+| `dashboard/` | active/overlapping | Streamlit dashboards. |
+| `web-dashboard/` | active/overlapping | Next.js dashboard; not consolidated. |
+| `polymarket/five_min_monitor.py` | utility | Market monitor separate from trade-loop ownership. |
 
-## Run Commands
+## Test Structure
 
-```bash
-# Safe paper loop
-python main.py
-
-# Explicit paper loop
-python main.py --mode paper --interval 60
-
-# Explicit live loop; verify readiness first
-python main.py --mode live --interval 60
-
-# Quick backtest smoke
-python main.py --mode polymarket-backtest --days 3 --asset BTC
-
-# Full test suite
-python -m pytest tests/ -q
-
-# Daily report
-python daily_report.py
-
-# Market monitor
-python polymarket/five_min_monitor.py --interval 30
+```text
+tests/
+  test_bankroll_tiers.py
+  test_risk_modes.py
+  test_execution_risk_controls.py
+  test_paper_mode.py
+  test_exit_agent.py
+  test_logging_resilience.py
+  test_terminal_dashboard_display.py
+  test_position_reconciliation.py
+  test_polymarket_trader.py
+  ...
 ```
+
+Use targeted tests for scoped changes, then broader suites when touching shared behavior.

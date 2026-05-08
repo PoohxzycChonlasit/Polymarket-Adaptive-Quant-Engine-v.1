@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import importlib.util
 import json
 import logging
@@ -19,6 +20,14 @@ from polymarket.signal import BACKTEST_WIN_RATE
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+def _call_with_optional_ui(func, interval: int, ui_mode: str, fps_mode: str) -> int:
+    """Call realtime runners with UI args while keeping old test monkeypatches valid."""
+    params = inspect.signature(func).parameters
+    if "ui_mode" in params or "fps_mode" in params:
+        return func(interval, ui_mode=ui_mode, fps_mode=fps_mode)
+    return func(interval)
 
 
 DEPENDENCY_SPECS: tuple[dict[str, object], ...] = (
@@ -119,6 +128,18 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=60,
         help="Scan interval in seconds for polymarket-realtime/polymarket-paper (default: 60).",
+    )
+    parser.add_argument(
+        "--ui",
+        choices=["auto", "compact", "standard", "wide", "fullscreen"],
+        default="auto",
+        help="Terminal dashboard layout mode for paper/live realtime modes (default: auto).",
+    )
+    parser.add_argument(
+        "--fps",
+        choices=["low", "medium", "high"],
+        default="medium",
+        help="Terminal dashboard refresh rate for paper/live realtime modes (default: medium).",
     )
     parser.add_argument(
         "--days",
@@ -254,7 +275,12 @@ def _log_paper_mode_banner() -> None:
     )
 
 
-def run_polymarket_realtime(interval: int, force_paper: bool = True) -> int:
+def run_polymarket_realtime(
+    interval: int,
+    force_paper: bool = True,
+    ui_mode: str = "auto",
+    fps_mode: str = "medium",
+) -> int:
     import signal
     import time
     from datetime import datetime, timezone
@@ -291,6 +317,8 @@ def run_polymarket_realtime(interval: int, force_paper: bool = True) -> int:
         paper_trading  = settings.paper_trading,
         interval       = interval,
         snipe_min_edge = settings.snipe_min_edge,
+        ui_mode        = ui_mode,
+        fps_mode       = fps_mode,
     )
 
     stop       = threading.Event()
@@ -635,11 +663,14 @@ def run_polymarket_realtime(interval: int, force_paper: bool = True) -> int:
     return 0
 
 
-def run_polymarket_paper(interval: int = 15) -> int:
+def run_polymarket_paper(interval: int = 15, ui_mode: str = "auto", fps_mode: str = "medium") -> int:
+    params = inspect.signature(run_polymarket_realtime).parameters
+    if "ui_mode" in params or "fps_mode" in params:
+        return run_polymarket_realtime(interval=interval, force_paper=True, ui_mode=ui_mode, fps_mode=fps_mode)
     return run_polymarket_realtime(interval=interval, force_paper=True)
 
 
-def run_polymarket_live(interval: int = 60) -> int:
+def run_polymarket_live(interval: int = 60, ui_mode: str = "auto", fps_mode: str = "medium") -> int:
     LOGGER.warning("[LIVE_MODE] Explicit --mode live selected. Running live readiness preflight before realtime loop.")
     preflight_code = run_verify_mode()
     if preflight_code != 0:
@@ -648,7 +679,7 @@ def run_polymarket_live(interval: int = 60) -> int:
     settings = get_settings()
     settings.paper_trading = False
     settings.dry_run = False
-    return run_polymarket_realtime(interval=interval, force_paper=False)
+    return run_polymarket_realtime(interval=interval, force_paper=False, ui_mode=ui_mode, fps_mode=fps_mode)
 
 
 SENSITIVE_ENV_NAMES = {
@@ -1030,9 +1061,9 @@ def main() -> int:
     if args.mode == "polymarket":
         return run_polymarket_mode()
     if args.mode in {"paper", "polymarket-paper", "polymarket-realtime"}:
-        return run_polymarket_paper(args.interval)
+        return _call_with_optional_ui(run_polymarket_paper, args.interval, args.ui, args.fps)
     if args.mode == "live":
-        return run_polymarket_live(args.interval)
+        return _call_with_optional_ui(run_polymarket_live, args.interval, args.ui, args.fps)
     if args.mode == "verify":
         return run_verify_mode()
     if args.mode == "polymarket-backtest":

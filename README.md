@@ -1,304 +1,296 @@
-# PolyTrade Crypto Scalper
+# PolyTrade Bot / Polymarket 5M BTC-ETH Quant Scalper
 
-> **v4.0 — HFT Tiered Signal System**  
-> Algorithmic trading bot for **Polymarket 5-minute BTC binary prediction markets** on Polygon L2.  
-> Designed for high-frequency micro-grinding with Window-Delta primary signal + Counter-momentum entry timing.
+> Current status: paper-first, partially live-wired, not live-trading ready.
+> Last synced: 2026-05-08.
 
----
+PolyTrade Bot is a Python trading system for Polymarket BTC/ETH 5-minute binary prediction markets. The current main path runs real market data and real CLOB orderbooks through a paper-mode execution simulator by default.
 
-## Current Operating Docs
+Do not treat this repository as a new project or a rebuild candidate. It already has a working market scanner, oracle/feed path, terminal dashboard, paper execution path, risk modules, order intent guards, and tests. The remaining work is validation, observability, and live-readiness hardening.
 
-Use these files as the current map before changing or running the bot:
+## Safety Disclaimer
 
-- `AGENTS.md` - safety rules and active files for AI agents.
-- `docs/quant_agent_setup_md/` - quant-agent operating system.
-- `docs/PROJECT_STRUCTURE.md` - current data flow, risk flow, execution flow, and logging flow.
-- `docs/PROJECT_CLEANUP_REPORT.md` - cleanup findings, archived files, and manual review items.
-- `CURRENT_PROJECT_STATUS.md` - latest project status.
+This project is not financial advice and is not confirmed live-trading ready.
 
-Canonical Polymarket runtime path:
+Live trading must not be claimed ready until all of these are proven in terminal/runtime evidence:
 
-```bash
-python main.py --mode polymarket-realtime --interval 60
-```
+- Real BTC/ETH 5-minute markets are active.
+- `BID`, `ASK`, and `SPREAD` are visible in terminal.
+- Wallet/portfolio source reads real CLOB collateral balance in live mode.
+- Live allowance is ready.
+- Live order placement, fill, cancel, and reconciliation are validated.
+- Risk floor, single-trade cap, daily drawdown guard, reconciliation gate, and order intent guard remain active.
 
-Verify `.env` before running this command. The command can become live-risk if `PAPER_TRADING=false` or `DRY_RUN=false`.
+Paper mode is the default. Live mode requires explicit `--mode live` and a passing readiness preflight.
 
----
+## Quickstart
 
-## How It Works
-
-Polymarket sells binary contracts: **YES** ($1 if BTC closes above a price target) and **NO** ($1 if below).  
-Each contract expires every **5 minutes**. The bot predicts which side wins using live Binance data.
-
-```
-BTC spot > PTB (Price To Beat) → YES wins → YES holders get $1/share
-BTC spot ≤ PTB               → NO wins  → NO holders get $1/share
-```
-
-The edge comes from detecting when market prices (YES/NO) are mispriced relative to our probability model.
-
----
-
-## Signal Pipeline
-
-```
-Binance WebSocket         Gamma API
-(BTC spot + 1m/5m candles)   (YES/NO price)
-        │                       │
-        └──────────┬────────────┘
-                   ▼
-         compute_tiered_signal()
-              │
-              ├── window_delta = (spot - PTB) / PTB × 100   ← primary driver
-              ├── 3-candle momentum (1m bars)                ← entry timing
-              ├── RSI-14                                     ← overbought/oversold filter
-              └── p_model → EV → Edge
-                   │
-                   ▼
-         ┌─────────────────┐
-         │  Tier Selection │
-         │  STRONG / MEDIUM / WEAK
-         └────────┬────────┘
-                  │
-         Dominant-side lock
-         (one direction per window)
-                  │
-                  ▼
-         Binary Settlement
-         (spot vs PTB at window close)
-```
-
----
-
-## Tiered Signal System
-
-The bot finds **3 levels of edge** per cycle — more opportunities without more risk:
-
-| Tier | Min EV | Min Edge | Bet Size | Max/Window |
-|------|--------|----------|----------|-----------|
-| **STRONG** | 2.5% | 4.0% | $1.50 | 3 positions |
-| **MEDIUM** | 0.8% | 1.5% | $0.75 | 2 positions |
-| **WEAK** | 0.2% | 0.5% | $0.30 | 2 positions |
-
-**Max window exposure:** `3×$1.50 + 2×$0.75 + 2×$0.30 = $6.60 = 6.6%` (hard cap 10%)
-
-**Dominant-side lock:** Once the first position is entered in a window (e.g. YES), all subsequent entries in that window must also be YES — preventing self-hedging.
-
----
-
-## Risk Management
-
-| Rule | Value |
-|------|-------|
-| Floor balance (hard stop) | $5.00 |
-| Max window exposure | 10% of bankroll |
-| Daily drawdown limit | 8% |
-| Circuit breaker | 5-min pause if near floor |
-
-**4-Tier Bankroll (hft/risk_manager.py):**
-
-| Tier | Balance | Kelly Fraction | Max Bet |
-|------|---------|---------------|---------|
-| micro | < $100 | 25% | $2 |
-| small | $100–$999 | 20% | $5 |
-| growth | $1K–$10K | 15% | $15 |
-| institutional | $10K+ | 10% | $50 |
-
----
-
-## Project Structure
-
-```
-polytrade-crypto-scalper/
-│
-├── hft_paper_run.py              ★ Main HFT paper trade loop
-│
-├── hft/                          HFT engine modules
-│   ├── risk_manager.py           4-tier Kelly bankroll + circuit breaker
-│   ├── strategy_engine.py        Strategy A (Deep Value) / B (MTF Momentum) / C (Hold)
-│   ├── execution_router.py       Limit → FOK smart routing (maker-first for Tier 3/4)
-│   ├── signal_engine.py          Signal computation
-│   ├── config.py                 HFT constants
-│   └── utils.py                  sigmoid, Kelly, EV helpers
-│
-├── polymarket/
-│   ├── market_feed.py            Binance WebSocket feed (BTC spot + 1m/5m candles)
-│   ├── gamma_fetcher.py          Gamma API wrapper (YES/NO prices)
-│   ├── signal.py                 Quant signal (main bot)
-│   ├── trader.py                 Live/paper trading loop
-│   ├── client.py                 py-clob-client wrapper (L2 auth + orders)
-│   └── backtester_5m.py          5-minute backtest engine
-│
-├── config/
-│   └── settings.py               pydantic v2 settings (all env vars)
-│
-├── utils/
-│   ├── risk_manager.py           Kelly + tiered sizing + $5 floor
-│   └── telegram_reporter.py      Trade, settlement & daily alerts
-│
-├── web-dashboard/                Next.js dashboard (Port 3000)
-│
-├── runtime/
-│   ├── hft_trades.csv            Trade log — every closed position
-│   └── bot_status.json           Current bot state
-│
-└── research/
-    └── daily/YYYY-MM-DD.md       Daily work logs
-```
-
----
-
-## Quick Start
-
-**Requirements:** Python 3.11+
+Install dependencies in a local environment:
 
 ```bash
-# 1. Clone and create virtual environment
-git clone <repo>
-cd polytrade-crypto-scalper-main
 python -m venv .venv
-
-# Windows
 .venv\Scripts\activate
-# Mac/Linux
-source .venv/bin/activate
-
-# 2. Install dependencies
 pip install -r requirements.txt
-
-# 3. Set environment variables
-copy .env.example .env       # Windows
-# cp .env.example .env       # Mac/Linux
-# Edit .env and fill in your keys
 ```
 
----
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PAPER_TRADING` | Simulate orders — never touch real money | `true` |
-| `POLYMARKET_PRIVATE_KEY` | Polygon wallet private key | required |
-| `POLYMARKET_FUNDER` | Funding wallet address | required |
-| `LOG_LEVEL` | `DEBUG` / `INFO` / `WARNING` | `INFO` |
-
-> **Safety:** `PAPER_TRADING=true` by default. You must explicitly set `false` to trade real money.
-
----
-
-## Running the Bot
-
-### Paper Trade (HFT — recommended first)
+Create local settings:
 
 ```bash
-python hft_paper_run.py
+copy .env.example .env
 ```
 
-Runs a live paper trade loop against real Polymarket + Binance data.  
-Logs every closed trade to `runtime/hft_trades.csv`.
+Review `.env` before any runtime command. If `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-risk until proven otherwise.
 
-### Main Bot Loop
+Safe default paper runtime:
 
 ```bash
-python main.py --mode polymarket-realtime --interval 60
+python main.py
 ```
 
-### Backtesting
+Explicit paper runtime:
 
 ```bash
-# 60-day backtest
-python main.py --mode polymarket-backtest --days 60 --asset BTC
-
-# Quick 3-day smoke test
-python main.py --mode polymarket-backtest --days 3
+python main.py --mode paper --interval 60
 ```
 
-### Market Monitor
+Responsive terminal dashboard controls:
 
 ```bash
-python polymarket/five_min_monitor.py --interval 30
+python main.py --mode paper --interval 60 --ui auto --fps medium
 ```
 
----
+Read-only account/market verification:
 
-## Strategy Details
-
-### Primary Signal — Window Delta
-
-```
-window_delta = (BTC_spot - PTB) / PTB × 100
-
-sigma = 2.0 + 3.0 × window_progress    # steeper near window end
-p_yes = sigmoid(window_delta × sigma)   # P(BTC ends above PTB)
+```bash
+python main.py --mode verify
 ```
 
-### Adjustments
+Live runtime, blocked unless readiness passes:
 
-| Adjustment | Condition | Effect |
-|-----------|-----------|--------|
-| Counter-momentum | momentum same direction as delta | −0.02 (fade the crowd) |
-| Counter-momentum | momentum opposite to delta | +0.015 (bounce expected) |
-| RSI overbought | RSI > 72 | −0.04 |
-| RSI oversold | RSI < 28 | +0.04 |
-| Late window boost | < 60s left + clear delta | ±0.03 |
+```bash
+python main.py --mode live --interval 60
+```
 
-### Advanced Strategies (hft/ modules)
+## Supported Modes
 
-| Strategy | Condition | Action |
-|----------|-----------|--------|
-| **A — Deep Value** | ask < $0.32 AND EV > 12% | Maker limit order |
-| **B — MTF Momentum** | 5m HTF bias + 1m spike detected | Counter-trend entry |
-| **C — Hold Decision** | p_win > 92% | Hold to window end |
-| **C — Emergency Exit** | p_win drops from ≥ 92% to < 80% | Exit immediately |
+Implemented:
 
----
+- `python main.py` - safe default Polymarket paper loop.
+- `python main.py --mode paper` - explicit Polymarket paper loop.
+- `python main.py --mode polymarket-paper` - legacy alias routed to paper.
+- `python main.py --mode polymarket-realtime` - legacy alias routed to paper.
+- `python main.py --mode verify` - read-only environment, wallet, balance, market, and model verification.
+- `python main.py --mode polymarket-backtest --days N --asset BTC|ETH` - 5-minute backtest path.
+- `python main.py --mode polymarket-5m-dashboard` - Streamlit dashboard for Polymarket 5-minute analysis.
+- `python main.py --mode dashboard` - generic Streamlit dashboard.
+- `python main.py --mode realtime` - separate crypto ticker display path.
 
-## Live Trading Checklist
+Partially implemented / blocked:
 
-Do not go live until all items are confirmed:
+- `python main.py --mode live` - performs readiness preflight first; current known evidence still includes `missing_allowance`.
 
-- [ ] Run paper trade for **48+ hours** — check `runtime/hft_trades.csv`
-- [ ] Win Rate > 51% and Max Drawdown < 20%
-- [ ] Add **MATIC ≥ 0.5** to wallet for gas fees
-- [ ] Set `PAPER_TRADING=false` in `.env`
-- [ ] Wallet: `0x645a661bcf56c28297538848b6c519e378e833e2`
+Experimental / secondary:
 
----
+- `python main.py --mode hft` and `hft/` - experimental HFT path, paper-first only.
+- `hft_paper_run.py` - standalone HFT paper simulation utility.
+- `crypto_scalper/` and `--mode scalper` - separate crypto scalper path, not the canonical Polymarket bot.
+- `dashboard/` and `web-dashboard/` - overlapping dashboard surfaces retained for later consolidation.
 
-## Current Status (as of 2026-04-27)
+## Current Architecture
 
-| Item | Status |
-|------|--------|
-| Binance WebSocket feed | ✅ Live |
-| Polymarket market data | ✅ Live (Gamma API) |
-| Paper trading | ✅ Ready to run |
-| Telegram alerts | ✅ Active |
-| Web dashboard | ✅ Port 3000 |
-| Live trading | ❌ Blocked — MATIC = 0 |
+```text
+main.py
+  -> config/settings.py
+  -> polymarket/trader.py
+     -> polymarket/gamma_fetcher.py
+     -> polymarket/market_feed.py
+     -> polymarket/oracle_price_feed.py
+     -> polymarket/virtual_ptb.py
+     -> polymarket/signal.py
+     -> polymarket/probability_model.py
+     -> polymarket/expected_value.py
+     -> polymarket/position_sizing.py
+     -> polymarket/order_manager.py
+     -> polymarket/order_intent.py
+     -> utils/risk_manager.py
+     -> utils/position_tracker.py
+     -> polymarket/client.py
+  -> utils/display.py
+  -> polymarket/realtime_logger.py
+  -> utils/logger.py
+  -> utils/telegram_reporter.py
+```
 
----
+## Runtime Flow
 
-## Tech Stack
+1. `main.py` parses mode, interval, UI layout, and FPS options.
+2. Settings load from `config/settings.py` and `.env`.
+3. Paper mode is forced for default/legacy paper commands.
+4. `PolymarketTrader` initializes market, CLOB, risk, bankroll, reconciliation, and paper-session state.
+5. `RealtimeLogger` opens per-run scan CSV logging under `runtime/realtime_logs/`.
+6. `PolymarketRealtimeDisplay` renders Terminal UI V2.
+7. The loop refreshes portfolio/session state, BTC/ETH market snapshots, orderbooks, signals, EV, risk plans, and execution events.
+8. Paper mode returns synthetic receipts and updates virtual cash/equity/exposure/PnL locally.
+9. Live mode must pass readiness checks before the realtime loop is allowed to start.
 
-| Component | Library |
-|-----------|---------|
-| Prediction Markets | `py-clob-client` |
-| HTTP | `httpx` + `tenacity` |
-| Data | `pandas`, `numpy` |
-| Settings | `pydantic-settings` v2 |
-| Dashboard | `Next.js` (web-dashboard/) |
-| Alerts | Telegram Bot API |
+## Current Protections
 
----
+Implemented:
 
-## Important Notes
+- Paper mode default.
+- Paper mode blocks live order, cancel, redeem, signing, allowance, and wallet-collateral risk paths.
+- Live mode requires explicit `--mode live`.
+- Verify mode checks environment, wallet, balance source, positions, orderbooks, and model decisions.
+- OrderIntent validation classifies ENTRY vs EXIT.
+- ENTRY orders must be BUY.
+- NO entries buy the NO token; they must not SELL without inventory.
+- EXIT SELL is allowed only for tracked inventory.
+- LOCKDOWN blocks entries while still allowing exits/management.
+- Reconciliation gate blocks new entries on unsafe state.
+- Bankroll Rank Lock / hysteresis reduces tier flapping.
+- Risk Mode Ladder supports NORMAL, DEFENSIVE, MICRO_RECOVERY, and LOCKDOWN.
+- ExitAgent, panic/forced exit, partial TP, and runner controls are present.
+- Windows file-lock logging failures disable only the affected file logger and do not crash the loop.
 
-- **PTB proxy:** Gamma API does not return the true Coinbase oracle PTB. The bot uses BTC spot at window open as a proxy — slightly less accurate but functional.
-- **Intra-window TP/SL:** Polymarket prices don't move within a window, so Take-Profit and Stop-Loss only trigger at binary settlement (window end).
-- **Liquidity:** BTC/ETH markets on Polymarket have wide spreads (0.01 bid / 0.99 ask). The `execution_router` handles this with Limit → FOK fallback logic.
+Partially implemented / needs validation:
 
----
+- Live execution path exists but has not been proven end to end.
+- Live allowance is currently a blocker in latest evidence.
+- Fill/cancel/reconcile lifecycle is not confirmed live.
+- Telegram alerting exists, but spam cooldown/rate-limit policy is incomplete.
+- Daily Telegram summaries currently look for `scan_log.csv`, while realtime logging now writes per-run `scan_log_<run_id>.csv`.
 
-*Last updated: 2026-04-27 | Version: v4.0*
+## Logging System
+
+Implemented:
+
+- `utils/logger.py` configures console logging and per-run rotating file logs.
+- File logs use `polytrade_bot_<timestamp>_<pid>.log`.
+- `SafeRotatingFileHandler` disables itself if Windows locks a file or rollover fails with `PermissionError` / errno 13.
+- `polymarket/realtime_logger.py` writes per-run scan CSV files under `runtime/realtime_logs/YYYY-MM-DD/`.
+- Realtime CSV writes use `scan_log_<timestamp>_<pid>.csv`.
+- CSV open/write/flush/close permission failures disable CSV logging for that session only.
+- Paper summaries include cycles, markets, opportunities, orders, fills, exits, PnL, drawdown, skip reasons, risk mode, and bankroll tier data.
+
+Planned:
+
+- JSONL event log for structured quant events.
+- Unified daily-report reader for per-run CSV files.
+- Retention policy and log compaction.
+- Alert cooldown and deduplication.
+
+## Telegram Alert System
+
+Implemented:
+
+- `TelegramNotifier` sends messages asynchronously through a single-worker thread pool.
+- Telegram retries use `requests` session retry adapters.
+- ERROR/CRITICAL logs can be routed through `TelegramLogHandler`.
+- Message builders exist for startup, trade, exit, settlement, floor breach, drawdown, loss cluster, and errors.
+- `daily_report.py` can send a daily Telegram summary if notifier setup succeeds.
+
+Limitations:
+
+- Telegram failures are intentionally non-blocking and mostly silent.
+- No central cooldown/deduplication layer exists yet.
+- Daily summary readers still assume fixed `scan_log.csv` names.
+- Some Telegram message content contains stale backtest/live-blocker text and needs a dedicated cleanup before relying on daily reports.
+
+## Terminal Dashboard
+
+Implemented:
+
+- Terminal UI V2 in `utils/display.py`.
+- Layout modes: `--ui auto`, `compact`, `standard`, `wide`, `fullscreen`.
+- Refresh modes: `--fps low`, `medium`, `high`.
+- Panels: System Status, Portfolio, Risk, BTC Market, ETH Market, AI Decision, Execution, Skip Reasons, Rolling Logs.
+- Bottom status line: `WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING`.
+- Small terminals fall back to compact mode and show a minimum-size warning.
+- Long messages are clipped with ellipsis so panel borders stay aligned.
+
+## Existing Tests
+
+Current test areas include:
+
+- Bankroll tiers and hysteresis.
+- Risk modes and sizing multipliers.
+- Execution risk controls and order intent validation.
+- Paper mode isolation and simulated accounting.
+- ExitAgent, take-profit, stop-loss, runner behavior.
+- Orderbook/client parsing and verify mode.
+- Logging resilience on Windows file locks.
+- Terminal dashboard layout, resize, and overflow behavior.
+- Position manager/reconciliation and position tracker.
+- Probability, expected value, delta engine, trend runner, lucky shot, trade frequency, stale feed kill switch.
+
+Useful commands:
+
+```bash
+python -m pytest tests/ -q
+pytest -q tests/test_terminal_dashboard_display.py tests/test_paper_mode.py tests/test_logging_resilience.py
+pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/test_polymarket_trader.py tests/test_risk_modes.py tests/test_exit_agent.py
+```
+
+## Known Limitations
+
+- Live trading is not validated.
+- Latest verify evidence still includes `missing_allowance`.
+- No confirmed live order placement/fill/cancel/reconcile cycle.
+- Daily report and Telegram summary paths lag the new per-run CSV naming.
+- No JSONL event store yet.
+- Telegram alert cooldown/dedup is not implemented.
+- HFT path is experimental and not canonical live execution.
+- Dashboards overlap and need later consolidation.
+- Some older docs/research notes still describe stale HFT or live-ready assumptions.
+
+## Folder Structure
+
+```text
+.
+  main.py
+  config/
+  polymarket/
+  utils/
+  hft/
+  crypto_scalper/
+  dashboard/
+  web-dashboard/
+  docs/
+    PROJECT_STRUCTURE.md
+    PROJECT_CLEANUP_REPORT.md
+    OBSERVABILITY_PLAN.md
+    KNOWN_ISSUES.md
+    quant_agent_setup_md/
+  tests/
+  research/
+    daily/
+  runtime/
+    realtime_logs/
+  logs/
+  logs_vps/
+  backtest_results/
+  archive/
+```
+
+## Roadmap
+
+Next priorities:
+
+1. Keep documentation synchronized before new feature phases.
+2. Fix observability drift: per-run CSV daily-report reader, JSONL event plan, Telegram cooldown.
+3. Run longer paper sessions with real BTC/ETH market/orderbook data.
+4. Resolve live allowance.
+5. Validate tiny controlled live order, fill, cancel, and reconciliation only after explicit approval.
+6. Consolidate dashboards and stale docs after runtime safety is stable.
+
+## AI Assistant Instructions
+
+Before modifying code, read:
+
+1. `CURRENT_PROJECT_STATUS.md`
+2. `CODEX_START_HERE.md`
+3. `AGENTS.md`
+4. `docs/PROJECT_STRUCTURE.md`
+5. `docs/KNOWN_ISSUES.md`
+6. Relevant role docs under `docs/quant_agent_setup_md/roles/`
+
+Never rebuild the bot from scratch unless explicitly requested.

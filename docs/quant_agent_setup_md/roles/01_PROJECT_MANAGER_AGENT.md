@@ -10,9 +10,11 @@ What should we fix or build next to improve safety, execution, or measurable edg
 Use this agent at the start of every work session.
 
 ## Inputs
-- CURRENT_STATUS.md
-- BUGS_AND_FIXES.md
-- TRADE_REVIEW.md
+- CURRENT_PROJECT_STATUS.md
+- docs/KNOWN_ISSUES.md
+- docs/PROJECT_STRUCTURE.md
+- docs/OBSERVABILITY_PLAN.md when observability is in scope
+- Daily note or TRADE_REVIEW.md when available
 - Latest error logs
 - Current bankroll and mode
 - Last code change

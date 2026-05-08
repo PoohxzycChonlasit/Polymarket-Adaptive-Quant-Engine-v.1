@@ -1,5 +1,8 @@
 # Vultr Paper Run
 
+> Last synced: 2026-05-08.
+> This document is for the experimental HFT paper utility, not the canonical Polymarket BTC/ETH realtime bot. Do not use this as live-readiness evidence.
+
 Use this when the bot must keep running after the local PC is off. A local process stops when Windows shuts down; a Vultr instance keeps running independently.
 
 ## 1. Prepare

@@ -1,10 +1,13 @@
 from __future__ import annotations
 
-from collections import deque
+from collections import Counter, deque
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Deque, Mapping
 
+import shutil
 import sys
+import time
 
 from rich.columns import Columns
 from rich.console import Console
@@ -365,8 +368,8 @@ class RealtimeTickerDisplay:
 # Polymarket Realtime Display
 # ------------------------------------------------------------------
 
-class PolymarketRealtimeDisplay:
-    """Rich terminal display for --mode polymarket-realtime."""
+class _LegacyPolymarketRealtimeDisplay:
+    """Legacy pre-V2 Polymarket display kept for reference; runtime uses PolymarketRealtimeDisplay below."""
 
     _TICKERS = ["BTC", "ETH"]
     _WEAK    = {"BTC"}
@@ -435,7 +438,7 @@ class PolymarketRealtimeDisplay:
             screen=True,
         )
 
-    def __enter__(self) -> "PolymarketRealtimeDisplay":
+    def __enter__(self) -> "_LegacyPolymarketRealtimeDisplay":
         self._live.__enter__()
         return self
 
@@ -1451,6 +1454,753 @@ class PolymarketRealtimeDisplay:
             f"   [Ctrl+C] Stop",
             style="grey50",
         )
+
+
+@dataclass(frozen=True, slots=True)
+class DashboardLayout:
+    width: int
+    height: int
+    requested_mode: str
+    active_mode: str
+    columns: int
+    top_height: int
+    center_height: int
+    bottom_height: int
+    log_rows: int
+    panel_width: int
+    warning: str = ""
+
+
+class PolymarketRealtimeDisplay:
+    """Terminal UI V2: responsive Rich dashboard for Polymarket paper/live runtime."""
+
+    _TICKERS = ["BTC", "ETH"]
+    _VALID_UI_MODES = {"auto", "compact", "standard", "wide", "fullscreen"}
+    _FPS = {"low": 1, "medium": 4, "high": 8}
+    _MIN_WIDTH = 88
+    _MIN_HEIGHT = 24
+    _RECOMMENDED = "Recommended: 140x40 or wider; fullscreen: 180x48+"
+
+    def __init__(
+        self,
+        paper_trading: bool = True,
+        interval: int = 60,
+        snipe_min_edge: float = 0.30,
+        ui_mode: str = "auto",
+        fps_mode: str = "medium",
+        terminal_size_provider: object | None = None,
+        console: Console | None = None,
+    ) -> None:
+        self.paper_trading = paper_trading
+        self.interval = interval
+        self.snipe_min_edge = snipe_min_edge
+        self.ui_mode = ui_mode if ui_mode in self._VALID_UI_MODES else "auto"
+        self.fps_mode = fps_mode if fps_mode in self._FPS else "medium"
+        self._terminal_size_provider = terminal_size_provider
+        self._console = console or _CONSOLE
+
+        self._markets: dict[str, dict] = {
+            t: {
+                "ref_price": 0.0,
+                "current_price": 0.0,
+                "is_above": False,
+                "price_diff": 0.0,
+                "bid": 0.0,
+                "ask": 0.0,
+                "spread": 0.0,
+                "snipe_score": 0.0,
+                "signal": "--",
+                "confidence": 0.0,
+                "decision": "--",
+                "size": 0.0,
+                "risk_tier": "normal",
+                "countdown": 300,
+                "window_ts": "--:--",
+                "edge_pct": 0.0,
+                "p_yes": 0.0,
+                "p_no": 0.0,
+                "ev": 0.0,
+                "min_ev": 0.0,
+                "delta_regime": "--",
+                "delta_multiplier": 0.0,
+                "skip_reason": "",
+                "score": 0.0,
+                "ask_price": 0.0,
+                "final_size": 0.0,
+                "frequency_multiplier": 0.0,
+                "last_tick_ms": 0,
+            }
+            for t in self._TICKERS
+        }
+        self._portfolio: object | None = None
+        self._cycle_results: list[dict] = []
+        self._cycle_num = 0
+        self._cycle_at = "--"
+        self._next_in = interval
+        self._recent_trades: Deque[dict] = deque(maxlen=8)
+        self._rolling_logs: Deque[tuple[str, str, str]] = deque(maxlen=80)
+        self._skip_reason_counts: Counter[str] = Counter()
+        self._ai_layer: list[dict] = []
+        self._arbitrage: dict[str, dict] = {}
+        self._session_summary: dict[str, object] = {}
+        self._ws_status = "connecting"
+        self._logging_status = "SAFE"
+        self._started_at = datetime.now(tz=UTC)
+        self._last_layout_signature: tuple[int, int, str] | None = None
+
+        self._live = Live(
+            self._render(),
+            console=self._console,
+            refresh_per_second=self._FPS[self.fps_mode],
+            screen=True,
+        )
+
+    def __enter__(self) -> "PolymarketRealtimeDisplay":
+        self._live.__enter__()
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        self._live.__exit__(*args)
+
+    def update_market(self, ticker: str, **kwargs: object) -> None:
+        ticker = ticker.upper()
+        if ticker in self._markets:
+            self._markets[ticker].update(kwargs)
+            self._safe_live_update()
+
+    def update_cycle(self, results: list[dict], cycle_num: int) -> None:
+        self._cycle_results = results
+        self._cycle_num = cycle_num
+        self._cycle_at = datetime.now(tz=UTC).strftime("%H:%M:%S")
+        for item in results:
+            ticker = str(item.get("ticker", "--"))
+            decision = str(item.get("decision", "SKIP")).upper()
+            reason = str(item.get("skip_reason", "") or "")
+            ev = self._as_float(item.get("ev", 0.0))
+            if reason:
+                self._skip_reason_counts[reason] += 1
+            msg = f"{ticker} {decision}"
+            if reason:
+                msg += f" {reason}"
+            msg += f" EV={ev:+.3f}"
+            self.add_log(msg, level="WARN" if decision == "SKIP" else "INFO", redraw=False)
+        self._safe_live_update()
+
+    def update_portfolio(self, summary: object) -> None:
+        self._portfolio = summary
+        self._safe_live_update()
+
+    def update_countdown(self, next_in: int) -> None:
+        self._next_in = next_in
+        self._safe_live_update()
+
+    def update_realtime_batch(self, ticker_updates: dict[str, dict]) -> None:
+        now_ms = int(time.time() * 1000)
+        for ticker, data in ticker_updates.items():
+            ticker = ticker.upper()
+            if ticker in self._markets:
+                data["last_tick_ms"] = now_ms
+                self._markets[ticker].update(data)
+        self._safe_live_update()
+
+    def update_ai_layer(self, layers: list[dict]) -> None:
+        self._ai_layer = layers
+        self._safe_live_update()
+
+    def update_arbitrage(self, ticker: str, **kwargs: object) -> None:
+        self._arbitrage[ticker.upper()] = {
+            "ticker": ticker.upper(),
+            "at": datetime.now(tz=UTC).strftime("%H:%M:%S"),
+            **kwargs,
+        }
+        self._safe_live_update()
+
+    def update_ws_status(self, status: str) -> None:
+        self._ws_status = status or "--"
+        self._safe_live_update()
+
+    def add_trade(
+        self,
+        ticker: str,
+        side: str,
+        price: float,
+        size: float,
+        notional: float,
+        status: str,
+        *,
+        exit_price: float | None = None,
+        realized_pnl: float = 0.0,
+        reason: str = "entry",
+        mode: str = "--",
+    ) -> None:
+        trade = {
+            "time": datetime.now(tz=UTC).strftime("%H:%M:%S"),
+            "market": ticker,
+            "ticker": ticker,
+            "side": side,
+            "entry_price": price,
+            "exit_price": exit_price,
+            "price": price,
+            "size": size,
+            "notional": notional,
+            "status": status,
+            "realized_pnl": realized_pnl,
+            "reason": reason,
+            "mode": mode,
+        }
+        self._recent_trades.appendleft(trade)
+        label = "PAPER" if self.paper_trading else "LIVE"
+        self.add_log(
+            f"{label} {reason} {ticker} {side} size=${notional:.2f} price={price:.4f} status={status}",
+            level="EXEC",
+            redraw=False,
+        )
+        self._safe_live_update()
+
+    def update_recent_trades(self, trades: list[dict]) -> None:
+        self._recent_trades.clear()
+        for trade in reversed(trades[-self._recent_trades.maxlen:]):
+            self._recent_trades.appendleft(trade)
+        self._safe_live_update()
+
+    def update_session_summary(self, summary: dict[str, object]) -> None:
+        self._session_summary = summary
+        self._safe_live_update()
+
+    def add_log(self, message: str, *, level: str = "INFO", redraw: bool = True) -> None:
+        ts = datetime.now(tz=UTC).strftime("%H:%M:%S")
+        self._rolling_logs.appendleft((ts, level.upper(), str(message)))
+        if "logging" in str(message).lower() and "disabled" in str(message).lower():
+            self._logging_status = "FILE DISABLED"
+        if redraw:
+            self._safe_live_update()
+
+    def _safe_live_update(self) -> None:
+        self._live.update(self._render())
+
+    def _terminal_size(self) -> tuple[int, int]:
+        provider = self._terminal_size_provider
+        if callable(provider):
+            width, height = provider()
+            return max(20, int(width)), max(10, int(height))
+        try:
+            size = self._console.size
+            return max(20, int(size.width)), max(10, int(size.height))
+        except Exception:
+            fallback = shutil.get_terminal_size(fallback=(120, 34))
+            return max(20, fallback.columns), max(10, fallback.lines)
+
+    def _resolve_layout(self) -> DashboardLayout:
+        width, height = self._terminal_size()
+        requested = self.ui_mode
+        auto_mode = self._auto_mode(width, height)
+        active = auto_mode if requested == "auto" else requested
+        warning = ""
+        if width < self._MIN_WIDTH or height < self._MIN_HEIGHT:
+            active = "compact"
+            warning = (
+                f"Terminal too small ({width}x{height}). Using compact mode. "
+                f"Minimum {self._MIN_WIDTH}x{self._MIN_HEIGHT}. {self._RECOMMENDED}"
+            )
+
+        if active == "fullscreen":
+            columns = 3
+            top_height = 7
+            center_height = 13
+            bottom_height = max(8, height - top_height - center_height - 6)
+            log_rows = max(5, min(12, bottom_height - 3))
+        elif active == "wide":
+            columns = 3
+            top_height = 7
+            center_height = 12
+            bottom_height = max(7, height - top_height - center_height - 6)
+            log_rows = max(4, min(10, bottom_height - 3))
+        elif active == "standard":
+            columns = 2
+            top_height = 7
+            center_height = 12
+            bottom_height = max(7, height - top_height - center_height - 6)
+            log_rows = max(4, min(8, bottom_height - 3))
+        else:
+            columns = 1
+            top_height = 7
+            center_height = max(8, min(12, height - 18))
+            bottom_height = max(6, height - top_height - center_height - 6)
+            log_rows = max(3, min(6, bottom_height - 2))
+
+        panel_width = max(24, (width // max(columns, 1)) - 6)
+        return DashboardLayout(
+            width=width,
+            height=height,
+            requested_mode=requested,
+            active_mode=active,
+            columns=columns,
+            top_height=top_height,
+            center_height=center_height,
+            bottom_height=bottom_height,
+            log_rows=log_rows,
+            panel_width=panel_width,
+            warning=warning,
+        )
+
+    def _standalone_layout(self) -> DashboardLayout:
+        width, height = 180, 48
+        return DashboardLayout(
+            width=width,
+            height=height,
+            requested_mode=self.ui_mode,
+            active_mode="wide",
+            columns=1,
+            top_height=7,
+            center_height=12,
+            bottom_height=10,
+            log_rows=8,
+            panel_width=width - 8,
+            warning="",
+        )
+
+    def _auto_mode(self, width: int, height: int) -> str:
+        if width >= 176 and height >= 44:
+            return "fullscreen"
+        if width >= 138 and height >= 34:
+            return "wide"
+        if width >= 104 and height >= 28:
+            return "standard"
+        return "compact"
+
+    def _render(self) -> Layout:
+        spec = self._resolve_layout()
+        signature = (spec.width, spec.height, spec.active_mode)
+        if self._last_layout_signature and signature != self._last_layout_signature:
+            old_w, old_h, old_mode = self._last_layout_signature
+            self.add_log(
+                f"resize {old_w}x{old_h}/{old_mode} -> {spec.width}x{spec.height}/{spec.active_mode}",
+                level="UI",
+                redraw=False,
+            )
+        self._last_layout_signature = signature
+
+        layout = Layout()
+        header_size = 4 if not spec.warning else 5
+        layout.split_column(
+            Layout(self._header(spec), name="header", size=header_size),
+            Layout(name="top", size=spec.top_height),
+            Layout(name="center", size=spec.center_height),
+            Layout(name="bottom", size=spec.bottom_height),
+            Layout(self._footer(), name="footer", size=1),
+        )
+
+        if spec.active_mode == "compact":
+            layout["top"].split_row(
+                Layout(self._portfolio_panel(spec), name="portfolio"),
+                Layout(self._risk_panel(spec), name="risk"),
+            )
+            layout["center"].update(self._market_table(spec))
+            layout["bottom"].split_row(
+                Layout(self._cycle_panel(spec), name="ai"),
+                Layout(self._rolling_logs_panel(spec), name="logs"),
+            )
+            return layout
+
+        layout["top"].split_row(
+            Layout(self._system_panel(spec), name="system"),
+            Layout(self._portfolio_panel(spec), name="portfolio"),
+            Layout(self._risk_panel(spec), name="risk"),
+        )
+        if spec.active_mode == "standard":
+            layout["center"].split_row(
+                Layout(self._market_card("BTC", spec), name="btc"),
+                Layout(self._market_card("ETH", spec), name="eth"),
+            )
+            layout["bottom"].split_row(
+                Layout(self._cycle_panel(spec), name="ai"),
+                Layout(self._execution_panel(spec), name="execution"),
+                Layout(self._rolling_logs_panel(spec), name="logs"),
+            )
+        else:
+            layout["center"].split_row(
+                Layout(self._market_card("BTC", spec), name="btc"),
+                Layout(self._market_card("ETH", spec), name="eth"),
+                Layout(self._cycle_panel(spec), name="ai"),
+            )
+            layout["bottom"].split_row(
+                Layout(self._execution_panel(spec), name="execution"),
+                Layout(self._skip_reasons_panel(spec), name="skip"),
+                Layout(self._rolling_logs_panel(spec), name="logs"),
+            )
+        return layout
+
+    def _header(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        mode = "PAPER MODE" if self.paper_trading else "LIVE MODE"
+        mode_style = "bold white on dark_orange" if self.paper_trading else "bold white on red"
+        line1 = Text()
+        line1.append(" PolyTrade Bot ", style="bold bright_cyan")
+        line1.append(" | Polymarket BTC/ETH 5M Quant Scalper ", style="bold white")
+        line1.append(f" {mode} ", style=mode_style)
+        line1.append(f" UI={spec.active_mode.upper()} FPS={self.fps_mode.upper()} ", style="grey70")
+        line2 = Text()
+        line2.append(" Counter-Momentum | Markov Bounds | Kelly Sizing | ExitAgent | Risk Floor", style="grey70")
+        if spec.warning:
+            line2.append("\n " + self._clip(spec.warning, max(40, spec.width - 8)), style="bold bright_yellow")
+        return Panel(Text.assemble(line1, "\n", line2), border_style="bright_cyan", padding=(0, 1))
+
+    def _system_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        oracle = self._oracle_status()
+        orderbook = self._orderbook_status()
+        latency = self._latency_ms()
+        content = Text()
+        self._append_kv(content, "WS", self._clip(self._ws_status, 18), self._status_style(self._ws_status))
+        self._append_kv(content, "ORACLE", oracle, self._ok_warn_style(oracle == "OK"))
+        self._append_kv(content, "ORDERBOOK", orderbook, self._ok_warn_style(orderbook == "OK"))
+        self._append_kv(content, "MODE", "PAPER" if self.paper_trading else "LIVE", "bright_yellow" if self.paper_trading else "bright_red")
+        self._append_kv(content, "LATENCY", f"{latency}ms" if latency is not None else "--", "bright_green" if latency is not None and latency <= 1500 else "bright_yellow")
+        self._append_kv(content, "LOGGING", self._logging_status, "bright_green" if self._logging_status == "SAFE" else "bright_yellow")
+        content.append("\n" + self._clip(self._RECOMMENDED, spec.panel_width), style="grey50")
+        return Panel(content, title="[bold bright_white]System Status[/bold bright_white]", border_style="grey42")
+
+    def _portfolio_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._resolve_layout()
+        s = self._portfolio
+        if s is None:
+            return Panel(Text(" Waiting for portfolio data...", style="grey50"), title="[bold bright_white]Portfolio[/bold bright_white]", border_style="grey42")
+
+        balance = self._as_float(_get_field(s, "account_balance", _get_field(s, "sizing_bankroll", 0.0)))
+        start = self._as_float(_get_field(s, "starting_bankroll", balance))
+        cash = self._as_float(_get_field(s, "cash", balance))
+        open_value = self._as_float(_get_field(s, "open_value", 0.0))
+        equity = self._as_float(_get_field(s, "equity", cash + open_value))
+        sizing = self._as_float(_get_field(s, "sizing_bankroll", equity))
+        realized = self._as_float(_get_field(s, "realized_pnl", _get_field(s, "daily_realized_pnl", 0.0)))
+        upnl = self._as_float(_get_field(s, "unrealized_pnl", 0.0))
+        source = str(_get_field(s, "balance_source", "--"))
+
+        eq_style = "bright_green" if equity >= start else "bright_red"
+        pnl_style = "bright_green" if realized >= 0 else "bright_red"
+        upnl_style = "bright_green" if upnl >= 0 else "bright_red"
+        lines = [
+            self._line([
+                ("Start ", "grey70"), (f"${start:.2f}", "bold white"),
+                (" | Cash ", "grey70"), (f"${cash:.2f}", "bold bright_white"),
+            ], spec.panel_width),
+            self._line([
+                ("Open ", "grey70"), (f"${open_value:.2f}", "bold bright_cyan"),
+                (" | Equity ", "grey70"), (f"${equity:.2f}", f"bold {eq_style}"),
+            ], spec.panel_width),
+            self._line([
+                ("Sizing ", "grey70"), (f"${sizing:.2f}", "bold white"),
+                (" | Source ", "grey70"), (self._clip(source, 18), "bright_white"),
+            ], spec.panel_width),
+            self._line([
+                ("Realized ", "grey70"), (f"{realized:+.4f}", f"bold {pnl_style}"),
+                (" | Unrealized ", "grey70"), (f"{upnl:+.4f}", f"bold {upnl_style}"),
+            ], spec.panel_width),
+            self._line([
+                ("Tier ", "grey70"), (str(_get_field(s, "bankroll_tier", "--")), "bold bright_cyan"),
+                (" | RiskOff ", "grey70"), (str(bool(_get_field(s, "risk_off", False))), "bright_red" if bool(_get_field(s, "risk_off", False)) else "bright_green"),
+            ], spec.panel_width),
+        ]
+        return Panel(Text.assemble(*self._with_breaks(lines)), title="[bold bright_white]Portfolio[/bold bright_white]", border_style="grey42")
+
+    def _risk_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        s = self._portfolio or {}
+        tier = str(_get_field(s, "bankroll_tier", "--"))
+        raw_tier = str(_get_field(s, "raw_bankroll_tier", ""))
+        risk_mode = str(_get_field(s, "risk_mode", "NORMAL"))
+        risk_off = bool(_get_field(s, "risk_off", False))
+        dd = self._as_float(_get_field(s, "daily_drawdown", _get_field(s, "daily_drawdown_pct", 0.0)))
+        exp = self._as_float(_get_field(s, "total_exposure_pct", 0.0))
+        cnt = int(self._as_float(_get_field(s, "open_count", 0)))
+        maxp = int(self._as_float(_get_field(s, "max_open_positions", 0)))
+        mode_style = "bright_green" if risk_mode == "NORMAL" else "bright_yellow" if risk_mode != "LOCKDOWN" else "bold bright_red"
+        dd_style = "bright_green" if dd < 0.02 else "bright_yellow" if dd < 0.04 else "bright_red"
+        exp_style = "bright_green" if exp < 0.10 else "bright_yellow" if exp < 0.20 else "bright_red"
+        lines = [
+            self._line([("Mode ", "grey70"), (risk_mode, mode_style), (" | RiskOff ", "grey70"), (str(risk_off), "bright_red" if risk_off else "bright_green")], spec.panel_width),
+            self._line([("Tier ", "grey70"), (tier, "bold bright_cyan"), (" | Raw ", "grey70"), (raw_tier or tier, "bright_yellow" if raw_tier and raw_tier != tier else "grey70")], spec.panel_width),
+            self._line([("Exposure ", "grey70"), (f"{exp:.1%}", f"bold {exp_style}"), (" | DD ", "grey70"), (f"{dd:.1%}", f"bold {dd_style}")], spec.panel_width),
+            self._line([("Positions ", "grey70"), (f"{cnt}/{maxp}", "bold bright_white"), (" | Guard ", "grey70"), ("LOCKED" if risk_off else "OK", "bright_red" if risk_off else "bright_green")], spec.panel_width),
+        ]
+        return Panel(Text.assemble(*self._with_breaks(lines)), title="[bold bright_white]Risk[/bold bright_white]", border_style="grey42")
+
+    def _market_table(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        rows: list[object] = []
+        header = Text(" MKT      PTB        ORACLE     BID     ASK  SPREAD   P_Y   P_N      EV  MIN_EV  DELTA       CONF  DECISION", style="bold grey70")
+        rows += [header, "\n"]
+        for ticker in self._TICKERS:
+            rows += [self._market_line(ticker, spec.panel_width * max(1, spec.columns)), "\n"]
+        return Panel(Text.assemble(*rows), title="[bold bright_white]Market Scan[/bold bright_white]", border_style="bright_blue")
+
+    def _market_card(self, ticker: str, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        m = self._markets.get(ticker, {})
+        price = self._as_float(m.get("current_price", 0.0))
+        ptb = self._as_float(m.get("ref_price", 0.0))
+        diff = self._as_float(m.get("price_diff", price - ptb if price and ptb else 0.0))
+        bid = self._as_float(m.get("bid", 0.0))
+        ask = self._as_float(m.get("ask", 0.0))
+        spread = self._as_float(m.get("spread", 0.0))
+        py = self._as_float(m.get("p_yes", 0.0))
+        pn = self._as_float(m.get("p_no", 0.0))
+        ev = self._as_float(m.get("ev", 0.0))
+        min_ev = self._as_float(m.get("min_ev", 0.0))
+        conf = self._as_float(m.get("confidence", 0.0))
+        decision = self._decision_label(m)
+        delta = self._delta_label(m)
+        price_style = "bright_green" if diff >= 0 else "bright_red"
+        lines = [
+            self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
+            self._line([("Bid ", "grey70"), (self._fmt_prob(bid), "bold bright_green"), (" | Ask ", "grey70"), (self._fmt_prob(ask), "bold bright_red"), (" | Spread ", "grey70"), (self._fmt_prob(spread), "grey70")], spec.panel_width),
+            self._line([("P_Y ", "grey70"), (self._fmt_prob(py), "bright_green"), (" | P_N ", "grey70"), (self._fmt_prob(pn), "bright_red"), (" | Conf ", "grey70"), (self._fmt_pct(conf), self._confidence_style(conf))], spec.panel_width),
+            self._line([("EV ", "grey70"), (f"{ev:+.3f}" if ev else "--", "bright_green" if ev > 0 else "bright_red" if ev < 0 else "grey62"), (" | Min ", "grey70"), (f"{min_ev:.3f}" if min_ev else "--", "grey70"), (" | ", "grey70"), (delta, "bright_yellow" if "HIGH" in delta else "bright_green")], spec.panel_width),
+            self._line([("Decision ", "grey70"), (decision, self._decision_style(decision))], spec.panel_width),
+        ]
+        return Panel(Text.assemble(*self._with_breaks(lines)), title=f"[bold bright_white]{ticker} Market[/bold bright_white]", border_style="bright_blue")
+
+    def _cycle_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        if not self._cycle_results:
+            wait = Text()
+            wait.append(" Waiting for first Quant cycle...", style="grey50")
+            wait.append(f" Next in {self._next_in}s", style="bright_cyan")
+            return Panel(wait, title="[bold bright_white]AI Decision[/bold bright_white]", border_style="grey42")
+
+        rows: list[object] = []
+        hdr = Text()
+        hdr.append(f" Cycle #{self._cycle_num}", style="bold bright_white")
+        hdr.append(f" @ {self._cycle_at}", style="grey50")
+        hdr.append(f" | Next {self._next_in}s", style="bright_cyan")
+        rows += [hdr, "\n"]
+
+        max_rows = 5 if spec.active_mode in {"wide", "fullscreen"} else 4
+        for r in self._cycle_results[:max_rows]:
+            ticker = str(r.get("ticker", "--"))
+            decision = str(r.get("decision", "SKIP")).upper()
+            reason = str(r.get("skip_reason", "") or "")
+            ev = self._as_float(r.get("ev", 0.0))
+            min_ev = self._as_float(r.get("min_ev", 0.0))
+            conf = self._as_float(r.get("confidence", 0.0))
+            label = decision
+            if reason and decision in {"SKIP", "REJECTED"}:
+                label += f" {reason}"
+            line = f" {ticker:<4} {label} EV={ev:+.3f}"
+            if min_ev:
+                line += f" < {min_ev:.3f}" if ev < min_ev else f" min={min_ev:.3f}"
+            line += f" CONF={conf:.2f}"
+            rows += [Text(self._clip(line, spec.panel_width), style=self._decision_style(label)), "\n"]
+        return Panel(Text.assemble(*rows), title="[bold bright_white]AI Decision[/bold bright_white]", border_style="bright_cyan")
+
+    def _execution_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        if not self._recent_trades:
+            return Panel(Text(" No orders/fills/exits yet this session.", style="grey50"), title="[bold bright_white]Execution[/bold bright_white]", border_style="grey42")
+        rows: list[object] = []
+        max_rows = max(3, spec.log_rows)
+        for trade in list(self._recent_trades)[:max_rows]:
+            side = str(trade.get("side", "--"))
+            market = str(trade.get("market", trade.get("ticker", "--")))
+            entry = self._as_float(trade.get("entry_price", trade.get("price", 0.0)))
+            size = self._as_float(trade.get("size", trade.get("notional", 0.0)))
+            pnl = self._as_float(trade.get("realized_pnl", 0.0))
+            reason = str(trade.get("reason", "--"))
+            line = f" {trade.get('time', '--')} {market:<5} {side:<4} entry={entry:.3f} size=${size:.2f} pnl={pnl:+.3f} {reason}"
+            rows += [Text(self._clip(line, spec.panel_width), style="bright_green" if pnl >= 0 else "bright_red"), "\n"]
+        return Panel(Text.assemble(*rows), title="[bold bright_white]Execution[/bold bright_white]", border_style="bright_blue")
+
+    def _trades_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        return self._execution_panel(spec)
+
+    def _skip_reasons_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        counts = self._skip_reason_counts.copy()
+        for item in self._cycle_results:
+            reason = str(item.get("skip_reason", "") or "")
+            if reason and reason not in counts:
+                counts[reason] = 1
+        if not counts:
+            return Panel(Text(" No skip reasons recorded yet.", style="grey50"), title="[bold bright_white]Skip Reasons[/bold bright_white]", border_style="grey42")
+        rows: list[object] = []
+        for reason, count in counts.most_common(max(3, spec.log_rows)):
+            rows += [Text(self._clip(f" {count:>3}x {reason}", spec.panel_width), style="grey70"), "\n"]
+        return Panel(Text.assemble(*rows), title="[bold bright_white]Skip Reasons[/bold bright_white]", border_style="bright_yellow")
+
+    def _rolling_logs_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._resolve_layout()
+        if not self._rolling_logs:
+            msg = " Rolling log window ready. Important decisions and execution events stay here."
+            return Panel(Text(self._clip(msg, spec.panel_width), style="grey50"), title="[bold bright_white]Rolling Logs[/bold bright_white]", border_style="grey42")
+        rows: list[object] = []
+        for ts, level, message in list(self._rolling_logs)[:spec.log_rows]:
+            style = "bright_red" if level in {"ERROR", "WARN"} else "bright_cyan" if level in {"EXEC", "UI"} else "grey70"
+            rows += [Text(self._clip(f" {ts} {level:<5} {message}", spec.panel_width), style=style), "\n"]
+        return Panel(Text.assemble(*rows), title="[bold bright_white]Rolling Logs[/bold bright_white]", border_style="bright_blue")
+
+    def _quant_detail_panel(self) -> Panel:
+        return self._cycle_panel()
+
+    def _arbitrage_panel(self) -> Panel:
+        return self._system_panel()
+
+    def _footer(self) -> Text:
+        uptime = datetime.now(tz=UTC) - self._started_at
+        mins, secs = divmod(int(uptime.total_seconds()), 60)
+        latency = self._latency_ms()
+        risk = str(_get_field(self._portfolio or {}, "risk_mode", "NORMAL"))
+        if bool(_get_field(self._portfolio or {}, "risk_off", False)):
+            risk = "RISK_OFF"
+        parts = [
+            f"WS {self._clip(self._ws_status, 16)}",
+            f"ORACLE {self._oracle_status()}",
+            f"ORDERBOOK {self._orderbook_status()}",
+            f"MODE {'PAPER' if self.paper_trading else 'LIVE'}",
+            f"RISK {risk}",
+            f"LATENCY {latency}ms" if latency is not None else "LATENCY --",
+            f"LOGGING {self._logging_status}",
+        ]
+        session = ""
+        s = self._session_summary
+        if s:
+            win_rate = self._as_float(s.get("win_rate", 0.0))
+            win_txt = "--" if win_rate <= 0 else f"{win_rate * 100:.1f}%"
+            session = (
+                f" | Session: scanned={s.get('scanned', 0)} opps={s.get('opportunities', 0)} "
+                f"entered={s.get('entered', 0)} skipped={s.get('skipped', 0)} canceled={s.get('canceled', 0)} "
+                f"win={win_txt} realized={self._as_float(s.get('realized_pnl', 0.0)):+.2f} "
+                f"unrealized={self._as_float(s.get('unrealized_pnl', 0.0)):+.2f} "
+                f"maxDD={self._as_float(s.get('max_drawdown', 0.0)):.1%} critical={s.get('critical_count', 0)}"
+            )
+        return Text("  " + " | ".join(parts) + f" | Uptime {mins:02d}:{secs:02d} | Ctrl+C Stop" + session, style="grey50")
+
+    def _market_line(self, ticker: str, width: int) -> Text:
+        m = self._markets[ticker]
+        decision = self._decision_label(m)
+        line = (
+            f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} "
+            f"{self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
+            f"{self._fmt_prob(self._as_float(m.get('bid', 0.0))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('ask', 0.0))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('spread', 0.0))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('p_yes', 0.0))):>5} "
+            f"{self._fmt_prob(self._as_float(m.get('p_no', 0.0))):>5} "
+            f"{self._as_float(m.get('ev', 0.0)):+.3f} "
+            f"{self._as_float(m.get('min_ev', 0.0)):.3f} "
+            f"{self._delta_label(m):<11} "
+            f"{self._fmt_pct(self._as_float(m.get('confidence', 0.0))):>5} "
+            f"{decision}"
+        )
+        return Text(self._clip(line, width), style=self._decision_style(decision))
+
+    def _decision_label(self, market: Mapping[str, object]) -> str:
+        decision = str(market.get("decision", "--") or "--").upper()
+        reason = str(market.get("skip_reason", "") or "")
+        bid = self._as_float(market.get("bid", 0.0))
+        ask = self._as_float(market.get("ask", 0.0))
+        if decision in {"", "--"}:
+            decision = "SKIP" if reason else "--"
+        if decision == "SKIP" and not reason and bid <= 0 and ask <= 0:
+            reason = "no_orderbook"
+        return f"{decision} {reason}".strip()
+
+    def _decision_style(self, decision: str) -> str:
+        upper = decision.upper()
+        if any(word in upper for word in ("ENTER", "BUY", "APPROVED", "BEST_TRADE")):
+            return "bold bright_green"
+        if any(word in upper for word in ("LOCKDOWN", "ERROR", "PANIC")):
+            return "bold bright_red"
+        if "SKIP" in upper or "REJECT" in upper:
+            return "grey62"
+        return "bright_yellow"
+
+    def _delta_label(self, market: Mapping[str, object]) -> str:
+        regime = str(market.get("delta_regime", "--") or "--").upper()
+        mult = self._as_float(market.get("delta_multiplier", 0.0))
+        if regime == "--":
+            return "--"
+        return f"{regime[:4]} x{mult:.2f}"
+
+    def _oracle_status(self) -> str:
+        return "OK" if any(self._as_float(m.get("current_price", 0.0)) > 0 for m in self._markets.values()) else "WAIT"
+
+    def _orderbook_status(self) -> str:
+        return "OK" if all(self._as_float(m.get("bid", 0.0)) > 0 and self._as_float(m.get("ask", 0.0)) > 0 for m in self._markets.values()) else "WAIT"
+
+    def _latency_ms(self) -> int | None:
+        stamps = [int(self._as_float(m.get("last_tick_ms", 0))) for m in self._markets.values() if self._as_float(m.get("last_tick_ms", 0)) > 0]
+        if not stamps:
+            return None
+        return max(0, int(time.time() * 1000) - max(stamps))
+
+    def _status_style(self, value: str) -> str:
+        text = str(value).lower()
+        if "sync" in text or "ok" in text:
+            return "bright_green"
+        if "fail" in text or "error" in text:
+            return "bright_red"
+        return "bright_yellow"
+
+    def _ok_warn_style(self, ok: bool) -> str:
+        return "bright_green" if ok else "bright_yellow"
+
+    def _confidence_style(self, value: float) -> str:
+        return "bright_green" if value >= 0.65 else "bright_yellow" if value >= 0.50 else "bright_red" if value > 0 else "grey62"
+
+    def _append_kv(self, text: Text, key: str, value: str, style: str) -> None:
+        if len(text.plain) > 0:
+            text.append("\n")
+        text.append(f" {key:<10}", style="grey70")
+        text.append(str(value), style=f"bold {style}")
+
+    def _line(self, parts: list[tuple[str, str]], width: int) -> Text:
+        text = Text()
+        used = 0
+        for value, style in parts:
+            remaining = max(0, width - used)
+            if remaining <= 0:
+                break
+            clipped = self._clip(value, remaining)
+            text.append(clipped, style=style)
+            used += len(clipped)
+        return text
+
+    def _with_breaks(self, lines: list[Text]) -> list[object]:
+        out: list[object] = []
+        for idx, line in enumerate(lines):
+            out.append(line)
+            if idx < len(lines) - 1:
+                out.append("\n")
+        return out
+
+    def _clip(self, value: object, width: int) -> str:
+        text = str(value).replace("\n", " ")
+        if width <= 1:
+            return ""
+        if len(text) <= width:
+            return text
+        return text[: max(1, width - 1)] + "..."
+
+    def _as_float(self, value: object) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _fmt_price(self, value: float) -> str:
+        if value <= 0:
+            return "--"
+        if value >= 1000:
+            return f"${value:,.2f}"
+        if value >= 1:
+            return f"${value:.4f}"
+        return f"${value:.6f}"
+
+    def _fmt_prob(self, value: float) -> str:
+        return f"{value:.4f}" if value > 0 else "--"
+
+    def _fmt_pct(self, value: float) -> str:
+        return f"{value:.0%}" if value > 0 else "--"
 
 
 def _progress_bar_block(value: float, width: int = 20, color: str = "bright_green") -> Text:
