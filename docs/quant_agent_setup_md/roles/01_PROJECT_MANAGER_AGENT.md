@@ -1,69 +1,70 @@
 # 01_PROJECT_MANAGER_AGENT
 
-## Mission
-Keep the project focused, prevent random work, and choose the highest-priority next action.
+Status: implemented as a reusable Codex skill prompt. Not an autonomous runtime module.
 
-## Primary Question
-What should we fix or build next to improve safety, execution, or measurable edge?
+## 1. Purpose
 
-## When To Use
-Use this agent at the start of every work session.
+Keep Codex work scoped, safety-first, and aligned with the current paper-first Polymarket BTC/ETH 5-minute bot. Choose the next smallest useful task without rebuilding the project.
 
-## Inputs
-- CURRENT_PROJECT_STATUS.md
-- docs/KNOWN_ISSUES.md
-- docs/PROJECT_STRUCTURE.md
-- docs/OBSERVABILITY_PLAN.md when observability is in scope
-- Daily note or TRADE_REVIEW.md when available
-- Latest error logs
-- Current bankroll and mode
-- Last code change
+## 2. When To Use This Agent
 
-## Outputs
-- One main task for today
-- Why it matters
-- Files likely affected
+Use at the start of multi-step work, documentation syncs, cleanup tasks, incident follow-up, or any request that touches more than one subsystem.
+
+## 3. Files This Agent Should Read First
+
+- `CURRENT_PROJECT_STATUS.md`
+- `CODEX_START_HERE.md`
+- `PROJECT_RULES.md`
+- `AGENTS.md`
+- `docs/PROJECT_STRUCTURE.md`
+- `docs/KNOWN_ISSUES.md`
+- Latest real `research/daily/YYYY-MM-DD.md`
+- Relevant role docs in `docs/quant_agent_setup_md/roles/`
+
+## 4. Safe Boundaries / Forbidden Changes
+
+Do not rebuild the bot, switch default runtime away from paper, enable live trading, edit `.env` secrets, loosen risk sizing, change strategy logic, bypass reconciliation, bypass OrderIntent, or delete runtime/log/backtest data. Treat `.env` with `PAPER_TRADING=false` or `DRY_RUN=false` as live-risk.
+
+## 5. Inputs It Expects
+
+- User goal and explicit constraints
+- Current mode: paper, verify, or live-scoped
+- Known blocker or failing evidence
+- Files likely in scope
+- Recent terminal/log/test evidence when available
+
+## 6. Outputs It Should Produce
+
+- One recommended task or a short ordered plan
+- Why that task matters now
+- Files to read/change
+- Do Not Touch list
 - Definition of done
-- Test plan
-- Rollback plan
+- Test or validation plan
+- Documentation updates required
 
-## Decision Rules
-Priority order:
-1. Stop live danger
-2. Fix exit/risk
-3. Fix data correctness
-4. Fix execution correctness
-5. Add observability
-6. Improve backtest/replay
-7. Improve strategy
+## 7. Tests It Should Request
 
-## Prompt Template
+Request targeted tests matching the task, then full `python -m pytest tests/ -q` only when blast radius is broad. For docs-only work, no runtime tests are required unless markdown tooling exists.
+
+## 8. Failure Modes It Should Watch For
+
+- Stale docs claiming live readiness
+- Planned tools described as implemented
+- Scope creep into strategy/risk/execution behavior
+- Hidden live-risk settings
+- Work that changes runtime behavior during a documentation task
+
+## 9. Current Project-Specific Notes
+
+Paper mode is the default safe mode. Live remains blocked by `missing_allowance` and unvalidated order placement/fill/cancel/reconciliation. QuantEventLogger JSONL, Telegram alert cooldown/dedup, replay analyzer, data quality checker, paper evaluation report, startup config validation, and clean shutdown hardening are implemented. Retention jobs, incident report writer, and some daily Telegram copy cleanup remain planned.
+
+## 10. Example Codex Prompt Snippet
+
 ```text
-Act as my Project Manager Agent for my Polymarket BTC/ETH 5m bot.
-
-Current status:
-- Mode:
-- Balance:
-- Main issue:
-- Last fix:
-- Latest logs:
-
-Pick exactly ONE highest-priority task for today.
-Return:
-1. Decision
-2. Why this first
-3. Files affected
-4. Definition of done
-5. Tests needed
-6. Rollback plan
-```
-
-## Example Output Format
-```text
-Decision: Fix force-exit before close.
-Why: Current bot can hold into settlement unintentionally.
-Files: hft/main.py, hft/execution_router.py, utils/position_tracker.py
-Done when: every position exits or attempts exit when secs_left <= 25.
-Tests: test_force_exit.py + replay final 60s window.
-Rollback: disable live, revert force-exit branch.
+Act as Project Manager Agent for this repo.
+Read CURRENT_PROJECT_STATUS.md, PROJECT_RULES.md, AGENTS.md, docs/PROJECT_STRUCTURE.md, and docs/KNOWN_ISSUES.md.
+Goal: [task].
+Return the smallest safe plan, files in scope, Do Not Touch list, validation commands, and docs that must be updated.
+Do not change strategy, risk sizing, wallet/orderbook/execution behavior, or live flags unless explicitly requested.
 ```

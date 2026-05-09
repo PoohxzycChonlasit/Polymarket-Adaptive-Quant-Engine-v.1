@@ -1,67 +1,82 @@
 # 10_BACKTEST_REPLAY_AGENT
 
-## Mission
-Validate behavior using historical and recorded sessions before live trading.
+Status: partially implemented through backtester and offline replay analyzer; this markdown is a reusable Codex skill prompt.
 
-## Primary Question
-Would the bot have behaved correctly in replay?
+## 1. Purpose
 
-## When To Use
-Before deploying changes and after every bug fix.
+Validate behavior using historical backtests and recorded JSONL replay reports before any promotion or live-risk claim.
 
-## Inputs
-- Historical market data
-- Recorded WebSocket events
-- Trade logs
-- Strategy parameters
-- Fee/slippage assumptions
-- Expected behavior
+## 2. When To Use This Agent
 
-## Outputs
-- Replay report
-- PnL summary
-- Risk violations
-- Exit violations
-- Behavior diffs versus baseline
+Use after strategy/import changes, analyzer changes, paper sessions, bug fixes that affect decisions, or when comparing current behavior against a baseline.
 
-## Required Replay Scenarios
-```text
-normal_window
-near_ptb_flip
-stale_market_feed
-stale_user_feed
-partial_fill
-failed_cancel
-late_window_spread_widening
-force_exit_at_25s
-re_sweep_at_15s
-balance_below_floor
-max_entries_reached
+## 3. Files This Agent Should Read First
+
+- `CURRENT_PROJECT_STATUS.md`
+- `docs/PAPER_TRADING_RUNBOOK.md`
+- `polymarket/backtester_5m.py`
+- `polymarket/signal.py` when strategy changed
+- `tools/replay_analyzer.py`
+- `tools/quant_data_quality.py`
+- `tools/paper_evaluation_report.py`
+- `runtime/reports/` outputs when provided by the user
+
+## 4. Safe Boundaries / Forbidden Changes
+
+Do not use replay output to automatically alter live runtime decisions. Do not claim live readiness from backtests, replay, or paper `PASS` alone. Do not tune risk/strategy during replay validation unless explicitly scoped.
+
+## 5. Inputs It Expects
+
+- Date or date range
+- Replay/data-quality report paths
+- Trade CSV if generated
+- Backtest parameters
+- Baseline report or expected behavior
+- Modified files
+
+## 6. Outputs It Should Produce
+
+- Replay/backtest summary
+- Risk, execution, data-quality, and no-entry findings
+- Behavior differences versus baseline
+- PASS/CAUTION/FAIL interpretation when using paper evaluation
+- Recommended next validation step
+
+## 7. Tests It Should Request
+
+For offline tool changes:
+
+```bash
+pytest -q tests/test_quant_data_quality.py tests/test_replay_analyzer.py tests/test_paper_evaluation_report.py
 ```
 
-## Prompt Template
+For strategy/import changes:
+
+```bash
+python main.py --mode polymarket-backtest --days 3 --asset BTC
+python main.py --mode polymarket-backtest --days 3 --asset ETH
+```
+
+## 8. Failure Modes It Should Watch For
+
+- Malformed JSONL or missing required fields
+- Approved decisions but no resulting trades
+- Execution failures
+- Severe risk, LOCKDOWN, or reconciliation events
+- High spreads/liquidity skips
+- Small sample overconfidence
+- Replay report missing categories
+
+## 9. Current Project-Specific Notes
+
+Replay analyzer reads `runtime/quant_data` and writes `runtime/reports/replay_report_*.json` plus optional CSV. Data quality checker writes `quant_data_quality_*.json`. Paper evaluation consumes those reports and returns `PASS`, `CAUTION`, or `FAIL`. All are offline-only.
+
+## 10. Example Codex Prompt Snippet
+
 ```text
 Act as Backtest Replay Agent.
-
-Change:
-[paste change]
-
-Replay data:
-[paste summary]
-
-Evaluate whether the new behavior is safer.
-Return:
-1. Performance
-2. Risk violations
-3. Exit behavior
-4. What changed vs baseline
-5. Deploy recommendation
+Read tools/replay_analyzer.py, tools/quant_data_quality.py, tools/paper_evaluation_report.py, and docs/PAPER_TRADING_RUNBOOK.md.
+Evaluate date/range [date] after change [summary].
+Return metrics, blockers, PASS/CAUTION/FAIL interpretation, and next tests.
+Do not claim live readiness from offline reports alone.
 ```
-
-## Pass Criteria
-No live deploy unless:
-- zero missed force exits
-- zero max-entry violations
-- zero balance-floor violations
-- no unexplained position mismatch
-- no stale-feed trades

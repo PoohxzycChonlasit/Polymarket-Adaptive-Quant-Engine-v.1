@@ -69,7 +69,7 @@ Always inspect `.env` and `config/settings.py` before live-risk work.
 
 ## Available AI Agent Role Docs
 
-The agent playbooks live under `docs/quant_agent_setup_md/roles/`.
+The agent playbooks live under `docs/quant_agent_setup_md/roles/`. Use `MASTER_AGENT_ROUTER.md` first when the task type is unclear.
 
 Use these as guidance; they are markdown instructions, not autonomous runtime modules.
 
@@ -87,15 +87,38 @@ Use these as guidance; they are markdown instructions, not autonomous runtime mo
 | `10_BACKTEST_REPLAY_AGENT.md` | Backtest/replay validation | Strategy/import path changes. |
 | `11_OBSERVABILITY_INCIDENT_AGENT.md` | Logs, alerts, health, incidents | Logging/Telegram/monitoring work. |
 | `12_REVIEW_LEARNING_AGENT.md` | Postmortem/review learning | After incidents or paper sessions. |
+| `13_TELEGRAM_ALERT_AGENT.md` | Telegram routing, cooldown, daily copy | Telegram alert or daily summary work. |
+| `14_NO_ENTRY_DIAGNOSTICS_AGENT.md` | Explain zero-trade paper runs | Paper sessions with no entries/fills. |
+| `15_CONFIG_SAFETY_AGENT.md` | Startup config and `.env` safety | Mode, live flags, wallet-reference, validation. |
+| `16_PAPER_EVALUATION_AGENT.md` | PASS/CAUTION/FAIL paper evaluation | Post-run paper evidence review. |
+| `17_CLEAN_SHUTDOWN_AGENT.md` | Feed/logger/thread shutdown | Ctrl+C, teardown, lingering threads. |
+
+Status labels:
+
+- Implemented means code or docs exist and are usable now.
+- Partially implemented means some runtime support exists but validation or follow-up gaps remain.
+- Planned means the role or tool is only guidance until code/tests prove otherwise.
 
 ## Agent Use Boundaries
 
 - Do not use agent markdowns as permission to rewrite architecture.
+- Do not claim planned agent contracts are implemented unless code/tests prove it.
 - Do not create AI/LLM calls inside the realtime trading loop.
 - Do not bypass Risk Manager, ExitAgent, reconciliation, or order intent guards.
 - Do not change live size unless explicitly requested.
 - Do not alter strategy logic during documentation, observability, cleanup, or UI tasks.
-- Do not claim planned agent contracts are implemented unless code/tests prove it.
+- For docs-only agent work, do not change Python runtime behavior.
+
+## Agent Selection Workflow
+
+1. Read `MASTER_AGENT_ROUTER.md`.
+2. Pick one primary role doc and only add supporting role docs when the task crosses boundaries.
+3. Read the chosen role doc's "Files this agent should read first" section.
+4. Preserve the role doc's Do Not Touch boundaries.
+5. Route tests through `07_TEST_CI_AGENT.md` before claiming completion.
+6. For docs-only work, verify markdown diffs and state that no runtime tests were required.
+
+Do not use multiple agent prompts as justification for scope creep. If a task starts as documentation, observability, Telegram, config, cleanup, or reporting, strategy/risk/execution-sensitive code remains out of scope unless the user explicitly expands it.
 
 ## Active Files
 
@@ -121,6 +144,11 @@ Use these as guidance; they are markdown instructions, not autonomous runtime mo
 | `utils/display.py` | Terminal UI V2 and other Rich displays. |
 | `utils/logger.py` | Console/file/Telegram logging setup. |
 | `utils/telegram_reporter.py` | Telegram message builders and daily report sender. |
+| `utils/telegram_alerts.py` | Central Telegram cooldown/dedup alert layer. |
+| `utils/quant_event_logger.py` | Structured JSONL quant event writer. |
+| `tools/quant_data_quality.py` | Offline JSONL data quality checker. |
+| `tools/replay_analyzer.py` | Offline replay report generator. |
+| `tools/paper_evaluation_report.py` | Offline paper PASS/CAUTION/FAIL evaluator. |
 
 ## Secondary Or Experimental Paths
 
@@ -167,6 +195,10 @@ Never edit private keys, wallet addresses, live flags, or allowance behavior unl
 - `arb_auto_execute` must remain false by default unless explicitly scoped.
 - No martingale, no averaging down by default, no all-in, no fixed 20% live risk.
 - Risk and exit safety outrank new strategy ideas.
+- QuantEventLogger JSONL, replay analyzer, data quality checker, paper evaluation report, Telegram alert layer, startup config validation, and clean shutdown hardening are implemented support systems.
+- Offline analyzers must remain offline-only and must not feed automatic runtime decisions without a separately scoped phase.
+- `wallet_reference_paper` is read-only paper sizing/visibility; it must never submit, cancel, redeem, sign, or approve live orders.
+- Scan/debug/orderbook raw data must not spam Telegram.
 
 If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-risk until proven otherwise.
 
@@ -204,8 +236,8 @@ Run strategy smoke only when strategy or import paths changed.
 
 ## Known Manual Review Items
 
-- `daily_report.py` and `utils/telegram_reporter.py` still read fixed `scan_log.csv`, but realtime logging writes per-run `scan_log_<run_id>.csv`.
-- Telegram alerts have no central cooldown/dedup layer.
+- Review Phase 3 JSONL output during longer paper sessions before building analytics.
+- Daily Telegram message wording still needs cleanup before relying on daily summaries.
 - Live allowance remains a blocker in latest status.
 - Live fill/cancel/reconcile cycle is not validated.
 - Some older research docs may still describe HFT/live readiness too optimistically.

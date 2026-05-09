@@ -618,8 +618,8 @@ class _LegacyPolymarketRealtimeDisplay:
         table.add_column("BID",      style="bright_green",  width=8,  justify="right")
         table.add_column("ASK",      style="bright_red",    width=8,  justify="right")
         table.add_column("SPREAD",   style="grey62",        width=8,  justify="right")
-        table.add_column("P_Y",      style="bright_green",  width=6,  justify="right")
-        table.add_column("P_N",      style="bright_red",    width=6,  justify="right")
+        table.add_column("Model_Y",  style="bright_green",  width=8,  justify="right")
+        table.add_column("Model_N",  style="bright_red",    width=8,  justify="right")
         table.add_column("EV",       style="bright_cyan",   width=8,  justify="right")
         table.add_column("MIN_EV",   style="grey70",        width=7,  justify="right")
         table.add_column("DELTA",    style="white",         width=12, justify="center")
@@ -1223,7 +1223,7 @@ class _LegacyPolymarketRealtimeDisplay:
             if (
                 float(m.get("score", 0.0) or 0.0) > 0
                 or float(m.get("ev", 0.0) or 0.0) != 0.0
-                or float(m.get("p_yes", 0.0) or 0.0) > 0
+                or float(m.get("model_p_yes", m.get("p_yes", 0.0)) or 0.0) > 0
                 or bool(m.get("skip_reason"))
             )
         ]
@@ -1236,8 +1236,8 @@ class _LegacyPolymarketRealtimeDisplay:
 
         best = max(candidates, key=lambda item: float(item.get("score", 0.0) or 0.0))
         ticker = next((tk for tk, data in self._markets.items() if data is best), "--")
-        p_yes = float(best.get("p_yes", 0.0) or 0.0)
-        p_no = float(best.get("p_no", 0.0) or 0.0)
+        p_yes = float(best.get("model_p_yes", best.get("p_yes", 0.0)) or 0.0)
+        p_no = float(best.get("model_p_no", best.get("p_no", 0.0)) or 0.0)
         side = "YES" if p_yes >= p_no else "NO"
         ask = float(best.get("ask_price", 0.0) or best.get("ask", 0.0) or 0.0)
         ev = float(best.get("ev", 0.0) or 0.0)
@@ -1255,7 +1255,7 @@ class _LegacyPolymarketRealtimeDisplay:
         l1.append(f"{ticker} {side}", style="bold bright_white")
         l2 = Text()
         l2.append(f"  Score {score:.2f}", style="bright_cyan")
-        l2.append(f" | pY={p_yes:.2f}/pN={p_no:.2f}", style="grey70")
+        l2.append(f" | Model_Y={p_yes:.2f}/Model_N={p_no:.2f}", style="grey70")
         l2.append(f" | ask={ask:.3f}", style="grey70")
         l2.append(f" | EV={ev:+.3f}", style="bright_green" if ev > 0 else "bright_red")
         l2.append(f" | minEV={min_ev:.3f}", style="grey70")
@@ -1519,6 +1519,25 @@ class PolymarketRealtimeDisplay:
                 "edge_pct": 0.0,
                 "p_yes": 0.0,
                 "p_no": 0.0,
+                "model_p_yes": 0.0,
+                "model_p_no": 0.0,
+                "yes_bid": 0.0,
+                "yes_ask": 0.0,
+                "no_bid": 0.0,
+                "no_ask": 0.0,
+                "yes_mid": 0.0,
+                "no_mid": 0.0,
+                "clob_source": "CLOB orderbook",
+                "orderbook_age_ms": 0,
+                "yes_orderbook_age_ms": 0,
+                "no_orderbook_age_ms": 0,
+                "token_id": "",
+                "yes_token_id": "",
+                "no_token_id": "",
+                "condition_id": "",
+                "market_slug": "",
+                "outcome": "",
+                "token_mapping_warning": "",
                 "ev": 0.0,
                 "min_ev": 0.0,
                 "delta_regime": "--",
@@ -1875,6 +1894,12 @@ class PolymarketRealtimeDisplay:
         realized = self._as_float(_get_field(s, "realized_pnl", _get_field(s, "daily_realized_pnl", 0.0)))
         upnl = self._as_float(_get_field(s, "unrealized_pnl", 0.0))
         source = str(_get_field(s, "balance_source", "--"))
+        execution_mode = str(_get_field(s, "execution_mode", "PAPER ONLY" if self.paper_trading else "LIVE"))
+        wallet_reference_balance = _get_field(s, "wallet_reference_balance", None)
+        wallet_reference_error = str(_get_field(s, "wallet_reference_error", "") or "")
+        wallet_reference_label = str(_get_field(s, "wallet_reference_label", "") or "")
+        paper_cash = self._as_float(_get_field(s, "paper_cash", cash))
+        paper_sizing = self._as_float(_get_field(s, "paper_sizing_balance", sizing))
 
         eq_style = "bright_green" if equity >= start else "bright_red"
         pnl_style = "bright_green" if realized >= 0 else "bright_red"
@@ -1893,6 +1918,10 @@ class PolymarketRealtimeDisplay:
                 (" | Source ", "grey70"), (self._clip(source, 18), "bright_white"),
             ], spec.panel_width),
             self._line([
+                ("Execution ", "grey70"), (self._clip(execution_mode, 16), "bold bright_yellow" if self.paper_trading else "bold bright_red"),
+                (" | ", "grey70"), ("NO LIVE ORDERS" if self.paper_trading else "LIVE ORDERS ENABLED", "bold bright_green" if self.paper_trading else "bold bright_red"),
+            ], spec.panel_width),
+            self._line([
                 ("Realized ", "grey70"), (f"{realized:+.4f}", f"bold {pnl_style}"),
                 (" | Unrealized ", "grey70"), (f"{upnl:+.4f}", f"bold {upnl_style}"),
             ], spec.panel_width),
@@ -1901,6 +1930,25 @@ class PolymarketRealtimeDisplay:
                 (" | RiskOff ", "grey70"), (str(bool(_get_field(s, "risk_off", False))), "bright_red" if bool(_get_field(s, "risk_off", False)) else "bright_green"),
             ], spec.panel_width),
         ]
+        if wallet_reference_balance is not None:
+            wallet_balance = self._as_float(wallet_reference_balance)
+            lines.insert(3, self._line([
+                ("Wallet Bankroll ", "grey70"), (f"${wallet_balance:.2f}", "bold bright_cyan"),
+                (" | Paper Sizing Balance ", "grey70"), (f"${paper_sizing:.2f}", "bold white"),
+            ], spec.panel_width))
+            if wallet_reference_label:
+                lines.insert(4, self._line([
+                    (self._clip(wallet_reference_label, max(20, spec.panel_width - 2)), "bold bright_yellow"),
+                ], spec.panel_width))
+        elif wallet_reference_error:
+            lines.insert(3, self._line([
+                ("Wallet bankroll unavailable, fallback to paper_virtual", "bold bright_yellow"),
+            ], spec.panel_width))
+        if source == "wallet_reference_paper":
+            lines.insert(4 if wallet_reference_balance is not None else 3, self._line([
+                ("Paper Cash ", "grey70"), (f"${paper_cash:.2f}", "bold bright_white"),
+                (" | Source ", "grey70"), ("wallet_reference_paper", "bold bright_white"),
+            ], spec.panel_width))
         return Panel(Text.assemble(*self._with_breaks(lines)), title="[bold bright_white]Portfolio[/bold bright_white]", border_style="grey42")
 
     def _risk_panel(self, spec: DashboardLayout | None = None) -> Panel:
@@ -1928,7 +1976,7 @@ class PolymarketRealtimeDisplay:
     def _market_table(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
         rows: list[object] = []
-        header = Text(" MKT      PTB        ORACLE     BID     ASK  SPREAD   P_Y   P_N      EV  MIN_EV  DELTA       CONF  DECISION", style="bold grey70")
+        header = Text(" MKT      PTB        ORACLE  YES_BID YES_ASK  NO_BID  NO_ASK SPRD Model_Y Model_N   EV  MIN_EV  DELTA       CONF  DECISION", style="bold grey70")
         rows += [header, "\n"]
         for ticker in self._TICKERS:
             rows += [self._market_line(ticker, spec.panel_width * max(1, spec.columns)), "\n"]
@@ -1943,8 +1991,17 @@ class PolymarketRealtimeDisplay:
         bid = self._as_float(m.get("bid", 0.0))
         ask = self._as_float(m.get("ask", 0.0))
         spread = self._as_float(m.get("spread", 0.0))
-        py = self._as_float(m.get("p_yes", 0.0))
-        pn = self._as_float(m.get("p_no", 0.0))
+        model_y = self._as_float(m.get("model_p_yes", m.get("p_yes", 0.0)))
+        model_n = self._as_float(m.get("model_p_no", m.get("p_no", 0.0)))
+        yes_bid = self._as_float(m.get("yes_bid", bid if str(m.get("outcome", "")).upper() == "YES" else 0.0))
+        yes_ask = self._as_float(m.get("yes_ask", ask if str(m.get("outcome", "")).upper() == "YES" else 0.0))
+        no_bid = self._as_float(m.get("no_bid", bid if str(m.get("outcome", "")).upper() == "NO" else 0.0))
+        no_ask = self._as_float(m.get("no_ask", ask if str(m.get("outcome", "")).upper() == "NO" else 0.0))
+        yes_mid = self._as_float(m.get("yes_mid", (yes_bid + yes_ask) / 2.0 if yes_bid > 0 and yes_ask > 0 else 0.0))
+        no_mid = self._as_float(m.get("no_mid", (no_bid + no_ask) / 2.0 if no_bid > 0 and no_ask > 0 else 0.0))
+        age_ms = int(self._as_float(m.get("orderbook_age_ms", 0.0)))
+        clob_source = str(m.get("clob_source", "CLOB orderbook") or "CLOB orderbook")
+        mapping_warning = str(m.get("token_mapping_warning", "") or "")
         ev = self._as_float(m.get("ev", 0.0))
         min_ev = self._as_float(m.get("min_ev", 0.0))
         conf = self._as_float(m.get("confidence", 0.0))
@@ -1953,11 +2010,16 @@ class PolymarketRealtimeDisplay:
         price_style = "bright_green" if diff >= 0 else "bright_red"
         lines = [
             self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
-            self._line([("Bid ", "grey70"), (self._fmt_prob(bid), "bold bright_green"), (" | Ask ", "grey70"), (self._fmt_prob(ask), "bold bright_red"), (" | Spread ", "grey70"), (self._fmt_prob(spread), "grey70")], spec.panel_width),
-            self._line([("P_Y ", "grey70"), (self._fmt_prob(py), "bright_green"), (" | P_N ", "grey70"), (self._fmt_prob(pn), "bright_red"), (" | Conf ", "grey70"), (self._fmt_pct(conf), self._confidence_style(conf))], spec.panel_width),
+            self._line([("YES Bid ", "grey70"), (self._fmt_prob(yes_bid), "bold bright_green"), (" | YES Ask ", "grey70"), (self._fmt_prob(yes_ask), "bold bright_red")], spec.panel_width),
+            self._line([("NO Bid ", "grey70"), (self._fmt_prob(no_bid), "bold bright_green"), (" | NO Ask ", "grey70"), (self._fmt_prob(no_ask), "bold bright_red"), (" | Spread ", "grey70"), (self._fmt_prob(spread), "grey70")], spec.panel_width),
+            self._line([("YES Mid ", "grey70"), (self._fmt_prob(yes_mid), "bright_green"), (" | NO Mid ", "grey70"), (self._fmt_prob(no_mid), "bright_red"), (" | Age ", "grey70"), (f"{age_ms}ms" if age_ms else "--", "bright_green" if age_ms and age_ms <= 1500 else "bright_yellow")], spec.panel_width),
+            self._line([("Source ", "grey70"), (self._clip(clob_source, 18), "bright_cyan"), (" | Token ", "grey70"), (self._clip(str(m.get("token_id", "") or "--"), 16), "grey62")], spec.panel_width),
+            self._line([("Model_Y ", "grey70"), (self._fmt_prob(model_y), "bright_green"), (" | Model_N ", "grey70"), (self._fmt_prob(model_n), "bright_red"), (" | Conf ", "grey70"), (self._fmt_pct(conf), self._confidence_style(conf))], spec.panel_width),
             self._line([("EV ", "grey70"), (f"{ev:+.3f}" if ev else "--", "bright_green" if ev > 0 else "bright_red" if ev < 0 else "grey62"), (" | Min ", "grey70"), (f"{min_ev:.3f}" if min_ev else "--", "grey70"), (" | ", "grey70"), (delta, "bright_yellow" if "HIGH" in delta else "bright_green")], spec.panel_width),
             self._line([("Decision ", "grey70"), (decision, self._decision_style(decision))], spec.panel_width),
         ]
+        if mapping_warning:
+            lines.append(self._line([("Token mapping ", "bold bright_yellow"), (self._clip(mapping_warning, max(12, spec.panel_width - 16)), "bold bright_yellow")], spec.panel_width))
         return Panel(Text.assemble(*self._with_breaks(lines)), title=f"[bold bright_white]{ticker} Market[/bold bright_white]", border_style="bright_blue")
 
     def _cycle_panel(self, spec: DashboardLayout | None = None) -> Panel:
@@ -2080,11 +2142,13 @@ class PolymarketRealtimeDisplay:
         line = (
             f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} "
             f"{self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
-            f"{self._fmt_prob(self._as_float(m.get('bid', 0.0))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('ask', 0.0))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('yes_bid', m.get('bid', 0.0)))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('yes_ask', m.get('ask', 0.0)))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('no_bid', 0.0))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('no_ask', 0.0))):>7} "
             f"{self._fmt_prob(self._as_float(m.get('spread', 0.0))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('p_yes', 0.0))):>5} "
-            f"{self._fmt_prob(self._as_float(m.get('p_no', 0.0))):>5} "
+            f"{self._fmt_prob(self._as_float(m.get('model_p_yes', m.get('p_yes', 0.0)))):>7} "
+            f"{self._fmt_prob(self._as_float(m.get('model_p_no', m.get('p_no', 0.0)))):>7} "
             f"{self._as_float(m.get('ev', 0.0)):+.3f} "
             f"{self._as_float(m.get('min_ev', 0.0)):.3f} "
             f"{self._delta_label(m):<11} "

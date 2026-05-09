@@ -52,6 +52,9 @@ class BinanceFeed:
         self._running = False
         self._thread: Optional[threading.Thread] = None
         self._ready: set[str] = set()
+        self._stop_event = threading.Event()
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._ws_connection = None
 
     # ── Startup ────────────────────────────────────────────────────────────
 
@@ -60,6 +63,7 @@ class BinanceFeed:
         if self._running:
             return
         self._running = True
+        self._stop_event.clear()
         self._thread  = threading.Thread(target=self._run_loop, daemon=True, name="BinanceFeed")
         self._thread.start()
         # Wait up to 20 s for REST fill across active symbols
@@ -75,10 +79,12 @@ class BinanceFeed:
 
     def _run_loop(self) -> None:
         loop = asyncio.new_event_loop()
+        self._loop = loop
         asyncio.set_event_loop(loop)
         try:
             loop.run_until_complete(self._async_main())
         finally:
+            self._loop = None
             loop.close()
 
     # ── Async internals ────────────────────────────────────────────────────
@@ -89,7 +95,7 @@ class BinanceFeed:
             tasks.append(self._rest_fill(a, "5m", self._candles_5m))
             tasks.append(self._rest_fill(a, "1m", self._candles_1m))
         await asyncio.gather(*tasks)
-        while self._running:
+        while self._running and not self._stop_event.is_set():
             try:
                 await self._ws_loop()
             except Exception as exc:
@@ -146,8 +152,9 @@ class BinanceFeed:
 
         LOGGER.info("[BinanceFeed] WS connecting (%d streams)…", len(kline_5m_streams) + len(kline_1m_streams) + len(ticker_streams))
         async with websockets.connect(url, ping_interval=20, ping_timeout=10) as ws:
+            self._ws_connection = ws
             async for raw in ws:
-                if not self._running:
+                if not self._running or self._stop_event.is_set():
                     return
                 try:
                     msg   = json.loads(raw)
@@ -213,8 +220,38 @@ class BinanceFeed:
         with self._lock:
             return len(self._candles_5m.get(asset.upper(), [])) >= _READY_MIN
 
-    def stop(self) -> None:
+    def stop(self, join_timeout: float = 5.0) -> None:
         self._running = False
+        self._stop_event.set()
+        self._signal_ws_shutdown()
+        if self._thread and self._thread.is_alive() and self._thread is not threading.current_thread():
+            self._thread.join(timeout=join_timeout)
+
+    def close(self) -> None:
+        self.stop()
+
+    def shutdown(self) -> None:
+        self.stop()
+
+    def is_running(self) -> bool:
+        return bool(self._thread and self._thread.is_alive())
+
+    def _signal_ws_shutdown(self) -> None:
+        loop = self._loop
+        ws = self._ws_connection
+        if loop is None or ws is None or loop.is_closed():
+            return
+
+        def _close_ws() -> None:
+            try:
+                asyncio.create_task(ws.close())
+            except Exception:
+                pass
+
+        try:
+            loop.call_soon_threadsafe(_close_ws)
+        except Exception:
+            pass
 
 
 _feed: Optional[BinanceFeed] = None
@@ -224,9 +261,9 @@ _feed_lock = threading.Lock()
 def get_feed() -> BinanceFeed:
     """Return the shared BinanceFeed singleton, started on first call."""
     global _feed
-    if _feed is None:
+    if _feed is None or not _feed.is_running():
         with _feed_lock:
-            if _feed is None:
+            if _feed is None or not _feed.is_running():
                 _feed = BinanceFeed()
                 _feed.start()
     return _feed

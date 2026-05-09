@@ -4,20 +4,23 @@ Date: 2026-05-05
 
 Documentation sync update: 2026-05-08
 
+Markdown prompt cleanup update: 2026-05-09
+
 ## Scope
 
 This cleanup pass focused on structure, documentation, and reducing root-level confusion. It did not change trading strategy logic, order sizing, exits, wallet configuration, runtime logs, trade logs, backtest results, or paper/live execution code.
 
 The operating reference for future project work is:
 
-- `docs/quant_agent_setup_md/`
-- `AGENTS.md`
-- `CURRENT_PROJECT_STATUS.md`
 - `CODEX_START_HERE.md`
+- `AGENTS.md`
+- `MASTER_AGENT_ROUTER.md`
 - `PROJECT_RULES.md`
+- `CURRENT_PROJECT_STATUS.md`
+- `docs/PROJECT_STRUCTURE.md`
 - `docs/KNOWN_ISSUES.md`
-- `docs/OBSERVABILITY_PLAN.md`
-- latest real daily note in `research/daily/`
+
+Use `docs/OBSERVABILITY_PLAN.md` for logging/Telegram work and `docs/PAPER_TRADING_RUNBOOK.md` for paper operation/review work.
 
 ## Actions Taken
 
@@ -29,15 +32,45 @@ The operating reference for future project work is:
 - Updated `README.md` with the canonical operating docs and main runtime path.
 - 2026-05-08 documentation sync rewrote current root docs to reflect the real paper-first implementation, Terminal UI V2, Windows logging resilience, order intent/risk mode/bankroll rank protections, and live blockers.
 - 2026-05-08 documentation sync added `docs/OBSERVABILITY_PLAN.md`, `docs/KNOWN_ISSUES.md`, and root `PROJECT_STRUCTURE.md`.
+- 2026-05-09 markdown prompt cleanup reduced root-level Codex/AI prompt clutter by archiving stale, task-specific, or duplicate `.md` files into `archive/legacy/docs/2026-05-09-md-cleanup/`.
 
 ## Moved Files
+
+The files in this table are archived historical references only. Do not use them as the active Codex startup workflow.
 
 | From | To | Reason |
 |------|----|--------|
 | `AI_AGENTS.md` | `archive/legacy/docs/AI_AGENTS.md` | Stale AI handoff doc, overlaps with `docs/quant_agent_setup_md/` and `AGENTS.md`. |
 | `AI_CONTEXT.md` | `archive/legacy/docs/AI_CONTEXT.md` | Stale AI context doc, overlaps with current project status and quant-agent docs. |
+| `MASTER_CODEX_PROMPT.md` | `archive/legacy/docs/2026-05-09-md-cleanup/MASTER_CODEX_PROMPT.md` | Task/session prompt duplicated current `AGENTS.md`, `CODEX_START_HERE.md`, and `PROJECT_RULES.md`. |
+| `TASK_REQUEST.md` | `archive/legacy/docs/2026-05-09-md-cleanup/TASK_REQUEST.md` | Completed task-specific prompt for paper balance hardening; no longer a reusable operating doc. |
+| `CLAUDE.md` | `archive/legacy/docs/2026-05-09-md-cleanup/CLAUDE.md` | Claude compatibility note duplicated current Codex docs and contained stale observability gaps. |
+| `README_QUICK_CONTEXT.md` | `archive/legacy/docs/2026-05-09-md-cleanup/README_QUICK_CONTEXT.md` | Narrow context prompt duplicated current project rules and contained task-specific priorities. |
+| `ARCHITECTURE.md` | `archive/legacy/docs/2026-05-09-md-cleanup/ARCHITECTURE.md` | Aspirational websocket-first architecture note duplicated `docs/PROJECT_STRUCTURE.md` and could be mistaken for implemented runtime structure. |
+| `ROADMAP.md` | `archive/legacy/docs/2026-05-09-md-cleanup/ROADMAP.md` | Roadmap was subordinate to `CURRENT_PROJECT_STATUS.md` and contained stale observability status. |
+| `research/FOR_OTHER_AI.md` | `archive/legacy/docs/2026-05-09-md-cleanup/FOR_OTHER_AI.md` | External-AI handoff prompt duplicated current agent docs and adds prompt clutter. |
+| `research/DAILY_STARTUP_PROMPT.md` | `archive/legacy/docs/2026-05-09-md-cleanup/DAILY_STARTUP_PROMPT.md` | Copy-paste startup prompt duplicated `CODEX_START_HERE.md` and `AGENTS.md`. |
 
 No Python modules, configs, logs, runtime state, trade logs, or backtest results were moved.
+
+## Active Markdown Docs After 2026-05-09 Prompt Cleanup
+
+Use this smaller set for normal Codex work:
+
+| File | Purpose |
+|------|---------|
+| `AGENTS.md` | Auto-loaded safety-first Codex instructions. |
+| `CODEX_START_HERE.md` | Minimal session startup context. |
+| `PROJECT_RULES.md` | Current safety, architecture, token, and testing rules. |
+| `CURRENT_PROJECT_STATUS.md` | Single source of truth for current implementation status and blockers. |
+| `MASTER_AGENT_ROUTER.md` | Chooses the relevant role doc when role guidance is needed. |
+| `docs/PROJECT_STRUCTURE.md` | Canonical runtime/data-flow structure. |
+| `docs/KNOWN_ISSUES.md` | Current bugs, blockers, and technical debt. |
+| `docs/PROJECT_CLEANUP_REPORT.md` | Cleanup history and active/archived doc decisions. |
+| `docs/PAPER_TRADING_RUNBOOK.md` | Paper operation and review workflow. |
+| `docs/OBSERVABILITY_PLAN.md` | Logging, JSONL, Telegram, and incident observability plan. |
+
+Keep `docs/quant_agent_setup_md/roles/` because those files are still referenced by `AGENTS.md` and `MASTER_AGENT_ROUTER.md`. They are guidance prompts, not runtime modules.
 
 ## Active Entrypoints
 
@@ -90,7 +123,6 @@ Keep these in place unless a dedicated migration task updates all references and
 - `README.md`
 - `AGENTS.md`
 - `PROJECT_RULES.md`
-- `ROADMAP.md`
 - `VULTR_PAPER_RUN.md`
 - `requirements.txt`
 - `config/`
@@ -111,15 +143,12 @@ Keep these in place unless a dedicated migration task updates all references and
 
 ## Files That Look Unused Or Legacy
 
-These look legacy, duplicated, or stale, but were not moved because they may still be useful as historical references or for external tooling:
+These look legacy, duplicated, or unclear, but were not moved because they may still be useful as historical references or for external tooling:
 
 | File/Folder | Why it looks legacy or unclear | Recommendation |
 |-------------|--------------------------------|----------------|
-| `CLAUDE.md` | Duplicates old agent guidance and may conflict with `AGENTS.md`; could be auto-read by Claude tooling. | Manual review before moving. |
 | `PROJECT_RULES.md` | Refreshed on 2026-05-08 to match paper-first runtime and current safety gates. | Keep as current rules companion to `AGENTS.md`. |
-| `ROADMAP.md` | May be stale versus `CURRENT_PROJECT_STATUS.md`. | Keep as historical roadmap; review dates/status. |
 | `research/OVERVIEW.md` | Contains strategy history that may conflict with current v4/HFT docs. | Keep; mark as research history if stale. |
-| `research/FOR_OTHER_AI.md` | AI handoff style doc, likely superseded by quant-agent docs. | Manual review before archive. |
 | `scratch/` | Scratch workspace by name. | Review manually before archiving. |
 | `models/` | No clear active load path found during cleanup. | Review manually; do not delete. |
 

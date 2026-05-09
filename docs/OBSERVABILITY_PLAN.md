@@ -16,24 +16,34 @@ Implemented:
 - Per-run CSV filenames: `scan_log_<timestamp>_<pid>.csv`.
 - Per-run daily summary filenames: `daily_summary_<timestamp>_<pid>.json`.
 - PermissionError handling on CSV open, write, flush, close, and summary save.
+- Shared scan CSV reader in `utils/scan_log_loader.py`.
+- Daily reports and Telegram summaries now combine `scan_log*.csv`, including legacy `scan_log.csv`.
+- Fail-soft JSONL writer in `utils/quant_event_logger.py`.
+- Telegram cooldown/dedup utility in `utils/telegram_alerts.py`.
+- Main trader loop wiring for market snapshot, decision, execution, trade, risk, reconciliation, and low-frequency system health JSONL events.
+- Main trader alert routing through centralized Telegram alert helpers for clear entry, exit, risk, critical, summary, and incident call sites.
 - Terminal UI V2 bounded rolling log panel.
 - Paper session summary logging.
 - Optional Telegram notifier and Telegram error handler.
+- Runtime shutdown hardening for oracle/WebSocket feeds, realtime CSV logging, Telegram notifier executor, daily report scheduler, and trader-owned feed cleanup.
+- Closed-stream console logging is fail-soft during shutdown.
+- Offline quant data quality checker in `tools/quant_data_quality.py`.
+- Offline replay analyzer in `tools/replay_analyzer.py`.
 
 Partially implemented:
 
 - Daily report generation exists in `daily_report.py`.
 - Telegram daily message generation exists in `utils/telegram_reporter.py`.
 - Telegram startup/trade/exit/settlement/risk/error message builders exist.
+- JSONL event logger is wired into `polymarket/trader.py`; additional analytics and retention jobs remain planned.
+- Telegram alert cooldown/dedup is wired into clear trader alert call sites; daily message copy/content cleanup remains planned.
 
 Known gaps:
 
-- No JSONL quant event store yet.
-- No alert cooldown/dedup layer yet.
-- Daily report and Telegram summary readers still assume fixed `scan_log.csv`.
 - No formal retention/compaction job yet.
 - No incident report writer yet.
 - No health endpoint that consolidates market/user feed lag, orderbook age, reconciliation status, logging state, and Telegram state.
+- Some daily Telegram message wording still contains stale context and needs a copy/content cleanup pass.
 
 ## Current Log Architecture
 
@@ -54,6 +64,23 @@ RealtimeLogger
   -> runtime/realtime_logs/YYYY-MM-DD/
      -> scan_log_<timestamp>_<pid>.csv
      -> daily_summary_<timestamp>_<pid>.json
+
+utils.scan_log_loader
+  -> loads runtime/realtime_logs/YYYY-MM-DD/scan_log*.csv
+  -> keeps scan_log.csv compatibility
+  -> combines rows and sorts by timestamp_utc when available
+```
+
+Quant JSONL logs:
+
+```text
+QuantEventLogger
+  -> runtime/quant_data/market_snapshots/YYYY-MM-DD.jsonl
+  -> runtime/quant_data/decision_log/YYYY-MM-DD.jsonl
+  -> runtime/quant_data/execution_log/YYYY-MM-DD.jsonl
+  -> runtime/quant_data/trade_journal/YYYY-MM-DD.jsonl
+  -> runtime/quant_data/risk_log/YYYY-MM-DD.jsonl
+  -> runtime/quant_data/system_health/YYYY-MM-DD.jsonl
 ```
 
 Runtime status:
@@ -61,6 +88,27 @@ Runtime status:
 ```text
 PolymarketTrader.update_dashboard_status()
   -> runtime/bot_status.json
+```
+
+Shutdown lifecycle:
+
+```text
+PolymarketTrader.shutdown()
+  -> VirtualPriceToBeatTracker.close()
+     -> PolymarketOracleFeed.stop()
+        -> stop price thread
+        -> stop epoch/PTB thread
+        -> signal and join WebSocket thread
+        -> close oracle HTTP client
+  -> stop shared Binance/quant indicator feeds when they were started
+
+RealtimeLogger.close(save_summary=True)
+  -> flush/close scan CSV fail-soft
+  -> write daily summary fail-soft
+
+TelegramNotifier.close()
+  -> shutdown single-worker executor
+  -> close requests session
 ```
 
 Terminal observability:
@@ -78,55 +126,43 @@ PolymarketRealtimeDisplay
   -> WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING
 ```
 
-## JSONL Event Logging Plan
+## JSONL Event Logging
 
-Planned file pattern:
+Implemented utility file pattern:
 
 ```text
-runtime/events/YYYY-MM-DD/events_<timestamp>_<pid>.jsonl
+runtime/quant_data/
+  market_snapshots/YYYY-MM-DD.jsonl
+  decision_log/YYYY-MM-DD.jsonl
+  execution_log/YYYY-MM-DD.jsonl
+  trade_journal/YYYY-MM-DD.jsonl
+  risk_log/YYYY-MM-DD.jsonl
+  system_health/YYYY-MM-DD.jsonl
 ```
 
-Planned event schema:
+Implemented base schema:
 
 ```json
 {
-  "ts_utc": "2026-05-08T00:00:00Z",
-  "event_type": "ORDERBOOK_BEST",
+  "timestamp_utc": "2026-05-08T00:00:00Z",
+  "event_type": "market_snapshot",
   "mode": "paper",
-  "market": "BTC",
-  "market_slug": "...",
-  "condition_id": "...",
-  "token_id": "...",
-  "severity": "info",
-  "data": {},
-  "correlation_id": "cycle-123"
+  "run_id": "20260508T000000Z_1234_abcd1234",
+  "source_module": "utils.quant_event_logger",
+  "schema_version": "1.0",
+  "payload": {}
 }
 ```
 
-Planned event types:
+Implemented methods:
 
-- `CYCLE_START`
-- `CYCLE_END`
-- `MARKET_SELECTED`
-- `TOKEN_FLOW`
-- `ORDERBOOK_RESPONSE`
-- `ORDERBOOK_BEST`
-- `MODEL_DECISION`
-- `RISK_PLAN`
-- `RISK_MODE`
-- `BANKROLL_RANK_LOCK`
-- `ORDER_INTENT_APPROVED`
-- `ORDER_INTENT_BLOCKED`
-- `PAPER_ORDER`
-- `PAPER_FILL`
-- `PAPER_EXIT`
-- `PAPER_PNL`
-- `LIVE_ORDER_SUBMITTED`
-- `LIVE_ORDER_FAILED`
-- `RECONCILIATION_STATUS`
-- `LOCKDOWN_TRIGGERED`
-- `LOGGING_DEGRADED`
-- `TELEGRAM_SEND_FAILED`
+- `log_market_snapshot(payload)`
+- `log_decision(payload)`
+- `log_execution(payload)`
+- `log_trade_open(payload)`
+- `log_trade_close(payload)`
+- `log_risk_event(payload)`
+- `log_system_health(payload)`
 
 Implementation rules:
 
@@ -135,6 +171,83 @@ Implementation rules:
 - JSONL must not change strategy, risk, wallet, orderbook, or execution decisions.
 - Use event correlation IDs so a cycle can be reconstructed.
 - Do not log secrets, private keys, full API credentials, or unmasked wallet secrets.
+- PermissionError / Windows errno 13 must disable only the affected writer category for the session.
+
+Implemented trader integration:
+
+- Market snapshots after orderbook reads.
+- Decision events for approved, skipped, rejected, and risk-rejected outcomes.
+- Execution events for order intent approval/rejection, submit attempts, paper fills, live submits, submit failures, cancel success/failure, and analysis exceptions.
+- Trade journal events for opened and closed/reduced/settled positions.
+- Risk events for risk mode, floor breach, balance guard, reconciliation mismatch, exit failure, cycle risk pause, and periodic risk state.
+- System health events on startup and low-frequency cycle checkpoints.
+
+Still planned:
+
+- Retention and compression job.
+- Incident report writer.
+- Deeper analytics over JSONL files.
+- Dedicated `LOGGING_DEGRADED` events for every file logger state transition.
+
+## Offline Data Quality And Replay
+
+Implemented data quality command:
+
+```bash
+python tools/quant_data_quality.py --date YYYY-MM-DD --write-report
+```
+
+Checks:
+
+- JSONL files are readable.
+- Each non-empty line is valid JSON.
+- Required base fields exist: `timestamp_utc`, `event_type`, `mode`, `run_id`, `source_module`, `schema_version`.
+- Timestamps are parseable.
+- `event_type` is non-empty.
+- `mode` is one of the accepted offline values.
+- Numeric fields are numeric when present: `price`, `size`, `shares`, `pnl`, `confidence`, `edge`, `spread`, `liquidity`.
+
+Optional output:
+
+```text
+runtime/reports/quant_data_quality_YYYY-MM-DD.json
+```
+
+Implemented replay commands:
+
+```bash
+python tools/replay_analyzer.py --date YYYY-MM-DD --csv
+python tools/replay_analyzer.py --from YYYY-MM-DD --to YYYY-MM-DD --csv
+```
+
+Replay reads:
+
+- `runtime/quant_data/trade_journal/*.jsonl`
+- `runtime/quant_data/decision_log/*.jsonl`
+- `runtime/quant_data/execution_log/*.jsonl`
+- `runtime/quant_data/risk_log/*.jsonl`
+- `runtime/quant_data/market_snapshots/*.jsonl`
+
+Replay outputs:
+
+```text
+runtime/reports/replay_report_YYYY-MM-DD.json
+runtime/reports/replay_trades_YYYY-MM-DD.csv
+```
+
+Replay metrics:
+
+- Total closed trades, win rate, gross PnL, average PnL, max win, max loss.
+- Average holding time when matching open/close events are available.
+- Skipped decisions and top skip reasons.
+- Approved/rejected decision counts and ratio.
+- Risk reject count and execution failure count.
+- Average spread and confidence at entry.
+- PnL by YES/NO outcome and BTC/ETH asset when available.
+
+Safety rule:
+
+- These analyzers are offline-only. They must not change strategy, risk sizing, wallet state, orderbook behavior, execution behavior, or live-trading readiness.
 
 ## Telegram Alert Design
 
@@ -145,17 +258,38 @@ Implemented alert surfaces:
 - Settlement alert from `PolymarketTrader`.
 - Risk/floor/drawdown/loss-cluster alert builders in `utils/telegram_reporter.py`.
 - Daily report sender path.
+- Cooldown/dedup utility in `utils/telegram_alerts.py`.
+- Public wrapper functions:
+  - `notify_startup`
+  - `notify_entry`
+  - `notify_exit`
+  - `notify_risk`
+  - `notify_critical`
+  - `notify_summary`
+  - `notify_incident`
 
-Required next design:
+Current utility behavior:
 
-- Add alert event types.
-- Add cooldown by `(event_type, market, reason)`.
-- Add severity routing:
+- Telegram failures are caught and returned as send failures.
+- Entry and exit alerts send immediately.
+- Risk, incident, and summary alerts are cooldown-limited.
+- Repeated critical alerts are deduped within cooldown; different critical messages can send immediately.
+
+Implemented trader routing:
+
+- Entry and exit notifications use `notify_entry` / `notify_exit`.
+- Floor, balance guard, panic-sell block, and cycle risk pauses use `notify_risk`.
+- Reconciliation blocks use `notify_incident`.
+- Close/reduce failures use `notify_critical`.
+- Auto-redeem cycle summaries use `notify_summary`.
+
+Required next routing:
+
+- Add severity routing in call sites:
   - `INFO`: summaries only.
   - `WARN`: bounded frequency.
   - `ERROR`: immediate but deduped.
   - `CRITICAL`: immediate and repeated only after cooldown.
-- Add dedup hash of normalized alert body.
 - Add counters for suppressed alerts.
 - Add terminal/log message when alerts are suppressed.
 
@@ -181,6 +315,13 @@ Planned:
 - Keep daily summaries indefinitely or archive monthly.
 - Do not delete logs automatically until the operator approves retention policy.
 - Archive before delete.
+
+Current settings defaults:
+
+- `quant_log_retention_days = 90`
+- `market_snapshot_retention_days = 14`
+- `trade_journal_retention_days = 3650`
+- `compress_old_quant_logs = True`
 
 Do not move or delete:
 
@@ -234,9 +375,10 @@ Planned analytics:
 
 ## Immediate TODO
 
-1. Update `daily_report.py` to read all/latest `scan_log_*.csv`.
-2. Update `utils/telegram_reporter.py` to read all/latest `scan_log_*.csv`.
-3. Add tests for per-run CSV daily report aggregation.
-4. Add `runtime/events` JSONL writer with fail-soft behavior.
-5. Add Telegram cooldown/dedup service.
-6. Add tests for alert suppression and logging-degraded behavior.
+1. Review JSONL output from a longer real paper session.
+2. Clean stale daily Telegram message wording in `utils/telegram_reporter.py`.
+3. Add retention/compaction job only after operator approval.
+4. Add incident report writer and richer `TELEGRAM_DEGRADED` / `LOGGING_DEGRADED` health events.
+5. Add deeper analytics for orderbook availability, EV distribution, and alert suppression.
+6. Monitor longer Ctrl+C paper exits for any delayed oracle/WebSocket logging after shutdown.
+7. Run offline data quality and replay reports after longer paper sessions.

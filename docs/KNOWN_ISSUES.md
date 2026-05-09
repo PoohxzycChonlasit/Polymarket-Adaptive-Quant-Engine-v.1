@@ -44,48 +44,60 @@ Next:
 
 ## Observability Issues
 
-### OBS-001 - Daily report readers still expect fixed scan_log.csv
+### OBS-001 - Daily report readers support per-run scan CSV files
 
-Status: open.
+Status: fixed in Phase 1/2 observability pass.
 
 Implemented reality:
 
 - `polymarket/realtime_logger.py` writes per-run CSV files:
   - `runtime/realtime_logs/YYYY-MM-DD/scan_log_<timestamp>_<pid>.csv`
-
-Mismatch:
-
-- `daily_report.py` reads:
-  - `runtime/realtime_logs/YYYY-MM-DD/scan_log.csv`
-- `utils/telegram_reporter.py` reads:
-  - `runtime/realtime_logs/YYYY-MM-DD/scan_log.csv`
+- `daily_report.py` and `utils/telegram_reporter.py` now call `utils/scan_log_loader.py`.
+- `utils/scan_log_loader.py` loads `scan_log*.csv`, keeps old `scan_log.csv` compatibility, combines multiple files, and sorts by `timestamp_utc` when available.
 
 Impact:
 
-- Daily reports and Telegram daily summaries may miss current realtime scan data.
+- Fixed reader mismatch. Daily report content still needs separate copy review before relying on it operationally.
 
-Next:
+Evidence:
 
-- Update both readers to aggregate all `scan_log_*.csv` files or select the latest.
-- Add tests with multiple per-run CSV files.
+- `python -m pytest -q tests/test_scan_log_loading.py tests/test_logging_resilience.py`
 
-### OBS-002 - No JSONL quant event log yet
+### OBS-002 - JSONL quant event logging and offline analysis are wired, deeper analytics/retention pending
 
-Status: planned.
+Status: implemented for main trader runtime and Phase 5 offline analysis, follow-up planned.
+
+Implemented:
+
+- `utils/quant_event_logger.py`
+- Writes JSONL under:
+  - `runtime/quant_data/market_snapshots/YYYY-MM-DD.jsonl`
+  - `runtime/quant_data/decision_log/YYYY-MM-DD.jsonl`
+  - `runtime/quant_data/execution_log/YYYY-MM-DD.jsonl`
+  - `runtime/quant_data/trade_journal/YYYY-MM-DD.jsonl`
+  - `runtime/quant_data/risk_log/YYYY-MM-DD.jsonl`
+  - `runtime/quant_data/system_health/YYYY-MM-DD.jsonl`
+- Events include `timestamp_utc`, `event_type`, `mode`, `run_id`, `source_module`, and `schema_version`.
+- PermissionError / Windows errno 13 disables only the affected writer for the session.
+- `polymarket/trader.py` emits JSONL events for market snapshots, decisions, execution, trade open/close, risk, reconciliation, and low-frequency system health.
+- `tools/quant_data_quality.py` validates emitted JSONL files offline.
+- `tools/replay_analyzer.py` produces offline replay metrics and report files.
 
 Impact:
 
-- Cycle reconstruction depends on text logs and CSV rows.
-- Incident review is harder than necessary.
+- Cycle reconstruction is improved through JSONL, CSV, and text logs.
+- Offline review is now possible without touching trading behavior.
+- Retention, compression, and deeper analytics are still not implemented.
 
 Next:
 
-- Add fail-soft JSONL writer under `runtime/events/YYYY-MM-DD/`.
-- Use event types documented in `docs/OBSERVABILITY_PLAN.md`.
+- Review real paper-session JSONL output with the data quality checker and replay analyzer.
+- Add retention/compaction only in a scoped phase.
+- Keep analyzer output offline-only until a separate approved phase explicitly scopes feedback into strategy or risk research.
 
-### OBS-003 - Telegram alert cooldown/dedup missing
+### OBS-003 - Telegram alert cooldown/dedup wired for trader alerts, daily copy cleanup pending
 
-Status: open.
+Status: implemented for clear trader alert call sites, follow-up planned.
 
 Implemented reality:
 
@@ -93,20 +105,23 @@ Implemented reality:
 - Telegram sends asynchronously.
 - ERROR/CRITICAL logs can route to Telegram.
 - Message builders exist.
+- `utils/telegram_alerts.py` exposes `notify_startup`, `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident`.
+- Risk, incident, summary, and duplicate critical alerts can be cooldown/dedup limited.
+- Clear trader alerts now route through the alert layer for entries, exits, risk blocks, critical close/reduce failures, summaries, and reconciliation incidents.
 
 Gap:
 
-- No central cooldown.
-- No dedup hash.
-- No suppression counters.
+- Suppression counters are not yet surfaced in terminal/session summaries.
+- Daily Telegram message wording still needs cleanup before relying on it operationally.
 
 Impact:
 
-- Alert spam risk during repeated errors or degraded feeds.
+- Alert spam risk is reduced for trader alert paths wired through the new layer.
 
 Next:
 
-- Add cooldown/dedup layer before increasing alert volume.
+- Add suppression counters after the routing pass.
+- Clean stale daily Telegram message copy.
 
 ### OBS-004 - Telegram failures are intentionally mostly silent
 
@@ -119,7 +134,7 @@ Impact:
 
 Next:
 
-- Add non-blocking `TELEGRAM_DEGRADED` health event.
+- Add non-blocking `TELEGRAM_DEGRADED` health event through `QuantEventLogger` when the runtime integration phase is opened.
 
 ## Windows Logging Limitations
 
@@ -139,7 +154,28 @@ Remaining limitation:
 
 Next:
 
-- Surface logging-degraded state more explicitly in JSONL/terminal summary.
+- Surface logging-degraded state more explicitly in JSONL/terminal summary during runtime integration.
+
+### WINLOG-002 - Oracle/WebSocket thread logged after pytest stream close
+
+Status: fixed in Phase 4 runtime stability pass.
+
+Previous symptom:
+
+- After focused pytest runs passed, an oracle WebSocket background thread could continue briefly and log into a closed pytest capture stream.
+
+Implemented:
+
+- `PolymarketOracleFeed.start()` / `stop()` are idempotent.
+- Oracle stop signals the price, epoch/PTB, and WebSocket workers, actively asks the WebSocket connection to close, joins worker threads, and closes the HTTP client fail-soft.
+- `VirtualPriceToBeatTracker` and `PolymarketTrader` expose shutdown hooks that close the oracle owner.
+- Runtime shutdown closes the realtime CSV logger, trader-owned feeds, and daily report scheduler on normal exit.
+- Console stream logging now suppresses closed-stream errors during shutdown.
+
+Evidence:
+
+- `python -m pytest -q tests/test_runtime_shutdown.py`
+- `python -m pytest -q tests/test_quant_event_logger.py tests/test_telegram_alerts.py tests/test_scan_log_loading.py tests/test_logging_resilience.py tests/test_paper_mode.py tests/test_execution_risk_controls.py tests/test_runtime_shutdown.py`
 
 ## Documentation Mismatches Found In This Sync
 
@@ -274,6 +310,7 @@ Current useful focused suites:
 
 ```bash
 pytest -q tests/test_terminal_dashboard_display.py tests/test_paper_mode.py tests/test_logging_resilience.py
+pytest -q tests/test_scan_log_loading.py tests/test_quant_event_logger.py tests/test_telegram_alerts.py tests/test_logging_resilience.py
 pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/test_polymarket_trader.py tests/test_risk_modes.py tests/test_exit_agent.py
 pytest -q tests/test_bankroll_tiers.py tests/test_risk_modes.py tests/test_execution_risk_controls.py
 ```

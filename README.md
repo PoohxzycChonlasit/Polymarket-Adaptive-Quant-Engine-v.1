@@ -5,7 +5,7 @@
 
 PolyTrade Bot is a Python trading system for Polymarket BTC/ETH 5-minute binary prediction markets. The current main path runs real market data and real CLOB orderbooks through a paper-mode execution simulator by default.
 
-Do not treat this repository as a new project or a rebuild candidate. It already has a working market scanner, oracle/feed path, terminal dashboard, paper execution path, risk modules, order intent guards, and tests. The remaining work is validation, observability, and live-readiness hardening.
+Do not treat this repository as a new project or a rebuild candidate. It already has a working market scanner, oracle/feed path, terminal dashboard, paper execution path, risk modules, order intent guards, observability utilities, and tests. The remaining work is validation, observability integration, and live-readiness hardening.
 
 ## Safety Disclaimer
 
@@ -40,6 +40,23 @@ copy .env.example .env
 
 Review `.env` before any runtime command. If `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-risk until proven otherwise.
 
+Startup validates key `.env` values before the bot runs. Invalid `MODE` or invalid boolean live flags fail clearly. Invalid `PAPER_BALANCE_SOURCE` falls back to `virtual` with a warning. Telegram is disabled safely if `TELEGRAM_ENABLED=true` but token/chat ID is missing. Secrets are never printed in startup logs.
+
+Startup logs include a redacted configuration summary:
+
+```text
+Mode: PAPER
+Execution: PAPER ONLY
+Live Orders: DISABLED
+Balance Source: paper_virtual
+Wallet Reference Enabled: NO
+Telegram Enabled: NO
+Quant Logging: ENABLED
+Replay Analyzer: AVAILABLE
+RiskAgent: ENABLED
+ExitAgent: ENABLED
+```
+
 Safe default paper runtime:
 
 ```bash
@@ -51,6 +68,20 @@ Explicit paper runtime:
 ```bash
 python main.py --mode paper --interval 60
 ```
+
+Optional paper balance reference settings:
+
+```env
+PAPER_BALANCE_SOURCE=virtual
+WALLET_REFERENCE_REFRESH_SECONDS=300
+SHOW_WALLET_REFERENCE_BALANCE=true
+```
+
+`PAPER_BALANCE_SOURCE=virtual` keeps the existing isolated paper bankroll from `ACCOUNT_BALANCE`.
+
+`PAPER_BALANCE_SOURCE=wallet_reference` lets paper mode fetch the real wallet/CLOB collateral balance and use it only as the paper sizing reference. The dashboard and startup messages label this as `wallet_reference_paper`, show `REAL WALLET BALANCE (REFERENCE ONLY)`, and keep execution as `PAPER ONLY` / `NO LIVE ORDERS`. If the wallet balance fetch fails, the bot warns and falls back to `paper_virtual`.
+
+If `LIVE_TRADING_ENABLED=true` is set while running paper mode, startup warns loudly and keeps live orders disabled.
 
 Responsive terminal dashboard controls:
 
@@ -117,7 +148,10 @@ main.py
   -> utils/display.py
   -> polymarket/realtime_logger.py
   -> utils/logger.py
+  -> utils/scan_log_loader.py
+  -> utils/quant_event_logger.py
   -> utils/telegram_reporter.py
+  -> utils/telegram_alerts.py
 ```
 
 ## Runtime Flow
@@ -138,6 +172,7 @@ Implemented:
 
 - Paper mode default.
 - Paper mode blocks live order, cancel, redeem, signing, allowance, and wallet-collateral risk paths.
+- Paper mode can optionally mirror real wallet/CLOB collateral as a read-only sizing reference with `PAPER_BALANCE_SOURCE=wallet_reference`; execution remains paper-only.
 - Live mode requires explicit `--mode live`.
 - Verify mode checks environment, wallet, balance source, positions, orderbooks, and model decisions.
 - OrderIntent validation classifies ENTRY vs EXIT.
@@ -156,8 +191,8 @@ Partially implemented / needs validation:
 - Live execution path exists but has not been proven end to end.
 - Live allowance is currently a blocker in latest evidence.
 - Fill/cancel/reconcile lifecycle is not confirmed live.
-- Telegram alerting exists, but spam cooldown/rate-limit policy is incomplete.
-- Daily Telegram summaries currently look for `scan_log.csv`, while realtime logging now writes per-run `scan_log_<run_id>.csv`.
+- Telegram alerting exists with a cooldown/dedup utility, and clear trader alert call sites are routed through it where safe.
+- Daily report and Telegram summary readers now load combined `scan_log*.csv` files, but daily message wording still needs review for stale content.
 
 ## Logging System
 
@@ -170,13 +205,57 @@ Implemented:
 - Realtime CSV writes use `scan_log_<timestamp>_<pid>.csv`.
 - CSV open/write/flush/close permission failures disable CSV logging for that session only.
 - Paper summaries include cycles, markets, opportunities, orders, fills, exits, PnL, drawdown, skip reasons, risk mode, and bankroll tier data.
+- `daily_report.py` and `utils/telegram_reporter.py` load and combine `scan_log*.csv`, including old `scan_log.csv` and per-run scan files.
+- `utils/quant_event_logger.py` can write structured JSONL events under `runtime/quant_data/` with fail-soft per-writer disable behavior.
+- `polymarket/trader.py` emits quant events for runtime market snapshots, decisions, order intent/submit/fill/fail, trade open/close, risk events, reconciliation blocks, and low-frequency system health.
+- `tools/quant_data_quality.py` validates emitted quant JSONL files offline.
+- `tools/replay_analyzer.py` summarizes emitted quant JSONL files offline into replay metrics and reports.
+- Paper wallet-reference mode shows wallet bankroll, paper sizing balance, paper cash, source, and `NO LIVE ORDERS` in dashboard/startup surfaces when enabled.
 
 Planned:
 
-- JSONL event log for structured quant events.
-- Unified daily-report reader for per-run CSV files.
 - Retention policy and log compaction.
-- Alert cooldown and deduplication.
+- Incident report writer and health-event analytics.
+
+## Offline Quant Analysis
+
+These tools only read files under `runtime/quant_data/` and write reports under `runtime/reports/`. They do not affect live trading, paper trading, strategy, risk sizing, wallet state, orderbooks, or execution.
+
+Validate JSONL data quality for one day:
+
+```bash
+python tools/quant_data_quality.py --date 2026-05-08 --write-report
+```
+
+Run replay analysis for one day:
+
+```bash
+python tools/replay_analyzer.py --date 2026-05-08 --csv
+```
+
+Run replay analysis for a date range:
+
+```bash
+python tools/replay_analyzer.py --from 2026-05-08 --to 2026-05-09 --csv
+```
+
+Generate a conservative paper-run evaluation from the data quality and replay reports:
+
+```bash
+python tools/paper_evaluation_report.py --date 2026-05-08
+```
+
+Evaluate a date range:
+
+```bash
+python tools/paper_evaluation_report.py --from 2026-05-08 --to 2026-05-09
+```
+
+Data quality checks include readable files, valid JSON lines, required base fields, parseable timestamps, valid mode values, non-empty event types, and numeric sanity checks for fields such as price, size, pnl, confidence, edge, spread, and liquidity.
+
+Replay metrics include total closed trades, win rate, gross and average PnL, max win/loss, average holding time, skipped decisions, top skip reasons, approved/rejected ratio, risk reject count, execution failure count, average entry spread/confidence, and PnL by YES/NO outcome and BTC/ETH asset.
+
+Paper evaluation reads the generated `quant_data_quality_*.json` and `replay_report_*.json` files, writes `paper_evaluation_*.json`, and returns `PASS`, `CAUTION`, or `FAIL`. It is conservative: malformed data, severe risk incidents, execution failures, system-health errors, or high drawdown can fail a run, while small samples, high spreads, and liquidity/spread-heavy skips usually produce caution. See `docs/PAPER_TRADING_RUNBOOK.md` for the 24-hour paper checklist, post-run workflow, and live-readiness checklist.
 
 ## Telegram Alert System
 
@@ -187,12 +266,13 @@ Implemented:
 - ERROR/CRITICAL logs can be routed through `TelegramLogHandler`.
 - Message builders exist for startup, trade, exit, settlement, floor breach, drawdown, loss cluster, and errors.
 - `daily_report.py` can send a daily Telegram summary if notifier setup succeeds.
+- `utils/telegram_alerts.py` exposes `notify_startup`, `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident`.
+- Risk, incident, summary, and repeated critical alerts can be cooldown/dedup limited through that utility.
+- Clear trader alerts for entries, exits, risk blocks, critical close/reduce failures, summaries, and reconciliation incidents now route through the alert layer where safe.
 
 Limitations:
 
 - Telegram failures are intentionally non-blocking and mostly silent.
-- No central cooldown/deduplication layer exists yet.
-- Daily summary readers still assume fixed `scan_log.csv` names.
 - Some Telegram message content contains stale backtest/live-blocker text and needs a dedicated cleanup before relying on daily reports.
 
 ## Terminal Dashboard
@@ -218,6 +298,10 @@ Current test areas include:
 - ExitAgent, take-profit, stop-loss, runner behavior.
 - Orderbook/client parsing and verify mode.
 - Logging resilience on Windows file locks.
+- Daily report scan CSV aggregation.
+- Quant JSONL event logger fail-soft behavior.
+- Telegram alert cooldown/dedup behavior.
+- Trader observability failure regression in paper mode.
 - Terminal dashboard layout, resize, and overflow behavior.
 - Position manager/reconciliation and position tracker.
 - Probability, expected value, delta engine, trend runner, lucky shot, trade frequency, stale feed kill switch.
@@ -227,6 +311,7 @@ Useful commands:
 ```bash
 python -m pytest tests/ -q
 pytest -q tests/test_terminal_dashboard_display.py tests/test_paper_mode.py tests/test_logging_resilience.py
+pytest -q tests/test_scan_log_loading.py tests/test_quant_event_logger.py tests/test_telegram_alerts.py tests/test_logging_resilience.py
 pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/test_polymarket_trader.py tests/test_risk_modes.py tests/test_exit_agent.py
 ```
 
@@ -235,9 +320,9 @@ pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/t
 - Live trading is not validated.
 - Latest verify evidence still includes `missing_allowance`.
 - No confirmed live order placement/fill/cancel/reconcile cycle.
-- Daily report and Telegram summary paths lag the new per-run CSV naming.
-- No JSONL event store yet.
-- Telegram alert cooldown/dedup is not implemented.
+- JSONL event logging is wired into the main trader loop, but retention/analytics are not implemented yet.
+- Telegram cooldown/dedup is wired for clear trader alert call sites, but daily message copy still needs review.
+- Daily Telegram message wording still has stale content that needs review.
 - HFT path is experimental and not canonical live execution.
 - Dashboards overlap and need later consolidation.
 - Some older docs/research notes still describe stale HFT or live-ready assumptions.
@@ -265,6 +350,7 @@ pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/t
     daily/
   runtime/
     realtime_logs/
+    quant_data/
   logs/
   logs_vps/
   backtest_results/
@@ -276,7 +362,7 @@ pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/t
 Next priorities:
 
 1. Keep documentation synchronized before new feature phases.
-2. Fix observability drift: per-run CSV daily-report reader, JSONL event plan, Telegram cooldown.
+2. Review Phase 3 JSONL output during longer paper sessions and add retention/incident reports later.
 3. Run longer paper sessions with real BTC/ETH market/orderbook data.
 4. Resolve live allowance.
 5. Validate tiny controlled live order, fill, cancel, and reconciliation only after explicit approval.
@@ -289,8 +375,12 @@ Before modifying code, read:
 1. `CURRENT_PROJECT_STATUS.md`
 2. `CODEX_START_HERE.md`
 3. `AGENTS.md`
-4. `docs/PROJECT_STRUCTURE.md`
-5. `docs/KNOWN_ISSUES.md`
-6. Relevant role docs under `docs/quant_agent_setup_md/roles/`
+4. `MASTER_AGENT_ROUTER.md`
+5. `docs/AGENT_WORKFLOW.md`
+6. `docs/PROJECT_STRUCTURE.md`
+7. `docs/KNOWN_ISSUES.md`
+8. Relevant role docs under `docs/quant_agent_setup_md/roles/`
 
 Never rebuild the bot from scratch unless explicitly requested.
+
+Agent role docs are reusable Codex skill prompts, not autonomous runtime modules. For docs-only agent work, do not change Python runtime behavior. Use the router to choose the right role for risk, orderbook, Telegram, observability, paper evaluation, no-entry diagnostics, config safety, shutdown, testing, and docs tasks.

@@ -46,7 +46,9 @@ from polymarket.risk_modes import (
 )
 from utils.position_tracker import InventoryClassification, PositionTracker, ReconciliationReport
 from utils.risk_manager import FLOOR_BALANCE, RiskManager, RiskPlan
-from utils.logger import get_telegram_notifier
+from utils.quant_event_logger import QuantEventLogger
+from utils.telegram_alerts import TelegramAlertLayer
+from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
 
 
 LOGGER = logging.getLogger(__name__)
@@ -70,9 +72,24 @@ class MarketDisplayMetrics:
     ticker: str
     outcome: str
     token_id: str
+    yes_token_id: str = ""
+    no_token_id: str = ""
+    condition_id: str = ""
+    market_slug: str = ""
     bid: float = 0.0
     ask: float = 0.0
     spread: float = 0.0
+    yes_bid: float = 0.0
+    yes_ask: float = 0.0
+    no_bid: float = 0.0
+    no_ask: float = 0.0
+    yes_mid: float = 0.0
+    no_mid: float = 0.0
+    orderbook_age_ms: int = 0
+    yes_orderbook_age_ms: int = 0
+    no_orderbook_age_ms: int = 0
+    clob_source: str = "CLOB orderbook"
+    token_mapping_warning: str = ""
     snipe_score: float = 0.0
     edge_pct: float = 0.0
     has_orderbook: bool = False
@@ -87,6 +104,15 @@ class MarketDisplayMetrics:
     frequency_multiplier: float = 0.0
     final_size: float = 0.0
     ask_price: float = 0.0
+
+
+@dataclass(slots=True)
+class AdaptiveEntryCutoffDecision:
+    allowed: bool
+    policy: str
+    effective_cutoff_seconds: int
+    reason: str
+    late_entry_hard_block: bool = False
 
 
 @dataclass(slots=True)
@@ -229,6 +255,14 @@ class PolymarketTrader:
         self._balance_source: str = "paper_virtual" if self.settings.paper_trading else "unverified"
         self._balance_wallet_address: str = self.settings.polymarket_proxy_wallet or self.settings.polymarket_funder
         self._last_balance_snapshot: BalanceSnapshot | None = None
+        self._paper_virtual_reference_balance = float(self.settings.account_balance)
+        self._wallet_reference_balance: float | None = None
+        self._wallet_reference_source: str = ""
+        self._wallet_reference_error: str = ""
+        self._last_wallet_reference_refresh_ts = 0.0
+        self._paper_wallet_reference_initialized = False
+        self._paper_startup_fallback_used = False
+        self._paper_virtual_cash_initial = float(self.settings.account_balance)
         self.paper_stats = PaperSessionStats()
         self._risk_mode_state = RiskModeState()
         self._last_risk_mode_log = ""
@@ -243,9 +277,621 @@ class PolymarketTrader:
         )
         self._last_bankroll_rank_lock_log = ""
         self.last_quant_details: dict[str, dict[str, object]] = {}
+        self._last_orderbook_age_ms: dict[str, int] = {}
+        self._preloaded_token_ids: dict[tuple[str, int], tuple[str, str]] = {}
+        self._preloaded_token_meta: dict[tuple[str, int], dict[str, object]] = {}
+        self._warmed_orderbook_epochs: set[tuple[str, int]] = set()
+        self._market_readiness_metrics = {
+            "token_preload_hits": 0,
+            "token_preload_misses": 0,
+            "token_preload_warmups": 0,
+            "token_preload_failures": 0,
+        }
         self._recent_display_trades: deque[dict[str, object]] = deque(maxlen=12)
         self._cycle_count = 0
+        self._cycle_started_monotonic = 0.0
+        self._cycle_started_at_utc = ""
+        self._last_scan_cycle_duration_ms = 0
         self._last_structured_logs: dict[str, str] = {}
+        self.quant_events = self._init_quant_event_logger()
+        self.telegram_alerts = self._init_telegram_alert_layer()
+        self._last_system_health_event_ts = 0.0
+        self._last_risk_state_event_ts = 0.0
+        self._shutdown_complete = False
+
+    def close(self) -> None:
+        """Release trader-owned background resources without changing trading state."""
+        if self._shutdown_complete:
+            return
+        self._shutdown_complete = True
+        try:
+            close_ptb = getattr(self.ptb_tracker, "close", None)
+            if callable(close_ptb):
+                close_ptb()
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] PTB/oracle feed close failed: %s", exc)
+        for module_name, attr_name in (
+            ("polymarket.market_feed", "_feed"),
+            ("polymarket.quant_indicators", "_quant_feed"),
+        ):
+            try:
+                module = __import__(module_name, fromlist=[attr_name])
+                feed = getattr(module, attr_name, None)
+                stop_feed = getattr(feed, "stop", None)
+                if callable(stop_feed):
+                    stop_feed()
+            except Exception as exc:
+                LOGGER.debug("[SHUTDOWN] %s close failed: %s", module_name, exc)
+        try:
+            self._maybe_emit_system_health(force=True, reason="shutdown")
+        except Exception:
+            pass
+
+    def shutdown(self) -> None:
+        self.close()
+
+    def stop(self) -> None:
+        self.close()
+
+    def _runtime_mode(self) -> str:
+        return "paper" if self.settings.paper_trading else "live"
+
+    def _init_quant_event_logger(self) -> QuantEventLogger | None:
+        try:
+            return QuantEventLogger(mode=self._runtime_mode(), source_module="polymarket.trader")
+        except Exception as exc:
+            LOGGER.warning("[OBSERVABILITY] QuantEventLogger disabled at startup: %s", exc)
+            return None
+
+    def _init_telegram_alert_layer(self) -> TelegramAlertLayer | None:
+        try:
+            return TelegramAlertLayer()
+        except Exception as exc:
+            LOGGER.warning("[OBSERVABILITY] Telegram alert layer disabled at startup: %s", exc)
+            return None
+
+    def _emit_quant_event(self, event_method: str, payload: dict[str, object] | None = None) -> bool:
+        logger = getattr(self, "quant_events", None)
+        if logger is None:
+            return False
+        try:
+            logger.mode = self._runtime_mode()
+            method = getattr(logger, event_method)
+            return bool(method(payload or {}))
+        except Exception as exc:
+            LOGGER.warning("[OBSERVABILITY] quant event failed | method=%s error=%s", event_method, exc)
+            return False
+
+    def _utc_timestamp(self) -> str:
+        return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    def _begin_cycle_timing(self) -> None:
+        self._cycle_started_monotonic = time.monotonic()
+        self._cycle_started_at_utc = self._utc_timestamp()
+        self._last_scan_cycle_duration_ms = 0
+
+    def _cycle_elapsed_ms(self) -> int:
+        started = float(getattr(self, "_cycle_started_monotonic", 0.0) or 0.0)
+        if started <= 0:
+            return 0
+        return int(max(0.0, time.monotonic() - started) * 1000)
+
+    def _finish_cycle_timing(self, *, reason: str, force: bool = False) -> None:
+        self._last_scan_cycle_duration_ms = self._cycle_elapsed_ms()
+        self._maybe_emit_system_health(force=force, reason=reason)
+
+    def _notify_telegram(self, alert_method: str, message: str = "", **context: object):
+        alerts = getattr(self, "telegram_alerts", None)
+        if alerts is None:
+            return None
+        try:
+            method = getattr(alerts, alert_method)
+            result = method(message, **context)
+            if getattr(result, "reason", "") == "send_failed":
+                self._emit_quant_event(
+                    "log_system_health",
+                    {
+                        "event": "telegram_degraded",
+                        "alert_method": alert_method,
+                        "reason": result.reason,
+                        "mode": self._runtime_mode(),
+                    },
+                )
+            return result
+        except Exception as exc:
+            LOGGER.warning("[OBSERVABILITY] telegram alert failed | method=%s error=%s", alert_method, exc)
+            self._emit_quant_event(
+                "log_system_health",
+                {
+                    "event": "telegram_degraded",
+                    "alert_method": alert_method,
+                    "reason": "exception",
+                    "error": str(exc),
+                    "mode": self._runtime_mode(),
+                },
+            )
+            return None
+
+    def _risk_plan_payload(self, risk_plan: RiskPlan | None) -> dict[str, object]:
+        if risk_plan is None:
+            return {}
+        try:
+            return asdict(risk_plan)
+        except Exception:
+            return {
+                "position_size": float(getattr(risk_plan, "position_size", 0.0) or 0.0),
+                "notional_size": float(getattr(risk_plan, "notional_size", 0.0) or 0.0),
+                "risk_amount": float(getattr(risk_plan, "risk_amount", 0.0) or 0.0),
+            }
+
+    def _market_slug_for_ticker(self, ticker: str, fallback: str = "") -> str:
+        meta = self._market_token_meta.get((ticker or "").upper(), {})
+        return str(meta.get("slug", "") or fallback or "")
+
+    @staticmethod
+    def _current_five_min_epoch(now_ts: int | None = None) -> int:
+        now_ts = int(time.time()) if now_ts is None else int(now_ts)
+        return now_ts - (now_ts % 300)
+
+    def _market_preload_lead_seconds(self) -> int:
+        return max(
+            int(self._setting("execution_entry_cutoff_seconds", 90)),
+            int(self._setting("exit_agent_entry_cutoff_seconds", 45)),
+        ) + 60
+
+    @staticmethod
+    def _meta_int(meta: dict[str, object], key: str, default: int = 0) -> int:
+        try:
+            return int(float(meta.get(key, default) or default))
+        except (TypeError, ValueError):
+            return default
+
+    def _cached_active_market_valid(self, ticker: str, now_ts: int) -> bool:
+        token_ids = self._real_token_ids.get(ticker)
+        meta = self._market_token_meta.get(ticker, {})
+        if not token_ids:
+            return False
+        epoch_start = self._meta_int(meta, "epoch_start_ts")
+        epoch_end = self._meta_int(meta, "epoch_end_ts", epoch_start + 300 if epoch_start else 0)
+        return bool(epoch_start and epoch_start <= now_ts < epoch_end)
+
+    def _cache_market_tokens(self, ticker: str, market, *, source: str) -> dict[str, object] | None:
+        yes_token = str(getattr(market, "yes_token_id", "") or "")
+        no_token = str(getattr(market, "no_token_id", "") or "")
+        if not yes_token or not no_token:
+            return None
+
+        now_ts = int(time.time())
+        epoch_start = int(getattr(market, "epoch_start_ts", 0) or self._current_five_min_epoch(now_ts))
+        epoch_end = int(getattr(market, "epoch_end_ts", 0) or epoch_start + 300)
+        meta: dict[str, object] = {
+            "slug": str(getattr(market, "slug", "")),
+            "condition_id": str(getattr(market, "condition_id", "")),
+            "yes_token_id": yes_token,
+            "no_token_id": no_token,
+            "market_id": str(getattr(market, "market_id", "")),
+            "epoch_start_ts": epoch_start,
+            "epoch_end_ts": epoch_end,
+            "seconds_remaining": max(0, epoch_end - now_ts),
+            "source": source,
+            "discovered_at_ts": now_ts,
+        }
+        key = (ticker, epoch_start)
+        self._preloaded_token_ids[key] = (yes_token, no_token)
+        self._preloaded_token_meta[key] = meta
+        return meta
+
+    def _promote_preloaded_market(self, ticker: str, epoch_start: int, *, source: str) -> bool:
+        key = (ticker, epoch_start)
+        token_ids = self._preloaded_token_ids.get(key)
+        meta = self._preloaded_token_meta.get(key)
+        if not token_ids or not meta:
+            return False
+        self._real_token_ids[ticker] = token_ids
+        self._market_token_meta[ticker] = dict(meta)
+        self._market_token_meta[ticker]["source"] = source
+        if source.startswith("preloaded"):
+            self._market_readiness_metrics["token_preload_hits"] += 1
+        self._warm_orderbooks_for_ticker(ticker, token_ids, self._market_token_meta[ticker], reason=source)
+        return True
+
+    def _warm_orderbooks_for_ticker(
+        self,
+        ticker: str,
+        token_ids: tuple[str, str],
+        meta: dict[str, object],
+        *,
+        reason: str,
+    ) -> None:
+        epoch_start = self._meta_int(meta, "epoch_start_ts")
+        if not epoch_start or (ticker, epoch_start) in self._warmed_orderbook_epochs:
+            return
+        if not bool(getattr(self, "_connected", False)):
+            return
+
+        started = time.monotonic()
+        ok = False
+        error = ""
+        try:
+            yes_ob = self.client.get_orderbook(token_ids[0])
+            no_ob = self.client.get_orderbook(token_ids[1])
+            yes_age_ms = self._orderbook_age_ms(yes_ob)
+            no_age_ms = self._orderbook_age_ms(no_ob)
+            if yes_age_ms or no_age_ms:
+                self._last_orderbook_age_ms[ticker] = max(yes_age_ms, no_age_ms)
+            ok = True
+            self._market_readiness_metrics["token_preload_warmups"] += 1
+        except Exception as exc:
+            error = str(exc)
+            self._market_readiness_metrics["token_preload_failures"] += 1
+            LOGGER.info(
+                "[MARKET_WARMUP] ticker=%s market_slug=%s epoch=%s status=degraded reason=%s error=%s",
+                ticker,
+                meta.get("slug", ""),
+                epoch_start,
+                reason,
+                exc,
+            )
+        finally:
+            self._warmed_orderbook_epochs.add((ticker, epoch_start))
+            duration_ms = int(max(0.0, time.monotonic() - started) * 1000)
+            self._emit_quant_event(
+                "log_system_health",
+                {
+                    "event": "market_readiness_warmup",
+                    "ticker": ticker,
+                    "market_slug": str(meta.get("slug", "")),
+                    "condition_id": str(meta.get("condition_id", "")),
+                    "epoch_start_ts": epoch_start,
+                    "seconds_remaining": self._meta_int(meta, "seconds_remaining"),
+                    "orderbook_readiness_ms": duration_ms,
+                    "warmup_ok": ok,
+                    "reason": reason,
+                    "error": error,
+                    "metrics": dict(self._market_readiness_metrics),
+                    "mode": self._runtime_mode(),
+                },
+            )
+
+    @staticmethod
+    def _diagnostic_float(value: object, default: float = 0.0) -> float:
+        if isinstance(value, bool) or value is None:
+            return default
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _diagnostic_int(value: object) -> int | None:
+        if value is None:
+            return None
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return None
+
+    def _risk_plan_zero_diagnostics(
+        self,
+        risk_plan: RiskPlan | None,
+        *,
+        confidence: float,
+        edge: object,
+    ) -> dict[str, object]:
+        diagnostics = getattr(risk_plan, "diagnostics", {}) if risk_plan is not None else {}
+        diagnostics = diagnostics if isinstance(diagnostics, dict) else {}
+        reason = self._risk_plan_zero_reason(risk_plan, fallback_reason=str(diagnostics.get("reason_from_order_manager", "") or ""))
+        return {
+            "bankroll": float(getattr(risk_plan, "account_balance", diagnostics.get("bankroll", 0.0)) or 0.0),
+            "tier": str(diagnostics.get("tier", "")),
+            "risk_mode": self._risk_mode_state.current_mode.value,
+            "confidence": float(confidence or 0.0),
+            "edge": self._diagnostic_float(edge),
+            "entry_price": float(getattr(risk_plan, "entry_price", diagnostics.get("entry_price", 0.0)) or 0.0),
+            "final_position_size": float(getattr(risk_plan, "position_size", diagnostics.get("final_position_size", 0.0)) or 0.0),
+            "final_notional_size": float(getattr(risk_plan, "notional_size", diagnostics.get("final_notional_size", 0.0)) or 0.0),
+            "min_position_size_usd": float(diagnostics.get("min_position_size_usd", 0.0) or 0.0),
+            "reason_from_order_manager": str(diagnostics.get("reason_from_order_manager", "") or ""),
+            "risk_plan_zero_reason": reason,
+        }
+
+    def _paper_available_balance(self) -> float:
+        if not self.settings.paper_trading:
+            return float(self.bankroll_state.current_cash_balance)
+        return max(float(self.bankroll_state.current_cash_balance), 0.0)
+
+    def _risk_plan_zero_reason(self, risk_plan: RiskPlan | None, *, fallback_reason: str = "") -> str:
+        diagnostics = getattr(risk_plan, "diagnostics", {}) if risk_plan is not None else {}
+        diagnostics = diagnostics if isinstance(diagnostics, dict) else {}
+        text = " ".join(
+            [
+                fallback_reason,
+                str(diagnostics.get("reason_from_order_manager", "") or ""),
+                " ".join(str(item) for item in diagnostics.get("blocked_reasons", []) or []),
+            ]
+        ).lower()
+        balance = float(getattr(risk_plan, "account_balance", self.bankroll_state.current_bankroll_for_sizing) or 0.0)
+        if "balance_guard" in text or "insufficient" in text:
+            return "insufficient_paper_balance"
+        if balance < FLOOR_BALANCE or "floor" in text or "balance_below_floor" in text:
+            return "bankroll_floor"
+        if (
+            self._risk_mode_state.current_mode == RiskMode.LOCKDOWN
+            or "drawdown" in text
+            or "daily_loss" in text
+            or "hard_drawdown" in text
+            or "lockdown" in text
+        ):
+            return "risk_mode_blocked"
+        if "below_min_position_size" in text or "min shares" in text or "min_order" in text:
+            return "min_order_size_not_met"
+        if "max risk per market" in text or "position tracker" in text or "max active" in text or "max_position" in text:
+            return "max_position_limit"
+        return "unknown"
+
+    def _decision_diagnostics_payload(
+        self,
+        outcome: TradeOutcome,
+        *,
+        ticker: str,
+    ) -> dict[str, object]:
+        display = outcome.display or {}
+        raw_reason = str(display.get("raw_skip_reason", "") or outcome.skip_reason or "")
+        normalized_reason = str(display.get("normalized_skip_reason", "") or normalize_skip_reason(raw_reason))
+        seconds_remaining = display.get("seconds_remaining", display.get("time_remaining_seconds"))
+        entry_cutoff_seconds = display.get(
+            "entry_cutoff_seconds",
+            int(self._setting("execution_entry_cutoff_seconds", 90)),
+        )
+        time_bucket = str(display.get("time_bucket", "") or classify_time_bucket(seconds_remaining, entry_cutoff_seconds))
+        edge = display.get("edge", display.get("ev", 0.0))
+        decision_timestamp = self._utc_timestamp()
+        market_close_timestamp = str(
+            display.get("market_close_timestamp")
+            or display.get("market_end_time")
+            or ""
+        )
+        orderbook_age_ms = self._diagnostic_int(display.get("orderbook_age_ms")) or 0
+        oracle_age_ms = self._diagnostic_int(display.get("oracle_age_ms")) or 0
+        market_feed_age_ms = self._diagnostic_int(display.get("market_feed_age_ms")) or 0
+        cutoff_block_seconds_remaining = (
+            self._diagnostic_int(seconds_remaining)
+            if normalized_reason == "time_unsafe" or "cutoff" in raw_reason.lower()
+            else None
+        )
+        payload: dict[str, object] = {
+            "raw_skip_reason": raw_reason,
+            "normalized_skip_reason": normalized_reason,
+            "asset": ticker or self._ticker_from_market_id(outcome.market_id),
+            "market_slug": str(display.get("market_slug", "") or self._market_slug_for_ticker(ticker, outcome.market_id)),
+            "edge": self._diagnostic_float(edge),
+            "ev": self._diagnostic_float(display.get("ev", edge or 0.0)),
+            "decision_timestamp": decision_timestamp,
+            "decision_latency_ms": self._cycle_elapsed_ms(),
+            "scan_cycle_duration_ms": self._cycle_elapsed_ms(),
+            "seconds_remaining": self._diagnostic_int(seconds_remaining),
+            "entry_cutoff_seconds": self._diagnostic_int(entry_cutoff_seconds),
+            "effective_cutoff_seconds": self._diagnostic_int(display.get("effective_cutoff_seconds", entry_cutoff_seconds)),
+            "cutoff_policy": str(display.get("cutoff_policy", "static") or "static"),
+            "adaptive_cutoff_allowed": bool(display.get("adaptive_cutoff_allowed", False)),
+            "adaptive_cutoff_reason": str(display.get("adaptive_cutoff_reason", "") or ""),
+            "late_entry_hard_block": bool(display.get("late_entry_hard_block", False)),
+            "cutoff_block_seconds_remaining": cutoff_block_seconds_remaining,
+            "time_bucket": time_bucket,
+            "epoch_start": self._diagnostic_int(display.get("epoch_start", display.get("epoch_start_ts"))),
+            "market_start_time": str(display.get("market_start_time", "") or ""),
+            "market_end_time": str(display.get("market_end_time", "") or ""),
+            "market_close_timestamp": market_close_timestamp,
+            "token_id": str(display.get("token_id", "") or ""),
+            "yes_token_id": str(display.get("yes_token_id", "") or ""),
+            "no_token_id": str(display.get("no_token_id", "") or ""),
+            "condition_id": str(display.get("condition_id", "") or ""),
+            "outcome": str(display.get("outcome", "") or ""),
+            "source_module": str(display.get("source_module", "polymarket.trader") or "polymarket.trader"),
+            "orderbook_age_ms": orderbook_age_ms,
+            "orderbook_age": round(orderbook_age_ms / 1000.0, 3),
+            "orderbook_age_seconds": round(orderbook_age_ms / 1000.0, 3),
+            "oracle_age_ms": oracle_age_ms,
+            "oracle_age": round(oracle_age_ms / 1000.0, 3),
+            "oracle_age_seconds": round(oracle_age_ms / 1000.0, 3),
+            "market_feed_age_ms": market_feed_age_ms,
+            "market_feed_age_seconds": round(market_feed_age_ms / 1000.0, 3),
+            "token_mapping_warning": str(display.get("token_mapping_warning", "") or ""),
+            "paper_virtual_cash": float(self.bankroll_state.current_cash_balance if self.settings.paper_trading else 0.0),
+            "paper_available_balance": float(self._paper_available_balance() if self.settings.paper_trading else 0.0),
+            "paper_open_position_value": float(self.bankroll_state.open_position_market_value if self.settings.paper_trading else 0.0),
+            "live_wallet_reference_balance": (
+                float(self._wallet_reference_balance)
+                if self._wallet_reference_balance is not None and self._paper_wallet_reference_visible()
+                else None
+            ),
+            "risk_per_trade": float(getattr(outcome.risk_plan, "risk_amount", 0.0) or 0.0),
+            "calculated_order_size": float(getattr(outcome.risk_plan, "position_size", 0.0) or 0.0),
+            "risk_plan_zero_reason": "",
+        }
+        is_zero_plan = (
+            outcome.skipped
+            and normalized_reason == "risk_plan_zero"
+            and outcome.risk_plan is not None
+            and float(getattr(outcome.risk_plan, "position_size", 0.0) or 0.0) <= 0.0
+        )
+        if is_zero_plan:
+            payload["risk_plan_zero_reason"] = self._risk_plan_zero_reason(outcome.risk_plan, fallback_reason=raw_reason)
+            payload["risk_plan_zero_diagnostics"] = self._risk_plan_zero_diagnostics(
+                outcome.risk_plan,
+                confidence=outcome.confidence,
+                edge=edge,
+            )
+        elif outcome.skipped and outcome.risk_plan is not None:
+            classified = self._risk_plan_zero_reason(outcome.risk_plan, fallback_reason=raw_reason)
+            if classified != "unknown":
+                payload["risk_plan_zero_reason"] = classified
+        return payload
+
+    def _emit_decision_event(
+        self,
+        outcome: TradeOutcome,
+        *,
+        ticker: str = "",
+        stage: str = "market_analysis",
+    ) -> None:
+        reason = outcome.skip_reason or ""
+        reason_lower = reason.lower()
+        if not outcome.skipped:
+            decision_type = "approved"
+        elif any(flag in reason_lower for flag in ("risk", "floor", "balance", "drawdown", "reconciliation", "lockdown")):
+            decision_type = "risk_rejected"
+        elif any(flag in reason_lower for flag in ("order_intent", "blocked", "duplicate")):
+            decision_type = "rejected"
+        else:
+            decision_type = "skipped"
+        self._emit_quant_event(
+            "log_decision",
+            {
+                "stage": stage,
+                "decision_type": decision_type,
+                "market_id": outcome.market_id,
+                "ticker": ticker or self._ticker_from_market_id(outcome.market_id),
+                "decision": outcome.decision,
+                "confidence": float(outcome.confidence or 0.0),
+                "skipped": bool(outcome.skipped),
+                "skip_reason": reason,
+                "has_receipt": outcome.receipt is not None,
+                "receipt_status": getattr(outcome.receipt, "status", "") if outcome.receipt else "",
+                "risk_plan": self._risk_plan_payload(outcome.risk_plan),
+                "display": outcome.display,
+                **self._decision_diagnostics_payload(outcome, ticker=ticker or self._ticker_from_market_id(outcome.market_id)),
+            },
+        )
+
+    def _emit_trade_opened_event(
+        self,
+        *,
+        market_id: str,
+        ticker: str,
+        token_id: str,
+        outcome: str,
+        receipt: OrderReceipt,
+        risk_plan: RiskPlan,
+        entry_price: float,
+        strategy: str,
+    ) -> None:
+        self._emit_quant_event(
+            "log_trade_open",
+            {
+                "market_id": market_id,
+                "ticker": ticker,
+                "token_id": token_id,
+                "outcome": outcome,
+                "side": BUY,
+                "entry_price": float(entry_price),
+                "size": float(risk_plan.position_size),
+                "notional_size": float(risk_plan.notional_size),
+                "receipt": asdict(receipt),
+                "strategy": strategy,
+                "mode": self._runtime_mode(),
+            },
+        )
+
+    def _emit_trade_closed_event(
+        self,
+        *,
+        position,
+        reason: str,
+        exit_price: float,
+        size: float,
+        pnl: float,
+        receipt: OrderReceipt | None,
+        partial: bool = False,
+    ) -> None:
+        self._emit_quant_event(
+            "log_trade_close",
+            {
+                "position_id": getattr(position, "position_id", ""),
+                "market_id": getattr(position, "symbol", ""),
+                "ticker": self._ticker_from_market_id(getattr(position, "symbol", "")),
+                "token_id": self._position_token_id(position),
+                "outcome": self._position_outcome(position),
+                "reason": reason,
+                "exit_price": float(exit_price),
+                "size": float(size),
+                "pnl": float(pnl),
+                "partial": bool(partial),
+                "receipt": asdict(receipt) if receipt else {},
+                "mode": self._runtime_mode(),
+            },
+        )
+
+    def _emit_risk_event(self, event: str, payload: dict[str, object] | None = None) -> None:
+        data = {"event": event, "mode": self._runtime_mode()}
+        if payload:
+            data.update(payload)
+        self._emit_quant_event("log_risk_event", data)
+
+    def _maybe_emit_risk_state_event(self, *, force: bool = False, reason: str = "periodic") -> None:
+        now = time.time()
+        if not force and now - self._last_risk_state_event_ts < 60.0:
+            return
+        self._last_risk_state_event_ts = now
+        state = self.bankroll_state
+        summary = self.tracker.summary()
+        self._emit_risk_event(
+            "risk_state",
+            {
+                "reason": reason,
+                "cash": float(state.current_cash_balance),
+                "equity": float(state.equity),
+                "balance_source": self._balance_source,
+                "paper_balance_source": self._paper_balance_source_setting(),
+                "wallet_reference_balance": (
+                    float(self._wallet_reference_balance)
+                    if self._wallet_reference_balance is not None and self._paper_wallet_reference_visible()
+                    else None
+                ),
+                "wallet_reference_source": self._wallet_reference_source,
+                "wallet_reference_error": self._wallet_reference_error,
+                "execution": "PAPER ONLY" if self.settings.paper_trading else "LIVE",
+                "no_live_orders": bool(self.settings.paper_trading),
+                "daily_drawdown_pct": float(state.daily_drawdown_pct),
+                "total_drawdown_pct": float(state.total_drawdown_pct),
+                "risk_off": self._risk_off(state.daily_drawdown_pct),
+                "risk_mode": self._risk_mode_state.current_mode.value,
+                "total_exposure": float(getattr(summary, "total_exposure", 0.0) or 0.0),
+                "open_positions": int(getattr(summary, "open_count", 0) or 0),
+            },
+        )
+
+    def _maybe_emit_system_health(self, *, force: bool = False, reason: str = "periodic") -> None:
+        now = time.time()
+        if not force and now - self._last_system_health_event_ts < 60.0:
+            return
+        self._last_system_health_event_ts = now
+        reconciliation = self._last_reconciliation
+        disabled_quant_writers = []
+        if getattr(self, "quant_events", None) is not None:
+            disabled_quant_writers = sorted(getattr(self.quant_events, "disabled_categories", set()))
+        self._emit_quant_event(
+            "log_system_health",
+            {
+                "reason": reason,
+                "cycle": int(self._cycle_count),
+                "cycle_started_at_utc": str(getattr(self, "_cycle_started_at_utc", "") or ""),
+                "scan_cycle_duration_ms": int(
+                    self._last_scan_cycle_duration_ms
+                    if self._last_scan_cycle_duration_ms
+                    else self._cycle_elapsed_ms()
+                ),
+                "mode": self._runtime_mode(),
+                "connected": bool(self._connected),
+                "paper_trading": bool(self.settings.paper_trading),
+                "balance_source": self._balance_source,
+                "risk_mode": self._risk_mode_state.current_mode.value,
+                "open_positions": len(self.tracker.open_positions()),
+                "reconciliation_class": getattr(getattr(reconciliation, "classification", None), "value", ""),
+                "reconciliation_blocks_trading": bool(getattr(reconciliation, "block_new_trading", False)),
+                "quant_disabled_writers": disabled_quant_writers,
+            },
+        )
 
     def _setting(self, name: str, default: float | int | bool) -> float | int | bool:
         return getattr(self.settings, name, default)
@@ -273,6 +919,162 @@ class PolymarketTrader:
         except (TypeError, ValueError):
             return None
         return seconds if seconds >= 0 else None
+
+    def _market_timing_detail(
+        self,
+        market: GammaMarket,
+        ptb_info,
+        *,
+        seconds_remaining: object = None,
+        entry_cutoff_seconds: object = None,
+    ) -> dict[str, object]:
+        raw_seconds = seconds_remaining
+        if raw_seconds is None:
+            raw_seconds = getattr(ptb_info, "seconds_remaining", None)
+        raw_cutoff = entry_cutoff_seconds
+        if raw_cutoff is None:
+            raw_cutoff = int(self._setting("execution_entry_cutoff_seconds", 90))
+        epoch_start = getattr(ptb_info, "epoch_start_ts", None)
+        market_start_time = str(getattr(ptb_info, "market_start_time", "") or "")
+        if epoch_start is not None and not market_start_time:
+            try:
+                market_start_time = datetime.fromtimestamp(int(epoch_start), tz=UTC).isoformat()
+            except (TypeError, ValueError, OSError):
+                market_start_time = ""
+        market_end_time = str(
+            getattr(ptb_info, "market_end_time", "")
+            or getattr(ptb_info, "end_date_iso", "")
+            or getattr(market, "end_date_iso", "")
+            or ""
+        )
+        if not market_end_time and epoch_start is not None:
+            try:
+                market_end_time = datetime.fromtimestamp(int(epoch_start) + 300, tz=UTC).isoformat()
+            except (TypeError, ValueError, OSError):
+                market_end_time = ""
+        return {
+            "seconds_remaining": self._diagnostic_int(raw_seconds),
+            "entry_cutoff_seconds": self._diagnostic_int(raw_cutoff),
+            "time_bucket": classify_time_bucket(raw_seconds, raw_cutoff),
+            "epoch_start": self._diagnostic_int(epoch_start),
+            "market_start_time": market_start_time,
+            "market_end_time": market_end_time,
+            "market_close_timestamp": market_end_time,
+        }
+
+    def _entry_hard_block_seconds(self) -> int:
+        return max(
+            int(self._setting("adaptive_entry_hard_block_seconds", 60)),
+            int(self._setting("entry_min_seconds_remaining", 30)),
+            int(self._setting("execution_force_exit_seconds", 60)),
+            int(self._setting("exit_agent_cancel_entries_seconds", 35)),
+            int(self._setting("exit_agent_force_exit_seconds", 25)),
+        )
+
+    def _adaptive_entry_cutoff_seconds(self) -> int:
+        return max(
+            self._entry_hard_block_seconds(),
+            int(self._setting("adaptive_entry_cutoff_seconds", 60)),
+        )
+
+    def _cutoff_decision_detail(self, decision: AdaptiveEntryCutoffDecision) -> dict[str, object]:
+        return {
+            "effective_cutoff_seconds": int(decision.effective_cutoff_seconds),
+            "cutoff_policy": decision.policy,
+            "adaptive_cutoff_allowed": bool(decision.allowed and decision.policy == "adaptive"),
+            "adaptive_cutoff_reason": decision.reason,
+            "late_entry_hard_block": bool(decision.late_entry_hard_block),
+        }
+
+    def _entry_cutoff_skip_reason(self, seconds_remaining: int, decision: AdaptiveEntryCutoffDecision) -> str:
+        label = "hard block" if decision.late_entry_hard_block else "adaptive denied"
+        return (
+            f"Entry cutoff: {seconds_remaining}s <= {decision.effective_cutoff_seconds}s "
+            f"({label}: {decision.reason})"
+        )
+
+    def _evaluate_entry_cutoff(
+        self,
+        *,
+        seconds_remaining: int,
+        static_cutoff_seconds: int,
+        orderbook_age_ms: int | None,
+        oracle_age_ms: int | None,
+        decision_latency_ms: int | None,
+        scan_cycle_duration_ms: int | None,
+        spread: float,
+    ) -> AdaptiveEntryCutoffDecision:
+        hard_block = self._entry_hard_block_seconds()
+        if seconds_remaining <= hard_block:
+            return AdaptiveEntryCutoffDecision(
+                allowed=False,
+                policy="adaptive" if bool(self._setting("adaptive_entry_cutoff_enabled", True)) else "static",
+                effective_cutoff_seconds=hard_block,
+                reason="hard_close_zone",
+                late_entry_hard_block=True,
+            )
+
+        if seconds_remaining > static_cutoff_seconds:
+            return AdaptiveEntryCutoffDecision(
+                allowed=True,
+                policy="static",
+                effective_cutoff_seconds=static_cutoff_seconds,
+                reason="static_safe",
+            )
+
+        if not bool(self._setting("adaptive_entry_cutoff_enabled", True)):
+            return AdaptiveEntryCutoffDecision(
+                allowed=False,
+                policy="static",
+                effective_cutoff_seconds=static_cutoff_seconds,
+                reason="static_cutoff",
+            )
+
+        effective_cutoff = self._adaptive_entry_cutoff_seconds()
+        if seconds_remaining <= effective_cutoff:
+            return AdaptiveEntryCutoffDecision(
+                allowed=False,
+                policy="adaptive",
+                effective_cutoff_seconds=effective_cutoff,
+                reason="adaptive_cutoff_floor",
+            )
+
+        if self._risk_mode_state.current_mode == RiskMode.LOCKDOWN:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "lockdown")
+
+        if not self._reconciliation_safe_for_entry():
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "reconciliation_block")
+
+        max_orderbook_age_ms = int(self._setting("adaptive_entry_max_orderbook_age_ms", 1000))
+        if orderbook_age_ms is None:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "orderbook_age_unknown")
+        if orderbook_age_ms > max_orderbook_age_ms:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "orderbook_stale")
+
+        max_oracle_age_ms = int(self._setting("adaptive_entry_max_oracle_age_ms", 5000))
+        if oracle_age_ms is None:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "oracle_age_unknown")
+        if oracle_age_ms > max_oracle_age_ms:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "oracle_stale")
+
+        max_decision_latency_ms = int(self._setting("adaptive_entry_max_decision_latency_ms", 2000))
+        if decision_latency_ms is not None and decision_latency_ms > max_decision_latency_ms:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "decision_latency_high")
+
+        max_cycle_duration_ms = int(self._setting("adaptive_entry_max_cycle_duration_ms", 2500))
+        if scan_cycle_duration_ms is not None and scan_cycle_duration_ms > max_cycle_duration_ms:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "cycle_latency_high")
+
+        max_spread = float(self._setting("adaptive_entry_max_spread", 0.06))
+        if spread > max_spread:
+            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "spread_too_wide")
+
+        return AdaptiveEntryCutoffDecision(
+            allowed=True,
+            policy="adaptive",
+            effective_cutoff_seconds=effective_cutoff,
+            reason="healthy_late_entry",
+        )
 
     def _exit_agent_entry_cutoff_seconds(self) -> int:
         return max(
@@ -348,6 +1150,18 @@ class PolymarketTrader:
                     reason,
                     order_id,
                 )
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "cancel_order",
+                        "status": "canceled",
+                        "market_id": market_id,
+                        "ticker": ticker,
+                        "order_id": order_id,
+                        "seconds_to_close": int(seconds_to_close),
+                        "reason": reason,
+                    },
+                )
             else:
                 self._paper_record_cancel("cancel_failed")
                 self._log_order_section(
@@ -363,6 +1177,18 @@ class PolymarketTrader:
                     seconds_to_close,
                     reason,
                     order_id,
+                )
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "cancel_order",
+                        "status": "failed",
+                        "market_id": market_id,
+                        "ticker": ticker,
+                        "order_id": order_id,
+                        "seconds_to_close": int(seconds_to_close),
+                        "reason": reason,
+                    },
                 )
 
     def _paper_enabled(self) -> bool:
@@ -420,10 +1246,14 @@ class PolymarketTrader:
         ticker = ticker.upper()
         detail = self.last_quant_details.get(ticker, {"ticker": ticker})
         detail.update(values)
+        if "p_yes" in values:
+            detail["model_p_yes"] = values["p_yes"]
+        if "p_no" in values:
+            detail["model_p_no"] = values["p_no"]
         detail["ticker"] = ticker
         self.last_quant_details[ticker] = detail
         LOGGER.debug(
-            "[DASHBOARD_QUANT] ticker=%s p_yes=%s p_no=%s ev=%s min_ev=%s delta=%s x%s decision=%s reason=%s",
+            "[DASHBOARD_QUANT] ticker=%s model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s decision=%s reason=%s",
             ticker,
             detail.get("p_yes", "--"),
             detail.get("p_no", "--"),
@@ -567,6 +1397,19 @@ class PolymarketTrader:
                     f"{decision.previous_mode.value}->{decision.mode.value}"
                 ] += 1
             self._last_risk_mode_log = body
+            self._emit_risk_event(
+                "risk_mode",
+                {
+                    "mode": decision.mode.value,
+                    "previous_mode": decision.previous_mode.value,
+                    "reason": decision.reason,
+                    "consecutive_losses": int(decision.consecutive_losses),
+                    "drawdown_pct": float(decision.drawdown_pct),
+                    "size_multiplier": float(decision.size_multiplier),
+                    "allow_new_entries": bool(decision.allow_new_entries),
+                    "lockdown_reasons": list(decision.lockdown_reasons),
+                },
+            )
         return decision
 
     def _apply_risk_mode_to_plan(self, risk_plan: RiskPlan, decision: RiskModeDecision) -> None:
@@ -631,8 +1474,148 @@ class PolymarketTrader:
         self._balance_source = snapshot.source
         self._balance_wallet_address = snapshot.wallet_address
 
+    def _paper_balance_source_setting(self) -> str:
+        source = str(getattr(self.settings, "paper_balance_source", "virtual") or "virtual").strip().lower()
+        return source if source in {"virtual", "wallet_reference"} else "virtual"
+
+    def _paper_starting_balance_source_setting(self) -> str:
+        source = str(getattr(self.settings, "paper_starting_balance_source", "") or "").strip().lower()
+        aliases = {
+            "virtual": "config",
+            "paper_virtual": "config",
+            "wallet_reference": "live_wallet_reference",
+        }
+        if not source:
+            source = "live_wallet_reference" if self._paper_balance_source_setting() == "wallet_reference" else "config"
+        source = aliases.get(source, source)
+        return source if source in {"config", "live_wallet_reference"} else "config"
+
+    def _paper_wallet_sync_on_start(self) -> bool:
+        return bool(getattr(self.settings, "paper_wallet_sync_on_start", True))
+
+    def _paper_wallet_sync_mode(self) -> str:
+        mode = str(getattr(self.settings, "paper_wallet_sync_mode", "initialize_only") or "initialize_only").strip().lower()
+        return "initialize_only" if mode != "initialize_only" else mode
+
+    def _paper_min_balance_fallback(self) -> float:
+        try:
+            return max(float(getattr(self.settings, "paper_min_balance_fallback", 0.0) or 0.0), 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
+    def _paper_wallet_reference_enabled(self) -> bool:
+        return bool(
+            self.settings.paper_trading
+            and self._paper_starting_balance_source_setting() == "live_wallet_reference"
+            and self._paper_wallet_sync_on_start()
+            and self._paper_wallet_sync_mode() == "initialize_only"
+        )
+
+    def _paper_wallet_reference_refresh_seconds(self) -> float:
+        try:
+            return max(30.0, float(getattr(self.settings, "wallet_reference_refresh_seconds", 300) or 300))
+        except (TypeError, ValueError):
+            return 300.0
+
+    def _paper_wallet_reference_visible(self) -> bool:
+        return bool(getattr(self.settings, "show_wallet_reference_balance", True))
+
+    def _paper_open_position_entry_cost(self) -> float:
+        total = 0.0
+        for pos in self.tracker.open_positions():
+            try:
+                total += float(pos.entry_price) * float(pos.size)
+            except Exception:
+                continue
+        return max(total, 0.0)
+
+    def _apply_paper_reference_balance(self, reference_balance: float, *, reset_starting_balance: bool = False) -> None:
+        reference_balance = max(float(reference_balance), 0.0)
+        self._paper_virtual_cash_initial = reference_balance
+        state = self.bankroll_state
+        if reset_starting_balance:
+            state.starting_bankroll = reference_balance
+            state.daily_start_bankroll = reference_balance
+            state.peak_bankroll = max(state.peak_bankroll, reference_balance)
+            self._bankroll_rank_lock.reset(reference_balance)
+        invested_cost = self._paper_open_position_entry_cost()
+        state.current_cash_balance = max(0.0, reference_balance + state.realized_pnl - invested_cost)
+        self._update_bankroll_state(refresh_wallet_reference=False)
+
+    def _set_wallet_reference_snapshot(self, snapshot: BalanceSnapshot, *, reset_starting_balance: bool = False) -> None:
+        wallet_balance = self._coerce_cash_balance(snapshot.balance)
+        self._last_balance_snapshot = snapshot
+        self._wallet_reference_balance = wallet_balance
+        self._wallet_reference_source = str(snapshot.source or "wallet_reference")
+        self._wallet_reference_error = ""
+        self._balance_source = "wallet_reference_paper"
+        self._balance_wallet_address = str(snapshot.wallet_address or self._wallet_address_for_logs())
+        self._last_wallet_reference_refresh_ts = time.time()
+        self._apply_paper_reference_balance(wallet_balance, reset_starting_balance=reset_starting_balance)
+
+    def _activate_paper_virtual_fallback(self, reason: str) -> None:
+        self._wallet_reference_error = str(reason)
+        self._wallet_reference_balance = None
+        self._wallet_reference_source = ""
+        self._balance_source = "paper_virtual"
+        self._balance_wallet_address = self._wallet_address_for_logs()
+        self._last_wallet_reference_refresh_ts = time.time()
+        self._paper_startup_fallback_used = True
+        self._paper_wallet_reference_initialized = True
+        fallback_balance = max(self._paper_virtual_reference_balance, self._paper_min_balance_fallback())
+        LOGGER.warning(
+            "[PAPER WALLET REFERENCE] Wallet bankroll unavailable, fallback to paper_virtual | reason=%s",
+            reason,
+        )
+        self._apply_balance(
+            fallback_balance,
+            reset_starting_balance=True,
+            refresh_wallet_reference=False,
+        )
+
+    def _refresh_wallet_reference_balance(self, *, force: bool = False) -> bool:
+        if not self._paper_wallet_reference_enabled():
+            return False
+        if self._paper_wallet_sync_mode() == "initialize_only" and self._paper_wallet_reference_initialized and not force:
+            return False
+        if self._paper_wallet_sync_mode() == "initialize_only" and not force:
+            return False
+        now = time.time()
+        if not force and now - self._last_wallet_reference_refresh_ts < self._paper_wallet_reference_refresh_seconds():
+            return False
+        try:
+            if force:
+                try:
+                    self.client.connect()
+                except Exception as exc:
+                    LOGGER.warning(
+                        "[PAPER WALLET REFERENCE] CLOB read-only connect failed, trying balance snapshot fallback: %s",
+                        exc,
+                    )
+            snapshot = self._fetch_live_balance_snapshot()
+            if not str(snapshot.wallet_address or self._wallet_address_for_logs()).strip():
+                raise RuntimeError("wallet address not configured")
+            self._set_wallet_reference_snapshot(snapshot, reset_starting_balance=force)
+            self._paper_wallet_reference_initialized = True
+            self._paper_startup_fallback_used = False
+            LOGGER.info(
+                "[PAPER WALLET REFERENCE] REAL WALLET BALANCE (REFERENCE ONLY) source=%s wallet=%s "
+                "wallet_bankroll=$%.4f paper_virtual_cash_initial=$%.4f execution=PAPER ONLY NO LIVE ORDERS sync_mode=%s",
+                self._wallet_reference_source,
+                self._balance_wallet_address or "not_configured",
+                self._wallet_reference_balance or 0.0,
+                self._paper_virtual_cash_initial,
+                self._paper_wallet_sync_mode(),
+            )
+            return True
+        except Exception as exc:
+            self._activate_paper_virtual_fallback(str(exc))
+            return False
+
     def _ensure_bankroll_state_matches_settings(self) -> None:
         if not self.settings.paper_trading:
+            return
+        if self._paper_wallet_reference_enabled():
             return
         configured = float(self.settings.account_balance)
         state = self.bankroll_state
@@ -667,8 +1650,16 @@ class PolymarketTrader:
             self._last_bankroll_rank_lock_log = log_body
         return result
 
-    def _update_bankroll_state(self, *, fetch_live_cash: bool = False, force_log: bool = False) -> BankrollState:
+    def _update_bankroll_state(
+        self,
+        *,
+        fetch_live_cash: bool = False,
+        force_log: bool = False,
+        refresh_wallet_reference: bool = True,
+    ) -> BankrollState:
         self._ensure_bankroll_state_matches_settings()
+        if refresh_wallet_reference:
+            self._refresh_wallet_reference_balance()
         state = self.bankroll_state
 
         if not self.settings.paper_trading and fetch_live_cash:
@@ -915,6 +1906,25 @@ class PolymarketTrader:
             "positions": getattr(summary, "positions", []),
             "balance_source": self._balance_source,
             "wallet_address": self._balance_wallet_address,
+            "paper_balance_source": self._paper_balance_source_setting(),
+            "execution_mode": "PAPER ONLY" if self.settings.paper_trading else "LIVE",
+            "live_orders_enabled": not self.settings.paper_trading,
+            "no_live_orders": bool(self.settings.paper_trading),
+            "paper_cash": state.current_cash_balance,
+            "paper_sizing_balance": state.current_bankroll_for_sizing,
+            "wallet_reference_balance": (
+                float(self._wallet_reference_balance)
+                if self._wallet_reference_balance is not None and self._paper_wallet_reference_visible()
+                else None
+            ),
+            "wallet_reference_available": self._wallet_reference_balance is not None,
+            "wallet_reference_source": self._wallet_reference_source,
+            "wallet_reference_error": self._wallet_reference_error,
+            "wallet_reference_label": (
+                "REAL WALLET BALANCE (REFERENCE ONLY)"
+                if self._balance_source == "wallet_reference_paper"
+                else ""
+            ),
         }
 
     def dashboard_session_summary(self) -> dict[str, object]:
@@ -938,6 +1948,39 @@ class PolymarketTrader:
         if not self._paper_enabled():
             return
         self.log_quant_summary(force=True)
+        self._log_session_runtime_evaluation()
+
+    def _log_session_runtime_evaluation(self) -> None:
+        try:
+            from tools.session_runtime_evaluator import evaluate_session_runtime, format_terminal_summary
+
+            evaluation = evaluate_session_runtime(
+                session_summary=self.paper_session_summary(),
+                date=datetime.now(UTC).strftime("%Y-%m-%d"),
+                quant_data_dir=str(self._setting("quant_data_dir", "runtime/quant_data")),
+                load_offline_reports=True,
+            )
+            for line in format_terminal_summary(evaluation):
+                LOGGER.info("[SESSION_EVAL] %s", line)
+            self._emit_quant_event(
+                "log_system_health",
+                {
+                    "event": "session_runtime_evaluation",
+                    "session_status": evaluation.session_status,
+                    "primary_bottleneck": evaluation.primary_bottleneck,
+                    "secondary_bottleneck": evaluation.secondary_bottleneck,
+                    "bottleneck_scores": evaluation.bottleneck_scores,
+                    "health_summary": evaluation.health_summary,
+                    "timing_quality": evaluation.timing_quality,
+                    "cutoff_behavior": evaluation.cutoff_behavior,
+                    "risk_blocks": evaluation.risk_blocks,
+                    "execution_summary": evaluation.execution_summary,
+                    "orderbook_readiness": evaluation.orderbook_readiness,
+                    "mode": self._runtime_mode(),
+                },
+            )
+        except Exception as exc:
+            LOGGER.warning("[SESSION_EVAL] automatic evaluation failed: %s", exc)
 
     def _skip_outcome(
         self,
@@ -946,23 +1989,51 @@ class PolymarketTrader:
         confidence: float,
         reason: str,
         risk_plan: RiskPlan | None = None,
+        *,
+        edge: float | None = None,
+        ev: float | None = None,
+        seconds_remaining: int | None = None,
+        entry_cutoff_seconds: int | None = None,
+        extra_detail: dict[str, object] | None = None,
     ) -> TradeOutcome:
         ticker = self._ticker_from_market_id(market.market_id)
+        raw_reason = reason
+        normalized_reason = normalize_skip_reason(raw_reason)
+        detail_values: dict[str, object] = dict(extra_detail or {})
+        if entry_cutoff_seconds is None:
+            entry_cutoff_seconds = detail_values.get(
+                "entry_cutoff_seconds",
+                int(self._setting("execution_entry_cutoff_seconds", 90)),
+            )
+        if seconds_remaining is None:
+            seconds_remaining = detail_values.get("seconds_remaining")
+        detail_values.update({
+            "market_id": market.market_id,
+            "market_slug": self._market_slug_for_ticker(ticker, market.market_id),
+            "decision": "SKIP",
+            "skip_reason": self._display_skip_reason(reason),
+            "raw_skip_reason": raw_reason,
+            "normalized_skip_reason": normalized_reason,
+            "confidence": confidence,
+            "final_size": 0.0,
+            "seconds_remaining": seconds_remaining,
+            "entry_cutoff_seconds": entry_cutoff_seconds,
+            "time_bucket": classify_time_bucket(seconds_remaining, entry_cutoff_seconds),
+        })
+        if edge is not None:
+            detail_values["edge"] = float(edge)
+        if ev is not None:
+            detail_values["ev"] = float(ev)
         detail = self._record_quant_detail(
             ticker,
-            market_id=market.market_id,
-            decision="SKIP",
-            skip_reason=self._display_skip_reason(reason),
-            raw_skip_reason=reason,
-            confidence=confidence,
-            final_size=0.0,
+            **detail_values,
         )
         LOGGER.info(
             "[ENTRY_SKIP] market=%s decision=%s confidence=%.3f reason=%s",
             market.market_id, decision, confidence, reason,
         )
         self._paper_record_skip(reason)
-        return TradeOutcome(
+        outcome = TradeOutcome(
             market_id=market.market_id,
             question=market.question,
             decision=decision,
@@ -973,6 +2044,8 @@ class PolymarketTrader:
             skip_reason=reason,
             display=detail,
         )
+        self._emit_decision_event(outcome, ticker=ticker)
+        return outcome
 
     def _open_positions_for_market(self, market_id: str) -> list:
         return [pos for pos in self.tracker.open_positions() if pos.symbol == market_id]
@@ -1049,15 +2122,29 @@ class PolymarketTrader:
             report.classification.value,
             report.reason,
         )
-        tg = get_telegram_notifier()
-        if tg:
-            tg.send_message(
+        self._emit_risk_event(
+            "reconciliation_mismatch",
+            {
+                "classification": report.classification.value,
+                "reason": report.reason,
+                "local_yes": float(report.local_yes),
+                "local_no": float(report.local_no),
+                "clob_yes": float(report.clob_yes),
+                "clob_no": float(report.clob_no),
+            },
+        )
+        self._notify_telegram(
+            "notify_incident",
+            (
                 "*TRADING BLOCKED: POSITION RECONCILIATION*\n"
                 f"Class: {report.classification.value}\n"
                 f"Reason: {report.reason}\n"
                 f"Local YES/NO: {report.local_yes:.4f}/{report.local_no:.4f}\n"
                 f"CLOB YES/NO: {report.clob_yes:.4f}/{report.clob_no:.4f}"
-            )
+            ),
+            dedup_key=f"reconciliation:{report.classification.value}:{report.reason}",
+            reason=report.reason,
+        )
 
         if report.classification == InventoryClassification.PARTIALLY_HEDGED_ARB:
             LOGGER.critical(
@@ -1089,19 +2176,57 @@ class PolymarketTrader:
             self.settings.paper_trading,
         )
         if self.settings.paper_trading:
-            LOGGER.info("[PAPER] Local simulation mode active -- skipping CLOB connect and live balance fetch.")
-            self._apply_balance(float(self.settings.account_balance))
-            self._balance_source = "paper_virtual"
-            self._balance_wallet_address = self._wallet_address_for_logs()
+            if self.paper_stats.trades_simulated == 0 and abs(self.bankroll_state.realized_pnl) < 0.0001:
+                self._paper_virtual_reference_balance = float(self.settings.account_balance)
+            if self._paper_wallet_reference_enabled():
+                LOGGER.info(
+                    "[PAPER] Wallet reference startup sync active -- reading real wallet/CLOB balance once "
+                    "to initialize paper virtual cash. Execution remains PAPER ONLY; NO LIVE ORDERS."
+                )
+                self._refresh_wallet_reference_balance(force=True)
+            else:
+                LOGGER.info("[PAPER] Local simulation mode active -- skipping CLOB connect and live balance fetch.")
+                self._apply_balance(float(self.settings.account_balance), refresh_wallet_reference=False)
+                self._paper_virtual_cash_initial = float(self.bankroll_state.current_bankroll_for_sizing)
+                self._balance_source = "paper_virtual"
+            if not self._balance_wallet_address:
+                self._balance_wallet_address = self._wallet_address_for_logs()
             LOGGER.info(
-                "[WALLET CONNECTED] mode=paper connected=false wallet_address=%s balance_source=paper_virtual",
+                "[WALLET CONNECTED] mode=paper connected=%s wallet_address=%s balance_source=%s execution=PAPER_ONLY",
+                "reference_only" if self._balance_source == "wallet_reference_paper" else "false",
                 self._balance_wallet_address or "not_configured",
+                self._balance_source,
             )
             LOGGER.info(
-                "[USDC BALANCE] mode=paper source=paper_virtual balance=$%.4f",
+                "[USDC BALANCE] mode=paper source=%s balance=$%.4f wallet_bankroll=%s paper_cash=$%.4f "
+                "paper_sizing_balance=$%.4f execution=PAPER_ONLY no_live_orders=true",
+                self._balance_source,
                 self.bankroll_state.current_cash_balance,
+                (
+                    f"${self._wallet_reference_balance:.4f}"
+                    if self._wallet_reference_balance is not None
+                    else "unavailable"
+                ),
+                self.bankroll_state.current_cash_balance,
+                self.bankroll_state.current_bankroll_for_sizing,
+            )
+            LOGGER.info(
+                "[PAPER BALANCE STARTUP] mode=paper paper_starting_balance_source=%s "
+                "paper_wallet_sync_on_start=%s paper_wallet_sync_mode=%s "
+                "live_wallet_reference_balance=%s paper_virtual_cash_initial=$%.4f fallback_used=%s",
+                self._paper_starting_balance_source_setting(),
+                str(self._paper_wallet_sync_on_start()).lower(),
+                self._paper_wallet_sync_mode(),
+                (
+                    f"${self._wallet_reference_balance:.4f}"
+                    if self._wallet_reference_balance is not None
+                    else "unavailable"
+                ),
+                self._paper_virtual_cash_initial,
+                str(self._paper_startup_fallback_used).lower(),
             )
             self._connected = True
+            self._maybe_emit_system_health(force=True, reason="startup_connected")
             return
 
         try:
@@ -1121,11 +2246,19 @@ class PolymarketTrader:
                 LOGGER.warning("Wallet Balance is $0.00. Orders will be skipped.")
             self._log_wallet_startup_verification()
             self._connected = True
+            self._maybe_emit_system_health(force=True, reason="startup_connected")
         except Exception:
             LOGGER.exception("Failed to connect to Polymarket CLOB. Using Default Bankroll.")
             self._connected = False
+            self._maybe_emit_system_health(force=True, reason="startup_connect_failed")
 
-    def _apply_balance(self, balance: float, *, reset_starting_balance: bool = False) -> None:
+    def _apply_balance(
+        self,
+        balance: float,
+        *,
+        reset_starting_balance: bool = False,
+        refresh_wallet_reference: bool = False,
+    ) -> None:
         """Propagate a fresh cash/equity balance to bankroll state and sub-components."""
         balance = float(balance)
         if reset_starting_balance:
@@ -1133,7 +2266,7 @@ class PolymarketTrader:
             self.bankroll_state.daily_start_bankroll = balance
             self.bankroll_state.peak_bankroll = balance
         self.bankroll_state.current_cash_balance = balance
-        self._update_bankroll_state()
+        self._update_bankroll_state(refresh_wallet_reference=refresh_wallet_reference)
         balance = self.bankroll_state.current_bankroll_for_sizing
 
         tier_config = get_tier_config(self.bankroll_state.current_bankroll_tier)
@@ -1143,10 +2276,22 @@ class PolymarketTrader:
         if balance < FLOOR_BALANCE:
             msg = f"[FLOOR BREACH] Balance ${balance:.2f} < floor ${FLOOR_BALANCE:.2f} -- ALL TRADING SUSPENDED"
             LOGGER.warning(msg)
-            tg = get_telegram_notifier()
-            if tg:
-                from utils.telegram_reporter import build_floor_breach_alert
-                tg.send_message(build_floor_breach_alert(balance, FLOOR_BALANCE))
+            self._emit_risk_event(
+                "floor_breach",
+                {
+                    "balance": float(balance),
+                    "floor": float(FLOOR_BALANCE),
+                    "balance_source": self._balance_source,
+                },
+            )
+            from utils.telegram_reporter import build_floor_breach_alert
+
+            self._notify_telegram(
+                "notify_risk",
+                build_floor_breach_alert(balance, FLOOR_BALANCE),
+                dedup_key="floor_breach",
+                reason="floor_breach",
+            )
         elif tier.value in {"SEED_TEST", "MICRO", "MICRO_PLUS"}:
             LOGGER.info(
                 "MICRO BANKROLL PROTECTION ACTIVE -- using rank sizing | "
@@ -1277,53 +2422,157 @@ class PolymarketTrader:
         return markets[:top_n]
 
     def _refresh_token_ids(self, tickers: object) -> None:
+        refresh_started = time.monotonic()
+        now_ts = int(time.time())
+        current_epoch = self._current_five_min_epoch(now_ts)
+        preload_lead = self._market_preload_lead_seconds()
+        refreshed = 0
+        cache_hits = 0
+        cache_misses = 0
+        preloaded = 0
         for raw_ticker in tickers:
             ticker = str(raw_ticker).upper()
             try:
+                if self._promote_preloaded_market(ticker, current_epoch, source="preloaded_current"):
+                    cache_hits += 1
+                    refreshed += 1
+                    continue
+
+                if self._cached_active_market_valid(ticker, now_ts):
+                    meta = self._market_token_meta.get(ticker, {})
+                    epoch_end = self._meta_int(meta, "epoch_end_ts")
+                    next_epoch = current_epoch + 300
+                    next_cached = (ticker, next_epoch) in self._preloaded_token_ids
+                    seconds_remaining = max(0, epoch_end - now_ts) if epoch_end else 0
+                    if seconds_remaining > preload_lead or next_cached:
+                        cache_hits += 1
+                        continue
+
+                self._market_readiness_metrics["token_preload_misses"] += 1
+                cache_misses += 1
                 active = self.gamma.get_current_5min_market(ticker)
                 if active and active.yes_token_id and active.no_token_id:
-                    self._real_token_ids[ticker] = (active.yes_token_id, active.no_token_id)
-                    self._market_token_meta[ticker] = {
-                        "slug": str(getattr(active, "slug", "")),
-                        "condition_id": str(getattr(active, "condition_id", "")),
-                        "yes_token_id": active.yes_token_id,
-                        "no_token_id": active.no_token_id,
-                    }
-                    LOGGER.info(
-                        "[TOKEN_FLOW] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s source=current",
-                        ticker,
-                        self._market_token_meta[ticker]["slug"],
-                        self._market_token_meta[ticker]["condition_id"],
-                        active.yes_token_id,
-                        active.no_token_id,
-                    )
+                    meta = self._cache_market_tokens(ticker, active, source="current")
+                    epoch_start = self._meta_int(meta or {}, "epoch_start_ts", current_epoch)
+                    is_active_now = epoch_start <= now_ts < self._meta_int(meta or {}, "epoch_end_ts", epoch_start + 300)
+                    if is_active_now:
+                        self._promote_preloaded_market(ticker, epoch_start, source="current")
+                        refreshed += 1
+                        LOGGER.info(
+                            "[TOKEN_FLOW] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s source=current seconds_remaining=%s",
+                            ticker,
+                            str((meta or {}).get("slug", "")),
+                            str((meta or {}).get("condition_id", "")),
+                            active.yes_token_id,
+                            active.no_token_id,
+                            (meta or {}).get("seconds_remaining", 0),
+                        )
+                    else:
+                        preloaded += 1
+                    if self._meta_int(meta or {}, "seconds_remaining", 999) <= preload_lead:
+                        next_market = getattr(self.gamma, "get_next_5min_market", lambda _ticker: None)(ticker)
+                        if next_market and getattr(next_market, "yes_token_id", "") and getattr(next_market, "no_token_id", ""):
+                            next_meta = self._cache_market_tokens(ticker, next_market, source="next_preload")
+                            if next_meta:
+                                preloaded += 1
                     continue
 
                 exact = self.gamma.get_exact_5min_ptb(ticker)
                 if exact and exact.yes_token_id and exact.no_token_id:
-                    self._real_token_ids[ticker] = (exact.yes_token_id, exact.no_token_id)
-                    self._market_token_meta[ticker] = {
-                        "slug": str(getattr(exact, "slug", "")),
-                        "condition_id": str(getattr(exact, "condition_id", "")),
-                        "yes_token_id": exact.yes_token_id,
-                        "no_token_id": exact.no_token_id,
-                    }
-                    LOGGER.info(
-                        "[TOKEN_FLOW] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s source=exact",
-                        ticker,
-                        self._market_token_meta[ticker]["slug"],
-                        self._market_token_meta[ticker]["condition_id"],
-                        exact.yes_token_id,
-                        exact.no_token_id,
-                    )
+                    meta = self._cache_market_tokens(ticker, exact, source="exact")
+                    epoch_start = self._meta_int(meta or {}, "epoch_start_ts", current_epoch)
+                    if epoch_start <= now_ts < self._meta_int(meta or {}, "epoch_end_ts", epoch_start + 300):
+                        self._promote_preloaded_market(ticker, epoch_start, source="exact")
+                        refreshed += 1
+                        LOGGER.info(
+                            "[TOKEN_FLOW] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s source=exact",
+                            ticker,
+                            str((meta or {}).get("slug", "")),
+                            str((meta or {}).get("condition_id", "")),
+                            exact.yes_token_id,
+                            exact.no_token_id,
+                        )
+                    else:
+                        preloaded += 1
             except Exception as exc:
                 LOGGER.warning("[TokenID] Failed to fetch token IDs for %s: %s", ticker, exc)
+        duration_ms = int(max(0.0, time.monotonic() - refresh_started) * 1000)
+        if bool(getattr(self, "_connected", False)) and (refreshed or preloaded):
+            self._emit_quant_event(
+                "log_system_health",
+                {
+                    "event": "market_discovery_refresh",
+                    "tickers": [str(t).upper() for t in tickers],
+                    "market_discovery_duration_ms": duration_ms,
+                    "token_preload_hit_rate": cache_hits / max(cache_hits + cache_misses, 1),
+                    "refreshed_markets": refreshed,
+                    "preloaded_markets": preloaded,
+                    "metrics": dict(self._market_readiness_metrics),
+                    "mode": self._runtime_mode(),
+                },
+            )
 
     def _snipe_score(self, best_ask: float, model_implied_prob: float) -> float:
         """Relative edge of model vs best ask. Positive = contract is underpriced."""
         if best_ask <= 0:
             return 0.0
         return (model_implied_prob - best_ask) / best_ask
+
+    @staticmethod
+    def _orderbook_age_ms(snapshot) -> int:
+        try:
+            return int(max(0.0, float(getattr(snapshot, "age_seconds", 0.0) or 0.0)) * 1000)
+        except (TypeError, ValueError):
+            return 0
+
+    def _token_mapping_warning(
+        self,
+        ticker: str,
+        token_ids: tuple[str, str] | None,
+        meta: dict[str, str] | None = None,
+        *,
+        yes_ob=None,
+        no_ob=None,
+    ) -> str:
+        meta = meta or {}
+        warnings: list[str] = []
+        if not token_ids or len(token_ids) < 2 or not token_ids[0] or not token_ids[1]:
+            warnings.append("missing_yes_no_token_ids")
+        elif token_ids[0] == token_ids[1]:
+            warnings.append("yes_no_token_ids_identical")
+
+        expected_yes = token_ids[0] if token_ids else ""
+        expected_no = token_ids[1] if token_ids and len(token_ids) > 1 else ""
+        actual_yes = str(getattr(yes_ob, "token_id", "") or "")
+        actual_no = str(getattr(no_ob, "token_id", "") or "")
+        if expected_yes and actual_yes and actual_yes != expected_yes:
+            warnings.append("yes_token_id_mismatch")
+        if expected_no and actual_no and actual_no != expected_no:
+            warnings.append("no_token_id_mismatch")
+
+        meta_condition = str(meta.get("condition_id", "") or "")
+        yes_condition = str(getattr(yes_ob, "condition_id", "") or "")
+        no_condition = str(getattr(no_ob, "condition_id", "") or "")
+        if yes_condition and no_condition and yes_condition != no_condition:
+            warnings.append("yes_no_condition_id_mismatch")
+        if meta_condition:
+            if yes_condition and yes_condition != meta_condition:
+                warnings.append("yes_condition_id_mismatch")
+            if no_condition and no_condition != meta_condition:
+                warnings.append("no_condition_id_mismatch")
+
+        warning = ",".join(dict.fromkeys(warnings))
+        if warning:
+            LOGGER.warning(
+                "[TOKEN_MAPPING_WARNING] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s reason=%s",
+                ticker,
+                meta.get("slug", ""),
+                meta_condition,
+                expected_yes,
+                expected_no,
+                warning,
+            )
+        return warning
 
     def get_market_display_metrics(
         self,
@@ -1345,14 +2594,19 @@ class PolymarketTrader:
             if missing_token_ids
             else token_ids[0] if outcome == "YES" else token_ids[1]
         )
+        meta = self._market_token_meta.get(ticker, {})
         metrics = MarketDisplayMetrics(
             ticker=ticker,
             outcome=outcome,
             token_id=token_id,
+            yes_token_id=token_ids[0] if token_ids else "",
+            no_token_id=token_ids[1] if token_ids else "",
+            condition_id=str(meta.get("condition_id", "")),
+            market_slug=str(meta.get("slug", "")),
             skip_reason="api_missing_fields" if missing_token_ids else "",
         )
+        metrics.token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta)
         try:
-            meta = self._market_token_meta.get(ticker, {})
             LOGGER.info(
                 "[ORDERBOOK_FLOW] ticker=%s outcome=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s requested_token_id=%s",
                 ticker,
@@ -1363,23 +2617,50 @@ class PolymarketTrader:
                 meta.get("no_token_id", token_ids[1] if token_ids else ""),
                 token_id,
             )
-            ob = self.client.get_orderbook(token_id)
-            metrics.bid = ob.best_bid
-            metrics.ask = ob.best_ask
-            metrics.spread = ob.spread
-            metrics.has_orderbook = ob.best_bid > 0 and ob.best_ask > 0
+            yes_ob = self.client.get_orderbook(token_ids[0]) if token_ids else None
+            no_ob = self.client.get_orderbook(token_ids[1]) if token_ids else None
+            metrics.token_mapping_warning = self._token_mapping_warning(
+                ticker,
+                token_ids,
+                meta,
+                yes_ob=yes_ob,
+                no_ob=no_ob,
+            )
+            metrics.yes_bid = float(getattr(yes_ob, "best_bid", 0.0) or 0.0)
+            metrics.yes_ask = float(getattr(yes_ob, "best_ask", 0.0) or 0.0)
+            metrics.no_bid = float(getattr(no_ob, "best_bid", 0.0) or 0.0)
+            metrics.no_ask = float(getattr(no_ob, "best_ask", 0.0) or 0.0)
+            metrics.yes_mid = (metrics.yes_bid + metrics.yes_ask) / 2.0 if metrics.yes_bid > 0 and metrics.yes_ask > 0 else 0.0
+            metrics.no_mid = (metrics.no_bid + metrics.no_ask) / 2.0 if metrics.no_bid > 0 and metrics.no_ask > 0 else 0.0
+            metrics.yes_orderbook_age_ms = self._orderbook_age_ms(yes_ob)
+            metrics.no_orderbook_age_ms = self._orderbook_age_ms(no_ob)
+            metrics.orderbook_age_ms = max(metrics.yes_orderbook_age_ms, metrics.no_orderbook_age_ms)
+            if metrics.orderbook_age_ms:
+                self._last_orderbook_age_ms[ticker] = metrics.orderbook_age_ms
+            metrics.bid = metrics.no_bid if outcome == "NO" else metrics.yes_bid
+            metrics.ask = metrics.no_ask if outcome == "NO" else metrics.yes_ask
+            metrics.spread = max(
+                metrics.yes_ask - metrics.yes_bid if metrics.yes_bid > 0 and metrics.yes_ask > 0 else 0.0,
+                metrics.no_ask - metrics.no_bid if metrics.no_bid > 0 and metrics.no_ask > 0 else 0.0,
+            )
+            metrics.has_orderbook = metrics.yes_bid > 0 and metrics.yes_ask > 0 and metrics.no_bid > 0 and metrics.no_ask > 0
             if not metrics.has_orderbook:
                 metrics.skip_reason = metrics.skip_reason or "no_orderbook"
-            if confidence > 0 and ob.best_ask > 0:
-                metrics.edge_pct = confidence - ob.best_ask
-                metrics.snipe_score = self._snipe_score(ob.best_ask, confidence)
+            if metrics.token_mapping_warning:
+                metrics.skip_reason = metrics.skip_reason or "token_mapping_warning"
+            if confidence > 0 and metrics.ask > 0:
+                metrics.edge_pct = confidence - metrics.ask
+                metrics.snipe_score = self._snipe_score(metrics.ask, confidence)
         except Exception as exc:
             metrics.skip_reason = metrics.skip_reason or ("stale_orderbook" if "stale_orderbook" in str(exc) else "no_orderbook")
             LOGGER.warning(
-                "[ORDERBOOK_FLOW] ticker=%s outcome=%s token=%s failed=%s",
+                "[ORDERBOOK_FLOW] ticker=%s outcome=%s token=%s market_slug=%s last_successful_orderbook_age_ms=%s retry_count=%s failed=%s",
                 ticker,
                 outcome,
                 token_id,
+                meta.get("slug", ""),
+                self._last_orderbook_age_ms.get(ticker, 0),
+                int(self._setting("api_retry_attempts", 1)),
                 exc,
             )
         detail = self.last_quant_details.get(ticker, {})
@@ -1391,15 +2672,18 @@ class PolymarketTrader:
         elif not detail and not metrics.skip_reason:
             metrics.skip_reason = "model_not_run"
         LOGGER.debug(
-            "[DASHBOARD_OB] ticker=%s token=%s bid=%.4f ask=%.4f spread=%.4f p_yes=%s ev=%s delta=%s reason=%s",
+            "[DASHBOARD_OB] ticker=%s token=%s yes_bid=%.4f yes_ask=%.4f no_bid=%.4f no_ask=%.4f spread=%.4f model_p_yes=%s ev=%s delta=%s age_ms=%s reason=%s",
             ticker,
             token_id,
-            metrics.bid,
-            metrics.ask,
+            metrics.yes_bid,
+            metrics.yes_ask,
+            metrics.no_bid,
+            metrics.no_ask,
             metrics.spread,
             metrics.p_yes,
             metrics.ev,
             metrics.delta_regime,
+            metrics.orderbook_age_ms,
             metrics.skip_reason,
         )
         return metrics
@@ -1848,6 +3132,13 @@ class PolymarketTrader:
         risk_mode_decision = self._update_risk_mode()
         trades_last_hour = self._trades_last_hour()
         seconds_to_close = self._seconds_to_close(ptb_info)
+        entry_cutoff = self._exit_agent_entry_cutoff_seconds()
+        timing_detail = self._market_timing_detail(
+            market,
+            ptb_info,
+            seconds_remaining=seconds_to_close,
+            entry_cutoff_seconds=entry_cutoff,
+        )
 
         if not risk_mode_decision.allow_new_entries:
             skip_reason = f"risk_mode_lockdown:{risk_mode_decision.reason}"
@@ -1861,7 +3152,15 @@ class PolymarketTrader:
                 risk_off=risk_off,
                 skip_reason=skip_reason,
             )
-            return self._skip_outcome(market, "skip", 0.0, skip_reason)
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                skip_reason,
+                seconds_remaining=seconds_to_close,
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail=timing_detail,
+            )
 
         if seconds_to_close is None:
             LOGGER.info(
@@ -1878,14 +3177,29 @@ class PolymarketTrader:
                 risk_off=risk_off,
                 skip_reason="missing_close_time",
             )
-            return self._skip_outcome(market, "skip", 0.0, "missing_close_time")
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                "missing_close_time",
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail=timing_detail,
+            )
 
         self._exit_agent_tick(market.market_id, ticker, seconds_to_close)
 
-        entry_cutoff = self._exit_agent_entry_cutoff_seconds()
         skip_reason = ""
-        if seconds_to_close <= entry_cutoff:
-            skip_reason = f"Entry cutoff: {seconds_to_close}s <= {entry_cutoff}s"
+        hard_block_seconds = self._entry_hard_block_seconds()
+        if seconds_to_close <= hard_block_seconds:
+            hard_block_decision = AdaptiveEntryCutoffDecision(
+                allowed=False,
+                policy="adaptive" if bool(self._setting("adaptive_entry_cutoff_enabled", True)) else "static",
+                effective_cutoff_seconds=hard_block_seconds,
+                reason="hard_close_zone",
+                late_entry_hard_block=True,
+            )
+            timing_detail.update(self._cutoff_decision_detail(hard_block_decision))
+            skip_reason = self._entry_cutoff_skip_reason(seconds_to_close, hard_block_decision)
         elif len(self._open_positions_for_market(market.market_id)) >= int(self._setting("max_active_positions_per_market", 1)):
             skip_reason = "Max active positions per market reached"
         elif self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts) >= int(self._setting("max_entries_per_market", 1)):
@@ -1916,7 +3230,15 @@ class PolymarketTrader:
                 risk_off=risk_off,
                 skip_reason=skip_reason,
             )
-            return self._skip_outcome(market, "skip", 0.0, skip_reason)
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                skip_reason,
+                seconds_remaining=seconds_to_close,
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail=timing_detail,
+            )
 
         feed_age = self._feed_age_seconds(ptb_info)
         feed_age_log = -1.0 if feed_age is None else feed_age
@@ -1943,19 +3265,73 @@ class PolymarketTrader:
                 risk_off=risk_off,
                 skip_reason="stale_feed",
             )
-            return self._skip_outcome(market, "skip", 0.0, "stale_feed")
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                "stale_feed",
+                seconds_remaining=seconds_to_close,
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail=timing_detail,
+            )
 
         yes_bid = yes_ask = no_bid = no_ask = 0.0
         yes_bid_size = yes_ask_size = no_bid_size = no_ask_size = 0.0
         ob_spread = 0.0
         ob_liquidity_usd = float(market.liquidity or 0.0)
         orderbook_error = ""
+        token_ids = self._real_token_ids.get(ticker)
+        yes_token_id = token_ids[0] if token_ids else market.market_id
+        no_token_id = token_ids[1] if token_ids else ""
+        meta = self._market_token_meta.get(ticker, {})
+        yes_orderbook_age_ms = 0
+        no_orderbook_age_ms = 0
+        token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta)
+        if token_mapping_warning:
+            skip_reason = f"token_mapping_warning:{token_mapping_warning}"
+            detail = {
+                **timing_detail,
+                "token_id": yes_token_id,
+                "yes_token_id": yes_token_id,
+                "no_token_id": no_token_id,
+                "market_slug": meta.get("slug", ""),
+                "condition_id": meta.get("condition_id", ""),
+                "outcome": "YES/NO",
+                "source_module": "polymarket.trader",
+                "token_mapping_warning": token_mapping_warning,
+                "orderbook_error": skip_reason,
+                "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
+                "retry_count": int(self._setting("api_retry_attempts", 1)),
+            }
+            self._emit_quant_event(
+                "log_market_snapshot",
+                {
+                    "ticker": ticker,
+                    "market_id": market.market_id,
+                    **detail,
+                },
+            )
+            self._log_risk_section(
+                bankroll=current_balance,
+                tier=tier.value,
+                base_risk_pct=calculate_base_risk_pct(current_balance),
+                frequency_multiplier=frequency_multiplier_for_tier(tier_config, trades_last_hour, liquidity=ob_liquidity_usd),
+                final_size=0.0,
+                daily_drawdown_pct=daily_drawdown_pct,
+                risk_off=risk_off,
+                skip_reason=skip_reason,
+            )
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                skip_reason,
+                seconds_remaining=seconds_to_close,
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail=detail,
+            )
 
         try:
-            token_ids = self._real_token_ids.get(ticker)
-            yes_token_id = token_ids[0] if token_ids else market.market_id
-            no_token_id = token_ids[1] if token_ids else ""
-            meta = self._market_token_meta.get(ticker, {})
             LOGGER.info(
                 "[ORDERBOOK_FLOW] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s",
                 ticker,
@@ -1968,6 +3344,7 @@ class PolymarketTrader:
             yes_ob = self.client.get_orderbook(yes_token_id)
             yes_bid, yes_ask = yes_ob.best_bid, yes_ob.best_ask
             yes_bid_size, yes_ask_size = yes_ob.bid_size, yes_ob.ask_size
+            yes_orderbook_age_ms = self._orderbook_age_ms(yes_ob)
             LOGGER.info(
                 "[ORDERBOOK_BEST] ticker=%s outcome=YES condition_id=%s token=%s bid=%.4f ask=%.4f spread=%.6f age=%.3fs",
                 ticker,
@@ -1983,6 +3360,8 @@ class PolymarketTrader:
                 no_ob = self.client.get_orderbook(no_token_id)
                 no_bid, no_ask = no_ob.best_bid, no_ob.best_ask
                 no_bid_size, no_ask_size = no_ob.bid_size, no_ob.ask_size
+                no_orderbook_age_ms = self._orderbook_age_ms(no_ob)
+                token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta, yes_ob=yes_ob, no_ob=no_ob)
                 LOGGER.info(
                     "[ORDERBOOK_BEST] ticker=%s outcome=NO condition_id=%s token=%s bid=%.4f ask=%.4f spread=%.6f age=%.3fs",
                     ticker,
@@ -2008,12 +3387,67 @@ class PolymarketTrader:
             avg_price = sum(prices) / max(len(prices), 1)
             if total_size > 0:
                 ob_liquidity_usd = total_size * avg_price
+            if yes_orderbook_age_ms or no_orderbook_age_ms:
+                self._last_orderbook_age_ms[ticker] = max(yes_orderbook_age_ms, no_orderbook_age_ms)
         except Exception as exc:
             orderbook_error = str(exc)
-            LOGGER.warning("[OB] Unavailable for %s: %s", market.market_id, exc)
+            LOGGER.warning(
+                "[OB] Unavailable for %s token_id=%s market_slug=%s outcome=YES/NO last_successful_orderbook_age_ms=%s retry_count=%s error=%s",
+                market.market_id,
+                yes_token_id,
+                meta.get("slug", ""),
+                self._last_orderbook_age_ms.get(ticker, 0),
+                int(self._setting("api_retry_attempts", 1)),
+                exc,
+            )
 
-        if yes_ask <= 0 or no_ask <= 0:
+        self._emit_quant_event(
+            "log_market_snapshot",
+            {
+                "ticker": ticker,
+                "market_id": market.market_id,
+                "market_slug": meta.get("slug", ""),
+                "condition_id": meta.get("condition_id", ""),
+                "yes_token_id": yes_token_id,
+                "no_token_id": no_token_id,
+                "token_id": yes_token_id,
+                "outcome": "YES/NO",
+                "source_module": "polymarket.trader",
+                "yes_bid": float(yes_bid),
+                "yes_ask": float(yes_ask),
+                "yes_bid_size": float(yes_bid_size),
+                "yes_ask_size": float(yes_ask_size),
+                "yes_mid": (float(yes_bid) + float(yes_ask)) / 2.0 if yes_bid > 0 and yes_ask > 0 else 0.0,
+                "no_bid": float(no_bid),
+                "no_ask": float(no_ask),
+                "no_bid_size": float(no_bid_size),
+                "no_ask_size": float(no_ask_size),
+                "no_mid": (float(no_bid) + float(no_ask)) / 2.0 if no_bid > 0 and no_ask > 0 else 0.0,
+                "spread": float(ob_spread),
+                "liquidity_usd": float(ob_liquidity_usd),
+                "orderbook_error": orderbook_error,
+                "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
+                "orderbook_age": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
+                "orderbook_age_seconds": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
+                "yes_orderbook_age_ms": yes_orderbook_age_ms,
+                "no_orderbook_age_ms": no_orderbook_age_ms,
+                "oracle_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
+                "oracle_age": round(max(0.0, feed_age or 0.0), 3),
+                "oracle_age_seconds": round(max(0.0, feed_age or 0.0), 3),
+                "market_feed_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
+                "market_feed_age_seconds": round(max(0.0, feed_age or 0.0), 3),
+                "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
+                "retry_count": int(self._setting("api_retry_attempts", 1)),
+                "token_mapping_warning": token_mapping_warning,
+                "seconds_remaining": int(getattr(ptb_info, "seconds_remaining", 0) or 0),
+                "market_close_timestamp": timing_detail.get("market_close_timestamp", ""),
+            },
+        )
+
+        if yes_ask <= 0 or no_ask <= 0 or token_mapping_warning:
             skip_reason = "stale_orderbook" if "stale_orderbook" in orderbook_error else "orderbook_unavailable"
+            if token_mapping_warning:
+                skip_reason = f"token_mapping_warning:{token_mapping_warning}"
             self._log_risk_section(
                 bankroll=current_balance,
                 tier=tier.value,
@@ -2024,7 +3458,83 @@ class PolymarketTrader:
                 risk_off=risk_off,
                 skip_reason=skip_reason,
             )
-            return self._skip_outcome(market, "skip", 0.0, skip_reason)
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                skip_reason,
+                seconds_remaining=seconds_to_close,
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail={
+                    **timing_detail,
+                    "token_id": yes_token_id,
+                    "yes_token_id": yes_token_id,
+                    "no_token_id": no_token_id,
+                    "market_slug": meta.get("slug", ""),
+                    "condition_id": meta.get("condition_id", ""),
+                    "outcome": "YES/NO",
+                    "source_module": "polymarket.trader",
+                    "orderbook_error": orderbook_error,
+                    "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
+                    "retry_count": int(self._setting("api_retry_attempts", 1)),
+                    "token_mapping_warning": token_mapping_warning,
+                },
+            )
+
+        decision_latency_ms = self._cycle_elapsed_ms()
+        scan_cycle_duration_ms = self._last_scan_cycle_duration_ms or decision_latency_ms
+        cutoff_decision = self._evaluate_entry_cutoff(
+            seconds_remaining=seconds_to_close,
+            static_cutoff_seconds=entry_cutoff,
+            orderbook_age_ms=max(yes_orderbook_age_ms, no_orderbook_age_ms),
+            oracle_age_ms=int(max(0.0, feed_age or 0.0) * 1000),
+            decision_latency_ms=decision_latency_ms,
+            scan_cycle_duration_ms=scan_cycle_duration_ms,
+            spread=ob_spread,
+        )
+        cutoff_detail = self._cutoff_decision_detail(cutoff_decision)
+        timing_detail.update(
+            {
+                **cutoff_detail,
+                "decision_latency_ms": decision_latency_ms,
+                "scan_cycle_duration_ms": scan_cycle_duration_ms,
+            }
+        )
+        if not cutoff_decision.allowed:
+            skip_reason = self._entry_cutoff_skip_reason(seconds_to_close, cutoff_decision)
+            self._log_risk_section(
+                bankroll=current_balance,
+                tier=tier.value,
+                base_risk_pct=calculate_base_risk_pct(current_balance),
+                frequency_multiplier=frequency_multiplier_for_tier(tier_config, trades_last_hour, liquidity=ob_liquidity_usd),
+                final_size=0.0,
+                daily_drawdown_pct=daily_drawdown_pct,
+                risk_off=risk_off,
+                skip_reason=skip_reason,
+            )
+            return self._skip_outcome(
+                market,
+                "skip",
+                0.0,
+                skip_reason,
+                seconds_remaining=seconds_to_close,
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail={
+                    **timing_detail,
+                    "token_id": yes_token_id,
+                    "yes_token_id": yes_token_id,
+                    "no_token_id": no_token_id,
+                    "market_slug": meta.get("slug", ""),
+                    "condition_id": meta.get("condition_id", ""),
+                    "outcome": "YES/NO",
+                    "source_module": "polymarket.trader",
+                    "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
+                    "oracle_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
+                    "spread": float(ob_spread),
+                    "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
+                    "token_mapping_warning": token_mapping_warning,
+                },
+            )
 
         imbalance_total = yes_bid_size + yes_ask_size
         imbalance = (yes_bid_size - yes_ask_size) / imbalance_total if imbalance_total > 0 else 0.0
@@ -2105,6 +3615,33 @@ class PolymarketTrader:
         self._paper_record_model(confidence, model_ev, opportunity_found=scan.best_trade is not None)
         frequency_multiplier = frequency_multiplier_for_tier(tier_config, trades_last_hour, liquidity=ob_liquidity_usd)
         min_ev_required = ev_result.min_ev if ev_result else ev_tier.min_ev
+        clob_detail = {
+            "yes_bid": float(yes_bid),
+            "yes_ask": float(yes_ask),
+            "no_bid": float(no_bid),
+            "no_ask": float(no_ask),
+            "yes_mid": (float(yes_bid) + float(yes_ask)) / 2.0 if yes_bid > 0 and yes_ask > 0 else 0.0,
+            "no_mid": (float(no_bid) + float(no_ask)) / 2.0 if no_bid > 0 and no_ask > 0 else 0.0,
+            "spread": float(ob_spread),
+            "token_id": yes_token_id if model_side != "NO" else no_token_id,
+            "yes_token_id": yes_token_id,
+            "no_token_id": no_token_id,
+            "market_slug": meta.get("slug", ""),
+            "condition_id": meta.get("condition_id", ""),
+            "outcome": model_side,
+            "source_module": "polymarket.trader",
+            "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
+            "orderbook_age": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
+            "orderbook_age_seconds": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
+            "yes_orderbook_age_ms": yes_orderbook_age_ms,
+            "no_orderbook_age_ms": no_orderbook_age_ms,
+            "oracle_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
+            "oracle_age": round(max(0.0, feed_age or 0.0), 3),
+            "oracle_age_seconds": round(max(0.0, feed_age or 0.0), 3),
+            "market_feed_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
+            "market_feed_age_seconds": round(max(0.0, feed_age or 0.0), 3),
+            "token_mapping_warning": token_mapping_warning,
+        }
         quant_detail = self._record_quant_detail(
             ticker,
             market_id=market.market_id,
@@ -2125,6 +3662,8 @@ class PolymarketTrader:
             decision=scan.decision.value,
             skip_reason=self._display_skip_reason(scored.skip_reason if scored and scored.skip_reason else ""),
             raw_skip_reason=scored.skip_reason if scored and scored.skip_reason else "",
+            **timing_detail,
+            **clob_detail,
         )
 
         if bool(self._setting("verbose_scan_logs", True)):
@@ -2168,11 +3707,8 @@ class PolymarketTrader:
             self._risk_mode_state.current_mode,
             confidence=confidence,
         )
-        entry_cutoff = int(self._setting("execution_entry_cutoff_seconds", 90))
         skip_reason = ""
-        if ptb_info.seconds_remaining <= entry_cutoff:
-            skip_reason = f"Entry cutoff: {ptb_info.seconds_remaining}s <= {entry_cutoff}s"
-        elif len(self._open_positions_for_market(market.market_id)) >= int(self._setting("max_active_positions_per_market", 1)):
+        if len(self._open_positions_for_market(market.market_id)) >= int(self._setting("max_active_positions_per_market", 1)):
             skip_reason = "Max active positions per market reached"
         elif self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts) >= int(self._setting("max_entries_per_market", 1)):
             skip_reason = "Max entries per market reached"
@@ -2205,8 +3741,17 @@ class PolymarketTrader:
                 risk_off=risk_off,
                 skip_reason=skip_reason,
             )
-            outcome = self._skip_outcome(market, "skip", confidence, skip_reason)
-            outcome.display.update(quant_detail)
+            outcome = self._skip_outcome(
+                market,
+                "skip",
+                confidence,
+                skip_reason,
+                edge=model_ev,
+                ev=model_ev,
+                seconds_remaining=int(ptb_info.seconds_remaining),
+                entry_cutoff_seconds=entry_cutoff,
+                extra_detail=quant_detail,
+            )
             return outcome
 
         trend = evaluate_trend_entry(TrendRunnerInput(side=model_side, momentum=momentum_decimal, price_velocity=price_velocity, ev=model_ev, confidence_score=confidence, tier=tier, spread=ob_spread, liquidity=ob_liquidity_usd, delta_regime=delta.delta_regime))
@@ -2218,7 +3763,9 @@ class PolymarketTrader:
             size_multiplier = min(size_multiplier, lucky.risk_pct / max(tier_config.max_risk_pct, 1e-9))
 
         self.order_manager.account_balance = current_balance
-        risk_plan = self.order_manager.build_order_plan(OrderRequest(market_id=market.market_id, side=model_side, entry_price=entry_price, win_rate=probability.p_yes if model_side == "YES" else probability.p_no, reward_risk_ratio=2.0, edge=model_ev, price_to_beat=ptb_info.price_to_beat, spread=ob_spread, liquidity_usd=ob_liquidity_usd, delta=delta.delta_score, delta_multiplier=delta.delta_multiplier, time_remaining_seconds=ptb_info.seconds_remaining, trades_last_hour=trades_last_hour, drawdown_pct=daily_drawdown_pct, min_position_size_usd=max(float(self.settings.min_shares_per_order) * entry_price, 1.0), daily_loss_limit_reached=risk_off, hard_drawdown_reached=daily_drawdown_pct >= 0.15))
+        min_position_size_usd = max(float(self.settings.min_shares_per_order) * entry_price, 1.0)
+        order_request = OrderRequest(market_id=market.market_id, side=model_side, entry_price=entry_price, win_rate=probability.p_yes if model_side == "YES" else probability.p_no, reward_risk_ratio=2.0, edge=model_ev, price_to_beat=ptb_info.price_to_beat, spread=ob_spread, liquidity_usd=ob_liquidity_usd, delta=delta.delta_score, delta_multiplier=delta.delta_multiplier, time_remaining_seconds=ptb_info.seconds_remaining, trades_last_hour=trades_last_hour, drawdown_pct=daily_drawdown_pct, min_position_size_usd=min_position_size_usd, daily_loss_limit_reached=risk_off, hard_drawdown_reached=daily_drawdown_pct >= 0.15)
+        risk_plan = self.order_manager.build_order_plan(order_request)
         if risk_plan.position_size > 0 and size_multiplier < 1.0:
             risk_plan.risk_amount = round(risk_plan.risk_amount * size_multiplier, 6)
             risk_plan.position_size = round(risk_plan.position_size * size_multiplier, 6)
@@ -2232,7 +3779,20 @@ class PolymarketTrader:
                 decision="SKIP",
                 skip_reason="ev_below_threshold",
                 raw_skip_reason="risk_plan_zero",
+                normalized_skip_reason="risk_plan_zero",
+                edge=model_ev,
+                ev=model_ev,
+                seconds_remaining=int(ptb_info.seconds_remaining),
+                entry_cutoff_seconds=entry_cutoff,
+                time_bucket=classify_time_bucket(ptb_info.seconds_remaining, entry_cutoff),
                 final_size=0.0,
+                **{key: value for key, value in timing_detail.items() if key not in {"seconds_remaining", "entry_cutoff_seconds", "time_bucket"}},
+                risk_plan_zero_diagnostics=self._risk_plan_zero_diagnostics(
+                    risk_plan,
+                    confidence=confidence,
+                    edge=model_ev,
+                ),
+                **clob_detail,
             )
             self._log_risk_section(
                 bankroll=current_balance,
@@ -2245,7 +3805,9 @@ class PolymarketTrader:
                 skip_reason="risk_plan_zero",
             )
             self._paper_record_skip("Risk plan returned zero position size -- skipping.")
-            return TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, "Risk plan returned zero position size -- skipping.", quant_detail)
+            outcome = TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, "Risk plan returned zero position size -- skipping.", quant_detail)
+            self._emit_decision_event(outcome, ticker=ticker)
+            return outcome
 
         configured_market_cap = float(self._setting("max_risk_per_market", tier_config.max_market_exposure_pct))
         max_risk_per_market = min(configured_market_cap, tier_config.max_market_exposure_pct)
@@ -2260,6 +3822,8 @@ class PolymarketTrader:
                 skip_reason="risk_off",
                 raw_skip_reason=skip_msg,
                 final_size=0.0,
+                **timing_detail,
+                **clob_detail,
             )
             self._log_risk_section(
                 bankroll=current_balance,
@@ -2272,7 +3836,14 @@ class PolymarketTrader:
                 skip_reason=skip_msg,
             )
             self._paper_record_skip("Max risk per market exceeded")
-            outcome = self._skip_outcome(market, "buy" if model_side == "YES" else "sell", confidence, skip_msg, risk_plan=risk_plan)
+            outcome = self._skip_outcome(
+                market,
+                "buy" if model_side == "YES" else "sell",
+                confidence,
+                skip_msg,
+                risk_plan=risk_plan,
+                extra_detail=timing_detail,
+            )
             outcome.display.update(quant_detail)
             return outcome
         if risk_plan.notional_size > remaining_market_capacity:
@@ -2291,6 +3862,8 @@ class PolymarketTrader:
                 skip_reason="risk_off",
                 raw_skip_reason=skip_msg,
                 final_size=0.0,
+                **timing_detail,
+                **clob_detail,
             )
             self._log_risk_section(
                 bankroll=current_balance,
@@ -2303,7 +3876,9 @@ class PolymarketTrader:
                 skip_reason=skip_msg,
             )
             self._paper_record_skip(skip_msg)
-            return TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, skip_msg, quant_detail)
+            outcome = TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, skip_msg, quant_detail)
+            self._emit_decision_event(outcome, ticker=ticker)
+            return outcome
 
         if risk_plan.position_size < self.settings.min_shares_per_order:
             skip_msg = f"Min shares: {risk_plan.position_size:.1f} < {self.settings.min_shares_per_order}"
@@ -2313,6 +3888,8 @@ class PolymarketTrader:
                 skip_reason="liquidity_too_low",
                 raw_skip_reason=skip_msg,
                 final_size=0.0,
+                **timing_detail,
+                **clob_detail,
             )
             self._log_risk_section(
                 bankroll=current_balance,
@@ -2325,7 +3902,9 @@ class PolymarketTrader:
                 skip_reason=skip_msg,
             )
             self._paper_record_skip(skip_msg)
-            return TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, skip_msg, quant_detail)
+            outcome = TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, skip_msg, quant_detail)
+            self._emit_decision_event(outcome, ticker=ticker)
+            return outcome
 
         LOGGER.info("[DECISION] %s %s | mode=%s score=%.2f mom=%.3f%% delta_score=%.2f entry=%.4f shares=%.1f cost=$%.4f reason=quant_stack", ticker, model_side, quant_decision, signal.score, signal.momentum_pct, delta.delta_score, entry_price, risk_plan.position_size, risk_plan.notional_size)
         self._log_risk_section(
@@ -2354,6 +3933,8 @@ class PolymarketTrader:
                 skip_reason="risk_off",
                 raw_skip_reason="BALANCE_GUARD: insufficient funds for order",
                 final_size=0.0,
+                **timing_detail,
+                **clob_detail,
             )
             self._log_risk_section(
                 bankroll=current_balance,
@@ -2366,7 +3947,9 @@ class PolymarketTrader:
                 skip_reason="BALANCE_GUARD: insufficient funds for order",
             )
             self._paper_record_skip("BALANCE_GUARD: insufficient funds for order")
-            return TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, "BALANCE_GUARD: insufficient funds for order", quant_detail)
+            outcome = TradeOutcome(market.market_id, market.question, "skip", confidence, risk_plan, None, True, "BALANCE_GUARD: insufficient funds for order", quant_detail)
+            self._emit_decision_event(outcome, ticker=ticker)
+            return outcome
 
         receipt = self._submit_order(
             market_id=clob_token_id,
@@ -2381,7 +3964,7 @@ class PolymarketTrader:
         )
 
         if receipt is not None:
-            self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value})
+            opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value})
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
             self._record_market_entry(market.market_id, ptb_info.epoch_start_ts)
             self._paper_record_trade(risk_plan.notional_size)
@@ -2393,6 +3976,8 @@ class PolymarketTrader:
                 skip_reason="",
                 raw_skip_reason="",
                 final_size=risk_plan.notional_size,
+                **timing_detail,
+                **clob_detail,
             )
             self._record_display_trade(
                 market=ticker,
@@ -2403,9 +3988,31 @@ class PolymarketTrader:
                 mode=quant_decision,
                 status=receipt.status,
             )
+            self._emit_trade_opened_event(
+                market_id=market.market_id,
+                ticker=ticker,
+                token_id=clob_token_id,
+                outcome=model_side,
+                receipt=receipt,
+                risk_plan=risk_plan,
+                entry_price=entry_price,
+                strategy=quant_decision,
+            )
+            self._notify_telegram(
+                "notify_entry",
+                "",
+                market=ticker,
+                side=model_side,
+                price=f"{entry_price:.4f}",
+                size=f"{risk_plan.position_size:.6f}",
+                status=receipt.status,
+                dedup_key=f"entry:{receipt.order_id}",
+            )
             LOGGER.info("[ENTRY] market=%s token=%s outcome=%s action=BUY entry=%.4f size=%.6f cost=%.4f", market.market_id, clob_token_id, model_side, entry_price, risk_plan.position_size, risk_plan.notional_size)
 
-        return TradeOutcome(market_id=market.market_id, question=market.question, decision="buy" if model_side == "YES" else "sell", confidence=confidence, risk_plan=risk_plan, receipt=receipt, skipped=False, skip_reason="", display=quant_detail)
+        outcome = TradeOutcome(market_id=market.market_id, question=market.question, decision="buy" if model_side == "YES" else "sell", confidence=confidence, risk_plan=risk_plan, receipt=receipt, skipped=False, skip_reason="", display=quant_detail)
+        self._emit_decision_event(outcome, ticker=ticker)
+        return outcome
 
     def _analyze_market(self, market: GammaMarket) -> TradeOutcome:
         ticker   = market.market_id.replace("pm-5m-", "").upper()
@@ -2751,10 +4358,11 @@ class PolymarketTrader:
                 signal.score, signal.momentum_pct, edge_pct, ptb_display,
             )
 
-            tg = get_telegram_notifier()
-            if tg:
-                from utils.telegram_reporter import build_trade_alert
-                tg.send_message(build_trade_alert(
+            from utils.telegram_reporter import build_trade_alert
+
+            self._notify_telegram(
+                "notify_entry",
+                build_trade_alert(
                     asset=ticker,
                     signal=signal.side,
                     momentum_pct=signal.momentum_pct,
@@ -2764,7 +4372,10 @@ class PolymarketTrader:
                     entry_price=entry_price,
                     ptb_display=ptb_display,
                     paper=self.settings.paper_trading,
-                ))
+                ),
+                dedup_key=f"entry:{receipt.order_id}",
+                market=ticker,
+            )
 
         return TradeOutcome(
             market_id=market.market_id,
@@ -2787,7 +4398,32 @@ class PolymarketTrader:
         Returns True if balance is sufficient.
         """
         if self.settings.paper_trading:
-            return True  # Paper mode: always allow
+            available = self._paper_available_balance()
+            if available < float(cost_needed):
+                LOGGER.warning(
+                    "[PAPER BALANCE_GUARD] %s BLOCKED -- paper_available_balance $%.2f < cost $%.2f",
+                    ticker,
+                    available,
+                    cost_needed,
+                )
+                self._emit_risk_event(
+                    "paper_balance_guard",
+                    {
+                        "ticker": ticker,
+                        "balance": float(available),
+                        "required": float(cost_needed),
+                        "balance_source": self._balance_source,
+                        "risk_plan_zero_reason": "insufficient_paper_balance",
+                    },
+                )
+                return False
+            LOGGER.info(
+                "[PAPER BALANCE_GUARD] %s OK -- paper_available_balance $%.2f >= cost $%.2f",
+                ticker,
+                available,
+                cost_needed,
+            )
+            return True
 
         try:
             live_balance = self._coerce_cash_balance(self.client.get_usdc_balance())
@@ -2804,15 +4440,28 @@ class PolymarketTrader:
                 "[BALANCE_GUARD] %s BLOCKED â€” balance $%.2f < cost $%.2f | AUTO PAUSE",
                 ticker, live_balance, cost_needed,
             )
-            tg = get_telegram_notifier()
-            if tg:
-                tg.send_message(
-                    f"âš ï¸ *BALANCE GUARD*\n"
+            self._emit_risk_event(
+                "balance_guard",
+                {
+                    "ticker": ticker,
+                    "balance": float(live_balance),
+                    "required": float(cost_needed),
+                    "balance_source": self._balance_source,
+                },
+            )
+            self._notify_telegram(
+                "notify_risk",
+                (
+                    f"BALANCE GUARD\n"
                     f"Blocked order for {ticker}\n"
                     f"Balance: ${live_balance:.2f}\n"
                     f"Required: ${cost_needed:.2f}\n"
                     f"Bot PAUSED until balance is sufficient"
-                )
+                ),
+                dedup_key=f"balance_guard:{ticker}",
+                market=ticker,
+                reason="balance_guard",
+            )
             return False
 
         self._paused_insufficient_funds = False
@@ -2886,6 +4535,24 @@ class PolymarketTrader:
                     mode=str(metadata.get("strategy", "--")),
                     status=receipt.status,
                 )
+                self._emit_trade_closed_event(
+                    position=pos,
+                    reason=reason,
+                    exit_price=price,
+                    size=pos.size,
+                    pnl=pnl,
+                    receipt=receipt,
+                    partial=False,
+                )
+                self._notify_telegram(
+                    "notify_exit",
+                    "",
+                    market=self._ticker_from_market_id(pos.symbol),
+                    reason=reason,
+                    pnl=f"{pnl:+.4f}",
+                    status=receipt.status,
+                    dedup_key=f"exit:{receipt.order_id}:{reason}",
+                )
                 self._partial_tp_taken.discard(pos.position_id)
                 return True
 
@@ -2893,12 +4560,48 @@ class PolymarketTrader:
                 "[FAILED_ORDER] close failed | reason=%s position=%s market=%s token=%s attempt=%d/%d price=%.4f size=%.6f",
                 reason, pos.position_id, pos.symbol, token_id, attempt, attempts, price, pos.size,
             )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "exit_submit_failed",
+                    "reason": reason,
+                    "position_id": pos.position_id,
+                    "market_id": pos.symbol,
+                    "token_id": token_id,
+                    "attempt": attempt,
+                    "attempts": attempts,
+                    "price": float(price),
+                    "size": float(pos.size),
+                },
+            )
             if attempt < attempts:
                 time.sleep(delay)
 
         LOGGER.critical(
             "[CRITICAL_CLOSE_FAILED] position still open after %d attempts | reason=%s position=%s market=%s token=%s",
             attempts, reason, pos.position_id, pos.symbol, token_id,
+        )
+        self._emit_risk_event(
+            "exit_failure",
+            {
+                "reason": reason,
+                "position_id": pos.position_id,
+                "market_id": pos.symbol,
+                "token_id": token_id,
+                "attempts": attempts,
+            },
+        )
+        self._notify_telegram(
+            "notify_critical",
+            (
+                "CRITICAL CLOSE FAILED\n"
+                f"Market: {pos.symbol}\n"
+                f"Position: {pos.position_id}\n"
+                f"Reason: {reason}\n"
+                f"Attempts: {attempts}"
+            ),
+            dedup_key=f"exit_failure:{pos.position_id}:{reason}",
+            reason="exit_failure",
         )
         self._trigger_lockdown("exit_failure")
         return False
@@ -2988,6 +4691,24 @@ class PolymarketTrader:
                     mode=str(metadata.get("strategy", "--")),
                     status=receipt.status,
                 )
+                self._emit_trade_closed_event(
+                    position=pos,
+                    reason=reason,
+                    exit_price=price,
+                    size=sell_size,
+                    pnl=pnl,
+                    receipt=receipt,
+                    partial=True,
+                )
+                self._notify_telegram(
+                    "notify_exit",
+                    "",
+                    market=self._ticker_from_market_id(pos.symbol),
+                    reason=reason,
+                    pnl=f"{pnl:+.4f}",
+                    status=receipt.status,
+                    dedup_key=f"partial_exit:{receipt.order_id}:{reason}",
+                )
                 return True
 
             LOGGER.error(
@@ -3001,6 +4722,20 @@ class PolymarketTrader:
                 price,
                 sell_size,
             )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "reduce_submit_failed",
+                    "reason": reason,
+                    "position_id": pos.position_id,
+                    "market_id": pos.symbol,
+                    "token_id": token_id,
+                    "attempt": attempt,
+                    "attempts": attempts,
+                    "price": float(price),
+                    "size": float(sell_size),
+                },
+            )
             if attempt < attempts:
                 time.sleep(delay)
 
@@ -3011,6 +4746,29 @@ class PolymarketTrader:
             pos.position_id,
             pos.symbol,
             token_id,
+        )
+        self._emit_risk_event(
+            "exit_failure",
+            {
+                "reason": reason,
+                "position_id": pos.position_id,
+                "market_id": pos.symbol,
+                "token_id": token_id,
+                "attempts": attempts,
+                "partial": True,
+            },
+        )
+        self._notify_telegram(
+            "notify_critical",
+            (
+                "CRITICAL REDUCE FAILED\n"
+                f"Market: {pos.symbol}\n"
+                f"Position: {pos.position_id}\n"
+                f"Reason: {reason}\n"
+                f"Attempts: {attempts}"
+            ),
+            dedup_key=f"reduce_failure:{pos.position_id}:{reason}",
+            reason="exit_failure",
         )
         self._trigger_lockdown("exit_failure")
         return False
@@ -3132,14 +4890,27 @@ class PolymarketTrader:
                     "(bid=%.4f fair=%.4f countdown=%ds delta=$%.2f)",
                     ticker, slippage, max_slippage, exit_price, fair_value, countdown, window_delta,
                 )
-                tg = get_telegram_notifier()
-                if tg:
-                    tg.send_message(
-                        f"â³ *PANIC SELL BLOCKED â€” slippage too high*\n"
+                self._emit_risk_event(
+                    "panic_sell_blocked",
+                    {
+                        "ticker": ticker,
+                        "countdown": int(countdown),
+                        "slippage": float(slippage),
+                        "max_slippage": float(max_slippage),
+                    },
+                )
+                self._notify_telegram(
+                    "notify_risk",
+                    (
+                        f"PANIC SELL BLOCKED - slippage too high\n"
                         f"Asset: {ticker} | Countdown: {countdown}s\n"
                         f"Slippage: {slippage:.3f} > max {max_slippage:.3f}\n"
                         f"Holding to settlement (binary outcome)"
-                    )
+                    ),
+                    dedup_key=f"panic_block:{ticker}",
+                    market=ticker,
+                    reason="panic_sell_blocked",
+                )
                 continue  # do NOT sell â€” hold to expiry
 
             # Slippage is acceptable â€” proceed with exit
@@ -3155,15 +4926,19 @@ class PolymarketTrader:
             epoch_ts = epoch_ts - (epoch_ts % 300)
             self._panic_sold_epochs[ticker] = epoch_ts
 
-            tg = get_telegram_notifier()
-            if tg:
-                tg.send_message(
-                    f"ðŸš¨ *PANIC SELL*\n"
+            self._notify_telegram(
+                "notify_exit",
+                (
+                    f"PANIC SELL\n"
                     f"Asset: {ticker} ({pos.side})\n"
                     f"Countdown: {countdown}s | Delta: ${window_delta:.2f}\n"
                     f"Exit: {exit_price:.4f} | Slippage: {slippage:.4f} (OK)\n"
                     f"Auto-pause: next round skipped"
-                )
+                ),
+                dedup_key=f"panic_sell:{ticker}:{epoch_ts}",
+                market=ticker,
+                reason="panic_sell",
+            )
 
     # ------------------------------------------------------------------
     # v3.5: Dynamic Tiered & Quant-Adjusted Stop Loss
@@ -3294,15 +5069,19 @@ class PolymarketTrader:
                     self._paper_apply_exit_cash(current_price * pos.size, pnl)
                     self._paper_update_drawdown()
 
-                tg = get_telegram_notifier()
-                if tg:
-                    tg.send_message(
-                        f"ðŸ›‘ *STOP LOSS HIT*\n"
+                self._notify_telegram(
+                    "notify_exit",
+                    (
+                        f"STOP LOSS HIT\n"
                         f"Asset: {ticker} ({pos.side})\n"
                         f"Loss: {unrealized_loss_pct*100:.1f}% (Limit: {active_sl_pct*100:.0f}%)\n"
                         f"Exit: {current_price:.4f} (Entry: {pos.entry_price:.4f})\n"
                         f"P&L: -${abs(pnl):.4f}"
-                    )
+                    ),
+                    dedup_key=f"stop_loss:{pos.position_id}",
+                    market=ticker,
+                    reason="stop_loss",
+                )
 
     # ------------------------------------------------------------------
     # v3.1: Take Profit + Let Profit Run
@@ -3385,13 +5164,17 @@ class PolymarketTrader:
                 )
                 self._close_position_with_retry(pos, reason="auto_redeem", exit_price=current_price)
 
-                tg = get_telegram_notifier()
-                if tg:
-                    tg.send_message(
-                        f"â™»ï¸ *AUTO-REDEEM (EARLY EXIT)*\n"
+                self._notify_telegram(
+                    "notify_exit",
+                    (
+                        f"AUTO-REDEEM (EARLY EXIT)\n"
                         f"Asset: {ticker}\n"
                         f"Action: Claimed at {current_price:.4f} (Recycled)"
-                    )
+                    ),
+                    dedup_key=f"auto_redeem_exit:{pos.position_id}",
+                    market=ticker,
+                    reason="auto_redeem",
+                )
                 continue
 
             # â”€â”€ Full TP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -3434,13 +5217,17 @@ class PolymarketTrader:
                 )
                 self._close_position_with_retry(pos, reason="take_profit_full", exit_price=current_price)
 
-                tg = get_telegram_notifier()
-                if tg:
-                    tg.send_message(
-                        f"ðŸ’° *TAKE PROFIT (FULL)*\n"
+                self._notify_telegram(
+                    "notify_exit",
+                    (
+                        f"TAKE PROFIT (FULL)\n"
                         f"Asset: {ticker}\n"
                         f"Profit: {unrealized_pct*100:.1f}%"
-                    )
+                    ),
+                    dedup_key=f"tp_full:{pos.position_id}",
+                    market=ticker,
+                    reason="take_profit_full",
+                )
                 continue
 
             # â”€â”€ Partial TP (sell 50%) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -3459,14 +5246,18 @@ class PolymarketTrader:
                 else:
                     continue
 
-                tg = get_telegram_notifier()
-                if tg:
-                    tg.send_message(
-                        f"ðŸ’µ *TAKE PROFIT (PARTIAL 50%)*\n"
+                self._notify_telegram(
+                    "notify_exit",
+                    (
+                        f"TAKE PROFIT (PARTIAL 50%)\n"
                         f"Asset: {ticker}\n"
                         f"Profit: {unrealized_pct*100:.1f}%\n"
                         f"Sold: {half_size:.2f} shares (holding rest)"
-                    )
+                    ),
+                    dedup_key=f"tp_partial:{pos.position_id}",
+                    market=ticker,
+                    reason="take_profit_partial",
+                )
 
                 if unrealized_pct >= pos_tp_full and not bool(metadata.get("tp2_taken")):
                     let_runner_after_partial = (
@@ -3572,6 +5363,20 @@ class PolymarketTrader:
                 side,
                 size,
             )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "order_intent_reject",
+                    "reason": "missing_order_intent",
+                    "token_id": market_id,
+                    "side": side,
+                    "price": float(price),
+                    "size": float(size),
+                    "source_market_id": source_market_id,
+                    "outcome": outcome,
+                    "position_id": position_id,
+                },
+            )
             return False
 
         intent_kind = intent_type if isinstance(intent_type, OrderIntentType) else OrderIntentType(str(intent_type).upper())
@@ -3606,6 +5411,23 @@ class PolymarketTrader:
                 size,
                 decision.reason,
             )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "order_intent_approved",
+                    "intent": intent_kind.value,
+                    "token_id": market_id,
+                    "side": side,
+                    "price": float(price),
+                    "size": float(size),
+                    "source_market_id": source_market_id,
+                    "outcome": outcome,
+                    "position_id": position_id,
+                    "reason": decision.reason,
+                    "tracked_inventory_size": float(tracked_inventory),
+                    "mode": self._runtime_mode(),
+                },
+            )
             return True
 
         LOGGER.error(
@@ -3617,6 +5439,23 @@ class PolymarketTrader:
             position_id or "--",
             size,
             decision.reason,
+        )
+        self._emit_quant_event(
+            "log_execution",
+            {
+                "event": "order_intent_reject",
+                "intent": intent_kind.value,
+                "token_id": market_id,
+                "side": side,
+                "price": float(price),
+                "size": float(size),
+                "source_market_id": source_market_id,
+                "outcome": outcome,
+                "position_id": position_id,
+                "reason": decision.reason,
+                "tracked_inventory_size": float(tracked_inventory),
+                "mode": self._runtime_mode(),
+            },
         )
         self._paper_record_skip(f"order_intent:{decision.reason}")
         return False
@@ -3653,6 +5492,12 @@ class PolymarketTrader:
         ):
             return None
 
+        intent_name = (
+            intent_type.value
+            if isinstance(intent_type, OrderIntentType)
+            else str(intent_type or "")
+        )
+
         # â”€â”€ Tier-based live limit price calculation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         live_limit_price = price  # default: use signal price
         if not self.settings.paper_trading:
@@ -3669,6 +5514,24 @@ class PolymarketTrader:
                         live_limit_price = computed
             except Exception as e:
                 LOGGER.warning("[LIMIT_PRICE] Orderbook unavailable (%s) â€” using signal price %.4f", e, price)
+
+        self._emit_quant_event(
+            "log_execution",
+            {
+                "event": "order_submit_attempt",
+                "intent": intent_name,
+                "token_id": market_id,
+                "source_market_id": source_market_id,
+                "outcome": outcome,
+                "position_id": position_id,
+                "side": side,
+                "signal_price": float(price),
+                "limit_price": float(live_limit_price),
+                "size": float(size),
+                "paper": bool(self.settings.paper_trading),
+                "mode": self._runtime_mode(),
+            },
+        )
 
         if self.settings.paper_trading:
             self.paper_stats.paper_orders_created += 1
@@ -3699,6 +5562,19 @@ class PolymarketTrader:
                 receipt.remaining_size,
             )
             self.paper_stats.paper_fills += 1
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "paper_fill",
+                    "intent": intent_name,
+                    "token_id": market_id,
+                    "source_market_id": source_market_id,
+                    "outcome": outcome,
+                    "position_id": position_id,
+                    "receipt": asdict(receipt),
+                    "mode": self._runtime_mode(),
+                },
+            )
             self._log_order_section(
                 order_type="LIMIT_BUY" if side == BUY else "LIMIT_SELL",
                 size=size,
@@ -3721,6 +5597,19 @@ class PolymarketTrader:
                 price=live_limit_price,
                 status=str(receipt.status or "SUBMITTED").upper(),
             )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "live_order_submitted",
+                    "intent": intent_name,
+                    "token_id": market_id,
+                    "source_market_id": source_market_id,
+                    "outcome": outcome,
+                    "position_id": position_id,
+                    "receipt": asdict(receipt),
+                    "mode": self._runtime_mode(),
+                },
+            )
             self._reconcile_after_order_attempt()
             return receipt
         except Exception:
@@ -3733,6 +5622,21 @@ class PolymarketTrader:
             LOGGER.exception(
                 "[FAILED_ORDER] Order submission failed | market=%s side=%s price=%.4f size=%.6f",
                 market_id, side, live_limit_price, size,
+            )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "order_submit_failed",
+                    "intent": intent_name,
+                    "token_id": market_id,
+                    "source_market_id": source_market_id,
+                    "outcome": outcome,
+                    "position_id": position_id,
+                    "side": side,
+                    "limit_price": float(live_limit_price),
+                    "size": float(size),
+                    "mode": self._runtime_mode(),
+                },
             )
             self._trigger_lockdown("api_order_failure")
             self._reconcile_after_order_attempt()
@@ -3791,14 +5695,16 @@ class PolymarketTrader:
                     total_redeemed, new_balance,
                 )
 
-                # Notify via Telegram
-                tg = get_telegram_notifier()
-                if tg:
-                    tg.send_message(
-                        f"*Auto-Redeem*\n"
+                self._notify_telegram(
+                    "notify_summary",
+                    (
+                        f"Auto-Redeem\n"
                         f"Claimed ${total_redeemed:.4f} from {len(redeemable)} settled position(s)\n"
                         f"New Bankroll: ${new_balance:.4f}"
-                    )
+                    ),
+                    dedup_key="auto_redeem_cycle",
+                    reason="auto_redeem",
+                )
 
         except Exception as e:
             LOGGER.warning("[AUTO_REDEEM] Cycle failed: %s", e)
@@ -3937,6 +5843,15 @@ class PolymarketTrader:
                         cancel_reason="stale_entry_order",
                     )
                     LOGGER.info("[POSITION] state=PENDING_ENTRY side=BUY entry=0 current_price=0 unrealized_pnl=0 action=CANCEL_ENTRY reason=stale_entry_order order_id=%s", order_id)
+                    self._emit_quant_event(
+                        "log_execution",
+                        {
+                            "event": "cancel_order",
+                            "status": "canceled",
+                            "order_id": order_id,
+                            "reason": "stale_entry_order",
+                        },
+                    )
                 except Exception as exc:
                     self._paper_record_cancel("cancel_failed")
                     self._log_order_section(
@@ -3947,6 +5862,16 @@ class PolymarketTrader:
                         cancel_reason="cancel_failed",
                     )
                     LOGGER.warning("[POSITION] state=PENDING_ENTRY side=BUY entry=0 current_price=0 unrealized_pnl=0 action=cancel_failed order_id=%s reason=%s", order_id, exc)
+                    self._emit_quant_event(
+                        "log_execution",
+                        {
+                            "event": "cancel_order",
+                            "status": "failed",
+                            "order_id": order_id,
+                            "reason": "cancel_failed",
+                            "error": str(exc),
+                        },
+                    )
 
     # ------------------------------------------------------------------
     # Public entry point
@@ -3990,18 +5915,31 @@ class PolymarketTrader:
                 "[SETTLEMENT] %s %s | won=%s pnl=%.4f | is_above_ptb=%s",
                 outcome, symbol, won, signed_pnl, is_above_ptb,
             )
+            self._emit_trade_closed_event(
+                position=pos,
+                reason="settlement",
+                exit_price=1.0 if won else 0.0,
+                size=pos.size,
+                pnl=signed_pnl,
+                receipt=None,
+                partial=False,
+            )
             
-            # Send Telegram settlement alert
-            tg = get_telegram_notifier()
-            if tg:
-                from utils.telegram_reporter import build_settlement_alert
-                tg.send_message(build_settlement_alert(
+            from utils.telegram_reporter import build_settlement_alert
+
+            self._notify_telegram(
+                "notify_exit",
+                build_settlement_alert(
                     asset=symbol,
                     won=won,
                     pnl=pnl,
                     bankroll=self._risk_mgr._balance,
                     paper=self.settings.paper_trading,
-                ))
+                ),
+                dedup_key=f"settlement:{pos.position_id}",
+                market=symbol,
+                reason="settlement",
+            )
 
     def run_single_cycle(self, top_n: int = 3) -> list[TradeOutcome]:
         """Run one complete analysis-and-execution cycle.
@@ -4009,6 +5947,7 @@ class PolymarketTrader:
         Returns one TradeOutcome per selected market.
         """
         self._cycle_count += 1
+        self._begin_cycle_timing()
         if self._paper_enabled():
             self.paper_stats.cycles_scanned += 1
         # â”€â”€ Auto-Redeem: claim any settled winnings before trading â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -4017,8 +5956,12 @@ class PolymarketTrader:
         self._ensure_connected()
         report = self.reconcile_live_positions()
         self._update_bankroll_state(fetch_live_cash=not self.settings.paper_trading)
+        self._maybe_emit_risk_state_event(reason="cycle_start")
+        self._maybe_emit_system_health(reason="cycle_start")
         if self._block_on_reconciliation_if_needed(report):
+            self._maybe_emit_system_health(force=True, reason="reconciliation_block")
             self._maybe_log_cycle_summary()
+            self._finish_cycle_timing(reason="cycle_end_reconciliation_block", force=True)
             return []
         self._cancel_stale_entry_orders_if_needed()
         self._check_stalled_positions()
@@ -4040,10 +5983,12 @@ class PolymarketTrader:
                     else:
                         LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds ($%.2f) -- waiting for deposit/claim", live_balance)
                         self._maybe_log_cycle_summary()
+                        self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                         return []
                 except Exception:
                     LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds -- waiting for deposit/claim")
                     self._maybe_log_cycle_summary()
+                    self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                     return []
         if self._paused_insufficient_funds and not self.settings.paper_trading:
             # Check if funds have been deposited/claimed to auto-resume
@@ -4055,38 +6000,58 @@ class PolymarketTrader:
                 else:
                     LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds ($%.2f) â€” waiting for deposit/claim", live_balance)
                     self._maybe_log_cycle_summary()
+                    self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                     return []
             except Exception:
                 LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds â€” waiting for deposit/claim")
                 self._maybe_log_cycle_summary()
+                self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                 return []
 
         ok, pause_reason = self._risk_mgr.can_trade()
         if not ok:
             LOGGER.warning("[CYCLE SKIP] %s", pause_reason)
-            tg = get_telegram_notifier()
-            if tg:
-                from utils.telegram_reporter import (
-                    build_loss_cluster_alert, build_daily_drawdown_alert,
-                )
-                from utils.risk_manager import LOSS_CLUSTER_PAUSE_SECONDS, HARD_DAILY_DRAWDOWN
-                balance = self._risk_mgr._balance
-                if "LOSS CLUSTER" in pause_reason or "consecutive" in pause_reason.lower():
-                    tg.send_message(build_loss_cluster_alert(
+            self._emit_risk_event(
+                "cycle_risk_pause",
+                {
+                    "reason": pause_reason,
+                    "balance": float(getattr(self._risk_mgr, "_balance", 0.0) or 0.0),
+                },
+            )
+            from utils.telegram_reporter import (
+                build_loss_cluster_alert, build_daily_drawdown_alert,
+            )
+            from utils.risk_manager import LOSS_CLUSTER_PAUSE_SECONDS, HARD_DAILY_DRAWDOWN
+
+            balance = self._risk_mgr._balance
+            if "LOSS CLUSTER" in pause_reason or "consecutive" in pause_reason.lower():
+                self._notify_telegram(
+                    "notify_risk",
+                    build_loss_cluster_alert(
                         streak=3,
                         pause_minutes=LOSS_CLUSTER_PAUSE_SECONDS // 60,
                         bankroll=balance,
-                    ))
-                elif "DRAWDOWN" in pause_reason:
-                    import re as _re
-                    m = _re.search(r"([\d.]+)%", pause_reason)
-                    dd = float(m.group(1)) if m else HARD_DAILY_DRAWDOWN * 100
-                    tg.send_message(build_daily_drawdown_alert(
+                    ),
+                    dedup_key="loss_cluster",
+                    reason="loss_cluster",
+                )
+            elif "DRAWDOWN" in pause_reason:
+                import re as _re
+                m = _re.search(r"([\d.]+)%", pause_reason)
+                dd = float(m.group(1)) if m else HARD_DAILY_DRAWDOWN * 100
+                self._notify_telegram(
+                    "notify_risk",
+                    build_daily_drawdown_alert(
                         dd_pct=dd,
                         limit_pct=HARD_DAILY_DRAWDOWN * 100,
                         bankroll=balance,
-                    ))
+                    ),
+                    dedup_key="daily_drawdown",
+                    reason="daily_drawdown",
+            )
+            self._maybe_emit_system_health(force=True, reason="cycle_risk_pause")
             self._maybe_log_cycle_summary()
+            self._finish_cycle_timing(reason="cycle_end_risk_pause", force=True)
             return []
 
         markets = self._select_markets(top_n=top_n)
@@ -4094,6 +6059,8 @@ class PolymarketTrader:
         if not markets:
             self._maybe_log_cycle_summary()
             LOGGER.warning("No markets available â€” cycle skipped.")
+            self._maybe_emit_system_health(force=True, reason="no_markets")
+            self._finish_cycle_timing(reason="cycle_end_no_markets", force=True)
             return []
 
         outcomes: list[TradeOutcome] = []
@@ -4117,8 +6084,17 @@ class PolymarketTrader:
                     )
             except Exception:
                 LOGGER.exception("Unexpected error analyzing market_id=%s", market.market_id)
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "market_analysis_exception",
+                        "market_id": market.market_id,
+                        "mode": self._runtime_mode(),
+                    },
+                )
 
         self.update_dashboard_status(0)
+        self._finish_cycle_timing(reason="cycle_end")
         self._maybe_log_cycle_summary()
         return outcomes
 
@@ -4128,6 +6104,11 @@ class PolymarketTrader:
             status = {
                 "timestamp": datetime.now().isoformat(),
                 "account_balance": float(self.settings.account_balance),
+                "balance_source": self._balance_source,
+                "paper_balance_source": self._paper_balance_source_setting(),
+                "execution_mode": "PAPER ONLY" if self.settings.paper_trading else "LIVE",
+                "wallet_reference_balance": self._wallet_reference_balance,
+                "wallet_reference_error": self._wallet_reference_error,
                 "open_positions": [asdict(p) for p in self.tracker.open_positions()],
                 "is_paper_trading": self.settings.paper_trading,
                 "current_countdown": countdown,

@@ -135,6 +135,7 @@ class RiskPlan:
     position_size: float        # number of shares
     notional_size: float        # cost to enter = shares x entry_price
     stop_loss_pct: float
+    diagnostics: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass

@@ -1,12 +1,12 @@
 from __future__ import annotations
-
+import time
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from polymarket.arbitrage import ArbitrageScanner
 from polymarket.client import OrderReceipt, OrderbookSnapshot, PolymarketClient
-from polymarket.gamma_fetcher import GammaMarket
+from polymarket.gamma_fetcher import ActiveFiveMinMarket, GammaMarket
 from polymarket.order_intent import OrderIntentType
 from polymarket.trader import PolymarketTrader, TradeOutcome
 from utils.risk_manager import RiskPlan
@@ -266,6 +266,119 @@ class PolymarketTraderPaperModeTests(unittest.TestCase):
         self.assertEqual(selected[0].market_id, "pm-5m-btc")
         self.assertEqual(trader._real_token_ids["BTC"], ("yes-token", "no-token"))
         self.assertEqual(trader._real_token_ids["ETH"], ("yes-token", "no-token"))
+
+    def test_select_markets_reuses_current_token_cache_without_gamma(self) -> None:
+        trader = self._make_trader()
+        now_ts = int(time.time())
+        epoch = trader._current_five_min_epoch(now_ts)
+        trader._real_token_ids["BTC"] = ("yes-token", "no-token")
+        trader._market_token_meta["BTC"] = {
+            "slug": "btc-updown-5m",
+            "condition_id": "condition-1",
+            "yes_token_id": "yes-token",
+            "no_token_id": "no-token",
+            "epoch_start_ts": epoch,
+            "epoch_end_ts": epoch + 300,
+        }
+
+        with patch.object(trader, "_market_preload_lead_seconds", return_value=0), \
+             patch.object(trader.gamma, "get_current_5min_market", side_effect=AssertionError("gamma called")):
+            selected = trader._select_markets(top_n=1)
+
+        self.assertEqual(selected[0].market_id, "pm-5m-btc")
+        self.assertEqual(trader._real_token_ids["BTC"], ("yes-token", "no-token"))
+
+    def test_refresh_token_ids_promotes_preloaded_current_epoch(self) -> None:
+        trader = self._make_trader()
+        epoch = trader._current_five_min_epoch()
+        key = ("BTC", epoch)
+        trader._preloaded_token_ids[key] = ("yes-next", "no-next")
+        trader._preloaded_token_meta[key] = {
+            "slug": "btc-updown-5m-next",
+            "condition_id": "condition-next",
+            "yes_token_id": "yes-next",
+            "no_token_id": "no-next",
+            "epoch_start_ts": epoch,
+            "epoch_end_ts": epoch + 300,
+        }
+
+        with patch.object(trader.gamma, "get_current_5min_market", side_effect=AssertionError("gamma called")):
+            trader._refresh_token_ids(("BTC",))
+
+        self.assertEqual(trader._real_token_ids["BTC"], ("yes-next", "no-next"))
+        self.assertEqual(trader._market_token_meta["BTC"]["source"], "preloaded_current")
+        self.assertEqual(trader._market_readiness_metrics["token_preload_hits"], 1)
+
+    def test_refresh_token_ids_preloads_next_window_near_cutoff(self) -> None:
+        trader = self._make_trader()
+        now_ts = int(time.time())
+        epoch = trader._current_five_min_epoch(now_ts)
+        active = ActiveFiveMinMarket(
+            asset="BTC",
+            slug="btc-updown-5m-current",
+            condition_id="condition-current",
+            question="BTC current?",
+            epoch_start_ts=epoch,
+            epoch_end_ts=now_ts + 100,
+            seconds_remaining=100,
+            yes_token_id="yes-current",
+            no_token_id="no-current",
+            yes_price=0.51,
+            liquidity=1000.0,
+            market_id="market-current",
+        )
+        next_market = ActiveFiveMinMarket(
+            asset="BTC",
+            slug="btc-updown-5m-next",
+            condition_id="condition-next",
+            question="BTC next?",
+            epoch_start_ts=epoch + 300,
+            epoch_end_ts=epoch + 600,
+            seconds_remaining=400,
+            yes_token_id="yes-next",
+            no_token_id="no-next",
+            yes_price=0.50,
+            liquidity=1000.0,
+            market_id="market-next",
+        )
+
+        with patch.object(trader.gamma, "get_current_5min_market", return_value=active), \
+             patch.object(trader.gamma, "get_next_5min_market", return_value=next_market):
+            trader._refresh_token_ids(("BTC",))
+
+        self.assertEqual(trader._real_token_ids["BTC"], ("yes-current", "no-current"))
+        self.assertEqual(trader._preloaded_token_ids[("BTC", epoch + 300)], ("yes-next", "no-next"))
+
+    def test_refresh_token_ids_warms_orderbooks_once_when_connected(self) -> None:
+        trader = self._make_trader()
+        trader._connected = True
+        trader.quant_events = None
+        epoch = trader._current_five_min_epoch()
+        active = ActiveFiveMinMarket(
+            asset="BTC",
+            slug="btc-updown-5m-current",
+            condition_id="condition-current",
+            question="BTC current?",
+            epoch_start_ts=epoch,
+            epoch_end_ts=epoch + 300,
+            seconds_remaining=250,
+            yes_token_id="yes-current",
+            no_token_id="no-current",
+            yes_price=0.51,
+            liquidity=1000.0,
+            market_id="market-current",
+        )
+        trader.client.get_orderbook = MagicMock(side_effect=[
+            OrderbookSnapshot("yes-current", 0.49, 0.50, 0.01, 10.0, 11.0, age_seconds=0.05),
+            OrderbookSnapshot("no-current", 0.50, 0.51, 0.01, 10.0, 11.0, age_seconds=0.06),
+        ])
+
+        with patch.object(trader.gamma, "get_current_5min_market", return_value=active):
+            trader._refresh_token_ids(("BTC",))
+
+        self.assertEqual(trader.client.get_orderbook.call_count, 2)
+        self.assertEqual(trader._last_orderbook_age_ms["BTC"], 60)
+        self.assertEqual(trader._market_readiness_metrics["token_preload_warmups"], 1)
 
 
 class TradeOutcomeTests(unittest.TestCase):

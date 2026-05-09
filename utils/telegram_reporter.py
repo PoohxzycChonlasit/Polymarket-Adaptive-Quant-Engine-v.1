@@ -10,7 +10,6 @@ telegram_reporter.py
 from __future__ import annotations
 
 import argparse
-import csv
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -20,15 +19,13 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from utils.scan_log_loader import DEFAULT_SCAN_LOG_ROOT, load_scan_rows
+
 
 # ── Scan log helpers ──────────────────────────────────────────────────────────
 
-def _load_scan_csv(date_str: str) -> list[dict]:
-    path = Path("runtime/realtime_logs") / date_str / "scan_log.csv"
-    if not path.exists():
-        return []
-    with open(path, encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+def _load_scan_csv(date_str: str, root: str | Path = DEFAULT_SCAN_LOG_ROOT) -> list[dict]:
+    return load_scan_rows(date_str, root=root)
 
 
 def _compute_stats(rows: list[dict]) -> dict:
@@ -178,6 +175,11 @@ def build_startup_alert(
     bankroll: float,
     paper: bool,
     wallet: str = "",
+    balance_source: str = "",
+    wallet_balance: float | None = None,
+    paper_cash: float | None = None,
+    execution_mode: str = "",
+    wallet_reference_error: str = "",
     gas_note: str = "Check MATIC before live orders",
     snipe_min_edge: float = 0.0,
     floor: float = 5.0,
@@ -187,6 +189,17 @@ def build_startup_alert(
     mode_tag = "🟢 LIVE" if not paper else "🟡 PAPER"
     status_tag = "🟢 CONNECTED" if status == "CONNECTED" else "🔴 CONNECTION FAILED"
     wallet_short = f"{wallet[:6]}...{wallet[-4:]}" if wallet else "N/A"
+    source_label = balance_source or ("paper_virtual" if paper else "clob_collateral")
+    execution_label = execution_mode or ("PAPER ONLY" if paper else "LIVE")
+    wallet_line = ""
+    if wallet_balance is not None:
+        wallet_line = f"  â€¢ Wallet Bankroll <code>${float(wallet_balance):.4f} USDC</code>  REFERENCE ONLY\n"
+    paper_cash_line = ""
+    if paper and paper_cash is not None:
+        paper_cash_line = f"  â€¢ Paper Cash  <code>${float(paper_cash):.4f} USDC</code>\n"
+    fallback_line = ""
+    if wallet_reference_error:
+        fallback_line = "  â€¢ Warning     <code>Wallet bankroll unavailable, fallback to paper_virtual</code>\n"
     return (
         f"🚀 <b>PolyTrade Bot Started</b>  {mode_tag}\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -198,11 +211,17 @@ def build_startup_alert(
         f"\n"
         f"💼 <b>Capital</b>\n"
         f"  • Bankroll    <code>${bankroll:.4f} USDC</code>\n"
+        f"  • Source      <code>{escape(source_label)}</code>\n"
+        f"{wallet_line}"
+        f"{paper_cash_line}"
+        f"{fallback_line}"
         f"  • Floor Stop  <code>${floor:.2f}</code>\n"
         f"  • Daily DD    <code>{daily_dd_limit * 100:.0f}% hard stop</code>\n"
         f"  • Open Slots  <code>{max_open_positions}</code>\n"
         f"\n"
         f"🎯 <b>Execution Watch</b>\n"
+        f"  • Execution   <code>{escape(execution_label)}</code>\n"
+        f"  • Live Orders <code>{'NO LIVE ORDERS' if paper else 'ENABLED'}</code>\n"
         f"  • Snipe Edge  <code>{snipe_min_edge * 100:.1f}%+</code>\n"
         f"  • Wallet      <code>{wallet_short}</code>\n"
         f"  • Gas         <code>{escape(gas_note)}</code>\n"

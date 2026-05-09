@@ -1,86 +1,80 @@
 # 05_MARKET_DATA_AGENT
 
-## Mission
-Make sure the bot trades only when market data is fresh, aligned, and usable.
+Status: partially implemented in market discovery/orderbook/feed paths; this markdown is a reusable Codex skill prompt.
 
-## Primary Question
-Is the market data trustworthy right now?
+## 1. Purpose
 
-## When To Use
-Before signal generation and before every order decision.
+Verify that BTC/ETH 5-minute Polymarket markets, token IDs, orderbooks, spreads, liquidity, oracle/PTB, and Binance feeds are fresh and usable before signals or orders rely on them.
 
-## Inputs
-- Polymarket orderbook feed status
-- User/order feed status
-- Reference price feed status
-- Server time / local time skew
-- Best bid / ask
-- Spread
-- Top-of-book depth
-- Recent trades
-- Market metadata
-- Token IDs
-- Window start/end time
+## 2. When To Use This Agent
 
-## Outputs
-- market_quality: GOOD / DEGRADED / HALT
-- reason codes
-- normalized market snapshot
-- warning flags
+Use for `SKIP no_orderbook`, stale books, token mismatch, Gamma discovery, market rollover, orderbook display, oracle/PTB feed issues, or claims that orderbook works.
 
-## Data Quality Rules
-Return HALT if:
-- Market WebSocket stale > 2s
-- Reference price stale > 2s
-- User WebSocket stale while position open
-- Clock skew > 250ms
-- Orderbook crossed/invalid
-- Token ID mismatch
-- Market window unknown
-- Spread/depth abnormal
+## 3. Files This Agent Should Read First
 
-## Reason Codes
-```text
-data_good
-market_ws_stale
-user_ws_stale
-reference_feed_stale
-clock_skew
-invalid_orderbook
-token_id_mismatch
-unknown_window
-spread_abnormal
-depth_insufficient
-market_rollover_uncertain
+- `CURRENT_PROJECT_STATUS.md`
+- `docs/PROJECT_STRUCTURE.md`
+- `docs/KNOWN_ISSUES.md`
+- `polymarket/trader.py`
+- `polymarket/client.py`
+- `polymarket/gamma_fetcher.py`
+- `polymarket/market_feed.py`
+- `polymarket/oracle_price_feed.py`
+- `polymarket/virtual_ptb.py`
+- `utils/display.py`
+- Relevant verify/orderbook tests
+
+## 4. Safe Boundaries / Forbidden Changes
+
+Do not change strategy thresholds, risk sizing, wallet behavior, execution, live flags, or order submission while fixing market data. Do not claim orderbook works unless terminal/logs show active `BID`, `ASK`, and `SPREAD`. Do not replace the market scanner architecture without a scoped refactor.
+
+## 5. Inputs It Expects
+
+- Market slug, condition ID, YES/NO token IDs
+- Best bid/ask/spread/depth
+- Orderbook age and response shape
+- Oracle/PTB price and feed age
+- Market window open/close and seconds left
+- Terminal or verify output
+- Relevant `[TOKEN_FLOW]`, `[ORDERBOOK_FLOW]`, `[ORDERBOOK_RESPONSE]`, `[ORDERBOOK_BEST]` logs
+
+## 6. Outputs It Should Produce
+
+- Market quality: good, degraded, halt, or unknown
+- Data blocker reason
+- Normalized snapshot fields
+- Whether strategy/risk can evaluate
+- Logs/tests needed to prove the fix
+
+## 7. Tests It Should Request
+
+```bash
+pytest -q tests/test_verify_mode.py
+pytest -q tests/test_polymarket_trader.py
+pytest -q tests/test_terminal_dashboard_display.py
 ```
 
-## Prompt Template
+Use `python main.py --mode verify` only when a read-only integration check is explicitly useful.
+
+## 8. Failure Modes It Should Watch For
+
+- Empty, stale, crossed, or malformed orderbooks
+- YES/NO token ID mismatch
+- Active market window unknown or rolled over
+- Display path not using same orderbook values as signal/risk path
+- `SKIP no_orderbook` caused by data regression
+- Excess raw scan/debug/orderbook details routed to Telegram
+
+## 9. Current Project-Specific Notes
+
+The old `no_orderbook` blocker is fixed but must be monitored. Current status says verify showed BTC/ETH orderbooks with non-empty `BID`, `ASK`, and `SPREAD`. Market snapshots are logged by QuantEventLogger under `runtime/quant_data/market_snapshots/`. Orderbook/debug raw data should stay in logs/JSONL/CSV, not spam Telegram.
+
+## 10. Example Codex Prompt Snippet
+
 ```text
 Act as Market Data Agent.
-
-Current market state:
-- market:
-- token_id_yes:
-- token_id_no:
-- best_bid:
-- best_ask:
-- spread:
-- top_depth:
-- market_ws_lag_ms:
-- user_ws_lag_ms:
-- reference_feed_lag_ms:
-- server_clock_skew_ms:
-- secs_left:
-
-Classify market quality: GOOD / DEGRADED / HALT.
-Explain whether the trading system may continue.
+Read polymarket/trader.py, polymarket/client.py, polymarket/gamma_fetcher.py, oracle/feed files, and current status docs.
+Issue: [orderbook/feed/token/window problem].
+Classify data quality, identify root cause, list exact files to inspect/change, and request tests.
+Do not change strategy, risk, wallet, or execution behavior.
 ```
-
-## Code Contract
-```python
-class MarketDataAgent:
-    def evaluate(self, snapshot: MarketSnapshot) -> MarketQualityDecision:
-        ...
-```
-
-SignalAgent and RiskAgent must consume this decision.

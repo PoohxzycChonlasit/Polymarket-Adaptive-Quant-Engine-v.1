@@ -1,104 +1,83 @@
 # 04_EXIT_EXECUTION_AGENT
 
-## Mission
-Ensure positions are exited intentionally, not accidentally held into settlement.
+Status: partially implemented in exit/execution paths; this markdown is a reusable Codex skill prompt.
 
-## Primary Question
-Should we hold, reduce, cancel quotes, force exit, or emergency flatten?
+## 1. Purpose
 
-## When To Use
-Continuously while a position is open.
+Ensure entries, exits, cancellations, forced exits, and paper/live separation are handled intentionally. Open positions must be managed before new entries.
 
-## Inputs
-- Position side
-- Entry price
-- Mark price / best bid/ask
-- Position size
-- Time left in window
-- Spread
-- Liquidity
-- Market feed lag
-- User feed lag
-- Unrealized PnL
-- Current order status
-- Fill status
+## 2. When To Use This Agent
 
-## Outputs
-- action: hold / reduce / cancel_quotes / force_exit / emergency_flatten
-- reason code
-- order type recommendation
-- urgency
+Use for TP/SL, runner logic, forced/panic exits, order submission, cancel/retry behavior, settlement, paper receipts/fills, live execution review, or OrderIntent changes.
 
-## Exit Rules
-Starting policy:
+## 3. Files This Agent Should Read First
+
+- `CURRENT_PROJECT_STATUS.md`
+- `PROJECT_RULES.md`
+- `config/settings.py`
+- `polymarket/trader.py`
+- `polymarket/client.py`
+- `polymarket/order_intent.py`
+- `polymarket/order_manager.py`
+- `polymarket/position_manager.py`
+- `utils/position_tracker.py`
+- `tests/test_exit_agent.py`
+- `tests/test_execution_risk_controls.py`
+- `tests/test_paper_mode.py`
+
+## 4. Safe Boundaries / Forbidden Changes
+
+Do not enable live trading, sign orders, approve allowance, cancel live orders, redeem, or submit live orders from paper mode. Do not bypass OrderIntent. ENTRY must be BUY. NO entry must buy NO tokens, not sell YES without inventory. EXIT SELL is allowed only for tracked inventory. Do not change risk sizing or strategy logic while fixing execution docs or plumbing.
+
+## 5. Inputs It Expects
+
+- Mode and paper/live execution flags
+- Candidate or existing position
+- Tracked inventory and reconciliation report
+- Time remaining in market
+- Best bid/ask/spread/liquidity
+- Unrealized PnL and exit thresholds
+- Open orders, fill/cancel status, retry failures
+
+## 6. Outputs It Should Produce
+
+- Action: hold, enter, reduce, close, cancel, force exit, emergency flatten, or block
+- Reason code and urgency
+- Required guard checks
+- Expected JSONL/CSV/log events
+- Tests required before completion
+
+## 7. Tests It Should Request
+
+```bash
+pytest -q tests/test_exit_agent.py
+pytest -q tests/test_execution_risk_controls.py
+pytest -q tests/test_paper_mode.py
+pytest -q tests/test_polymarket_trader.py
+```
+
+For shutdown or feed lifecycle changes, also request `pytest -q tests/test_runtime_shutdown.py`.
+
+## 8. Failure Modes It Should Watch For
+
+- Paper path submitting/canceling/redeeming live
+- Entry after cutoff
+- Forced exit missed near close
+- Panic/forced exit without tracked inventory
+- Partial hedge or unknown state
+- Cancel assumed successful without confirmation
+- Live order placement/fill/cancel/reconcile claimed without evidence
+
+## 9. Current Project-Specific Notes
+
+Paper mode returns synthetic receipts and updates local paper state. Live execution code exists but is not validated end to end. Latest status still lists `missing_allowance`; no live-ready claim is allowed. Clean shutdown hooks now exist for trader-owned feeds and loggers. QuantEventLogger records execution/order intent events under `runtime/quant_data/execution_log/`.
+
+## 10. Example Codex Prompt Snippet
+
 ```text
-No new entry after T-45s
-Cancel passive entry quotes at T-35s
-Force exit starts at T-25s
-Re-sweep residual position at T-15s
-Emergency flatten at T-10s if still holding
+Act as Execution Agent.
+Read polymarket/trader.py, polymarket/client.py, polymarket/order_intent.py, polymarket/order_manager.py, utils/position_tracker.py, and status docs.
+Task: [entry/exit/cancel/paper execution issue].
+Return safe action logic, guard checks, Do Not Touch items, and tests.
+Do not enable live trading or alter risk/strategy sizing.
 ```
-
-## Profit/Loss Rules
-```text
-TAKE_PROFIT = 0.04 to 0.06
-STOP_LOSS = 0.08
-FORCE_EXIT_SECS = 25
-```
-
-## Hard Exit Conditions
-Exit if:
-- pnl_pct >= take_profit
-- pnl_pct <= -stop_loss
-- secs_left <= force_exit_secs
-- feed stale while position open
-- position mismatch detected
-- spread widens near close
-- kill switch active
-
-## Reason Codes
-```text
-hold
-take_profit
-stop_loss
-force_exit_before_close
-emergency_flatten_stale_feed
-cancel_quotes_near_close
-position_mismatch
-kill_switch_flatten
-spread_widening
-```
-
-## Prompt Template
-```text
-Act as Exit Execution Agent.
-
-Open position:
-- side:
-- entry_price:
-- mark_price:
-- size:
-- secs_left:
-- spread:
-- market_feed_lag_ms:
-- user_feed_lag_ms:
-- current_orders:
-- unrealized_pnl_pct:
-
-Decide exit action.
-Return:
-1. action
-2. reason
-3. urgency
-4. order type
-5. failure risk
-```
-
-## Code Contract
-```python
-class ExitAgent:
-    def evaluate(self, position_state: PositionState) -> ExitDecision:
-        ...
-```
-
-Every open position must be evaluated by ExitAgent on every loop tick.

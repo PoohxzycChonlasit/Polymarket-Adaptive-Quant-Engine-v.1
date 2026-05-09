@@ -20,6 +20,17 @@ def test_market_table_shows_quant_scalper_fields() -> None:
         spread=0.03,
         p_yes=0.61,
         p_no=0.39,
+        model_p_yes=0.61,
+        model_p_no=0.39,
+        yes_bid=0.52,
+        yes_ask=0.55,
+        no_bid=0.45,
+        no_ask=0.48,
+        yes_mid=0.535,
+        no_mid=0.465,
+        clob_source="CLOB orderbook",
+        orderbook_age_ms=250,
+        token_id="yes-token",
         ev=0.028,
         min_ev=0.020,
         delta_regime="NORMAL",
@@ -31,12 +42,48 @@ def test_market_table_shows_quant_scalper_fields() -> None:
 
     text = _render_text(display._market_table())
 
-    assert "P_Y" in text
+    assert "Model_Y" in text
+    assert "P_Y" not in text
+    assert "YES_BID" in text
+    assert "NO_ASK" in text
     assert "EV" in text
     assert "+0.028" in text
     assert "0.020" in text
     assert "NORM x0.80" in text
     assert "SKIP ev_below_threshold" in text
+
+
+def test_market_card_separates_clob_prices_from_model_probability() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_market(
+        "BTC",
+        yes_bid=0.10,
+        yes_ask=0.11,
+        no_bid=0.89,
+        no_ask=0.90,
+        yes_mid=0.105,
+        no_mid=0.895,
+        spread=0.01,
+        model_p_yes=0.61,
+        model_p_no=0.39,
+        confidence=0.71,
+        clob_source="CLOB orderbook",
+        orderbook_age_ms=120,
+        token_id="yes-token",
+        decision="SKIP",
+    )
+
+    text = _render_text(display._market_card("BTC", display._resolve_layout()))
+
+    assert "YES Bid" in text
+    assert "YES Ask" in text
+    assert "NO Bid" in text
+    assert "NO Ask" in text
+    assert "YES Mid" in text
+    assert "NO Mid" in text
+    assert "Source CLOB orderbook" in text
+    assert "Model_Y" in text
+    assert "Model_N" in text
 
 
 def test_portfolio_panel_shows_realtime_bankroll_state() -> None:
@@ -180,3 +227,74 @@ def test_dashboard_bottom_status_line_contains_required_health_fields() -> None:
     assert "RISK NORMAL" in footer
     assert "LATENCY" in footer
     assert "LOGGING SAFE" in footer
+
+
+def test_portfolio_panel_wallet_reference_paper_shows_expected_labels() -> None:
+    """wallet_reference_paper portfolio must show Wallet Bankroll, Paper Sizing Balance,
+    the source label, and NO LIVE ORDERS."""
+    display = PolymarketRealtimeDisplay()
+    display.update_portfolio({
+        "starting_bankroll": 250.0,
+        "cash": 250.0,
+        "open_value": 0.0,
+        "realized_pnl": 0.0,
+        "unrealized_pnl": 0.0,
+        "equity": 250.0,
+        "sizing_bankroll": 250.0,
+        "paper_cash": 250.0,
+        "paper_sizing_balance": 250.0,
+        "bankroll_tier": "SMALL",
+        "daily_drawdown": 0.0,
+        "risk_off": False,
+        "open_count": 0,
+        "max_open_positions": 3,
+        "total_exposure_pct": 0.0,
+        "balance_source": "wallet_reference_paper",
+        "execution_mode": "PAPER ONLY",
+        "no_live_orders": True,
+        "wallet_reference_balance": 250.0,
+        "wallet_reference_label": "REAL WALLET BALANCE (REFERENCE ONLY)",
+        "wallet_reference_error": "",
+    })
+
+    text = _render_text(display._portfolio_panel())
+
+    assert "Wallet Bankroll" in text
+    assert "$250.00" in text
+    assert "wallet_reference_paper" in text
+    assert "NO LIVE ORDERS" in text
+
+
+def test_portfolio_panel_paper_virtual_fallback_shows_fallback_warning() -> None:
+    """When wallet_reference fetch fails and falls back to paper_virtual the panel must
+    show the fallback warning and still show NO LIVE ORDERS."""
+    display = PolymarketRealtimeDisplay()
+    display.update_portfolio({
+        "starting_bankroll": 100.0,
+        "cash": 100.0,
+        "open_value": 0.0,
+        "realized_pnl": 0.0,
+        "unrealized_pnl": 0.0,
+        "equity": 100.0,
+        "sizing_bankroll": 100.0,
+        "paper_cash": 100.0,
+        "paper_sizing_balance": 100.0,
+        "bankroll_tier": "SEED_TEST",
+        "daily_drawdown": 0.0,
+        "risk_off": False,
+        "open_count": 0,
+        "max_open_positions": 3,
+        "total_exposure_pct": 0.0,
+        "balance_source": "paper_virtual",
+        "execution_mode": "PAPER ONLY",
+        "no_live_orders": True,
+        "wallet_reference_balance": None,
+        "wallet_reference_label": "",
+        "wallet_reference_error": "connect unavailable",
+    })
+
+    text = _render_text(display._portfolio_panel())
+
+    assert "NO LIVE ORDERS" in text
+    # Fallback warning line must appear when wallet_reference_error is set
+    assert "wallet bankroll unavailable" in text.lower() or "fallback" in text.lower()

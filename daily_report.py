@@ -25,15 +25,12 @@ from rich.panel import Panel
 from rich.columns import Columns
 from rich.rule import Rule
 from collections import defaultdict
-import csv
+
+from utils.scan_log_loader import DEFAULT_SCAN_LOG_ROOT, load_scan_rows
 
 
-def load_scan_csv(date: str) -> list[dict]:
-    csv_path = Path("runtime/realtime_logs") / date / "scan_log.csv"
-    if not csv_path.exists():
-        return []
-    with open(csv_path, encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+def load_scan_csv(date: str, root: str | Path = DEFAULT_SCAN_LOG_ROOT) -> list[dict]:
+    return load_scan_rows(date, root=root)
 
 
 def print_day_report(summary: dict, scans: list[dict], console: Console):
@@ -312,6 +309,14 @@ def run_scheduler():
     from datetime import datetime, time as dtime
     import threading
     from utils.logger import get_telegram_notifier
+    global _SCHEDULER_THREAD
+    global _SCHEDULER_STOP
+    if "_SCHEDULER_STOP" not in globals():
+        _SCHEDULER_STOP = threading.Event()
+        _SCHEDULER_THREAD = None
+    if _SCHEDULER_THREAD and _SCHEDULER_THREAD.is_alive():
+        return _SCHEDULER_THREAD
+    _SCHEDULER_STOP.clear()
 
     def job():
         LOGGER = __import__("logging").getLogger("daily_report")
@@ -344,12 +349,28 @@ def run_scheduler():
     def loop():
         import schedule
         schedule.every().day.at("00:05").do(job)
-        while True:
+        while not _SCHEDULER_STOP.is_set():
             schedule.run_pending()
-            time.sleep(60)
+            _SCHEDULER_STOP.wait(60)
 
     t = threading.Thread(target=loop, daemon=True, name="DailyReportScheduler")
     t.start()
+    _SCHEDULER_THREAD = t
+    return t
+
+
+def stop_scheduler(join_timeout: float = 5.0) -> None:
+    import threading
+    global _SCHEDULER_THREAD
+    global _SCHEDULER_STOP
+    if "_SCHEDULER_STOP" not in globals():
+        _SCHEDULER_STOP = threading.Event()
+        _SCHEDULER_THREAD = None
+        return
+    _SCHEDULER_STOP.set()
+    if _SCHEDULER_THREAD and _SCHEDULER_THREAD.is_alive():
+        _SCHEDULER_THREAD.join(timeout=join_timeout)
+    _SCHEDULER_THREAD = None
 
 
 def main():

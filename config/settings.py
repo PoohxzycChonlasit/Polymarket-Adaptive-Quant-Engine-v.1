@@ -59,11 +59,29 @@ class Settings(BaseSettings):
     verbose_model_logs: bool = True
     verbose_risk_logs: bool = True
     summary_interval_cycles: int = 5
+    quant_data_enabled: bool = True
+    quant_data_dir: str = "runtime/quant_data"
+    quant_event_schema_version: str = "1.0"
+    quant_log_retention_days: int = 90
+    market_snapshot_retention_days: int = 14
+    trade_journal_retention_days: int = 3650
+    compress_old_quant_logs: bool = True
     paper_trading: bool = True
     dry_run: bool = True
+    paper_balance_source: str = "virtual"
+    paper_starting_balance_source: Literal["config", "live_wallet_reference"] = "config"
+    paper_wallet_sync_on_start: bool = True
+    paper_wallet_sync_mode: Literal["initialize_only"] = "initialize_only"
+    paper_min_balance_fallback: float = 0.0
+    wallet_reference_refresh_seconds: int = 300
+    show_wallet_reference_balance: bool = True
+    telegram_enabled: str = "true"
+    live_trading_enabled: str = "false"
 
     telegram_bot_token: SecretStr = Field(default=SecretStr(""))
     telegram_chat_id: SecretStr = Field(default=SecretStr(""))
+    telegram_alert_cooldown_seconds: int = 300
+    telegram_summary_interval_minutes: int = 60
 
     ai_timeout_seconds: int = 8
 
@@ -136,6 +154,14 @@ class Settings(BaseSettings):
     # ── v3.2: Advanced Trading Optimization ───────────────────────────────────
     entry_min_seconds_remaining: int = 30   # Legacy minimum; execution_entry_cutoff_seconds is the hard safety gate
     execution_entry_cutoff_seconds: int = 90
+    adaptive_entry_cutoff_enabled: bool = True
+    adaptive_entry_cutoff_seconds: int = 60
+    adaptive_entry_hard_block_seconds: int = 60
+    adaptive_entry_max_orderbook_age_ms: int = 1000
+    adaptive_entry_max_oracle_age_ms: int = 5000
+    adaptive_entry_max_decision_latency_ms: int = 2000
+    adaptive_entry_max_cycle_duration_ms: int = 2500
+    adaptive_entry_max_spread: float = 0.06
     execution_force_exit_seconds: int = 60
     exit_agent_entry_cutoff_seconds: int = 45
     exit_agent_cancel_entries_seconds: int = 35
@@ -219,6 +245,29 @@ class Settings(BaseSettings):
             raise ValueError(f"log_level={v!r} must be one of {sorted(valid)}")
         return upper
 
+    @field_validator("paper_balance_source")
+    @classmethod
+    def validate_paper_balance_source(cls, v: str) -> str:
+        normalized = str(v or "virtual").strip().lower()
+        return normalized if normalized in {"virtual", "wallet_reference"} else "virtual"
+
+    @field_validator("paper_starting_balance_source")
+    @classmethod
+    def validate_paper_starting_balance_source(cls, v: str) -> str:
+        normalized = str(v or "config").strip().lower()
+        aliases = {
+            "virtual": "config",
+            "paper_virtual": "config",
+            "wallet_reference": "live_wallet_reference",
+        }
+        normalized = aliases.get(normalized, normalized)
+        return normalized if normalized in {"config", "live_wallet_reference"} else "config"
+
+    @field_validator("paper_min_balance_fallback")
+    @classmethod
+    def validate_paper_min_balance_fallback(cls, v: float) -> float:
+        return max(float(v), 0.0)
+
     @field_validator("account_balance")
     @classmethod
     def validate_account_balance(cls, v: float) -> float:
@@ -251,6 +300,7 @@ class Settings(BaseSettings):
         "execution_take_profit_pct",
         "execution_stop_loss_pct",
         "max_risk_per_market",
+        "adaptive_entry_max_spread",
         "arb_min_net_edge",
         "arb_min_profit_usdc",
         "arb_live_min_profit_usdc",
@@ -267,6 +317,12 @@ class Settings(BaseSettings):
 
     @field_validator(
         "execution_entry_cutoff_seconds",
+        "adaptive_entry_cutoff_seconds",
+        "adaptive_entry_hard_block_seconds",
+        "adaptive_entry_max_orderbook_age_ms",
+        "adaptive_entry_max_oracle_age_ms",
+        "adaptive_entry_max_decision_latency_ms",
+        "adaptive_entry_max_cycle_duration_ms",
         "execution_force_exit_seconds",
         "exit_agent_entry_cutoff_seconds",
         "exit_agent_cancel_entries_seconds",
@@ -280,6 +336,7 @@ class Settings(BaseSettings):
         "arb_force_cancel_seconds_remaining",
         "arb_max_active_markets_small_bankroll",
         "summary_interval_cycles",
+        "wallet_reference_refresh_seconds",
     )
     @classmethod
     def validate_positive_int(cls, v: int) -> int:

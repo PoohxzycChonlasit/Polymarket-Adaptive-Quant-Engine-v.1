@@ -7,6 +7,7 @@ from datetime import datetime
 import os
 import sys
 import threading
+import atexit
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -25,6 +26,7 @@ class TelegramNotifier:
         self.chat_id = chat_id
         self._url = f"https://api.telegram.org/bot{token}/sendMessage"
         self._executor = __import__("concurrent.futures").futures.ThreadPoolExecutor(max_workers=1)
+        self._closed = False
         
         # Robust session with retries
         self._session = requests.Session()
@@ -34,9 +36,12 @@ class TelegramNotifier:
         self._session.mount('https://', adapter)
 
     def send_message(self, text: str) -> None:
-        if not self.token or not self.chat_id:
+        if self._closed or not self.token or not self.chat_id:
             return
-        self._executor.submit(self._send_blocking, text)
+        try:
+            self._executor.submit(self._send_blocking, text)
+        except RuntimeError:
+            pass
 
     def _send_blocking(self, text: str) -> None:
         try:
@@ -49,6 +54,23 @@ class TelegramNotifier:
             resp.raise_for_status()
         except Exception:
             pass  # intentionally silent — Telegram failures must never block the trading loop
+
+    def close(self, *, wait: bool = False) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self._executor.shutdown(wait=wait, cancel_futures=True)
+        except Exception:
+            pass
+        try:
+            self._session.close()
+        except Exception:
+            pass
+
+    def shutdown(self) -> None:
+        self.close(wait=False)
+
 
 class TelegramLogHandler(logging.Handler):
     """Logging handler that routes ERROR and CRITICAL logs to Telegram."""
@@ -65,9 +87,29 @@ class TelegramLogHandler(logging.Handler):
             self.handleError(record)
 
 _TELEGRAM_NOTIFIER: TelegramNotifier | None = None
+_TELEGRAM_ATEXIT_REGISTERED = False
 
 def get_telegram_notifier() -> TelegramNotifier | None:
     return _TELEGRAM_NOTIFIER
+
+
+def shutdown_telegram_notifier() -> None:
+    global _TELEGRAM_NOTIFIER
+    notifier = _TELEGRAM_NOTIFIER
+    _TELEGRAM_NOTIFIER = None
+    if notifier is not None:
+        notifier.close(wait=False)
+
+
+class SafeStreamHandler(logging.StreamHandler):
+    """Stream handler that suppresses closed-stream errors during shutdown."""
+
+    def handleError(self, record: logging.LogRecord) -> None:
+        exc = sys.exc_info()[1]
+        text = str(exc).lower() if exc is not None else ""
+        if isinstance(exc, (ValueError, OSError, RuntimeError)) and "closed" in text:
+            return
+        super().handleError(record)
 
 class ColoredEmojiFormatter(logging.Formatter):
     """Custom formatter to add emojis and colors to terminal output."""
@@ -157,7 +199,7 @@ def setup_logger(log_level: str = "INFO", log_dir: str = "logs") -> logging.Logg
         fmt="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%H:%M:%S",
     )
-    console_handler = logging.StreamHandler()
+    console_handler = SafeStreamHandler()
     console_handler.setFormatter(console_formatter)
 
     handlers: list[logging.Handler] = [console_handler]
@@ -191,11 +233,28 @@ def setup_logger(log_level: str = "INFO", log_dir: str = "logs") -> logging.Logg
     from config.settings import get_settings
     settings = get_settings()
     global _TELEGRAM_NOTIFIER
-    if settings.telegram_bot_token.get_secret_value() and settings.telegram_chat_id.get_secret_value():
+    global _TELEGRAM_ATEXIT_REGISTERED
+    if _TELEGRAM_NOTIFIER is not None:
+        shutdown_telegram_notifier()
+    telegram_enabled = str(getattr(settings, "telegram_enabled", "true") or "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+        "enabled",
+    }
+    if (
+        telegram_enabled
+        and settings.telegram_bot_token.get_secret_value()
+        and settings.telegram_chat_id.get_secret_value()
+    ):
         _TELEGRAM_NOTIFIER = TelegramNotifier(
             token=settings.telegram_bot_token.get_secret_value(),
             chat_id=settings.telegram_chat_id.get_secret_value()
         )
+        if not _TELEGRAM_ATEXIT_REGISTERED:
+            atexit.register(shutdown_telegram_notifier)
+            _TELEGRAM_ATEXIT_REGISTERED = True
         tg_handler = TelegramLogHandler(notifier=_TELEGRAM_NOTIFIER)
         tg_handler.setLevel(logging.ERROR)
         # Use a simpler format for Telegram

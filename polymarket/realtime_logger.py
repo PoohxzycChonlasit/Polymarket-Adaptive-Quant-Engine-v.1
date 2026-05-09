@@ -32,6 +32,23 @@ class ScanRecord:
     skip_reason: str
     daily_pnl_pct: float
     bankroll: float
+    raw_skip_reason: str = ""
+    normalized_skip_reason: str = ""
+    seconds_remaining: int = 0
+    entry_cutoff_seconds: int = 0
+    time_bucket: str = ""
+    epoch_start: str = ""
+    market_start_time: str = ""
+    market_end_time: str = ""
+    token_id: str = ""
+    outcome: str = ""
+    source_module: str = ""
+    market_slug: str = ""
+    condition_id: str = ""
+    orderbook_age_ms: int = 0
+    oracle_age_ms: int = 0
+    market_feed_age_ms: int = 0
+    token_mapping_warning: str = ""
 
 
 @dataclass
@@ -76,6 +93,7 @@ class RealtimeLogger:
         self._csv_writer: csv.writer | None = None
         self._csv_file = None
         self._csv_disabled = False
+        self._closed = False
         self._run_id = f"{datetime.now():%Y%m%d_%H%M%S}_{os.getpid()}"
 
         try:
@@ -109,7 +127,7 @@ class RealtimeLogger:
         return True
 
     def _open_csv(self, date_str: str) -> None:
-        if self._csv_disabled:
+        if self._csv_disabled or self._closed:
             return
         day_dir = LOG_ROOT / date_str
         try:
@@ -124,6 +142,11 @@ class RealtimeLogger:
                     "decision", "confidence", "edge", "momentum_pct", "score",
                     "signal", "position_size", "order_id", "order_status",
                     "skip_reason", "daily_pnl_pct", "bankroll",
+                    "raw_skip_reason", "normalized_skip_reason",
+                    "seconds_remaining", "entry_cutoff_seconds", "time_bucket",
+                    "epoch_start", "market_start_time", "market_end_time",
+                    "token_id", "outcome", "source_module", "market_slug", "condition_id",
+                    "orderbook_age_ms", "oracle_age_ms", "market_feed_age_ms", "token_mapping_warning",
                 ])
                 self._safe_flush_csv("header_flush")
         except PermissionError as exc:
@@ -187,6 +210,8 @@ class RealtimeLogger:
             raise
 
     def log_scan(self, record: ScanRecord) -> None:
+        if self._closed:
+            return
         now_utc = datetime.now(timezone.utc)
         date_str = now_utc.strftime("%Y-%m-%d")
         self._check_new_day(date_str)
@@ -209,6 +234,23 @@ class RealtimeLogger:
                 record.signal, f"{record.position_size:.6f}",
                 record.order_id, record.order_status, record.skip_reason,
                 f"{record.daily_pnl_pct:.4f}", f"{record.bankroll:.4f}",
+                record.raw_skip_reason,
+                record.normalized_skip_reason,
+                str(record.seconds_remaining),
+                str(record.entry_cutoff_seconds),
+                record.time_bucket,
+                record.epoch_start,
+                record.market_start_time,
+                record.market_end_time,
+                record.token_id,
+                record.outcome,
+                record.source_module,
+                record.market_slug,
+                record.condition_id,
+                str(record.orderbook_age_ms),
+                str(record.oracle_age_ms),
+                str(record.market_feed_age_ms),
+                record.token_mapping_warning,
             ])
         except PermissionError as exc:
             self._disable_csv_logger("write_scan", exc)
@@ -290,8 +332,27 @@ class RealtimeLogger:
         )
 
     def force_save_summary(self) -> None:
+        self.close(save_summary=True)
+
+    def close(self, *, save_summary: bool = False) -> None:
+        if self._closed and not save_summary:
+            return
         self._close_csv()
-        self._save_daily_summary()
+        if save_summary:
+            self._save_daily_summary()
+        self._closed = True
+
+    def shutdown(self) -> None:
+        self.close(save_summary=True)
+
+    def stop(self) -> None:
+        self.close(save_summary=True)
+
+    def __enter__(self) -> "RealtimeLogger":
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        self.close(save_summary=True)
 
     @staticmethod
     def load_all_summaries() -> list[dict]:

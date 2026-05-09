@@ -98,12 +98,8 @@ class PolymarketOracleFeed:
     _WS_URL = "wss://ws-live-data.polymarket.com"
 
     def __init__(self, refresh_interval: float = 5.0, timeout: float = 8.0) -> None:
-        transport = httpx.HTTPTransport(retries=3)
-        self._http = httpx.Client(
-            transport=transport,
-            timeout=httpx.Timeout(timeout),
-            headers={"User-Agent": "PolyTradeBot/1.0"},
-        )
+        self._timeout = timeout
+        self._http = self._make_http_client(timeout)
         self._refresh_interval = refresh_interval
         self._state: dict[str, OraclePriceState] = {
             asset: OraclePriceState(asset=asset)
@@ -113,38 +109,101 @@ class PolymarketOracleFeed:
         self._thread: threading.Thread | None = None
         self._price_thread: threading.Thread | None = None
         self._ws_thread: threading.Thread | None = None
+        self._start_stop_lock = threading.RLock()
         self._stop_event = threading.Event()
         # token_id → asset name, populated as Gamma markets are discovered
         self._token_map: dict[str, str] = {}
         self._ws_connected: bool = False
         self._current_epoch: int = 0
+        self._ws_loop_ref: asyncio.AbstractEventLoop | None = None
+        self._ws_connection = None
+        self._atexit_registered = False
+
+    @staticmethod
+    def _make_http_client(timeout: float) -> httpx.Client:
+        transport = httpx.HTTPTransport(retries=3)
+        return httpx.Client(
+            transport=transport,
+            timeout=httpx.Timeout(timeout),
+            headers={"User-Agent": "PolyTradeBot/1.0"},
+        )
+
+    def _safe_log(self, level: int, message: str, *args: object) -> None:
+        try:
+            LOGGER.log(level, message, *args)
+        except (ValueError, OSError, RuntimeError):
+            pass
 
     # ── Public API ──────────────────────────────────────────────────────────
 
     def start(self) -> None:
         """Start background threads: price polling, epoch/PTB loop, WebSocket."""
-        if self._thread and self._thread.is_alive():
-            return
-        self._stop_event.clear()
-        self._thread = threading.Thread(target=self._run_loop, daemon=True, name="OracleFeed")
-        self._thread.start()
-        self._price_thread = threading.Thread(target=self._price_loop, daemon=True, name="OraclePriceFeed")
-        self._price_thread.start()
-        self._ws_thread = threading.Thread(target=self._ws_run, daemon=True, name="OracleWSFeed")
-        self._ws_thread.start()
-        atexit.register(self.stop)
-        LOGGER.info("[OracleFeed] Started (price=1s, epoch=parallel, WebSocket)")
+        with self._start_stop_lock:
+            if self.is_running():
+                return
+            if getattr(self._http, "is_closed", False):
+                self._http = self._make_http_client(self._timeout)
+            self._stop_event.clear()
+            self._thread = threading.Thread(target=self._run_loop, daemon=True, name="OracleFeed")
+            self._thread.start()
+            self._price_thread = threading.Thread(target=self._price_loop, daemon=True, name="OraclePriceFeed")
+            self._price_thread.start()
+            self._ws_thread = threading.Thread(target=self._ws_run, daemon=True, name="OracleWSFeed")
+            self._ws_thread.start()
+            if not self._atexit_registered:
+                atexit.register(self.stop)
+                self._atexit_registered = True
+            self._safe_log(logging.INFO, "[OracleFeed] Started (price=1s, epoch=parallel, WebSocket)")
 
-    def stop(self) -> None:
-        self._stop_event.set()
-        if self._thread:
-            self._thread.join(timeout=5)
-        if self._price_thread:
-            self._price_thread.join(timeout=3)
-        if self._ws_thread:
-            self._ws_thread.join(timeout=3)
-        self._http.close()
-        LOGGER.info("[OracleFeed] Stopped.")
+    def stop(self, join_timeout: float = 5.0) -> None:
+        """Stop all oracle background work and wait briefly for clean exit."""
+        with self._start_stop_lock:
+            self._stop_event.set()
+            self._signal_ws_shutdown()
+            for thread in self._background_threads():
+                if thread and thread.is_alive() and thread is not threading.current_thread():
+                    thread.join(timeout=join_timeout)
+            self._ws_connected = False
+            try:
+                self._http.close()
+            except Exception:
+                pass
+            if self._atexit_registered:
+                try:
+                    atexit.unregister(self.stop)
+                except Exception:
+                    pass
+                self._atexit_registered = False
+            self._safe_log(logging.INFO, "[OracleFeed] Stopped.")
+
+    def close(self) -> None:
+        self.stop()
+
+    def shutdown(self) -> None:
+        self.stop()
+
+    def is_running(self) -> bool:
+        return any(thread is not None and thread.is_alive() for thread in self._background_threads())
+
+    def _background_threads(self) -> tuple[threading.Thread | None, threading.Thread | None, threading.Thread | None]:
+        return (self._thread, self._price_thread, self._ws_thread)
+
+    def _signal_ws_shutdown(self) -> None:
+        loop = self._ws_loop_ref
+        ws = self._ws_connection
+        if loop is None or ws is None or loop.is_closed():
+            return
+
+        def _close_ws() -> None:
+            try:
+                asyncio.create_task(ws.close())
+            except Exception:
+                pass
+
+        try:
+            loop.call_soon_threadsafe(_close_ws)
+        except Exception:
+            pass
 
     @property
     def ws_connected(self) -> bool:
@@ -537,12 +596,17 @@ class PolymarketOracleFeed:
         try:
             asyncio.run(self._ws_loop())
         except Exception as exc:
-            LOGGER.debug("[OracleWSFeed] Thread exited: %s", exc)
+            if not self._stop_event.is_set():
+                self._safe_log(logging.DEBUG, "[OracleWSFeed] Thread exited: %s", exc)
+        finally:
+            self._ws_connected = False
+            self._ws_loop_ref = None
 
     async def _ws_loop(self) -> None:
         """Connect to Polymarket RTDS WebSocket and update YES prices for binary tokens."""
         import websockets  # lazy import — optional dependency
 
+        self._ws_loop_ref = asyncio.get_running_loop()
         delay = 5.0
         while not self._stop_event.is_set():
             try:
@@ -552,16 +616,17 @@ class PolymarketOracleFeed:
                     ping_timeout=10,
                     additional_headers={"User-Agent": "PolyTradeBot/1.0"},
                 ) as ws:
+                    self._ws_connection = ws
                     self._ws_connected = True
                     delay = 5.0
-                    LOGGER.info("[OracleWSFeed] ✅ Connected to %s", self._WS_URL)
+                    self._safe_log(logging.INFO, "[OracleWSFeed] Connected to %s", self._WS_URL)
 
                     # Subscribe to known token IDs
                     with self._lock:
                         token_ids = list(self._token_map.keys())
                     if token_ids:
                         await ws.send(json.dumps({"type": "subscribe", "markets": token_ids}))
-                        LOGGER.info("[OracleWSFeed] Subscribed to %d tokens", len(token_ids))
+                        self._safe_log(logging.INFO, "[OracleWSFeed] Subscribed to %d tokens", len(token_ids))
 
                     async for raw in ws:
                         if self._stop_event.is_set():
@@ -569,26 +634,35 @@ class PolymarketOracleFeed:
                         try:
                             self._handle_ws_message(json.loads(raw))
                         except Exception as exc:
-                            LOGGER.debug("[OracleWSFeed] Message parse error: %s", exc)
+                            self._safe_log(logging.DEBUG, "[OracleWSFeed] Message parse error: %s", exc)
+                    self._ws_connection = None
 
             except websockets.exceptions.ConnectionClosed as exc:
                 self._ws_connected = False
-                LOGGER.debug("[OracleWSFeed] Connection closed unexpectedly: %s", exc)
-                for _ in range(int(delay)):
-                    if self._stop_event.is_set():
-                        return
-                    await asyncio.sleep(1)
+                self._ws_connection = None
+                if self._stop_event.is_set():
+                    return
+                self._safe_log(logging.DEBUG, "[OracleWSFeed] Connection closed unexpectedly: %s", exc)
+                if await self._sleep_or_stop(delay):
+                    return
                 delay = min(delay * 2, 60.0)
             except Exception as exc:
                 self._ws_connected = False
-                LOGGER.error("[OracleWSFeed] Exception (%s) — retry in %.0fs", exc, delay)
-                for _ in range(int(delay)):
-                    if self._stop_event.is_set():
-                        return
-                    await asyncio.sleep(1)
+                self._ws_connection = None
+                if self._stop_event.is_set():
+                    return
+                self._safe_log(logging.ERROR, "[OracleWSFeed] Exception (%s) - retry in %.0fs", exc, delay)
+                if await self._sleep_or_stop(delay):
+                    return
                 delay = min(delay * 2, 60.0)
 
         self._ws_connected = False
+
+    async def _sleep_or_stop(self, seconds: float) -> bool:
+        deadline = time.monotonic() + max(0.0, seconds)
+        while not self._stop_event.is_set() and time.monotonic() < deadline:
+            await asyncio.sleep(min(0.25, max(0.0, deadline - time.monotonic())))
+        return self._stop_event.is_set()
 
     def _handle_ws_message(self, msg: dict) -> None:
         """Parse a Polymarket RTDS message and update YES price for the matching asset."""
@@ -605,7 +679,7 @@ class PolymarketOracleFeed:
                 asset = self._token_map.get(market_id)
                 if asset and asset in self._state and self._state[asset].market:
                     self._state[asset].market.yes_price = price  # type: ignore[union-attr]
-                    LOGGER.debug("[OracleWSFeed] %s YES price → %.4f", asset, price)
+                    self._safe_log(logging.DEBUG, "[OracleWSFeed] %s YES price -> %.4f", asset, price)
         except (ValueError, TypeError):
             pass
 

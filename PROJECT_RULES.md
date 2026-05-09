@@ -1,231 +1,176 @@
-# PolyTrade Bot - Project Rules
+# PROJECT_RULES.md
 
-> Last synced: 2026-05-08.
-> These rules describe the current implementation and safety boundaries. They do not certify live readiness.
+# File Reading Rules
 
-## 1. Project Identity
+- NEVER scan the entire repository unless explicitly requested.
+- ALWAYS read markdown/docs first before code edits.
+- ONLY inspect files directly related to the current task.
+- Prefer targeted inspection over recursive analysis.
+  Do NOT inspect by default:
+- runtime/
+- logs/
+- reports/
+- parquet/
+- archives/
+- snapshots/
+- generated files
+  unless explicitly debugging those areas.
 
-- Project: PolyTrade Bot / Polymarket 5M Binary BTC-ETH Quant Scalper.
-- Language: Python 3.11+.
-- Primary market: Polymarket BTC/ETH 5-minute binary prediction markets.
-- Current operating posture: paper-first with real market/orderbook data and simulated execution.
-- Live status: blocked until allowance, live order placement, fill/cancel, and reconciliation are proven.
+---
 
-## 2. Canonical Command Rules
+# Token Efficiency Rules
 
-Safe default:
+Minimize token/context usage.
+Prefer:
 
-```bash
-python main.py
-```
+- minimal diffs
+- targeted edits
+- focused tests
+- specific module inspection
+  Avoid:
+- broad grep searches
+- repository-wide analysis
+- unrelated tests
+- historical runtime data
 
-Explicit paper:
+---
 
-```bash
-python main.py --mode paper --interval 60
-```
+# Architecture Rules
 
-Explicit live:
+The project is:
 
-```bash
-python main.py --mode live --interval 60
-```
+- websocket-first
+- event-driven
+- quant-oriented
+- risk-first
+- paper-safe by default
+  REST APIs are fallback only.
+  Never poll REST orderbooks every second across markets.
+  Use websocket cache as primary market state source.
 
-Live must run `verify` preflight first and must remain blocked if readiness fails.
+---
 
-## 3. Architecture Rules
+# Runtime Safety
 
-- `main.py` is the top-level CLI dispatcher.
-- `polymarket/trader.py` is the canonical Polymarket trade coordinator.
-- `utils/risk_manager.py` is the canonical hard risk policy for the Polymarket path.
-- `hft/risk_manager.py` is HFT-only unless a dedicated unification task is opened.
-- Risk logic must not move into signal logic.
-- Exit logic must not be mixed into entry signal generation.
-- Position truth must come from tracked inventory and reconciliation, not assumptions.
-- Runtime files are generated state, not source of truth.
-- No AI/LLM API calls are allowed inside the realtime trading loop.
+Do not:
 
-## 4. Documentation Rules
+- bypass order intent validation
+- bypass stale data protection
+- remove risk gates
+- disable execution protections
+- merge paper/live logic
+  without explicit approval.
 
-- Before new feature phases, sync docs if project status has drifted.
-- `CURRENT_PROJECT_STATUS.md` is the single source of truth for current bot state.
-- `docs/PROJECT_STRUCTURE.md` is the source of truth for runtime/data flow.
-- `docs/KNOWN_ISSUES.md` tracks bugs, technical debt, and unfinished systems.
-- `docs/OBSERVABILITY_PLAN.md` tracks logging/alerting design and gaps.
-- Do not describe planned systems as implemented.
-- Clearly label implemented, partially implemented, planned, experimental, and disabled systems.
+---
 
-## 5. Paper Mode Rules
+# Logging Rules
 
-Paper mode must:
+Use:
 
-- Be the default runtime.
-- Use real Polymarket market data.
-- Use real BTC/ETH orderbooks.
-- Use real spread/liquidity.
-- Simulate fills locally.
-- Use virtual starting balance only.
-- Keep live wallet fully isolated.
-- Never send live orders.
-- Never sign transactions.
-- Never approve allowance.
-- Never require allowance.
-- Never touch wallet collateral.
+- compressed logs
+- sampled snapshots
+- event-driven logging
+- log rotation
+  Do NOT:
+- log full orderbooks every second
+- store raw websocket streams indefinitely
+- create unbounded log files
 
-Paper mode logs should include:
+---
 
-- `[PAPER ORDER]`
-- `[PAPER FILL]`
-- `[PAPER EXIT]`
-- `[PAPER PNL]`
-- paper session summary
+# Logging Budget
 
-## 6. Live Mode Rules
+Target:
 
-Live mode requires:
+- <150MB/day compressed logs
+- no unbounded runtime files
+- sampled snapshots only
 
-- Explicit `--mode live`.
-- Passing verify preflight.
-- Valid wallet/API credentials.
-- Real CLOB collateral balance source.
-- Confirmed allowance.
-- Risk floor and drawdown checks.
-- Clean reconciliation.
-- Order intent validation.
-- Confirmed order placement, fill, cancel, and reconciliation cycle before any live-ready claim.
+---
 
-Do not bypass `missing_allowance`.
+# VPS Constraints
 
-## 7. Order Pipeline Rules
+Target environment:
 
-Every ENTRY order must pass:
+- Vultr VPS
+- ~5GB disk
+- 24/7 runtime
+  Implementations must:
+- minimize disk usage
+- support compressed logs
+- support retention cleanup
+- avoid memory-heavy runtime behavior
 
-```text
-Signal / EV
-  -> RiskPlan
-  -> PositionSizing
-  -> Risk Approval
-  -> Reconciliation Gate
-  -> Order Intent Guard
-  -> _submit_order()
-```
+---
 
-Every EXIT order must pass:
+# Runtime Cadence
 
-```text
-Tracked inventory
-  -> ExitAgent / TP / SL / forced exit
-  -> Order Intent Guard
-  -> _submit_order()
-```
+Decision loop target:
 
-Hard rules:
+- 1s
+  Snapshot sampling:
+- 5s
+  Market discovery:
+- 15s
+  Full orderbook logging:
+- event-only
 
-- Strategy modules must not submit orders directly.
-- ENTRY must be BUY.
-- NO entry is BUY on NO token, not SELL without inventory.
-- SELL is allowed only for tracked existing inventory.
-- LOCKDOWN blocks entries but allows exit/management.
-- Paper mode enforces the same guards.
+---
 
-## 8. Risk Rules
+# Paper vs Live
 
-Never bypass:
+Paper mode:
 
-- Floor balance.
-- Single-trade cap.
-- Daily drawdown checks.
-- Reconciliation gate.
-- Unknown-state guards.
-- Bankroll rank lock / hysteresis.
-- Risk Mode Ladder.
-- ExitAgent.
-- OrderIntent validation.
+- never submits live orders
+- never spends real funds
+- may read live wallet balance ONCE at startup as reference only
+  Live mode:
+- requires explicit enablement
+- requires readiness validation
 
-Risk Mode Ladder:
+---
 
-- NORMAL: normal locked-tier sizing.
-- DEFENSIVE: reduced sizing after loss/drawdown triggers.
-- MICRO_RECOVERY: very small sizing after deeper drawdown/loss streak.
-- LOCKDOWN: no new entries; manage/exit existing positions only.
+# Agent Workflow
 
-## 9. Strategy Change Rules
+Before editing:
 
-- Do not change strategy logic during docs, cleanup, logging, UI, or CI tasks.
-- Any signal change must update both `polymarket/signal.py` and `polymarket/backtester_5m.py`.
-- Any signal change requires a backtest before promotion.
-- Do not loosen risk rules to force paper trades.
-- If all trades skip, inspect skip reasons first.
+1. Read CODEX_START_HERE.md
+2. Read PROJECT_RULES.md
+3. Read CURRENT_PROJECT_STATUS.md
+4. Read docs/PROJECT_STRUCTURE.md
+5. Read docs/KNOWN_ISSUES.md
+6. Read MASTER_AGENT_ROUTER.md when role guidance is needed
+   Then:
 
-## 10. Logging And Observability Rules
+- inspect only relevant files
+- avoid repository-wide scans
+- avoid runtime/log/generated files
+- keep task-specific prompts in the conversation instead of creating new root `.md` prompt files
 
-Implemented:
+---
 
-- Per-run app logs in `logs/`.
-- Per-run scan CSV in `runtime/realtime_logs/YYYY-MM-DD/`.
-- Windows file-lock resilience for app log and realtime CSV logging.
-- Terminal UI V2 rolling log panel.
-- Optional Telegram notifier and Telegram error handler.
+# Relevant File Selection
 
-Current gaps:
+Before editing:
 
-- No JSONL event log yet.
-- No central Telegram cooldown/dedup.
-- Daily report and Telegram daily summary readers still expect fixed `scan_log.csv`.
-- Retention/archival strategy is planned, not implemented.
+- explain why each inspected file is necessary
+- explain which files are intentionally ignored
+- avoid recursive module exploration
 
-Logging failures must not crash paper mode. Fix logging in `utils/logger.py` or `polymarket/realtime_logger.py`; do not change trading logic to handle log file locks.
+---
 
-## 11. Telegram Rules
+# Development Workflow
 
-- Telegram must never block the trading loop.
-- Telegram failures should not trigger order/risk changes.
-- Do not rely on daily Telegram summaries until per-run CSV reader drift is fixed.
-- Add cooldown/dedup before increasing alert volume.
+Before editing:
 
-## 12. Testing Rules
-
-Use targeted tests for scoped work.
-
-Important suites:
-
-```bash
-pytest -q tests/test_paper_mode.py
-pytest -q tests/test_execution_risk_controls.py
-pytest -q tests/test_exit_agent.py
-pytest -q tests/test_risk_modes.py
-pytest -q tests/test_bankroll_tiers.py
-pytest -q tests/test_logging_resilience.py
-pytest -q tests/test_terminal_dashboard_display.py
-pytest -q tests/test_verify_mode.py
-```
-
-Full suite:
-
-```bash
-python -m pytest tests/ -q
-```
-
-Tests must mock external APIs unless explicitly running a controlled integration/verify task.
-
-## 13. Forbidden Modifications Without Explicit Approval
-
-- Editing `.env` secrets.
-- Switching default runtime away from paper.
-- Increasing live trade size.
-- Bypassing allowance.
-- Bypassing risk or reconciliation.
-- Rebuilding the project from scratch.
-- Deleting runtime logs, trade logs, backtest results, or config.
-- Moving strategy research records during unrelated cleanup.
-- Promoting HFT path to live.
-
-## 14. Violation Handling
-
-If a safety rule appears to block progress:
-
-1. Stop and document the blocker.
-2. Add/update `CURRENT_PROJECT_STATUS.md`.
-3. Add/update `docs/KNOWN_ISSUES.md`.
-4. Add tests for any proposed fix.
-5. Do not bypass the rule unless the user explicitly approves the live-risk impact.
+1. Read markdown/docs first
+2. Identify relevant files only
+3. Ignore unrelated modules
+4. Explain intended changes
+5. Make minimal diffs
+   After editing:
+6. Summarize modified files
+7. Summarize behavior changes
+8. Summarize tests added
+9. Summarize untouched areas
+10. Summarize token-saving decisions

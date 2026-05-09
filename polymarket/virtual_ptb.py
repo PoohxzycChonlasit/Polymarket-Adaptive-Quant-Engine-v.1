@@ -51,6 +51,15 @@ class VirtualPriceToBeatTracker:
             self._feed.stop()
             self._started = False
 
+    def stop(self) -> None:
+        self.close()
+
+    def shutdown(self) -> None:
+        self.close()
+
+    def is_running(self) -> bool:
+        return self._started and self._feed.is_running()
+
     def get_market_ptb(self, asset: str) -> VirtualPTB:
         """Return a VirtualPTB snapshot for the given asset (logs to INFO)."""
         self._ensure_started()

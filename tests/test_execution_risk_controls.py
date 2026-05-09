@@ -182,7 +182,7 @@ class ExecutionRiskControlTests(unittest.TestCase):
         self.assertEqual(trader.tracker.open_positions(), [])
         self.assertEqual(trader.tracker.closed_positions()[0].exit_reason, "stop_loss")
 
-    def test_entry_skips_when_time_to_close_under_ninety_seconds(self) -> None:
+    def test_entry_skips_when_time_to_close_inside_hard_close_zone(self) -> None:
         trader = _trader()
         trader.ptb_tracker = MagicMock()
         trader.ptb_tracker.get_market_ptb.return_value = SimpleNamespace(
@@ -190,7 +190,7 @@ class ExecutionRiskControlTests(unittest.TestCase):
             price_to_beat=100.0,
             current_price=101.0,
             price_diff_pct=0.01,
-            seconds_remaining=89,
+            seconds_remaining=55,
             epoch_start_ts=123,
         )
         trader.client.get_orderbook.return_value = OrderbookSnapshot("yes-token", 0.49, 0.50, 0.01, 10, 10)
@@ -213,6 +213,102 @@ class ExecutionRiskControlTests(unittest.TestCase):
         self.assertTrue(outcome.skipped)
         self.assertIn("Entry cutoff", outcome.skip_reason)
         self.assertEqual(trader.tracker.open_positions(), [])
+
+    def test_adaptive_cutoff_denied_when_data_stale(self) -> None:
+        trader = _trader(_settings(adaptive_entry_max_oracle_age_ms=1000))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=75,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=1500,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.policy, "adaptive")
+        self.assertEqual(decision.reason, "oracle_stale")
+
+    def test_adaptive_cutoff_denied_when_latency_high(self) -> None:
+        trader = _trader(_settings(adaptive_entry_max_decision_latency_ms=500))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=75,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=750,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason, "decision_latency_high")
+
+    def test_adaptive_cutoff_denied_near_hard_close_zone(self) -> None:
+        trader = _trader()
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=55,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertTrue(decision.late_entry_hard_block)
+        self.assertEqual(decision.reason, "hard_close_zone")
+
+    def test_adaptive_cutoff_allowed_when_market_data_and_latency_are_healthy(self) -> None:
+        trader = _trader()
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=75,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.policy, "adaptive")
+        self.assertEqual(decision.effective_cutoff_seconds, 60)
+        self.assertEqual(decision.reason, "healthy_late_entry")
+
+    def test_adaptive_cutoff_does_not_bypass_order_intent_guard(self) -> None:
+        trader = _trader()
+        trader.quant_events = None
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=75,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+
+        receipt = trader._submit_order(
+            market_id="yes-token",
+            side="BUY",
+            price=0.50,
+            size=2.0,
+            intent_type=OrderIntentType.ENTRY,
+            risk_plan=None,
+            source_market_id="pm-5m-btc",
+            outcome="YES",
+        )
+
+        self.assertTrue(decision.allowed)
+        self.assertIsNone(receipt)
+        self.assertEqual(trader.paper_stats.paper_orders_created, 0)
 
     def test_entry_skips_when_market_already_has_active_position(self) -> None:
         trader = _trader()

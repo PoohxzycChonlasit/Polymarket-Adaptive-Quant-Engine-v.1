@@ -48,7 +48,16 @@ class PolymarketOrderManager:
         self.stop_loss_pct     = stop_loss_pct
         self.kelly_fraction_cap = kelly_fraction_cap
 
-    def _zero_plan(self, request: OrderRequest) -> RiskPlan:
+    def _zero_plan(self, request: OrderRequest, *, reason: str = "", diagnostics: dict[str, object] | None = None) -> RiskPlan:
+        details = {
+            "reason_from_order_manager": reason,
+            "min_position_size_usd": float(request.min_position_size_usd),
+            "entry_price": float(request.entry_price),
+            "edge": float(request.edge),
+            "confidence": float(request.win_rate),
+        }
+        if diagnostics:
+            details.update(diagnostics)
         return RiskPlan(
             account_balance=self.account_balance,
             entry_price=request.entry_price,
@@ -61,6 +70,7 @@ class PolymarketOrderManager:
             position_size=0.0,
             notional_size=0.0,
             stop_loss_pct=self.stop_loss_pct,
+            diagnostics=details,
         )
 
     def build_order_plan(self, request: OrderRequest) -> RiskPlan:
@@ -84,7 +94,7 @@ class PolymarketOrderManager:
                 "[FLOOR BREACH] Balance $%.2f < floor $%.2f -- order plan returns zero size",
                 balance, FLOOR_BALANCE,
             )
-            return self._zero_plan(request)
+            return self._zero_plan(request, reason="balance_below_floor")
 
         ev = request.edge if request.edge != 0 else request.win_rate - request.entry_price
         sizing = calculate_position_size(PositionSizingInput(
@@ -110,7 +120,17 @@ class PolymarketOrderManager:
                 "[SKIP] sizing blocked | market=%s reasons=%s size=$%.4f",
                 request.market_id, ",".join(sizing.blocked_reasons), sizing.final_size_usd,
             )
-            return self._zero_plan(request)
+            return self._zero_plan(
+                request,
+                reason=",".join(sizing.blocked_reasons) or "sizing_blocked",
+                diagnostics={
+                    "blocked_reasons": list(sizing.blocked_reasons),
+                    "final_position_size": float(sizing.shares),
+                    "final_notional_size": float(sizing.final_size_usd),
+                    "tier": sizing.tier.value,
+                    "risk_pct_after_multipliers": float(sizing.risk_pct_after_multipliers),
+                },
+            )
 
         stop_loss_price   = request.entry_price * (1 - self.stop_loss_pct)
         take_profit_price = request.entry_price * (1 + 0.06)
@@ -128,4 +148,10 @@ class PolymarketOrderManager:
             position_size    = sizing.shares,
             notional_size    = sizing.final_size_usd,
             stop_loss_pct    = self.stop_loss_pct,
+            diagnostics={
+                "reason_from_order_manager": "",
+                "min_position_size_usd": float(request.min_position_size_usd),
+                "blocked_reasons": [],
+                "tier": sizing.tier.value,
+            },
         )

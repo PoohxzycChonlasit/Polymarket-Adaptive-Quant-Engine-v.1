@@ -57,6 +57,44 @@ The following parts are currently working or present in the project:
   - File logs use unique per-run filenames.
   - Realtime CSV logs use unique per-run filenames.
   - If Windows locks a log or CSV file, that file logger is disabled for the session and paper mode continues.
+- Phase 1/2 observability fixes were implemented on 2026-05-08:
+  - `daily_report.py` and `utils/telegram_reporter.py` now load and combine `scan_log*.csv` files, including old `scan_log.csv` and new per-run `scan_log_<timestamp>_<pid>.csv`.
+  - `utils/quant_event_logger.py` writes fail-soft JSONL quant events under `runtime/quant_data/`.
+  - `utils/telegram_alerts.py` provides a fail-soft alert cooldown/dedup layer.
+- Phase 3 observability wiring was implemented on 2026-05-08:
+  - `PolymarketTrader` initializes `QuantEventLogger` and `TelegramAlertLayer` safely.
+  - Runtime now emits JSONL events for market snapshots, decisions, order intent/submit/fill/fail, trade open/close, risk events, reconciliation blocks, and low-frequency system health.
+  - Clear trader Telegram sends were routed through centralized `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident` helpers where safe.
+  - Observability and Telegram failures are caught and must not crash paper execution.
+- Phase 4 runtime stability / clean shutdown hardening was implemented on 2026-05-08:
+  - `PolymarketOracleFeed` start/stop is now idempotent and owns clean shutdown for its price, epoch/PTB, and WebSocket threads.
+  - Oracle shutdown signals the WebSocket loop, joins background threads with timeouts, closes the HTTP client, and suppresses closed-stream logging failures.
+  - `VirtualPriceToBeatTracker`, `PolymarketTrader`, `RealtimeLogger`, Binance market feed, quant indicator feed, Telegram notifier, and the daily report scheduler now expose shutdown/close-style cleanup hooks.
+  - The realtime paper/live loop now closes the realtime logger, trader-owned feeds, and daily report scheduler on normal shutdown.
+  - Added shutdown regression tests covering oracle thread cleanup, repeated start/stop, trader shutdown, and closed-stream logging behavior.
+- Phase 5 offline data quality and replay analyzer tools were implemented on 2026-05-08:
+  - `tools/quant_data_quality.py` validates quant JSONL files under `runtime/quant_data/` without touching runtime trading behavior.
+  - `tools/replay_analyzer.py` reads trade, decision, execution, risk, and market snapshot JSONL files and writes offline replay summaries under `runtime/reports/`.
+  - Replay metrics include trade count, win rate, PnL, holding time, skip reasons, approved/rejected decisions, risk rejects, execution failures, entry spread/confidence, and PnL by outcome/asset.
+  - These tools are offline-only and must not be used to alter strategy, risk sizing, wallet, orderbook, or execution decisions until a separate explicitly scoped phase.
+- Phase 6 paper trading runbook and evaluation workflow was implemented on 2026-05-08:
+  - `docs/PAPER_TRADING_RUNBOOK.md` documents paper start commands, expected files, Telegram expectations, stop conditions, a 24-hour checklist, post-run analysis commands, pass/fail criteria, and live-readiness review items.
+  - `tools/paper_evaluation_report.py` reads generated data quality and replay reports and writes `paper_evaluation_YYYY-MM-DD.json` or `paper_evaluation_YYYY-MM-DD_to_YYYY-MM-DD.json` under `runtime/reports/`.
+  - The evaluation returns `PASS`, `CAUTION`, or `FAIL` using conservative offline-only criteria for data quality, execution failures, severe risk/system-health issues, sample size, spread/liquidity skips, PnL, and drawdown.
+  - The evaluator does not affect trading runtime state and must not be used as automatic permission to trade live.
+- Paper balance source option was implemented on 2026-05-08:
+  - `PAPER_BALANCE_SOURCE=virtual` remains the default and keeps existing isolated paper cash behavior.
+  - `PAPER_BALANCE_SOURCE=wallet_reference` fetches real wallet/CLOB collateral balance as a read-only paper sizing reference and labels the source as `wallet_reference_paper`.
+  - Wallet-reference paper mode shows wallet bankroll, paper sizing balance, paper cash, source, `PAPER ONLY`, and `NO LIVE ORDERS` in startup/dashboard surfaces.
+  - If wallet balance fetch fails, paper mode logs a warning, falls back to `paper_virtual`, and continues without enabling live execution.
+  - `WALLET_REFERENCE_REFRESH_SECONDS` controls low-frequency refresh; default is 300 seconds.
+- Strict startup config validation was implemented on 2026-05-08:
+  - `utils/config_validator.py` validates `MODE`, `PAPER_BALANCE_SOURCE`, `TELEGRAM_ENABLED`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `LIVE_TRADING_ENABLED`.
+  - Invalid `MODE` or invalid critical boolean values fail startup clearly with allowed values where applicable.
+  - Invalid `PAPER_BALANCE_SOURCE` falls back to `virtual` with a warning.
+  - Telegram disables safely when enabled but token/chat ID is missing.
+  - Startup logs now include a redacted configuration summary for mode, execution, live-order status, balance source, wallet-reference status, Telegram, quant logging, replay analyzer, RiskAgent, and ExitAgent.
+  - Secrets are not printed in startup validation output.
 - Documentation Sync Phase was performed on 2026-05-08 before new feature work:
   - `README.md`, `CURRENT_PROJECT_STATUS.md`, `CODEX_START_HERE.md`, `PROJECT_RULES.md`, `AGENTS.md`, `docs/PROJECT_STRUCTURE.md`, `PROJECT_STRUCTURE.md`, `docs/OBSERVABILITY_PLAN.md`, and `docs/KNOWN_ISSUES.md` were aligned to the current implementation.
 - Market window timing works.
@@ -98,11 +136,20 @@ Stability classification:
   - Live order placement path.
   - Live balance/allowance readiness.
   - Fill/cancel/reconcile lifecycle.
-  - Telegram daily reporting.
-- Planned:
-  - JSONL quant event logging.
-  - Telegram cooldown/dedup.
+  - Telegram daily reporting content still needs review before relying on it operationally.
+- Implemented observability:
+  - JSONL quant event logger utility and trader runtime wiring.
+  - Telegram alert cooldown/dedup utility and safe trader routing for clear alert call sites.
   - Daily report aggregation over per-run CSV logs.
+- Implemented runtime stability hardening:
+  - Oracle/WebSocket background threads stop cleanly through explicit lifecycle hooks.
+  - Repeated oracle start/stop does not duplicate worker threads.
+  - Closed pytest/logging streams are handled fail-soft during shutdown.
+- Implemented offline quant analysis:
+  - Quant JSONL data quality checker.
+  - Offline replay analyzer and report writer.
+  - Offline paper evaluation report that combines data quality and replay outputs into `PASS`, `CAUTION`, or `FAIL`.
+  - Tests covering valid, malformed, empty, and date-range datasets.
 
 ---
 
@@ -130,6 +177,8 @@ Wallet/portfolio status:
 - The previous wallet/portfolio source ambiguity was fixed in code on 2026-05-07.
 - In paper mode, the terminal remains virtual and must not fetch live balances.
 - Paper mode uses virtual starting balance, simulated cash/equity/exposure/PnL, and `balance_source=paper_virtual`.
+- Paper mode can optionally use real wallet/CLOB collateral as a read-only sizing reference with `balance_source=wallet_reference_paper`; execution remains paper-only.
+- Startup validation warns if `LIVE_TRADING_ENABLED=true` is present while running paper mode and keeps live orders disabled.
 - In live mode, `dashboard_portfolio_state()` refreshes from the live CLOB collateral balance after connection.
 - In live mode, `Start`, `Cash`, and `Equity` are aligned to the live wallet/CLOB balance at session startup instead of the paper/config seed.
 - `python main.py --mode verify` reported balance source `clob_collateral` with cash/equity/sizing matching.
@@ -162,6 +211,11 @@ Observed terminal evidence:
   - Paper mode could start correctly but crash if `RotatingFileHandler` could not write/roll over a locked log file, or if `polymarket/realtime_logger.py` hit `PermissionError` during CSV `flush()`.
   - This is a runtime logging resilience issue, not a strategy/orderbook/wallet/execution issue.
   - Code now catches `PermissionError`/Windows errno 13 on log setup, CSV open, write, flush, close, and daily summary save. The affected file logger is disabled for the session and the trading loop should continue safely.
+- Runtime shutdown finding on 2026-05-08:
+  - The oracle WebSocket path could leave a background thread logging after pytest/log capture streams were closed.
+  - `PolymarketOracleFeed.stop()` now signals all oracle workers, actively asks the WebSocket loop to close, joins threads, and closes the HTTP client.
+  - Trader/runtime shutdown now calls the PTB/oracle cleanup path and closes realtime CSV logging on normal exit.
+  - Validation passed without a post-pytest logging-to-closed-stream warning.
 - Terminal UI V2 finding on 2026-05-08:
   - The old terminal dashboard could overflow, compress panels in fullscreen, and let important messages scroll away.
   - `utils/display.py` now contains a responsive Polymarket dashboard renderer with System Status, Portfolio, Risk, BTC Market, ETH Market, AI Decision, Execution, Skip Reasons, and Rolling Logs panels.
@@ -170,8 +224,18 @@ Observed terminal evidence:
 - Documentation/observability finding on 2026-05-08:
   - Older docs still described stale HFT/live-ready assumptions and fixed `scan_log.csv` daily reporting.
   - Runtime logging now writes per-run CSV files named `scan_log_<timestamp>_<pid>.csv`.
-  - `daily_report.py` and `utils/telegram_reporter.py` still read fixed `scan_log.csv`, so daily Telegram summaries may miss current realtime data until updated.
-  - Telegram alert builders and async send path exist, but a central cooldown/dedup/spam-control system is not implemented yet.
+  - Fixed: `daily_report.py` and `utils/telegram_reporter.py` now aggregate `scan_log*.csv` and sort by `timestamp_utc` when available.
+  - Fixed: `utils/telegram_alerts.py` adds central cooldown/dedup wrappers for startup, entry, exit, risk, critical, summary, and incident alerts.
+  - Added: `utils/quant_event_logger.py` writes structured JSONL under `runtime/quant_data/` and disables only the affected writer on `PermissionError` / Windows errno 13.
+- Offline analyzer finding on 2026-05-08:
+  - Added `python tools/quant_data_quality.py --date YYYY-MM-DD --write-report`.
+  - Added `python tools/replay_analyzer.py --date YYYY-MM-DD --csv` and `python tools/replay_analyzer.py --from YYYY-MM-DD --to YYYY-MM-DD --csv`.
+  - Reports are written under `runtime/reports/` and are read-only with respect to trading runtime state.
+- Paper evaluation finding on 2026-05-08:
+  - Added `python tools/paper_evaluation_report.py --date YYYY-MM-DD`.
+  - Added `python tools/paper_evaluation_report.py --from YYYY-MM-DD --to YYYY-MM-DD`.
+  - The report reads offline analyzer outputs only and writes `runtime/reports/paper_evaluation_*.json`.
+  - `PASS` means paper evidence is clean enough for further review, not that live profitability or live readiness is guaranteed.
 
 Interpretation:
 
@@ -218,8 +282,11 @@ Important project areas:
 - `utils/display.py` - terminal display.
 - `utils/display.py` now includes Terminal UI V2 responsive layout logic for the Polymarket realtime dashboard.
 - `utils/telegram_reporter.py` - Telegram alerts and reports.
-- `daily_report.py` - daily summary/report sender; currently needs per-run CSV reader update.
-- `docs/OBSERVABILITY_PLAN.md` - logging/Telegram/JSONL observability roadmap.
+- `utils/telegram_alerts.py` - fail-soft Telegram cooldown/dedup utility.
+- `utils/quant_event_logger.py` - fail-soft structured JSONL quant event utility.
+- `utils/scan_log_loader.py` - shared reader for old and per-run realtime scan CSV files.
+- `daily_report.py` - daily summary/report sender; now reads combined `scan_log*.csv`.
+- `docs/OBSERVABILITY_PLAN.md` - logging/Telegram/JSONL observability status and roadmap.
 - `docs/KNOWN_ISSUES.md` - current bugs, technical debt, and unfinished systems.
 
 Secondary or experimental paths:
@@ -322,7 +389,7 @@ Latest paper validation:
 - The run found opportunities, including one EV-level `ENTER`, but all entries were blocked before execution by entry cutoff, low confidence, low EV, or zero-size risk planning.
 - Result: no paper orders/fills/exits occurred in that short session; simulated cash/equity stayed at `$8.70`, exposure stayed `$0.00`, PnL stayed `0.0`.
 
-### 5. Observability / Telegram Drift - open
+### 5. Observability / Telegram Drift - partially fixed
 
 Current status:
 
@@ -330,14 +397,21 @@ Current status:
 - Terminal UI V2 has a bounded rolling log panel.
 - Optional Telegram notifier exists and sends asynchronously.
 - Telegram message builders exist for startup, trade, exit, settlement, risk, and error alerts.
+- Daily report readers now combine old and per-run scan CSV files.
+- JSONL quant event logger utility exists with fail-soft Windows lock handling.
+- Telegram alert cooldown/dedup utility exists.
 
-Known gap:
+Fixed in Phase 1/2 observability pass:
 
-- `daily_report.py` and `utils/telegram_reporter.py` still read `runtime/realtime_logs/YYYY-MM-DD/scan_log.csv`.
-- `polymarket/realtime_logger.py` now writes per-run `scan_log_<timestamp>_<pid>.csv`.
-- Until this is fixed, daily reports/Telegram summaries can miss current scan data.
-- Telegram has no central alert cooldown/dedup layer yet.
-- JSONL event logging is planned but not implemented.
+- `daily_report.py` and `utils/telegram_reporter.py` use `utils/scan_log_loader.py`.
+- `utils/scan_log_loader.py` loads `runtime/realtime_logs/YYYY-MM-DD/scan_log*.csv`, preserves old `scan_log.csv` compatibility, and sorts rows by `timestamp_utc` when available.
+- Tests: `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py`.
+
+Remaining gap:
+
+- Quant event logger and Telegram alert layer are now wired into the main trader loop for market snapshots, decisions, execution, trade, risk, and health events.
+- Some existing Telegram daily message content still contains stale wording and needs a dedicated copy/content cleanup.
+- Full retention/compaction and incident-report files remain planned.
 
 ---
 
@@ -397,11 +471,21 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
    - Update `docs/PROJECT_CLEANUP_REPORT.md` for cleanup decisions.
    - Update `README.md` only for user-facing command/path changes.
 
-7. Fix observability drift.
-   - Update daily report readers to load `scan_log_*.csv`.
-   - Add JSONL event logging for structured quant/runtime events.
-   - Add Telegram cooldown/dedup before expanding alerts.
+7. Continue observability hardening carefully.
+   - Review generated JSONL during longer paper sessions and adjust payload fields only if needed.
+   - Route any future high-volume Telegram alerts through `utils/telegram_alerts.py`.
+   - Review and clean stale daily Telegram message wording.
+   - Add retention/compaction and incident-report writers only in a scoped phase.
    - Keep logging changes isolated from strategy/risk/execution behavior.
+
+8. Monitor shutdown behavior during longer paper sessions.
+   - Confirm Ctrl+C exits stop the oracle/WebSocket feed without delayed logging.
+   - If new background helpers are added, give them explicit `stop()` / `close()` / `shutdown()` ownership and tests.
+
+9. Use offline analyzers after paper sessions.
+   - Run `python tools/quant_data_quality.py --date YYYY-MM-DD --write-report` before trusting a replay.
+   - Run `python tools/replay_analyzer.py --date YYYY-MM-DD --csv` to summarize JSONL events.
+   - Treat analyzer output as review evidence only; do not wire it into trading decisions without a separate approved phase.
 
 ---
 

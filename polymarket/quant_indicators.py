@@ -28,11 +28,13 @@ class QuantIndicatorsFeed:
         self._lock = threading.RLock()
         self._running = False
         self._thread: Optional[threading.Thread] = None
+        self._stop_event = threading.Event()
 
     def start(self) -> None:
         if self._running:
             return
         self._running = True
+        self._stop_event.clear()
         self._thread = threading.Thread(target=self._run_loop, daemon=True, name="QuantFeed")
         self._thread.start()
         LOGGER.info("[QuantFeed] Started background polling for %s", list(_SYMBOL_MAP.keys()))
@@ -48,8 +50,10 @@ class QuantIndicatorsFeed:
     async def _async_main(self) -> None:
         # Initial fill
         await self._poll_all()
-        while self._running:
-            await asyncio.sleep(15)  # Poll every 15 seconds
+        while self._running and not self._stop_event.is_set():
+            await asyncio.to_thread(self._stop_event.wait, 15)
+            if self._stop_event.is_set():
+                break
             await self._poll_all()
 
     async def _poll_all(self) -> None:
@@ -95,8 +99,20 @@ class QuantIndicatorsFeed:
         with self._lock:
             return dict(self._data.get(asset, {}))
 
-    def stop(self) -> None:
+    def stop(self, join_timeout: float = 5.0) -> None:
         self._running = False
+        self._stop_event.set()
+        if self._thread and self._thread.is_alive() and self._thread is not threading.current_thread():
+            self._thread.join(timeout=join_timeout)
+
+    def close(self) -> None:
+        self.stop()
+
+    def shutdown(self) -> None:
+        self.stop()
+
+    def is_running(self) -> bool:
+        return bool(self._thread and self._thread.is_alive())
 
 
 _quant_feed: Optional[QuantIndicatorsFeed] = None
@@ -104,9 +120,9 @@ _quant_lock = threading.Lock()
 
 def get_quant_feed() -> QuantIndicatorsFeed:
     global _quant_feed
-    if _quant_feed is None:
+    if _quant_feed is None or not _quant_feed.is_running():
         with _quant_lock:
-            if _quant_feed is None:
+            if _quant_feed is None or not _quant_feed.is_running():
                 _quant_feed = QuantIndicatorsFeed()
                 _quant_feed.start()
     return _quant_feed

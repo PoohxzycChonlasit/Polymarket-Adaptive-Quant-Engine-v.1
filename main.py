@@ -15,6 +15,12 @@ from pathlib import Path
 
 from config.settings import get_settings
 from crypto_scalper.live_runner import main as run_scalper
+from utils.config_validator import (
+    apply_validation_to_settings,
+    build_paper_balance_debug_summary,
+    build_startup_summary,
+    validate_env,
+)
 from utils.logger import get_telegram_notifier, setup_logger
 from polymarket.signal import BACKTEST_WIN_RATE
 
@@ -263,15 +269,36 @@ def run_polymarket_backtest(
     return 0
 
 
-def _log_paper_mode_banner() -> None:
+def _log_paper_mode_banner(settings=None) -> None:
+    legacy_source = str(getattr(settings, "paper_balance_source", "virtual") or "virtual").strip().lower()
+    starting_source = str(getattr(settings, "paper_starting_balance_source", "") or "").strip().lower()
+    if not starting_source:
+        starting_source = "live_wallet_reference" if legacy_source == "wallet_reference" else "config"
+    if starting_source == "wallet_reference":
+        starting_source = "live_wallet_reference"
+    sync_on_start = bool(getattr(settings, "paper_wallet_sync_on_start", True))
+    sync_mode = str(getattr(settings, "paper_wallet_sync_mode", "initialize_only") or "initialize_only")
+    if starting_source == "live_wallet_reference" and sync_on_start:
+        sizing_source = "paper_virtual (initialized once from live wallet reference)"
+    else:
+        sizing_source = "paper_virtual (isolated virtual cash)"
     LOGGER.warning(
-        "\n=================\n"
-        "PAPER MODE\n"
-        "Real Market Data: ON\n"
-        "Live Orders: OFF\n"
-        "Simulated Execution: ON\n"
-        "Wallet Risk: NONE\n"
-        "================="
+        "\n================="
+        "\nPAPER MODE"
+        "\nReal Market Data: ON"
+        "\nLive Orders: OFF"
+        "\nSimulated Execution: ON"
+        "\nWallet Risk: NONE"
+        "\nExecution: PAPER ONLY"
+        "\nPaper Starting Balance Source: %s"
+        "\nPaper Wallet Sync On Start: %s"
+        "\nPaper Wallet Sync Mode: %s"
+        "\nSizing Source: %s"
+        "\n=================",
+        starting_source,
+        str(sync_on_start).lower(),
+        sync_mode,
+        sizing_source,
     )
 
 
@@ -292,7 +319,7 @@ def run_polymarket_realtime(
         settings.dry_run = True
         LOGGER.warning("[PAPER_MODE] Forced paper trading enabled. No real orders will be placed.")
     if settings.paper_trading:
-        _log_paper_mode_banner()
+        _log_paper_mode_banner(settings)
     dep_mode = "paper" if settings.paper_trading else "live"
     if not _validate_dependencies_for_mode(dep_mode):
         return 1
@@ -348,13 +375,19 @@ def run_polymarket_realtime(
         status = "CONNECTED" if trader._connected else "CONNECTION_FAILED"
         from utils.telegram_reporter import build_startup_alert
         wallet = settings.polymarket_proxy_wallet or settings.polymarket_funder
+        portfolio = trader.dashboard_portfolio_state()
         tg.send_message(build_startup_alert(
             mode=mode,
             status=status,
             interval=interval,
-            bankroll=settings.account_balance,
+            bankroll=float(portfolio.get("sizing_bankroll", settings.account_balance)),
             paper=settings.paper_trading,
             wallet=wallet,
+            balance_source=str(portfolio.get("balance_source", "paper_virtual")),
+            wallet_balance=portfolio.get("wallet_reference_balance"),
+            paper_cash=float(portfolio.get("paper_cash", portfolio.get("cash", settings.account_balance))),
+            execution_mode=str(portfolio.get("execution_mode", "PAPER ONLY" if settings.paper_trading else "LIVE")),
+            wallet_reference_error=str(portfolio.get("wallet_reference_error", "") or ""),
             gas_note="Required for LIVE orders on Polygon",
             snipe_min_edge=settings.snipe_min_edge,
             floor=settings.bankroll_floor,
@@ -465,6 +498,25 @@ def run_polymarket_realtime(
                             "edge_pct":    metrics.edge_pct,
                             "p_yes":       metrics.p_yes,
                             "p_no":        metrics.p_no,
+                            "model_p_yes": metrics.p_yes,
+                            "model_p_no":  metrics.p_no,
+                            "yes_bid":     metrics.yes_bid,
+                            "yes_ask":     metrics.yes_ask,
+                            "no_bid":      metrics.no_bid,
+                            "no_ask":      metrics.no_ask,
+                            "yes_mid":     metrics.yes_mid,
+                            "no_mid":      metrics.no_mid,
+                            "clob_source": metrics.clob_source,
+                            "orderbook_age_ms": metrics.orderbook_age_ms,
+                            "yes_orderbook_age_ms": metrics.yes_orderbook_age_ms,
+                            "no_orderbook_age_ms": metrics.no_orderbook_age_ms,
+                            "token_id":    metrics.token_id,
+                            "yes_token_id": metrics.yes_token_id,
+                            "no_token_id": metrics.no_token_id,
+                            "condition_id": metrics.condition_id,
+                            "market_slug": metrics.market_slug,
+                            "outcome":     metrics.outcome,
+                            "token_mapping_warning": metrics.token_mapping_warning,
                             "ev":          metrics.ev,
                             "min_ev":      metrics.min_ev,
                             "delta_regime": metrics.delta_regime,
@@ -476,10 +528,12 @@ def run_polymarket_realtime(
                             "frequency_multiplier": metrics.frequency_multiplier,
                         })
                         LOGGER.debug(
-                            "[DASHBOARD_PAYLOAD] ticker=%s bid=%.4f ask=%.4f spread=%.4f p_yes=%s p_no=%s ev=%s min_ev=%s delta=%s x%s reason=%s",
+                            "[DASHBOARD_PAYLOAD] ticker=%s yes_bid=%.4f yes_ask=%.4f no_bid=%.4f no_ask=%.4f spread=%.4f model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s age_ms=%s reason=%s",
                             ticker,
-                            metrics.bid,
-                            metrics.ask,
+                            metrics.yes_bid,
+                            metrics.yes_ask,
+                            metrics.no_bid,
+                            metrics.no_ask,
                             metrics.spread,
                             metrics.p_yes,
                             metrics.p_no,
@@ -487,6 +541,7 @@ def run_polymarket_realtime(
                             metrics.min_ev,
                             metrics.delta_regime,
                             metrics.delta_multiplier,
+                            metrics.orderbook_age_ms,
                             metrics.skip_reason,
                         )
                         if settings.arb_display_enabled:
@@ -581,6 +636,25 @@ def run_polymarket_realtime(
                         edge_pct      = metrics.edge_pct,
                         p_yes         = metrics.p_yes,
                         p_no          = metrics.p_no,
+                        model_p_yes   = metrics.p_yes,
+                        model_p_no    = metrics.p_no,
+                        yes_bid       = metrics.yes_bid,
+                        yes_ask       = metrics.yes_ask,
+                        no_bid        = metrics.no_bid,
+                        no_ask        = metrics.no_ask,
+                        yes_mid       = metrics.yes_mid,
+                        no_mid        = metrics.no_mid,
+                        clob_source   = metrics.clob_source,
+                        orderbook_age_ms = metrics.orderbook_age_ms,
+                        yes_orderbook_age_ms = metrics.yes_orderbook_age_ms,
+                        no_orderbook_age_ms = metrics.no_orderbook_age_ms,
+                        token_id      = metrics.token_id,
+                        yes_token_id  = metrics.yes_token_id,
+                        no_token_id   = metrics.no_token_id,
+                        condition_id  = metrics.condition_id,
+                        market_slug   = metrics.market_slug,
+                        outcome       = metrics.outcome,
+                        token_mapping_warning = metrics.token_mapping_warning,
                         ev            = metrics.ev,
                         min_ev        = metrics.min_ev,
                         delta_regime  = metrics.delta_regime,
@@ -645,6 +719,23 @@ def run_polymarket_realtime(
                             / max(rl_logger.start_of_day_balance, 0.01)
                         ),
                         bankroll       = settings.account_balance,
+                        raw_skip_reason = str(outcome.display.get("raw_skip_reason", outcome.skip_reason or "")),
+                        normalized_skip_reason = str(outcome.display.get("normalized_skip_reason", "")),
+                        seconds_remaining = int(outcome.display.get("seconds_remaining", ptb_info.seconds_remaining) or 0),
+                        entry_cutoff_seconds = int(outcome.display.get("entry_cutoff_seconds", settings.execution_entry_cutoff_seconds) or 0),
+                        time_bucket = str(outcome.display.get("time_bucket", "")),
+                        epoch_start = str(outcome.display.get("epoch_start", getattr(ptb_info, "epoch_start_ts", "")) or ""),
+                        market_start_time = str(outcome.display.get("market_start_time", "")),
+                        market_end_time = str(outcome.display.get("market_end_time", "")),
+                        token_id = str(outcome.display.get("token_id", "")),
+                        outcome = str(outcome.display.get("outcome", "")),
+                        source_module = str(outcome.display.get("source_module", "polymarket.trader")),
+                        market_slug = str(outcome.display.get("market_slug", "")),
+                        condition_id = str(outcome.display.get("condition_id", "")),
+                        orderbook_age_ms = int(outcome.display.get("orderbook_age_ms", 0) or 0),
+                        oracle_age_ms = int(outcome.display.get("oracle_age_ms", 0) or 0),
+                        market_feed_age_ms = int(outcome.display.get("market_feed_age_ms", 0) or 0),
+                        token_mapping_warning = str(outcome.display.get("token_mapping_warning", "")),
                     ))
 
                 display.update_cycle(cycle_results, cycle_num)
@@ -658,7 +749,22 @@ def run_polymarket_realtime(
     for h in _console_handlers:
         root_log.addHandler(h)
 
-    trader.log_paper_session_summary()
+    try:
+        trader.log_paper_session_summary()
+    finally:
+        try:
+            rl_logger.force_save_summary()
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] realtime logger close failed: %s", exc)
+        try:
+            trader.shutdown()
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] trader shutdown failed: %s", exc)
+        try:
+            from daily_report import stop_scheduler
+            stop_scheduler(join_timeout=1.0)
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] daily report scheduler stop failed: %s", exc)
     LOGGER.info("polymarket-realtime stopped after %s cycles.", cycle_num)
     return 0
 
@@ -1055,8 +1161,21 @@ def run_dashboard_mode() -> int:
 
 def main() -> int:
     args = build_parser().parse_args()
+    validation = validate_env(cli_mode=args.mode)
     settings = get_settings()
+    apply_validation_to_settings(settings, validation)
     setup_logger(settings.log_level, settings.log_dir)
+    if validation.errors:
+        for error in validation.errors:
+            LOGGER.critical("[CONFIG_INVALID] %s", error)
+        return 1
+    LOGGER.info("[STARTUP CONFIG]\n%s", build_startup_summary(settings, validation, mode=args.mode))
+    LOGGER.info("%s", build_paper_balance_debug_summary(
+        result=validation,
+        mode=args.mode,
+    ))
+    for warning in validation.warnings:
+        LOGGER.warning("[CONFIG_WARNING] %s", warning)
 
     if args.mode == "polymarket":
         return run_polymarket_mode()

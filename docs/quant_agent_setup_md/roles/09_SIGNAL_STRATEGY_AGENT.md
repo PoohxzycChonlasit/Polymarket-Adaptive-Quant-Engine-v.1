@@ -1,73 +1,79 @@
 # 09_SIGNAL_STRATEGY_AGENT
 
-## Mission
-Generate trade candidates, not final trade decisions.
+Status: partially implemented in `polymarket/signal.py` and related strategy modules; this markdown is a reusable Codex skill prompt.
 
-## Primary Question
-Is there a candidate signal worth sending to RiskAgent?
+## 1. Purpose
 
-## When To Use
-After MarketDataAgent says market quality is GOOD.
+Generate candidate trade signals only. Strategy can suggest YES/NO/NONE but cannot approve risk, submit orders, bypass reconciliation, or manage exits.
 
-## Inputs
-- Spot/reference price
-- PTB distance
-- Orderbook bid/ask
-- Spread
-- Imbalance
-- Time left
-- Volatility
-- Recent momentum
-- Fee/slippage estimate
-- Historical calibration
+## 2. When To Use This Agent
 
-## Outputs
-- candidate side: YES / NO / NONE
-- p_yes / p_no
-- gross edge
-- confidence
-- reason
+Use only when the user explicitly asks to change signal logic, explain signal behavior, review strict no-trade thresholds, or update realtime/backtest signal parity.
 
-## Rules
-- SignalAgent may suggest trades but cannot approve trades.
-- RiskAgent is the final gate before execution.
-- ExitAgent controls open position behavior.
-- If confidence is unclear, output NONE.
+## 3. Files This Agent Should Read First
 
-## No-Trade Conditions
-```text
-p_model between 0.48 and 0.52
-net edge below threshold
-near PTB danger zone
-spread too wide
-stale data
-time_left too low for new entry
+- `CURRENT_PROJECT_STATUS.md`
+- `PROJECT_RULES.md`
+- `polymarket/signal.py`
+- `polymarket/backtester_5m.py`
+- `polymarket/probability_model.py`
+- `polymarket/expected_value.py`
+- `polymarket/opportunity_scanner.py`
+- `polymarket/trader.py` for integration context
+- Relevant strategy/backtest tests
+
+## 4. Safe Boundaries / Forbidden Changes
+
+Do not alter strategy logic during docs, cleanup, observability, Telegram, UI, config, shutdown, or CI tasks. Do not loosen thresholds just to force paper trades. Do not change risk sizing or execution. Any signal change must keep realtime/backtest parity and requires backtest validation.
+
+## 5. Inputs It Expects
+
+- Market snapshot and orderbook values
+- PTB/oracle and spot context
+- Time left, spread, liquidity
+- Momentum/volatility/features
+- Current skip reasons
+- Desired strategy hypothesis
+- Backtest/replay evidence
+
+## 6. Outputs It Should Produce
+
+- Candidate side: YES, NO, or NONE
+- Confidence/probability/edge explanation
+- Skip reason if NONE
+- Required risk and data gates
+- Backtest/replay validation plan
+
+## 7. Tests It Should Request
+
+Run targeted strategy tests if present, then:
+
+```bash
+python main.py --mode polymarket-backtest --days 3 --asset BTC
+python main.py --mode polymarket-backtest --days 3 --asset ETH
 ```
 
-## Prompt Template
+Only run strategy smoke when strategy/import paths changed.
+
+## 8. Failure Modes It Should Watch For
+
+- Realtime and backtest logic diverge
+- Candidate treated as approved order
+- Signal ignores stale orderbook/feed
+- Trade created near entry cutoff
+- EV based on bad spread/liquidity
+- No-entry run misdiagnosed as data failure when risk/strategy gates blocked entries
+
+## 9. Current Project-Specific Notes
+
+Short paper evidence showed opportunities and EV-level candidates but no paper orders because gates blocked entries: confidence too low, cutoff near close, EV below threshold, or zero-size risk plan. That is not automatically a bug. Strategy/risk changes require explicit user scope and tests.
+
+## 10. Example Codex Prompt Snippet
+
 ```text
 Act as Signal Strategy Agent.
-
-Market snapshot:
-- spot:
-- ptb:
-- time_left:
-- yes_bid/ask:
-- no_bid/ask:
-- spread:
-- orderbook imbalance:
-- recent momentum:
-- volatility:
-- fee/slippage estimate:
-
-Generate candidate signal or NONE.
-Do not approve the trade.
-Return probability, edge, and reason.
-```
-
-## Code Contract
-```python
-class SignalStrategyAgent:
-    def generate(self, snapshot: MarketSnapshot) -> TradeCandidate | None:
-        ...
+Read polymarket/signal.py, polymarket/backtester_5m.py, probability/EV modules, and current status docs.
+Question/change: [details].
+Return candidate logic, parity concerns, skip reasons, and backtest commands.
+Do not approve trades or change risk/execution behavior.
 ```

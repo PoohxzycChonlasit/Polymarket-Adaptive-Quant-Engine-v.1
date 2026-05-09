@@ -70,12 +70,15 @@ class ActiveFiveMinMarket:
     no_token_id: str
     yes_price: float      # implied YES probability from market
     liquidity: float
+    market_id: str = ""
 
 
 class GammaFetcher:
     def __init__(self) -> None:
         self.settings = get_settings()
         self.timeout = httpx.Timeout(10.0)
+        self._five_min_cache_ttl_seconds = 5.0
+        self._five_min_market_cache: dict[str, tuple[float, list[ActiveFiveMinMarket]]] = {}
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(1))
     def fetch_markets(self, limit: int = 25) -> list[GammaMarket]:
@@ -110,18 +113,31 @@ class GammaFetcher:
 
         Returns None if no market is found.
         """
+        markets = self.get_current_and_next_5min_markets(asset)
+        return markets[0] if markets else None
+
+    def get_next_5min_market(self, asset: str) -> ActiveFiveMinMarket | None:
+        markets = self.get_current_and_next_5min_markets(asset)
+        return markets[1] if len(markets) > 1 else None
+
+    def get_current_and_next_5min_markets(self, asset: str, *, force_refresh: bool = False) -> list[ActiveFiveMinMarket]:
         asset_upper = asset.upper()
         slug_prefix = _ASSET_SLUG_PREFIX.get(asset_upper)
         if not slug_prefix:
             LOGGER.warning("Unknown 5M asset: %s", asset)
-            return None
+            return []
+
+        now_monotonic = time.monotonic()
+        cached = self._five_min_market_cache.get(asset_upper)
+        if cached and not force_refresh and cached[0] > now_monotonic:
+            return cached[1]
 
         now_ts = int(time.time())
-        # Try current epoch and the next one
         current_epoch = now_ts - (now_ts % 300)
+        markets: list[ActiveFiveMinMarket] = []
 
         with httpx.Client(timeout=self.timeout) as client:
-            for epoch_offset in (0, 300, -300):
+            for epoch_offset in (0, 300):
                 epoch_ts = current_epoch + epoch_offset
                 slug = f"{slug_prefix}-{epoch_ts}"
                 try:
@@ -155,6 +171,8 @@ class GammaFetcher:
                     # Compute epoch timestamps
                     end_ts = epoch_ts + 300
                     seconds_remaining = max(0, end_ts - now_ts)
+                    if seconds_remaining <= 0:
+                        continue
 
                     market = ActiveFiveMinMarket(
                         asset=asset_upper,
@@ -168,18 +186,28 @@ class GammaFetcher:
                         no_token_id=no_token,
                         yes_price=yes_price,
                         liquidity=liquidity,
+                        market_id=str(m.get("id", "")),
                     )
                     LOGGER.info(
                         "[GammaFetcher] Active 5M market found: %s | condition_id=%s | YES=%.4f | %ds remaining",
                         slug, market.condition_id, yes_price, seconds_remaining,
                     )
-                    return market
+                    markets.append(market)
 
                 except Exception as exc:
                     LOGGER.debug("[GammaFetcher] Slug lookup failed %s: %s", slug, exc)
 
-        LOGGER.warning("[GammaFetcher] No active 5M market found for %s", asset)
-        return None
+        markets = sorted(
+            {market.epoch_start_ts: market for market in markets}.values(),
+            key=lambda market: market.epoch_start_ts,
+        )
+        self._five_min_market_cache[asset_upper] = (
+            now_monotonic + self._five_min_cache_ttl_seconds,
+            markets,
+        )
+        if not markets:
+            LOGGER.warning("[GammaFetcher] No active 5M market found for %s", asset)
+        return markets
 
     def get_exact_5min_ptb(self, asset: str) -> ExactFiveMinMarket | None:
         """

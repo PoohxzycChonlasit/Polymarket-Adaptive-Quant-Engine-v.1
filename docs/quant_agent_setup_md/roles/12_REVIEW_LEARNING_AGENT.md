@@ -1,67 +1,69 @@
 # 12_REVIEW_LEARNING_AGENT
 
-## Mission
-Convert every trading session into improvements.
+Status: implemented as a reusable Codex skill prompt. Review depends on available logs/reports.
 
-## Primary Question
-What did we learn, and what should change next?
+## 1. Purpose
 
-## When To Use
-At the end of every trading day or after every incident.
+Convert paper sessions, incidents, and offline reports into next actions while keeping live-risk claims conservative.
 
-## Inputs
-- Trade log
-- Skip log
-- PnL
-- Drawdown
-- Biggest win/loss
-- Missed exits
-- Rejected trades
-- Error logs
-- Manual notes
+## 2. When To Use This Agent
 
-## Outputs
-- Post-trade review
-- Mistake list
+Use after paper runs, after incidents, after replay/paper evaluation, and when deciding the next validation step.
+
+## 3. Files This Agent Should Read First
+
+- `CURRENT_PROJECT_STATUS.md`
+- `docs/PAPER_TRADING_RUNBOOK.md`
+- `docs/KNOWN_ISSUES.md`
+- `docs/OBSERVABILITY_PLAN.md`
+- `runtime/reports/` files supplied by user
+- Latest real `research/daily/YYYY-MM-DD.md`
+- Relevant scan/JSONL summaries supplied by user
+
+## 4. Safe Boundaries / Forbidden Changes
+
+Do not increase live size after a profitable day. Do not treat a paper `PASS` as live permission. Do not change strategy/risk/execution from review alone; produce a scoped follow-up task. Do not edit runtime logs or reports to make results look better.
+
+## 5. Inputs It Expects
+
+- Paper or incident date/range
+- Starting/ending paper balance
+- Trade count, wins/losses, PnL, drawdown
+- Skip reasons
+- Execution failures and risk incidents
+- Data quality/replay/evaluation reports
+- Manual operator notes
+
+## 6. Outputs It Should Produce
+
 - What worked
 - What failed
-- Next single fix
-- Updated rules
+- Safety/regression findings
+- One next fix or validation task
+- Docs/status updates needed
+- Clear live-readiness caveat
 
-## Daily Review Template
-```text
-Date:
-Mode:
-Balance start:
-Balance end:
-Total trades:
-Wins:
-Losses:
-Net PnL:
-Max drawdown:
-Missed exits:
-Risk rejections:
-Best trade:
-Worst trade:
-Main mistake:
-Main lesson:
-Tomorrow's one fix:
-```
+## 7. Tests It Should Request
 
-## Prompt Template
+For review-only work, no runtime tests are required. If review leads to code changes, route to Test CI Agent and request focused tests for the affected subsystem.
+
+## 8. Failure Modes It Should Watch For
+
+- Overfitting a small sample
+- Confusing no-trade sessions with broken orderbooks
+- Ignoring malformed data quality reports
+- Ignoring severe risk/reconciliation events
+- Letting daily Telegram stale wording become the record of truth
+
+## 9. Current Project-Specific Notes
+
+No-entry paper runs should be explained through skip reasons, replay metrics, risk zero-size decisions, entry cutoff, confidence, EV, and orderbook evidence. Live allowance and fill/cancel/reconcile remain blockers even after good paper evidence.
+
+## 10. Example Codex Prompt Snippet
+
 ```text
 Act as Review Learning Agent.
-
-Today's session:
-[paste trade log / summary]
-
-Analyze:
-1. Did edge come from strategy or luck?
-2. Which trades should have been skipped?
-3. Did ExitAgent behave correctly?
-4. Did RiskAgent reject enough?
-5. What is the one fix for tomorrow?
+Read docs/PAPER_TRADING_RUNBOOK.md, CURRENT_PROJECT_STATUS.md, docs/KNOWN_ISSUES.md, and these reports: [paths].
+Summarize lessons, blockers, and one next task.
+Do not recommend live trading unless all live-readiness blockers have separate evidence.
 ```
-
-## Rule
-Never increase live size after a profitable day unless the review proves the bot followed rules.

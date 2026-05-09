@@ -43,9 +43,11 @@ python main.py --mode live --interval 60
 1. `CURRENT_PROJECT_STATUS.md`
 2. `AGENTS.md`
 3. `PROJECT_RULES.md`
-4. `docs/PROJECT_STRUCTURE.md`
-5. `docs/KNOWN_ISSUES.md`
-6. Relevant `docs/quant_agent_setup_md/roles/*.md`
+4. `MASTER_AGENT_ROUTER.md`
+5. `docs/AGENT_WORKFLOW.md`
+6. `docs/PROJECT_STRUCTURE.md`
+7. `docs/KNOWN_ISSUES.md`
+8. Relevant `docs/quant_agent_setup_md/roles/*.md`
 
 For observability/logging/Telegram tasks, also read:
 
@@ -82,14 +84,19 @@ For observability/logging/Telegram tasks, also read:
 - Bankroll rank lock / hysteresis.
 - Risk Mode Ladder.
 - Windows logging PermissionError resilience.
+- QuantEventLogger JSONL event logging under `runtime/quant_data`.
+- Telegram alert cooldown/dedup layer.
+- Offline data quality, replay analyzer, and paper evaluation report.
+- Startup config validation.
+- Clean shutdown hardening for major runtime feeds/loggers.
 
 ## Known Gaps
 
 - Live allowance still blocks live readiness.
 - No confirmed live order placement/fill/cancel/reconcile cycle.
-- Daily report and Telegram daily summary still read fixed `scan_log.csv`, while realtime logging writes per-run `scan_log_<run_id>.csv`.
-- Telegram lacks central cooldown/dedup.
-- JSONL quant event logging is planned, not implemented.
+- Daily Telegram summary wording still needs copy cleanup before relying on it operationally.
+- Retention/compaction and incident report writer are planned.
+- Dedicated `tools/no_entry_analyzer.py` is planned/missing.
 
 ## Token Budget Rules
 

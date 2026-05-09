@@ -1,0 +1,182 @@
+# FILE_INDEX.md
+
+> Last updated: 2026-05-09.
+> Purpose: quick file map for Codex and human operators. This is an index, not a source of truth for live readiness.
+
+## Start Here
+
+Read these first for normal work:
+
+| File | Use For |
+|------|---------|
+| `CODEX_START_HERE.md` | Minimal session startup context and safe commands. |
+| `AGENTS.md` | Auto-loaded Codex safety rules, role-doc workflow, and project boundaries. |
+| `PROJECT_RULES.md` | Token discipline, safety constraints, and task workflow rules. |
+| `CURRENT_PROJECT_STATUS.md` | Current implementation status, blockers, and latest operational truth. |
+| `MASTER_AGENT_ROUTER.md` | Pick the right role doc for scoped tasks. |
+| `docs/PROJECT_STRUCTURE.md` | Canonical architecture, runtime flow, data flow, logging flow, and folder map. |
+| `docs/KNOWN_ISSUES.md` | Current bugs, technical debt, and live blockers. |
+| `docs/PROJECT_CLEANUP_REPORT.md` | Cleanup history and archived-doc decisions. |
+
+Use these only for specific task types:
+
+| File | Use For |
+|------|---------|
+| `docs/OBSERVABILITY_PLAN.md` | Logging, JSONL, Telegram, health, incidents. |
+| `docs/PAPER_TRADING_RUNBOOK.md` | Paper run operation and post-run evaluation. |
+| `docs/BANKROLL_TIER_SYSTEM.md` | Bankroll rank/tier context. |
+| `docs/AGENT_WORKFLOW.md` | How to use project role docs. |
+| `VULTR_PAPER_RUN.md` | Experimental HFT paper utility deployment notes, not canonical live readiness. |
+
+## Canonical Runtime Files
+
+| File | Role |
+|------|------|
+| `main.py` | CLI dispatcher, paper/live realtime orchestration, verify mode, dashboard/backtest mode routing. |
+| `config/settings.py` | Pydantic settings, env defaults, paper/live flags, risk settings, startup config support. |
+| `utils/config_validator.py` | Startup config validation and secret-safe config summaries. |
+
+Safe default runtime:
+
+```bash
+python main.py
+```
+
+Explicit paper:
+
+```bash
+python main.py --mode paper --interval 60
+```
+
+Read-only verify:
+
+```bash
+python main.py --mode verify
+```
+
+Live remains blocked until explicit operator intent and readiness validation:
+
+```bash
+python main.py --mode live --interval 60
+```
+
+## Polymarket Core
+
+| File | Role |
+|------|------|
+| `polymarket/trader.py` | Main trade coordinator: cycle loop, market analysis, risk plan use, paper execution, reconciliation, exits, dashboard state, observability events. |
+| `polymarket/client.py` | Polymarket CLOB client, auth, orderbooks, balances, orders, redemptions. |
+| `polymarket/gamma_fetcher.py` | Gamma market/event/token discovery. |
+| `polymarket/market_feed.py` | Binance market feed singleton. |
+| `polymarket/oracle_price_feed.py` | Oracle/PTB price feed path. |
+| `polymarket/virtual_ptb.py` | Virtual price-to-beat tracker used by realtime trader. |
+| `polymarket/signal.py` | Realtime signal logic. Do not change without matching backtest work. |
+| `polymarket/backtester_5m.py` | Backtest path for 5-minute strategy validation. |
+| `polymarket/order_manager.py` | Converts signal/risk inputs into `RiskPlan`. |
+| `polymarket/order_intent.py` | ENTRY/EXIT validation guard. |
+| `polymarket/bankroll_tiers.py` | Bankroll rank/tier rules and hysteresis inputs. |
+| `polymarket/position_sizing.py` | Rank-aware position sizing calculation. |
+| `polymarket/risk_modes.py` | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN state ladder. |
+| `polymarket/realtime_logger.py` | Realtime scan/trade CSV and paper summary logging. |
+
+## Risk, Positions, Display
+
+| File | Role |
+|------|------|
+| `utils/risk_manager.py` | Canonical hard risk policy for the Polymarket path. |
+| `utils/position_tracker.py` | Position state, exposure, drawdown, and reconciliation support. |
+| `utils/display.py` | Terminal UI V2 and other Rich display surfaces. |
+| `utils/logger.py` | Console/file/Telegram logging setup with Windows file-lock resilience. |
+
+## Observability And Reporting
+
+| File | Role |
+|------|------|
+| `utils/quant_event_logger.py` | Fail-soft JSONL quant event writer under `runtime/quant_data/`. |
+| `utils/telegram_alerts.py` | Central Telegram cooldown/dedup alert layer. |
+| `utils/telegram_reporter.py` | Telegram message builders and daily report sender. |
+| `utils/scan_log_loader.py` | Shared scan CSV loader for old and per-run scan logs. |
+| `daily_report.py` | Daily report builder/sender. |
+| `tools/quant_data_quality.py` | Offline JSONL data quality checker. |
+| `tools/replay_analyzer.py` | Offline replay report generator. |
+| `tools/paper_evaluation_report.py` | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
+
+Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
+
+## Tests To Start With
+
+Use targeted tests for scoped work:
+
+| Area | Tests |
+|------|-------|
+| Paper/runtime separation | `tests/test_paper_mode.py` |
+| Risk and execution guards | `tests/test_execution_risk_controls.py`, `tests/test_risk_modes.py`, `tests/test_bankroll_tiers.py` |
+| Order intent and reconciliation | `tests/test_position_reconciliation.py`, `tests/test_polymarket_trader.py` |
+| Exit logic | `tests/test_exit_agent.py` |
+| Logging and observability | `tests/test_logging_resilience.py`, `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py` |
+| Terminal UI | `tests/test_terminal_dashboard_display.py` |
+| Shutdown | `tests/test_runtime_shutdown.py` |
+| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py` |
+
+Full suite:
+
+```bash
+python -m pytest tests/ -q
+```
+
+## Role Docs
+
+Use `MASTER_AGENT_ROUTER.md` first, then read only the relevant role doc:
+
+| Folder | Role |
+|--------|------|
+| `docs/quant_agent_setup_md/roles/` | Safety-first role prompts for scoped Codex work. |
+| `docs/quant_agent_setup_md/playbooks/` | Workflow/playbook guidance. |
+| `docs/quant_agent_setup_md/templates/` | Review/status/bug templates. |
+
+These markdown files guide work. They are not autonomous runtime modules and do not prove code is implemented.
+
+## Secondary Or Experimental Areas
+
+| Path | Status |
+|------|--------|
+| `hft_paper_run.py` | Active HFT paper simulation utility. |
+| `hft/` | Experimental HFT engine; paper-first only. |
+| `crypto_scalper/` | Separate crypto scalper path, not canonical Polymarket runtime. |
+| `dashboard/` | Streamlit dashboards; overlapping dashboard surface. |
+| `web-dashboard/` | Next.js dashboard; separate frontend surface. |
+| `polymarket/five_min_monitor.py` | Standalone market monitor. |
+
+Do not promote secondary paths to canonical live execution without a dedicated review.
+
+## Generated Or Evidence Folders
+
+Do not treat these as source-of-truth code during normal work:
+
+| Path | Rule |
+|------|------|
+| `runtime/` | Generated runtime state, quant JSONL, realtime logs, reports. Do not edit casually. |
+| `logs/` | Generated app logs. Preserve for evidence. |
+| `logs_vps/` | VPS operational evidence. Preserve. |
+| `backtest_results/` | Generated backtest artifacts. Preserve. |
+| `archive/legacy/` | Historical archived files. Do not use as active workflow. |
+
+## Files Not To Touch Casually
+
+- `.env`
+- `.env.example`
+- `config/`
+- runtime logs and scan logs
+- wallet/API credential helpers
+- live flags, private keys, wallet addresses, allowances
+- strategy research records
+
+## Cleanup Notes
+
+Archived prompt/docs from the 2026-05-09 markdown cleanup live under:
+
+```text
+archive/legacy/docs/2026-05-09-md-cleanup/
+```
+
+Those files are historical references only. Active Codex workflow starts from `CODEX_START_HERE.md`, `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `PROJECT_RULES.md`, `CURRENT_PROJECT_STATUS.md`, `docs/PROJECT_STRUCTURE.md`, and `docs/KNOWN_ISSUES.md`.
