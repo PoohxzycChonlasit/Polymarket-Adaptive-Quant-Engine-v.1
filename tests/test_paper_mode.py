@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -8,7 +9,7 @@ import pytest
 
 import main
 from main import build_parser
-from polymarket.client import BalanceSnapshot, OrderReceipt, OrderbookSnapshot
+from polymarket.client import BalanceSnapshot, ClobOrderbookError, OrderReceipt, OrderbookSnapshot, PolymarketClient
 from polymarket.order_manager import PolymarketOrderManager
 from polymarket.order_intent import OrderIntentType
 from polymarket.trader import BankrollState, PolymarketTrader, TradeOutcome
@@ -84,6 +85,9 @@ def _settings(**overrides):
         "paper_min_balance_fallback": 0.0,
         "wallet_reference_refresh_seconds": 300,
         "show_wallet_reference_balance": True,
+        "micro_survival_bankroll_threshold": 100.0,
+        "micro_survival_min_position_size": 0.05,
+        "micro_survival_risk_fraction": 0.0025,
     }
     values.update(overrides)
     if (
@@ -127,6 +131,29 @@ def _risk_plan(size: float = 2.0, price: float = 0.50) -> RiskPlan:
         notional_size=size * price,
         stop_loss_pct=0.08,
     )
+
+
+def _clob_settings(**overrides):
+    values = {
+        "polymarket_host": "https://clob.polymarket.com",
+        "clob_orderbook_retry_count": 1,
+        "clob_orderbook_retry_backoff_ms": 1,
+        "clob_rate_limit_cooldown_seconds": 30,
+        "clob_market_error_cooldown_seconds": 10,
+        "clob_circuit_breaker_threshold": 3,
+        "clob_circuit_breaker_window_seconds": 60,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+def _valid_orderbook_raw(token_id: str = "token") -> dict:
+    return {
+        "asset_id": token_id,
+        "market": "condition-1",
+        "bids": [{"price": "0.49", "size": "10"}],
+        "asks": [{"price": "0.51", "size": "12"}],
+    }
 
 
 def test_polymarket_paper_command_is_available() -> None:
@@ -529,6 +556,42 @@ def test_paper_submit_order_emits_execution_events_without_live_order() -> None:
     trader.client.place_limit_order.assert_not_called()
 
 
+def test_micro_survival_paper_entry_remains_simulated_only() -> None:
+    trader = _trader(_settings(account_balance=20.0))
+    plan = RiskPlan(
+        account_balance=20.0,
+        entry_price=0.50,
+        stop_loss_price=0.46,
+        take_profit_price=0.55,
+        partial_tp_price=0.53,
+        risk_amount=0.05,
+        kelly_fraction=0.0,
+        capped_fraction=0.0025,
+        position_size=0.1,
+        notional_size=0.05,
+        stop_loss_pct=0.08,
+        diagnostics={"bankroll_mode": "MICRO_SURVIVAL", "micro_survival_active": True},
+    )
+
+    receipt = trader._submit_order(
+        "yes-token",
+        side="BUY",
+        price=0.50,
+        size=plan.position_size,
+        intent_type=OrderIntentType.ENTRY,
+        risk_plan=plan,
+        source_market_id="pm-5m-btc",
+        outcome="YES",
+    )
+
+    assert receipt is not None
+    assert receipt.status == "paper"
+    assert trader.dashboard_portfolio_state()["bankroll_mode"] == "MICRO_SURVIVAL"
+    assert trader.dashboard_portfolio_state()["bankroll_tier_id"] == "T0_MICRO_SEED"
+    assert trader.dashboard_portfolio_state()["bankroll_family"] == "MICRO"
+    trader.client.place_limit_order.assert_not_called()
+
+
 def test_observability_failures_do_not_crash_paper_submit_order() -> None:
     trader = _trader()
     trader.quant_events = _FailingQuantLogger()
@@ -666,7 +729,7 @@ def test_market_display_metrics_warns_on_token_mapping_mismatch() -> None:
     metrics = trader.get_market_display_metrics("BTC", outcome="YES", confidence=0.61)
 
     assert "no_condition_id_mismatch" in metrics.token_mapping_warning
-    assert metrics.skip_reason == "token_mapping_warning"
+    assert metrics.skip_reason == "token_mapping_mismatch"
 
 
 def test_market_display_metrics_logs_orderbook_failure_diagnostics(caplog: pytest.LogCaptureFixture) -> None:
@@ -684,9 +747,269 @@ def test_market_display_metrics_logs_orderbook_failure_diagnostics(caplog: pytes
     with caplog.at_level("WARNING"):
         metrics = trader.get_market_display_metrics("BTC", outcome="YES", confidence=0.61)
 
-    assert metrics.skip_reason == "no_orderbook"
+    assert metrics.skip_reason == "empty_book"
     assert any("last_successful_orderbook_age_ms=321" in record.message for record in caplog.records)
     assert any("market_slug=btc-updown-5m" in record.message for record in caplog.records)
+
+
+def test_market_display_metrics_logs_structured_clob_failure_diagnostics(caplog: pytest.LogCaptureFixture) -> None:
+    trader = _trader()
+    trader._real_token_ids["BTC"] = ("yes-token", "no-token")
+    trader._market_token_meta["BTC"] = {
+        "slug": "btc-updown-5m",
+        "condition_id": "condition-1",
+        "yes_token_id": "yes-token",
+        "no_token_id": "no-token",
+    }
+    trader.client.get_orderbook.side_effect = ClobOrderbookError(
+        "clob_rate_limited",
+        "429 too many requests",
+        token_id="yes-token",
+        exception_type="HTTPError",
+        status_code=429,
+        api_failure=True,
+    )
+
+    with caplog.at_level("WARNING"):
+        metrics = trader.get_market_display_metrics("BTC", outcome="YES", confidence=0.61)
+
+    assert metrics.skip_reason == "clob_rate_limited"
+    assert metrics.orderbook_readiness_reason == "clob_rate_limited"
+    assert metrics.clob_error_category == "clob_rate_limited"
+    assert metrics.clob_exception_type == "HTTPError"
+    assert metrics.clob_status_code == 429
+    assert metrics.clob_api_failure is True
+    assert any("category=clob_rate_limited" in record.message for record in caplog.records)
+
+
+def test_orderbook_readiness_classifier_fresh_book_has_no_unavailable_reason() -> None:
+    trader = _trader()
+    trader._last_orderbook_age_ms["BTC"] = 5
+
+    reason = trader._classify_orderbook_readiness_reason(
+        "BTC",
+        token_ids=("yes-token", "no-token"),
+        yes_ask=0.51,
+        no_ask=0.50,
+    )
+
+    assert reason == ""
+
+
+def test_orderbook_readiness_classifier_tracks_warmup_before_empty_book() -> None:
+    trader = _trader()
+
+    reasons = [
+        trader._classify_orderbook_readiness_reason(
+            "BTC",
+            token_ids=("yes-token", "no-token"),
+            orderbook_error="empty_orderbook bids=0 asks=0",
+        )
+        for _ in range(4)
+    ]
+
+    assert reasons[:3] == ["warmup_pending", "warmup_pending", "warmup_pending"]
+    assert reasons[3] == "empty_book"
+
+
+def test_orderbook_readiness_classifier_missing_token_and_stale_book() -> None:
+    trader = _trader()
+
+    assert trader._classify_orderbook_readiness_reason("BTC", token_ids=None) == "missing_token_id"
+    assert (
+        trader._classify_orderbook_readiness_reason(
+            "BTC",
+            token_ids=("yes-token", "no-token"),
+            orderbook_error="stale_orderbook age=4.2s",
+        )
+        == "stale_book"
+    )
+
+
+def test_orderbook_readiness_classifier_categorizes_clob_errors() -> None:
+    trader = _trader()
+
+    assert (
+        trader._classify_orderbook_readiness_reason(
+            "BTC",
+            token_ids=("yes-token", "no-token"),
+            orderbook_error="request timed out",
+        )
+        == "clob_timeout"
+    )
+    assert (
+        trader._classify_orderbook_readiness_reason(
+            "BTC",
+            token_ids=("yes-token", "no-token"),
+            orderbook_error="404 token not found",
+        )
+        == "clob_token_not_found"
+    )
+    assert (
+        trader._classify_orderbook_readiness_reason(
+            "BTC",
+            token_ids=("yes-token", "no-token"),
+            orderbook_error="429 too many requests",
+        )
+        == "clob_rate_limited"
+    )
+
+
+def test_clob_client_classifies_orderbook_api_errors_without_fetching_network() -> None:
+    client = PolymarketClient()
+
+    class HTTPError(Exception):
+        status_code = 500
+
+    class RateLimitError(Exception):
+        status_code = 429
+
+    assert client._clob_orderbook_category(TimeoutError("timed out"), token_id="token") == "clob_timeout"
+    assert client._clob_orderbook_category(RateLimitError("too many requests"), token_id="token") == "clob_rate_limited"
+    assert client._clob_orderbook_category(HTTPError("server error"), token_id="token") == "clob_http_error"
+    assert client._clob_orderbook_category(RuntimeError("token not found"), token_id="token") == "clob_token_not_found"
+    assert client._clob_orderbook_category(RuntimeError("PolymarketClient not connected"), token_id="token") == "clob_client_not_connected"
+
+
+def test_clob_orderbook_rate_limit_opens_token_cooldown(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = PolymarketClient()
+    client.settings = _clob_settings(clob_orderbook_retry_count=2, clob_rate_limit_cooldown_seconds=30)
+
+    class RateLimitError(Exception):
+        status_code = 429
+
+    market_data_client = MagicMock()
+    market_data_client.get_order_book.side_effect = RateLimitError("too many requests")
+    client._market_data_client = market_data_client
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(ClobOrderbookError) as exc_info:
+        client.get_orderbook("yes-token")
+
+    exc = exc_info.value
+    assert exc.category == "clob_rate_limited"
+    assert exc.error_class == "rate_limited"
+    assert exc.backoff_active is True
+    assert exc.cooldown_seconds_remaining > 0
+    assert market_data_client.get_order_book.call_count == 1
+
+    with pytest.raises(ClobOrderbookError) as cooldown_info:
+        client.get_orderbook("yes-token")
+
+    assert cooldown_info.value.backoff_active is True
+    assert market_data_client.get_order_book.call_count == 1
+
+
+def test_clob_orderbook_transient_errors_retry_bounded_then_degrade(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = PolymarketClient()
+    client.settings = _clob_settings(clob_orderbook_retry_count=1, clob_orderbook_retry_backoff_ms=5)
+
+    class ServerError(Exception):
+        status_code = 500
+
+    sleeps: list[float] = []
+    market_data_client = MagicMock()
+    market_data_client.get_order_book.side_effect = ServerError("server unavailable")
+    client._market_data_client = market_data_client
+    monkeypatch.setattr(time, "sleep", lambda seconds: sleeps.append(seconds))
+
+    with pytest.raises(ClobOrderbookError) as exc_info:
+        client.get_orderbook("yes-token")
+
+    assert exc_info.value.error_class == "transient_api_issue"
+    assert exc_info.value.retry_count == 1
+    assert market_data_client.get_order_book.call_count == 2
+    assert len(sleeps) == 1
+    assert sleeps[0] <= 1.0
+
+
+def test_clob_orderbook_token_or_market_error_does_not_spam_retries(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = PolymarketClient()
+    client.settings = _clob_settings(clob_orderbook_retry_count=3, clob_market_error_cooldown_seconds=15)
+
+    class NotFoundError(Exception):
+        status_code = 404
+
+    market_data_client = MagicMock()
+    market_data_client.get_order_book.side_effect = NotFoundError("token not found")
+    client._market_data_client = market_data_client
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
+
+    with pytest.raises(ClobOrderbookError) as exc_info:
+        client.get_orderbook("bad-token")
+
+    assert exc_info.value.error_class == "token_or_market_issue"
+    assert exc_info.value.backoff_active is True
+    assert market_data_client.get_order_book.call_count == 1
+
+
+def test_clob_orderbook_per_token_circuit_opens_and_recovers(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = PolymarketClient()
+    client.settings = _clob_settings(
+        clob_orderbook_retry_count=0,
+        clob_market_error_cooldown_seconds=10,
+        clob_circuit_breaker_threshold=2,
+    )
+
+    class ServerError(Exception):
+        status_code = 500
+
+    market_data_client = MagicMock()
+    market_data_client.get_order_book.side_effect = [ServerError("server unavailable"), ServerError("server unavailable")]
+    client._market_data_client = market_data_client
+    monkeypatch.setattr(time, "sleep", lambda _seconds: None)
+
+    for _ in range(2):
+        with pytest.raises(ClobOrderbookError):
+            client.get_orderbook("yes-token")
+
+    health = client.get_orderbook_health("yes-token")
+    assert health["clob_circuit_open"] is True
+    assert health["clob_backoff_active"] is True
+
+    state = client._orderbook_health_for("yes-token")
+    state.cooldown_until = 0.0
+    state.circuit_open_until = 0.0
+    market_data_client.get_order_book.side_effect = None
+    market_data_client.get_order_book.return_value = _valid_orderbook_raw("yes-token")
+
+    snapshot = client.get_orderbook("yes-token")
+    recovered = client.get_orderbook_health("yes-token")
+
+    assert snapshot.best_bid == pytest.approx(0.49)
+    assert recovered["clob_circuit_open"] is False
+    assert recovered["clob_recovery_count"] == 1
+
+
+def test_market_display_metrics_degrades_without_crashing_paper_runtime() -> None:
+    trader = _trader()
+    trader._real_token_ids["BTC"] = ("yes-token", "no-token")
+    trader._market_token_meta["BTC"] = {
+        "slug": "btc-updown-5m",
+        "condition_id": "condition-1",
+        "yes_token_id": "yes-token",
+        "no_token_id": "no-token",
+    }
+    trader.client.get_orderbook.side_effect = ClobOrderbookError(
+        "clob_http_error",
+        "server unavailable",
+        token_id="yes-token",
+        exception_type="ServerError",
+        status_code=500,
+        api_failure=True,
+        error_class="transient_api_issue",
+        circuit_open=True,
+        backoff_active=True,
+        cooldown_seconds_remaining=10.0,
+        error_rate=1.0,
+    )
+
+    metrics = trader.get_market_display_metrics("BTC", outcome="YES", confidence=0.61)
+
+    assert metrics.skip_reason == "clob_http_error"
+    assert metrics.market_data_degraded is True
+    assert metrics.clob_circuit_open is True
+    trader.client.place_limit_order.assert_not_called()
 
 
 def test_duplicate_entry_protection_still_blocks_same_market_epoch() -> None:

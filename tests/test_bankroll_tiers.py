@@ -7,7 +7,9 @@ from polymarket.bankroll_tiers import (
     BankrollTier,
     calculate_base_risk_pct,
     get_bankroll_tier,
+    get_bankroll_tier_with_hysteresis,
     get_tier_config,
+    iter_tier_configs,
 )
 from polymarket.order_manager import OrderRequest, PolymarketOrderManager
 from polymarket.position_sizing import PositionSizingInput, calculate_position_size
@@ -16,20 +18,20 @@ from polymarket.position_sizing import PositionSizingInput, calculate_position_s
 @pytest.mark.parametrize(
     ("bankroll", "tier"),
     [
-        (0.0, BankrollTier.SEED_TEST),
-        (24.99, BankrollTier.SEED_TEST),
-        (25.0, BankrollTier.MICRO),
-        (50.0, BankrollTier.MICRO_PLUS),
-        (100.0, BankrollTier.SMALL),
-        (250.0, BankrollTier.SMALL_PLUS),
-        (500.0, BankrollTier.BUILDER),
-        (1_000.0, BankrollTier.GROWTH),
-        (2_500.0, BankrollTier.GROWTH_PLUS),
-        (5_000.0, BankrollTier.SERIOUS),
-        (10_000.0, BankrollTier.CAPITAL_BASE),
-        (25_000.0, BankrollTier.CAPITAL_PLUS),
-        (50_000.0, BankrollTier.ADVANCED),
-        (100_000.0, BankrollTier.PROFESSIONAL),
+        (0.0, BankrollTier.T0_MICRO_SEED),
+        (24.99, BankrollTier.T0_MICRO_SEED),
+        (25.0, BankrollTier.T1_MICRO_BUILD),
+        (50.0, BankrollTier.T2_MICRO_SURVIVAL),
+        (100.0, BankrollTier.T3_BASE_BUILD),
+        (250.0, BankrollTier.T4_BASE_STABLE),
+        (500.0, BankrollTier.T5_SMALL_GROWTH),
+        (1_000.0, BankrollTier.T6_GROWTH_1),
+        (2_500.0, BankrollTier.T7_GROWTH_2),
+        (5_000.0, BankrollTier.T8_GROWTH_3),
+        (10_000.0, BankrollTier.T9_CAPITAL_1),
+        (25_000.0, BankrollTier.T10_CAPITAL_2),
+        (50_000.0, BankrollTier.T11_CAPITAL_3),
+        (100_000.0, BankrollTier.T12_CAPITAL_PRESERVE),
     ],
 )
 def test_get_bankroll_tier_boundaries(bankroll: float, tier: BankrollTier) -> None:
@@ -37,48 +39,97 @@ def test_get_bankroll_tier_boundaries(bankroll: float, tier: BankrollTier) -> No
 
 
 def test_get_bankroll_tier_remains_raw_lookup_at_threshold() -> None:
-    assert get_bankroll_tier(99.0) == BankrollTier.MICRO_PLUS
-    assert get_bankroll_tier(100.0) == BankrollTier.SMALL
-    assert get_bankroll_tier(99.0) == BankrollTier.MICRO_PLUS
+    assert get_bankroll_tier(99.0) == BankrollTier.T2_MICRO_SURVIVAL
+    assert get_bankroll_tier(100.0) == BankrollTier.T3_BASE_BUILD
+    assert get_bankroll_tier(99.0) == BankrollTier.T2_MICRO_SURVIVAL
+
+
+def test_tier_metadata_table_is_complete_and_centralized() -> None:
+    configs = iter_tier_configs()
+
+    assert [config.tier_id for config in configs] == [
+        "T0_MICRO_SEED",
+        "T1_MICRO_BUILD",
+        "T2_MICRO_SURVIVAL",
+        "T3_BASE_BUILD",
+        "T4_BASE_STABLE",
+        "T5_SMALL_GROWTH",
+        "T6_GROWTH_1",
+        "T7_GROWTH_2",
+        "T8_GROWTH_3",
+        "T9_CAPITAL_1",
+        "T10_CAPITAL_2",
+        "T11_CAPITAL_3",
+        "T12_CAPITAL_PRESERVE",
+    ]
+    assert [config.family for config in configs[:3]] == ["MICRO", "MICRO", "MICRO"]
+    assert [config.family for config in configs[3:5]] == ["BASE", "BASE"]
+    assert [config.family for config in configs[5:9]] == ["GROWTH", "GROWTH", "GROWTH", "GROWTH"]
+    assert [config.family for config in configs[9:]] == ["CAPITAL", "CAPITAL", "CAPITAL", "CAPITAL"]
+
+    for config in configs:
+        metadata = config.to_metadata()
+        assert metadata["tier_id"] == config.tier.value
+        assert metadata["tier_name"]
+        assert metadata["risk_profile"]
+        assert metadata["description"]
+        assert config.lower_bound < config.upper_bound
+        assert 0.0 < config.recommended_max_risk_fraction <= 0.10
+        assert config.min_position_size_hint <= config.max_position_size_hint
 
 
 def test_bankroll_rank_lock_holds_active_tier_inside_downgrade_buffer() -> None:
-    lock = BankrollRankLock(initial_tier=BankrollTier.SMALL, buffer_pct=0.05)
+    lock = BankrollRankLock(initial_tier=BankrollTier.T3_BASE_BUILD, buffer_pct=0.05)
 
     result = lock.update(99.0)
-    assert result.active_tier == BankrollTier.SMALL
-    assert result.raw_tier == BankrollTier.MICRO_PLUS
+    assert result.active_tier == BankrollTier.T3_BASE_BUILD
+    assert result.raw_tier == BankrollTier.T2_MICRO_SURVIVAL
     assert result.reason == "inside_hysteresis"
+    assert result.tier_locked
+    assert result.hysteresis_active
 
-    assert lock.update(100.0).active_tier == BankrollTier.SMALL
-    assert lock.update(101.0).active_tier == BankrollTier.SMALL
-    assert lock.update(99.0).active_tier == BankrollTier.SMALL
+    assert lock.update(100.0).active_tier == BankrollTier.T3_BASE_BUILD
+    assert lock.update(101.0).active_tier == BankrollTier.T3_BASE_BUILD
+    assert lock.update(99.0).active_tier == BankrollTier.T3_BASE_BUILD
 
 
 def test_bankroll_rank_lock_downgrades_after_buffer_breaks() -> None:
-    lock = BankrollRankLock(initial_tier=BankrollTier.SMALL, buffer_pct=0.05)
+    lock = BankrollRankLock(initial_tier=BankrollTier.T3_BASE_BUILD, buffer_pct=0.05)
 
     result = lock.update(94.99)
 
-    assert result.active_tier == BankrollTier.MICRO_PLUS
-    assert result.raw_tier == BankrollTier.MICRO_PLUS
+    assert result.active_tier == BankrollTier.T2_MICRO_SURVIVAL
+    assert result.raw_tier == BankrollTier.T2_MICRO_SURVIVAL
     assert result.reason == "downgraded"
     assert result.changed
 
 
-def test_bankroll_rank_lock_delays_upgrade_until_above_buffer() -> None:
-    lock = BankrollRankLock(initial_tier=BankrollTier.MICRO_PLUS, buffer_pct=0.05)
+def test_bankroll_rank_lock_upgrades_at_boundary_without_aggression_buffer() -> None:
+    lock = BankrollRankLock(initial_tier=BankrollTier.T2_MICRO_SURVIVAL, buffer_pct=0.05)
 
-    assert lock.update(100.0).active_tier == BankrollTier.MICRO_PLUS
-    assert lock.update(101.0).active_tier == BankrollTier.MICRO_PLUS
-    assert lock.update(105.0).active_tier == BankrollTier.MICRO_PLUS
+    assert lock.update(99.99).active_tier == BankrollTier.T2_MICRO_SURVIVAL
 
-    result = lock.update(105.01)
+    result = lock.update(100.0)
 
-    assert result.active_tier == BankrollTier.SMALL
-    assert result.raw_tier == BankrollTier.SMALL
+    assert result.active_tier == BankrollTier.T3_BASE_BUILD
+    assert result.raw_tier == BankrollTier.T3_BASE_BUILD
     assert result.reason == "upgraded"
     assert result.changed
+
+
+def test_hysteresis_helper_uses_previous_tier_for_downgrades_only() -> None:
+    assert (
+        get_bankroll_tier_with_hysteresis(99.0, BankrollTier.T3_BASE_BUILD, buffer_pct=0.05)
+        == BankrollTier.T3_BASE_BUILD
+    )
+    assert (
+        get_bankroll_tier_with_hysteresis(94.99, BankrollTier.T3_BASE_BUILD, buffer_pct=0.05)
+        == BankrollTier.T2_MICRO_SURVIVAL
+    )
+    assert (
+        get_bankroll_tier_with_hysteresis(100.0, BankrollTier.T2_MICRO_SURVIVAL, buffer_pct=0.05)
+        == BankrollTier.T3_BASE_BUILD
+    )
 
 
 def test_base_risk_interpolates_inside_tier() -> None:
@@ -112,7 +163,7 @@ def test_position_sizing_uses_all_multipliers() -> None:
     result = calculate_position_size(sizing_input)
 
     assert result.approved
-    assert result.tier == BankrollTier.GROWTH
+    assert result.tier == BankrollTier.T6_GROWTH_1
     assert result.tier_base_risk_pct == pytest.approx(0.025)
     assert result.final_size_usd == pytest.approx(25.0)
     assert result.shares == pytest.approx(50.0)

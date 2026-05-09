@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from inspect import signature
 from typing import Any
@@ -62,6 +63,60 @@ class OrderbookSnapshot:
     raw_response: dict[str, Any] | None = None
 
 
+class ClobOrderbookError(RuntimeError):
+    """Structured market-data exception for orderbook diagnostics."""
+
+    def __init__(
+        self,
+        category: str,
+        message: str,
+        *,
+        token_id: str = "",
+        exception_type: str = "",
+        status_code: int | None = None,
+        parse_failure: bool = False,
+        api_failure: bool = False,
+        retry_count: int = 0,
+        error_class: str = "",
+        cooldown_seconds_remaining: float = 0.0,
+        circuit_open: bool = False,
+        backoff_active: bool = False,
+        error_rate: float = 0.0,
+        recovery_count: int = 0,
+    ) -> None:
+        super().__init__(message)
+        self.category = category
+        self.token_id = token_id
+        self.exception_type = exception_type or self.__class__.__name__
+        self.status_code = status_code
+        self.parse_failure = parse_failure
+        self.api_failure = api_failure
+        self.retry_count = retry_count
+        self.error_class = error_class
+        self.cooldown_seconds_remaining = cooldown_seconds_remaining
+        self.circuit_open = circuit_open
+        self.backoff_active = backoff_active
+        self.error_rate = error_rate
+        self.recovery_count = recovery_count
+
+
+@dataclass(slots=True)
+class ClobOrderbookHealth:
+    token_id: str
+    consecutive_failures: int = 0
+    cooldown_until: float = 0.0
+    circuit_open_until: float = 0.0
+    recent_failures: deque[float] = field(default_factory=deque)
+    recent_requests: deque[float] = field(default_factory=deque)
+    total_failures: int = 0
+    total_successes: int = 0
+    recovery_count: int = 0
+    last_error_class: str = ""
+    last_category: str = ""
+    last_exception_type: str = ""
+    last_status_code: int | None = None
+
+
 @dataclass(slots=True)
 class OrderReceipt:
     order_id: str
@@ -97,6 +152,9 @@ class PolymarketClient:
         # v3.2: Circuit breaker state
         self._consecutive_failures = 0
         self._circuit_open_until = 0.0
+        self._orderbook_health: defaultdict[str, ClobOrderbookHealth] = defaultdict(
+            lambda: ClobOrderbookHealth(token_id="")
+        )
 
     # ------------------------------------------------------------------
     # Auth helpers
@@ -203,6 +261,202 @@ class PolymarketClient:
             if value is not None:
                 return str(value)
         return default
+
+    def _exception_status_code(self, exc: Exception) -> int | None:
+        for attr in ("status_code", "status"):
+            value = getattr(exc, attr, None)
+            if value is not None:
+                try:
+                    return int(value)
+                except (TypeError, ValueError):
+                    pass
+        response = getattr(exc, "response", None)
+        if response is not None:
+            for attr in ("status_code", "status"):
+                value = getattr(response, attr, None)
+                if value is not None:
+                    try:
+                        return int(value)
+                    except (TypeError, ValueError):
+                        pass
+        return None
+
+    def _orderbook_health_for(self, token_id: str) -> ClobOrderbookHealth:
+        health = self._orderbook_health[token_id]
+        if not health.token_id:
+            health.token_id = token_id
+        return health
+
+    def _clob_error_class(self, category: str, status_code: int | None = None) -> str:
+        if status_code == 429 or category == "clob_rate_limited":
+            return "rate_limited"
+        if status_code in {400, 404} or category == "clob_token_not_found":
+            return "token_or_market_issue"
+        if status_code in {401, 403} or category in {"clob_auth_or_client_issue", "clob_client_not_connected"}:
+            return "auth_or_client_issue"
+        if category in {"clob_timeout", "clob_empty_response"}:
+            return "transient_api_issue"
+        if status_code is not None and status_code >= 500:
+            return "transient_api_issue"
+        if category == "clob_http_error":
+            return "transient_api_issue"
+        return "transient_api_issue"
+
+    def _clob_orderbook_category(self, exc: Exception, *, token_id: str) -> str:
+        message = str(exc).lower()
+        status_code = self._exception_status_code(exc)
+        exc_name = exc.__class__.__name__.lower()
+        if not token_id or "not connected" in message or "not installed" in message or "client_not_connected" in message:
+            return "clob_client_not_connected"
+        if "timeout" in message or "timed out" in message or "timeout" in exc_name:
+            return "clob_timeout"
+        if status_code == 429 or "rate limit" in message or "too many requests" in message:
+            return "clob_rate_limited"
+        if status_code in {401, 403} or "unauthorized" in message or "forbidden" in message:
+            return "clob_auth_or_client_issue"
+        if status_code in {400, 404} or "not found" in message or "unknown token" in message or "invalid token" in message:
+            return "clob_token_not_found"
+        if status_code is not None and status_code >= 400:
+            return "clob_http_error"
+        return "clob_http_error"
+
+    def _wrap_orderbook_exception(self, exc: Exception, *, token_id: str) -> ClobOrderbookError:
+        if isinstance(exc, ClobOrderbookError):
+            return exc
+        status_code = self._exception_status_code(exc)
+        category = self._clob_orderbook_category(exc, token_id=token_id)
+        return ClobOrderbookError(
+            category,
+            str(exc),
+            token_id=token_id,
+            exception_type=exc.__class__.__name__,
+            status_code=status_code,
+            parse_failure=False,
+            api_failure=True,
+            error_class=self._clob_error_class(category, status_code),
+        )
+
+    def _trim_orderbook_health(self, health: ClobOrderbookHealth, now: float) -> None:
+        window = max(1, int(getattr(self.settings, "clob_circuit_breaker_window_seconds", 60)))
+        cutoff = now - window
+        while health.recent_failures and health.recent_failures[0] < cutoff:
+            health.recent_failures.popleft()
+        while health.recent_requests and health.recent_requests[0] < cutoff:
+            health.recent_requests.popleft()
+
+    def _orderbook_error_rate(self, health: ClobOrderbookHealth, now: float | None = None) -> float:
+        now = time.monotonic() if now is None else now
+        self._trim_orderbook_health(health, now)
+        requests = len(health.recent_requests)
+        if requests <= 0:
+            return 0.0
+        return round(len(health.recent_failures) / requests, 4)
+
+    def get_orderbook_health(self, token_id: str) -> dict[str, Any]:
+        health = self._orderbook_health_for(token_id)
+        now = time.monotonic()
+        self._trim_orderbook_health(health, now)
+        cooldown_remaining = max(0.0, health.cooldown_until - now, health.circuit_open_until - now)
+        circuit_open = health.circuit_open_until > now
+        return {
+            "clob_error_rate": self._orderbook_error_rate(health, now),
+            "clob_backoff_active": cooldown_remaining > 0.0,
+            "clob_circuit_open": circuit_open,
+            "clob_cooldown_seconds_remaining": round(cooldown_remaining, 3),
+            "clob_recovery_count": int(health.recovery_count),
+            "clob_consecutive_failures": int(health.consecutive_failures),
+            "clob_last_error_class": health.last_error_class,
+            "clob_last_error_category": health.last_category,
+        }
+
+    def _orderbook_cooldown_error(self, token_id: str, health: ClobOrderbookHealth) -> ClobOrderbookError:
+        now = time.monotonic()
+        cooldown_remaining = max(0.0, health.cooldown_until - now, health.circuit_open_until - now)
+        circuit_open = health.circuit_open_until > now
+        category = health.last_category or "clob_http_error"
+        error_class = health.last_error_class or self._clob_error_class(category, health.last_status_code)
+        return ClobOrderbookError(
+            category,
+            f"clob_orderbook_cooldown_active token={token_id[:12]}... remaining={cooldown_remaining:.2f}s",
+            token_id=token_id,
+            exception_type="ClobOrderbookCooldown",
+            status_code=health.last_status_code,
+            api_failure=True,
+            retry_count=0,
+            error_class=error_class,
+            cooldown_seconds_remaining=cooldown_remaining,
+            circuit_open=circuit_open,
+            backoff_active=True,
+            error_rate=self._orderbook_error_rate(health, now),
+            recovery_count=health.recovery_count,
+        )
+
+    def _record_orderbook_success(self, token_id: str, health: ClobOrderbookHealth) -> None:
+        now = time.monotonic()
+        self._trim_orderbook_health(health, now)
+        health.total_successes += 1
+        if health.consecutive_failures or health.cooldown_until > now or health.circuit_open_until > now:
+            health.recovery_count += 1
+        health.consecutive_failures = 0
+        health.cooldown_until = 0.0
+        health.circuit_open_until = 0.0
+        health.last_error_class = ""
+        health.last_category = ""
+        health.last_exception_type = ""
+        health.last_status_code = None
+
+    def _record_orderbook_failure(
+        self,
+        token_id: str,
+        health: ClobOrderbookHealth,
+        exc: ClobOrderbookError,
+        *,
+        retry_count: int,
+    ) -> ClobOrderbookError:
+        now = time.monotonic()
+        self._trim_orderbook_health(health, now)
+        health.consecutive_failures += 1
+        health.total_failures += 1
+        health.recent_failures.append(now)
+        health.last_error_class = exc.error_class or self._clob_error_class(exc.category, exc.status_code)
+        health.last_category = exc.category
+        health.last_exception_type = exc.exception_type
+        health.last_status_code = exc.status_code
+
+        cooldown_seconds = 0
+        if health.last_error_class == "rate_limited":
+            cooldown_seconds = int(getattr(self.settings, "clob_rate_limit_cooldown_seconds", 30))
+        elif health.last_error_class in {"token_or_market_issue", "auth_or_client_issue"}:
+            cooldown_seconds = int(getattr(self.settings, "clob_market_error_cooldown_seconds", 10))
+
+        threshold = max(1, int(getattr(self.settings, "clob_circuit_breaker_threshold", 3)))
+        if len(health.recent_failures) >= threshold:
+            cooldown_seconds = max(cooldown_seconds, int(getattr(self.settings, "clob_market_error_cooldown_seconds", 10)))
+            health.circuit_open_until = max(health.circuit_open_until, now + cooldown_seconds)
+        if cooldown_seconds > 0:
+            health.cooldown_until = max(health.cooldown_until, now + cooldown_seconds)
+
+        cooldown_remaining = max(0.0, health.cooldown_until - now, health.circuit_open_until - now)
+        return ClobOrderbookError(
+            exc.category,
+            str(exc),
+            token_id=token_id,
+            exception_type=exc.exception_type,
+            status_code=exc.status_code,
+            parse_failure=exc.parse_failure,
+            api_failure=exc.api_failure,
+            retry_count=retry_count,
+            error_class=health.last_error_class,
+            cooldown_seconds_remaining=cooldown_remaining,
+            circuit_open=health.circuit_open_until > now,
+            backoff_active=cooldown_remaining > 0.0,
+            error_rate=self._orderbook_error_rate(health, now),
+            recovery_count=health.recovery_count,
+        )
+
+    def _orderbook_should_retry(self, exc: ClobOrderbookError) -> bool:
+        error_class = exc.error_class or self._clob_error_class(exc.category, exc.status_code)
+        return error_class == "transient_api_issue"
 
     def _normalise_order_receipt(
         self,
@@ -365,6 +619,14 @@ class PolymarketClient:
 
     def get_orderbook(self, token_id: str) -> OrderbookSnapshot:
         """Return a normalized orderbook snapshot for a binary outcome token."""
+        if not token_id:
+            raise ClobOrderbookError(
+                "clob_token_not_found",
+                "missing token_id for get_orderbook",
+                token_id=token_id,
+                exception_type="ValueError",
+                api_failure=False,
+            )
         client = self._require_market_data_client()
 
         def _level_value(level: Any, field: str) -> float:
@@ -420,12 +682,31 @@ class PolymarketClient:
             }
 
         def _parse_snapshot(raw: Any) -> OrderbookSnapshot:
-            if isinstance(raw, dict):
-                bids: list[Any] = raw.get("bids") or []
-                asks: list[Any] = raw.get("asks") or []
-            else:
-                bids = raw.bids or []
-                asks = raw.asks or []
+            if raw in (None, "", [], {}):
+                raise ClobOrderbookError(
+                    "clob_empty_response",
+                    f"empty_orderbook_response token={token_id[:12]}...",
+                    token_id=token_id,
+                    exception_type="ValueError",
+                    parse_failure=True,
+                    error_class="transient_api_issue",
+                )
+            try:
+                if isinstance(raw, dict):
+                    bids: list[Any] = raw.get("bids") or []
+                    asks: list[Any] = raw.get("asks") or []
+                else:
+                    bids = raw.bids or []
+                    asks = raw.asks or []
+            except Exception as exc:
+                raise ClobOrderbookError(
+                    "clob_parse_error",
+                    f"parse_orderbook_failed token={token_id[:12]}... error={exc}",
+                    token_id=token_id,
+                    exception_type=exc.__class__.__name__,
+                    parse_failure=True,
+                    error_class="token_or_market_issue",
+                ) from exc
 
             timestamp_ms, age_seconds = _timestamp_age(raw)
             if timestamp_ms and age_seconds > 3.0:
@@ -463,7 +744,10 @@ class PolymarketClient:
             )
 
         def _fetch_and_parse() -> OrderbookSnapshot:
-            raw = client.get_order_book(token_id)
+            try:
+                raw = client.get_order_book(token_id)
+            except Exception as exc:
+                raise self._wrap_orderbook_exception(exc, token_id=token_id) from exc
             snapshot = _parse_snapshot(raw)
             LOGGER.info(
                 "[ORDERBOOK_RESPONSE] token=%s raw=%s",
@@ -472,10 +756,84 @@ class PolymarketClient:
             )
             return snapshot
 
-        snapshot = self._api_call_with_retry(
-            _fetch_and_parse,
-            operation=f"get_orderbook({token_id[:12]}...)",
-        )
+        health = self._orderbook_health_for(token_id)
+        now = time.monotonic()
+        self._trim_orderbook_health(health, now)
+        health.recent_requests.append(now)
+        if health.cooldown_until > now or health.circuit_open_until > now:
+            raise self._orderbook_cooldown_error(token_id, health)
+
+        max_retries = max(0, int(getattr(self.settings, "clob_orderbook_retry_count", 1)))
+        max_attempts = max(1, 1 + max_retries)
+        backoff_ms = max(0, int(getattr(self.settings, "clob_orderbook_retry_backoff_ms", 150)))
+        last_error: ClobOrderbookError | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                snapshot = _fetch_and_parse()
+                self._record_orderbook_success(token_id, health)
+                break
+            except ClobOrderbookError as exc:
+                last_error = exc
+            except RuntimeError as exc:
+                message = str(exc).lower()
+                if (
+                    message.startswith("stale_orderbook")
+                    or message.startswith("empty_orderbook")
+                    or message.startswith("invalid_orderbook")
+                ):
+                    raise
+                last_error = self._wrap_orderbook_exception(exc, token_id=token_id)
+            except Exception as exc:
+                last_error = self._wrap_orderbook_exception(exc, token_id=token_id)
+
+            retry_count = attempt - 1
+            retry_allowed = (
+                last_error is not None
+                and self._orderbook_should_retry(last_error)
+                and attempt < max_attempts
+            )
+            if retry_allowed and backoff_ms > 0:
+                wait_seconds = min(1.0, (backoff_ms / 1000.0) * (2 ** retry_count))
+                LOGGER.debug(
+                    "[CLOB_ORDERBOOK_BACKOFF] token=%s category=%s class=%s attempt=%d/%d sleep=%.3fs",
+                    token_id[:12],
+                    last_error.category,
+                    last_error.error_class,
+                    attempt,
+                    max_attempts,
+                    wait_seconds,
+                )
+                time.sleep(wait_seconds)
+                continue
+
+            degraded = self._record_orderbook_failure(
+                token_id,
+                health,
+                last_error,
+                retry_count=retry_count,
+            )
+            LOGGER.warning(
+                "[CLOB_ORDERBOOK_DEGRADED] token=%s category=%s class=%s status=%s retry_count=%s "
+                "error_rate=%.3f circuit_open=%s cooldown=%.2fs error=%s",
+                token_id[:12],
+                degraded.category,
+                degraded.error_class,
+                degraded.status_code,
+                degraded.retry_count,
+                degraded.error_rate,
+                degraded.circuit_open,
+                degraded.cooldown_seconds_remaining,
+                degraded,
+            )
+            raise degraded
+        else:  # pragma: no cover - defensive guard for type checkers.
+            raise self._record_orderbook_failure(
+                token_id,
+                health,
+                last_error or ClobOrderbookError("clob_http_error", "unknown orderbook failure", token_id=token_id),
+                retry_count=max_retries,
+            )
         LOGGER.info(
             "[ORDERBOOK_BEST] condition_id=%s token=%s bid=%.4f ask=%.4f spread=%.6f "
             "bid_size=%.4f ask_size=%.4f age=%.3fs",

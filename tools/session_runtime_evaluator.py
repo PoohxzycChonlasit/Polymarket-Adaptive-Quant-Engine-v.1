@@ -5,7 +5,7 @@ import json
 import sys
 from collections import Counter
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, time as time_type, timezone
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +36,25 @@ BOTTLENECKS = (
     "execution_failures",
     "websocket_instability",
     "healthy_no_signal",
+    "no_data",
 )
+
+HARDBLOCK_ORDERBOOK_REASONS = {
+    "missing_token_id",
+    "empty_book",
+    "clob_error",
+    "token_mapping_mismatch",
+    "clob_http_error",
+    "clob_timeout",
+    "clob_rate_limited",
+    "clob_parse_error",
+    "clob_empty_response",
+    "clob_token_not_found",
+    "clob_client_not_connected",
+    "clob_auth_or_client_issue",
+}
+WARMUP_ORDERBOOK_REASONS = {"warmup_pending"}
+STALE_ORDERBOOK_REASONS = {"stale_book"}
 
 
 @dataclass
@@ -56,6 +74,7 @@ class SessionRuntimeEvaluation:
     orderbook_readiness: dict[str, Any] = field(default_factory=dict)
     recommendations: list[str] = field(default_factory=list)
     reports_used: dict[str, Any] = field(default_factory=dict)
+    time_filter: dict[str, Any] = field(default_factory=dict)
     fail_reasons: list[str] = field(default_factory=list)
     caution_reasons: list[str] = field(default_factory=list)
 
@@ -82,6 +101,81 @@ def _utc_now() -> str:
 
 def _today_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _parse_event_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _parse_hhmm_utc(date: str, value: str | None, *, field_name: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed_time = time_type.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be HH:MM in UTC; got {value!r}") from exc
+    if parsed_time.second or parsed_time.microsecond:
+        raise ValueError(f"{field_name} must be HH:MM in UTC; got {value!r}")
+    parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
+    return datetime.combine(parsed_date, parsed_time, tzinfo=timezone.utc)
+
+
+def _time_filter_payload(
+    *,
+    date: str,
+    since: str | None = None,
+    until: str | None = None,
+) -> dict[str, Any]:
+    since_utc = _parse_hhmm_utc(date, since, field_name="--since")
+    until_utc = _parse_hhmm_utc(date, until, field_name="--until")
+    if since_utc is not None and until_utc is not None and since_utc >= until_utc:
+        raise ValueError("--since must be earlier than --until")
+    return {
+        "timezone": "UTC",
+        "since": since,
+        "until": until,
+        "since_utc": since_utc,
+        "until_utc": until_utc,
+        "applied": since_utc is not None or until_utc is not None,
+        "display": _format_filter_range(date=date, since_utc=since_utc, until_utc=until_utc),
+    }
+
+
+def _format_filter_range(
+    *,
+    date: str,
+    since_utc: datetime | None,
+    until_utc: datetime | None,
+) -> str:
+    start = since_utc or datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+    end = until_utc or datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc).replace(hour=23, minute=59, second=59)
+    return f"{start.isoformat().replace('+00:00', 'Z')}..{end.isoformat().replace('+00:00', 'Z')}"
+
+
+def _event_in_time_filter(event: dict[str, Any], time_filter: dict[str, Any]) -> bool:
+    if not time_filter.get("applied"):
+        return True
+    timestamp = _parse_event_timestamp(event.get("timestamp_utc"))
+    if timestamp is None:
+        return False
+    since_utc = time_filter.get("since_utc")
+    until_utc = time_filter.get("until_utc")
+    if since_utc is not None and timestamp < since_utc:
+        return False
+    if until_utc is not None and timestamp >= until_utc:
+        return False
+    return True
 
 
 def _as_int(value: Any, default: int = 0) -> int:
@@ -144,9 +238,18 @@ def _safe_analyze_replay(
     *,
     date: str,
     quant_data_dir: str | Path,
+    since_utc: datetime | None = None,
+    until_utc: datetime | None = None,
 ) -> tuple[ReplayReport | None, str | None]:
     try:
-        report = analyze_replay(base_dir=quant_data_dir, date=date, write_reports=False, write_csv=False)
+        report = analyze_replay(
+            base_dir=quant_data_dir,
+            date=date,
+            write_reports=False,
+            write_csv=False,
+            since_utc=since_utc,
+            until_utc=until_utc,
+        )
         return report, None
     except Exception as exc:
         return None, f"replay_analyzer_failed:{exc}"
@@ -170,14 +273,113 @@ def _safe_analyze_no_entries(
         return None, f"no_entry_analyzer_failed:{exc}"
 
 
+def _execution_log_paths(base_dir: str | Path, date: str) -> list[Path]:
+    base_path = Path(base_dir)
+    direct_candidates = [
+        base_path / "execution_log" / f"{date}.jsonl",
+        base_path / f"execution_log_{date}.jsonl",
+        base_path / f"{date}_execution_log.jsonl",
+        base_path / "execution" / f"{date}.jsonl",
+    ]
+    existing_direct = [path for path in direct_candidates if path.exists()]
+    if existing_direct:
+        return existing_direct
+
+    if not base_path.exists():
+        return []
+
+    discovered: list[Path] = []
+    for path in base_path.rglob("*.jsonl"):
+        relative = str(path.relative_to(base_path)).lower()
+        if date not in relative:
+            continue
+        if "execution" not in relative:
+            continue
+        if "report" in relative or "cache" in relative:
+            continue
+        discovered.append(path)
+    return sorted(discovered)
+
+
+def _payload_from_event(event: dict[str, Any]) -> dict[str, Any]:
+    payload = event.get("payload")
+    if isinstance(payload, dict):
+        return payload
+    return event
+
+
+def _has_failure_detail(payload: dict[str, Any]) -> bool:
+    return any(bool(payload.get(key)) for key in ("error", "exception", "message", "traceback"))
+
+
+def _is_true_execution_failure_event(event_name: str, status: str = "", payload: dict[str, Any] | None = None) -> bool:
+    event = event_name.lower()
+    event_status = status.lower()
+    event_payload = payload or {}
+    if event == "order_intent_reject":
+        return False
+    if event == "order_submit_failed":
+        return True
+    if event == "market_analysis_exception":
+        return event_status in {"failed", "error", "rejected"} or _has_failure_detail(event_payload)
+    if event == "cancel_order" and event_status in {"failed", "error", "rejected"}:
+        return True
+    if event in {"live_order_submitted", "order_submit"} and event_status in {"failed", "error", "rejected"}:
+        return True
+    if event.endswith("_failed") or event.endswith("_failure"):
+        return event_status in {"failed", "error", "rejected"} or _has_failure_detail(event_payload)
+    return False
+
+
+def _load_execution_jsonl_summary(
+    base_dir: str | Path,
+    date: str,
+    *,
+    time_filter: dict[str, Any] | None = None,
+) -> dict[str, int] | None:
+    paths = _execution_log_paths(base_dir, date)
+    if not paths:
+        return None
+
+    summary = {
+        "execution_events_loaded": 0,
+        "execution_failure_count": 0,
+    }
+    for path in paths:
+        with path.open(encoding="utf-8") as handle:
+            for line in handle:
+                raw = line.strip()
+                if not raw:
+                    continue
+                try:
+                    event = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(event, dict):
+                    continue
+                if time_filter and not _event_in_time_filter(event, time_filter):
+                    continue
+                payload = _payload_from_event(event)
+                summary["execution_events_loaded"] += 1
+                event_name = str(payload.get("event", "") or event.get("event", "") or "").lower()
+                status = str(payload.get("status", "") or event.get("status", "") or "").lower()
+                if _is_true_execution_failure_event(event_name, status, payload):
+                    summary["execution_failure_count"] += 1
+    return summary
+
+
 def _build_scores(
     *,
     skip_counts: Counter[str],
     replay: ReplayReport | None,
     no_entry: NoEntryReport | None,
     execution_failure_count: int = 0,
+    no_data: bool = False,
 ) -> dict[str, int]:
     scores = {key: 0 for key in BOTTLENECKS}
+    if no_data:
+        scores["no_data"] = 1
+        return scores
     scores["cutoff"] += skip_counts.get("time_unsafe", 0)
     scores["risk_plan_zero"] += skip_counts.get("risk_plan_zero", 0)
     scores["strategy_thresholds"] += sum(
@@ -187,9 +389,9 @@ def _build_scores(
     scores["market_readiness"] += sum(
         count
         for reason, count in skip_counts.items()
-        if reason in {"orderbook_unavailable", "no_orderbook"} or "token_mapping" in reason
+        if reason in {"orderbook_unavailable", "no_orderbook", *HARDBLOCK_ORDERBOOK_REASONS} or "token_mapping" in reason
     )
-    scores["stale_data"] += sum(count for reason, count in skip_counts.items() if "stale" in reason)
+    scores["stale_data"] += sum(count for reason, count in skip_counts.items() if "stale" in reason or reason in STALE_ORDERBOOK_REASONS)
     scores["websocket_instability"] += sum(
         count
         for reason, count in skip_counts.items()
@@ -226,12 +428,66 @@ def _rank_bottlenecks(scores: dict[str, int]) -> tuple[str, str]:
     return primary, secondary
 
 
+def _orderbook_reason_counts(
+    *,
+    replay_payload: dict[str, Any],
+    no_entry_payload: dict[str, Any],
+    skip_counts: Counter[str],
+) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    for item in replay_payload.get("orderbook_readiness_reasons", []) or []:
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            counts[str(item[0])] += _as_int(item[1])
+
+    market_quality = no_entry_payload.get("market_data_quality", {}) if no_entry_payload else {}
+    if isinstance(market_quality, dict):
+        reason_payload = market_quality.get("orderbook_readiness_reason_counts", {})
+        if isinstance(reason_payload, dict):
+            for reason, count in reason_payload.items():
+                counts[str(reason)] += _as_int(count)
+        else:
+            for item in reason_payload or []:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    counts[str(item[0])] += _as_int(item[1])
+
+    for reason in HARDBLOCK_ORDERBOOK_REASONS | WARMUP_ORDERBOOK_REASONS | STALE_ORDERBOOK_REASONS:
+        if skip_counts.get(reason):
+            counts[reason] += skip_counts[reason]
+    return counts
+
+
+def _top_pairs_from_payloads(*payloads: dict[str, Any], key: str) -> list[list[Any]]:
+    counts: Counter[str] = Counter()
+    for payload in payloads:
+        if not payload:
+            continue
+        value = payload.get(key)
+        if isinstance(value, dict):
+            for reason, count in value.items():
+                counts[str(reason)] += _as_int(count)
+        else:
+            for item in value or []:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    counts[str(item[0])] += _as_int(item[1])
+        market_quality = payload.get("market_data_quality", {})
+        if isinstance(market_quality, dict):
+            nested = market_quality.get(key, {})
+            if isinstance(nested, dict):
+                for reason, count in nested.items():
+                    counts[str(reason)] += _as_int(count)
+    return [[reason, count] for reason, count in counts.most_common()]
+
+
 def _resolved_execution_failure_count(
     *,
     replay_payload: dict[str, Any],
     no_entry_payload: dict[str, Any],
+    raw_execution_summary: dict[str, int] | None = None,
 ) -> int:
     """Resolve true execution failures without treating total execution events as failures."""
+    if raw_execution_summary is not None:
+        return _as_int(raw_execution_summary.get("execution_failure_count"))
+
     if replay_payload:
         return _as_int(replay_payload.get("execution_failure_count"))
 
@@ -259,11 +515,14 @@ def _status_for(
     replay_payload: dict[str, Any] | None = None,
     no_entry_payload: dict[str, Any] | None = None,
     load_errors: list[str],
+    no_data: bool = False,
 ) -> tuple[str, list[str], list[str]]:
     fail_reasons: list[str] = []
     caution_reasons: list[str] = []
     if load_errors:
         caution_reasons.extend(load_errors)
+    if no_data:
+        caution_reasons.append("no_data_for_time_filter")
     if replay is not None and replay.bad_json_lines > 0:
         fail_reasons.append("bad_json_lines_present")
     if no_entry is not None and no_entry.bad_json_lines > 0:
@@ -303,17 +562,26 @@ def evaluate_session_runtime(
     quant_data_dir: str | Path = DEFAULT_QUANT_DATA_DIR,
     realtime_log_dir: str | Path = DEFAULT_REALTIME_LOG_DIR,
     load_offline_reports: bool = True,
+    since: str | None = None,
+    until: str | None = None,
 ) -> SessionRuntimeEvaluation:
     date = date or _today_utc()
+    time_filter = _time_filter_payload(date=date, since=since, until=until)
+    time_filter_applied = bool(time_filter.get("applied"))
     load_errors: list[str] = []
     replay_obj: ReplayReport | None = replay_report if isinstance(replay_report, ReplayReport) else None
     no_entry_obj: NoEntryReport | None = no_entry_report if isinstance(no_entry_report, NoEntryReport) else None
 
     if load_offline_reports and replay_obj is None:
-        replay_obj, error = _safe_analyze_replay(date=date, quant_data_dir=quant_data_dir)
+        replay_obj, error = _safe_analyze_replay(
+            date=date,
+            quant_data_dir=quant_data_dir,
+            since_utc=time_filter.get("since_utc"),
+            until_utc=time_filter.get("until_utc"),
+        )
         if error:
             load_errors.append(error)
-    if load_offline_reports and no_entry_obj is None:
+    if load_offline_reports and no_entry_obj is None and not time_filter_applied:
         no_entry_obj, error = _safe_analyze_no_entries(
             date=date,
             quant_data_dir=quant_data_dir,
@@ -339,16 +607,30 @@ def evaluate_session_runtime(
         replay_counts = _skip_counts_from_replay(replay_obj or replay_payload)
         skip_counts = replay_counts if replay_counts else _skip_counts_from_session(session_summary)
 
+    raw_execution_summary = (
+        _load_execution_jsonl_summary(quant_data_dir, date, time_filter=time_filter)
+        if load_offline_reports and replay_report is None and no_entry_report is None
+        else None
+    )
     execution_failure_count = _resolved_execution_failure_count(
         replay_payload=replay_payload,
         no_entry_payload=no_entry_payload,
+        raw_execution_summary=raw_execution_summary,
     )
 
+    no_data = bool(
+        time_filter_applied
+        and not session_summary
+        and _as_int(replay_payload.get("events_loaded")) == 0
+        and _as_int((raw_execution_summary or {}).get("execution_events_loaded")) == 0
+        and not no_entry_payload
+    )
     scores = _build_scores(
         skip_counts=skip_counts,
         replay=replay_obj,
         no_entry=no_entry_obj,
         execution_failure_count=execution_failure_count,
+        no_data=no_data,
     )
     if replay_obj is None and replay_payload:
         scores["cutoff"] += _as_int(replay_payload.get("cutoff_block_count"))
@@ -364,6 +646,14 @@ def evaluate_session_runtime(
         market_quality = no_entry_payload.get("market_data_quality", {})
         if isinstance(market_quality, dict):
             scores["market_readiness"] += _as_int(market_quality.get("token_mapping_warning_count"))
+    orderbook_reason_counts = _orderbook_reason_counts(
+        replay_payload=replay_payload,
+        no_entry_payload=no_entry_payload,
+        skip_counts=skip_counts,
+    )
+    if orderbook_reason_counts:
+        scores["market_readiness"] += sum(orderbook_reason_counts.get(reason, 0) for reason in HARDBLOCK_ORDERBOOK_REASONS)
+        scores["stale_data"] += sum(orderbook_reason_counts.get(reason, 0) for reason in STALE_ORDERBOOK_REASONS)
     primary, secondary = _rank_bottlenecks(scores)
     status, fail_reasons, caution_reasons = _status_for(
         primary=primary,
@@ -373,6 +663,7 @@ def evaluate_session_runtime(
         replay_payload=replay_payload,
         no_entry_payload=no_entry_payload,
         load_errors=load_errors,
+        no_data=no_data,
     )
 
     scanned = _as_int((session_summary or {}).get("total_markets_scanned"))
@@ -386,7 +677,20 @@ def evaluate_session_runtime(
         skipped = max(skipped, _as_int(replay_payload.get("skipped_decisions")))
 
     top_skips = [[reason, count] for reason, count in skip_counts.most_common(10)]
-    recommendations = _recommendations(primary, secondary, status, no_entry_obj, replay_obj)
+    hard_orderbook_unavailable_count = (
+        sum(orderbook_reason_counts.get(reason, 0) for reason in HARDBLOCK_ORDERBOOK_REASONS)
+        if orderbook_reason_counts
+        else skip_counts.get("orderbook_unavailable", 0) + skip_counts.get("no_orderbook", 0)
+    )
+    stale_orderbook_count = sum(orderbook_reason_counts.get(reason, 0) for reason in STALE_ORDERBOOK_REASONS)
+    recommendations = _recommendations(
+        primary,
+        secondary,
+        status,
+        no_entry_obj,
+        replay_obj,
+        execution_failure_count=execution_failure_count,
+    )
     return SessionRuntimeEvaluation(
         date=date,
         generated_at_utc=_utc_now(),
@@ -422,24 +726,63 @@ def evaluate_session_runtime(
             "adaptive_cutoff_denied_count": _as_int(replay_payload.get("adaptive_cutoff_denied_count")),
             "late_entry_hard_block_count": _as_int(replay_payload.get("late_entry_hard_block_count")),
             "adaptive_cutoff_reasons": replay_payload.get("adaptive_cutoff_reasons", []),
+            "adaptive_cutoff_denied_reasons": replay_payload.get(
+                "adaptive_cutoff_denied_reasons",
+                replay_payload.get("adaptive_cutoff_reasons", []),
+            ),
         },
         risk_blocks={
             "risk_plan_zero_count": int(skip_counts.get("risk_plan_zero", 0)),
             "risk_reject_count": _as_int(replay_payload.get("risk_reject_count")),
             "risk_mode": str((session_summary or {}).get("risk_mode", "")),
             "risk_mode_allow_new_entries": (session_summary or {}).get("risk_mode_allow_new_entries"),
+            "bankroll_tier_id": str((session_summary or {}).get("bankroll_tier_id", "")),
+            "bankroll_tier_name": str((session_summary or {}).get("bankroll_tier_name", "")),
+            "bankroll_family": str((session_summary or {}).get("bankroll_family", "")),
+            "bankroll_risk_profile": str((session_summary or {}).get("bankroll_risk_profile", "")),
+            "bankroll_tier_locked": bool((session_summary or {}).get("bankroll_tier_locked", False)),
+            "bankroll_hysteresis_active": bool((session_summary or {}).get("bankroll_hysteresis_active", False)),
+            "bankroll_mode": str((session_summary or {}).get("bankroll_mode", "")),
+            "micro_survival_active": bool((session_summary or {}).get("micro_survival_active", False)),
+            "micro_position_size": _as_float((session_summary or {}).get("micro_position_size")),
         },
         execution_summary={
             "execution_failure_count": execution_failure_count,
-            "execution_events_loaded": _as_int(no_entry_payload.get("execution_events_loaded")),
+            "execution_events_loaded": _as_int(
+                (raw_execution_summary or {}).get(
+                    "execution_events_loaded",
+                    no_entry_payload.get("execution_events_loaded"),
+                )
+            ),
             "approved_decisions": _as_int(replay_payload.get("approved_decisions")),
             "rejected_decisions": _as_int(replay_payload.get("rejected_decisions")),
             "order_submit_attempt_count": _as_int(no_entry_payload.get("order_submit_attempt_count")),
             "paper_fill_count": _as_int(no_entry_payload.get("paper_fill_count")),
         },
         orderbook_readiness={
-            "orderbook_unavailable_count": int(skip_counts.get("orderbook_unavailable", 0) + skip_counts.get("no_orderbook", 0)),
-            "stale_data_count": int(skip_counts.get("stale_data", 0)),
+            "orderbook_unavailable_count": int(hard_orderbook_unavailable_count),
+            "warmup_pending_count": int(orderbook_reason_counts.get("warmup_pending", 0)),
+            "stale_data_count": int(skip_counts.get("stale_data", 0) + stale_orderbook_count),
+            "reason_breakdown": [[reason, count] for reason, count in orderbook_reason_counts.most_common()],
+            "clob_error_categories": _top_pairs_from_payloads(
+                replay_payload,
+                no_entry_payload,
+                key="clob_error_categories",
+            ),
+            "clob_exception_types": _top_pairs_from_payloads(
+                replay_payload,
+                no_entry_payload,
+                key="clob_exception_types",
+            ),
+            "clob_error_classes": _top_pairs_from_payloads(
+                replay_payload,
+                no_entry_payload,
+                key="clob_error_classes",
+            ),
+            "clob_backoff_active_count": _as_int(replay_payload.get("clob_backoff_active_count")),
+            "clob_circuit_open_count": _as_int(replay_payload.get("clob_circuit_open_count")),
+            "max_clob_error_rate": _as_float(replay_payload.get("max_clob_error_rate")),
+            "clob_recovery_count": _as_int(replay_payload.get("clob_recovery_count")),
             "average_orderbook_age_ms": _as_float(replay_payload.get("average_orderbook_age_ms", no_entry_payload.get("market_data_quality", {}).get("average_orderbook_age_ms", 0.0))),
             "max_orderbook_age_ms": _as_float(replay_payload.get("max_orderbook_age_ms")),
             "average_oracle_age_ms": _as_float(replay_payload.get("average_oracle_age_ms")),
@@ -450,7 +793,16 @@ def evaluate_session_runtime(
             "session_summary": bool(session_summary),
             "replay_report": bool(replay_payload),
             "no_entry_report": bool(no_entry_payload),
+            "execution_log_recomputed": raw_execution_summary is not None,
             "load_errors": load_errors,
+        },
+        time_filter={
+            "applied": bool(time_filter_applied),
+            "timezone": "UTC",
+            "since": since,
+            "until": until,
+            "range": str(time_filter.get("display") or ""),
+            "semantics": "half_open_since_inclusive_until_exclusive",
         },
         fail_reasons=fail_reasons,
         caution_reasons=caution_reasons,
@@ -463,6 +815,8 @@ def _recommendations(
     status: str,
     no_entry: NoEntryReport | None,
     replay: ReplayReport | None,
+    *,
+    execution_failure_count: int = 0,
 ) -> list[str]:
     recommendations: list[str] = []
     if status == DECISION_FAIL:
@@ -479,11 +833,18 @@ def _recommendations(
         recommendations.append("Latency is elevated; inspect cycle duration and decision latency before changing cutoffs.")
     elif primary == "healthy_no_signal":
         recommendations.append("No severe bottleneck found; this may be a healthy no-signal session.")
+    elif primary == "no_data":
+        recommendations.append("No events matched the UTC time filter; adjust --since/--until or evaluate the full date.")
     if secondary not in {"none", primary}:
         recommendations.append(f"Secondary bottleneck to monitor: {secondary}.")
     if no_entry and no_entry.recommendations:
-        recommendations.extend(no_entry.recommendations[:2])
-    if replay and replay.execution_failure_count:
+        no_entry_recommendations = no_entry.recommendations
+        if not execution_failure_count:
+            no_entry_recommendations = [
+                item for item in no_entry_recommendations if "execution" not in item.lower()
+            ]
+        recommendations.extend(no_entry_recommendations[:2])
+    if execution_failure_count:
         recommendations.append("Execution failures were present; keep live execution disabled and inspect execution_log.")
     return list(dict.fromkeys(recommendations))[:6]
 
@@ -495,7 +856,13 @@ def format_terminal_summary(evaluation: SessionRuntimeEvaluation) -> list[str]:
     orderbook = evaluation.orderbook_readiness
     risk = evaluation.risk_blocks
     execution = evaluation.execution_summary
+    time_filter = evaluation.time_filter or {}
     return [
+        (
+            f"filter={time_filter.get('range', 'none')} "
+            f"timezone={time_filter.get('timezone', 'UTC')} "
+            f"semantics={time_filter.get('semantics', 'none')}"
+        ),
         (
             f"SESSION_STATUS={evaluation.session_status} "
             f"PRIMARY_BOTTLENECK={evaluation.primary_bottleneck} "
@@ -519,19 +886,35 @@ def format_terminal_summary(evaluation: SessionRuntimeEvaluation) -> list[str]:
             f"time_unsafe={cutoff.get('time_unsafe_count', 0)} "
             f"blocks={cutoff.get('cutoff_block_count', 0)} "
             f"adaptive_allowed={cutoff.get('adaptive_cutoff_allowed_count', 0)} "
-            f"adaptive_denied={cutoff.get('adaptive_cutoff_denied_count', 0)}"
+            f"adaptive_denied={cutoff.get('adaptive_cutoff_denied_count', 0)} "
+            f"deny_reasons={cutoff.get('adaptive_cutoff_denied_reasons', [])}"
         ),
         (
             "orderbook "
             f"unavailable={orderbook.get('orderbook_unavailable_count', 0)} "
+            f"warmup_pending={orderbook.get('warmup_pending_count', 0)} "
             f"stale={orderbook.get('stale_data_count', 0)} "
-            f"avg_age_ms={orderbook.get('average_orderbook_age_ms', 0.0):.2f}"
+            f"avg_age_ms={orderbook.get('average_orderbook_age_ms', 0.0):.2f} "
+            f"reasons={orderbook.get('reason_breakdown', [])} "
+            f"clob_categories={orderbook.get('clob_error_categories', [])} "
+            f"clob_error_rate={orderbook.get('max_clob_error_rate', 0.0):.4f} "
+            f"backoff_active={orderbook.get('clob_backoff_active_count', 0)} "
+            f"circuit_open={orderbook.get('clob_circuit_open_count', 0)}"
         ),
         (
             "risk_execution "
             f"risk_plan_zero={risk.get('risk_plan_zero_count', 0)} "
             f"risk_rejects={risk.get('risk_reject_count', 0)} "
-            f"execution_failures={execution.get('execution_failure_count', 0)}"
+            f"execution_failures={execution.get('execution_failure_count', 0)} "
+            f"tier_id={risk.get('bankroll_tier_id', '')} "
+            f"tier_name={risk.get('bankroll_tier_name', '')} "
+            f"family={risk.get('bankroll_family', '')} "
+            f"profile={risk.get('bankroll_risk_profile', '')} "
+            f"tier_locked={str(bool(risk.get('bankroll_tier_locked', False))).lower()} "
+            f"hysteresis={str(bool(risk.get('bankroll_hysteresis_active', False))).lower()} "
+            f"bankroll_mode={risk.get('bankroll_mode', '')} "
+            f"micro_survival_active={str(bool(risk.get('micro_survival_active', False))).lower()} "
+            f"micro_position_size={risk.get('micro_position_size', 0.0):.4f}"
         ),
         f"top_skip_reasons={evaluation.skip_summary.get('top_skip_reasons', [])}",
     ]
@@ -544,7 +927,13 @@ def write_session_runtime_report(
 ) -> Path:
     output_dir = Path(report_dir or DEFAULT_REPORT_DIR)
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"session_runtime_evaluation_{evaluation.date}.json"
+    suffix = ""
+    time_filter = evaluation.time_filter or {}
+    if time_filter.get("applied"):
+        since = str(time_filter.get("since") or "start").replace(":", "")
+        until = str(time_filter.get("until") or "end").replace(":", "")
+        suffix = f"_{since}_to_{until}"
+    output_path = output_dir / f"session_runtime_evaluation_{evaluation.date}{suffix}.json"
     with output_path.open("w", encoding="utf-8") as handle:
         json.dump(evaluation.to_dict(), handle, indent=2, sort_keys=True)
     return output_path
@@ -564,6 +953,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--realtime-log-dir", default=str(DEFAULT_REALTIME_LOG_DIR), help="Realtime log root directory.")
     parser.add_argument("--report-dir", default=str(DEFAULT_REPORT_DIR), help="Report output directory.")
     parser.add_argument("--write-report", action="store_true", help="Write session_runtime_evaluation JSON under runtime/reports.")
+    parser.add_argument("--since", default=None, help="UTC start time HH:MM for same-day filtering; inclusive.")
+    parser.add_argument("--until", default=None, help="UTC end time HH:MM for same-day filtering; exclusive.")
     return parser
 
 
@@ -574,6 +965,8 @@ def main() -> int:
         quant_data_dir=args.quant_data_dir,
         realtime_log_dir=args.realtime_log_dir,
         load_offline_reports=True,
+        since=args.since,
+        until=args.until,
     )
     print_summary(evaluation)
     if args.write_report:

@@ -76,6 +76,15 @@ class ReplayReport:
     adaptive_cutoff_denied_count: int = 0
     late_entry_hard_block_count: int = 0
     adaptive_cutoff_reasons: list[tuple[str, int]] = field(default_factory=list)
+    adaptive_cutoff_denied_reasons: list[tuple[str, int]] = field(default_factory=list)
+    orderbook_readiness_reasons: list[tuple[str, int]] = field(default_factory=list)
+    clob_error_categories: list[tuple[str, int]] = field(default_factory=list)
+    clob_exception_types: list[tuple[str, int]] = field(default_factory=list)
+    clob_error_classes: list[tuple[str, int]] = field(default_factory=list)
+    clob_backoff_active_count: int = 0
+    clob_circuit_open_count: int = 0
+    max_clob_error_rate: float = 0.0
+    clob_recovery_count: int = 0
     pnl_by_outcome: dict[str, float] = field(default_factory=dict)
     pnl_by_asset: dict[str, float] = field(default_factory=dict)
     trades: list[ReplayTrade] = field(default_factory=list)
@@ -85,6 +94,11 @@ class ReplayReport:
         data["trades"] = [asdict(trade) for trade in self.trades]
         data["top_skip_reasons"] = [[reason, count] for reason, count in self.top_skip_reasons]
         data["adaptive_cutoff_reasons"] = [[reason, count] for reason, count in self.adaptive_cutoff_reasons]
+        data["adaptive_cutoff_denied_reasons"] = [[reason, count] for reason, count in self.adaptive_cutoff_denied_reasons]
+        data["orderbook_readiness_reasons"] = [[reason, count] for reason, count in self.orderbook_readiness_reasons]
+        data["clob_error_categories"] = [[reason, count] for reason, count in self.clob_error_categories]
+        data["clob_exception_types"] = [[reason, count] for reason, count in self.clob_exception_types]
+        data["clob_error_classes"] = [[reason, count] for reason, count in self.clob_error_classes]
         return data
 
 
@@ -101,6 +115,24 @@ def _parse_timestamp(value: Any) -> datetime | None:
     if parsed.tzinfo is None:
         parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed
+
+
+def _event_in_time_window(
+    event: dict[str, Any],
+    *,
+    since_utc: datetime | None = None,
+    until_utc: datetime | None = None,
+) -> bool:
+    if since_utc is None and until_utc is None:
+        return True
+    timestamp = _parse_timestamp(event.get("timestamp_utc"))
+    if timestamp is None:
+        return False
+    if since_utc is not None and timestamp < since_utc:
+        return False
+    if until_utc is not None and timestamp >= until_utc:
+        return False
+    return True
 
 
 def _parse_date(value: str) -> date_type:
@@ -170,6 +202,36 @@ def _get_nested(payload: dict[str, Any], *paths: str) -> Any:
     return None
 
 
+def _track_clob_error(
+    payload: dict[str, Any],
+    category_counts: Counter[str],
+    exception_type_counts: Counter[str],
+    class_counts: Counter[str],
+    report: ReplayReport,
+) -> None:
+    category = str(_get_nested(payload, "clob_error_category", "display.clob_error_category") or "")
+    exception_type = str(_get_nested(payload, "clob_exception_type", "display.clob_exception_type") or "")
+    error_class = str(_get_nested(payload, "clob_error_class", "display.clob_error_class") or "")
+    if category:
+        category_counts[category] += 1
+    if exception_type:
+        exception_type_counts[exception_type] += 1
+    if error_class:
+        class_counts[error_class] += 1
+    if _as_bool(_get_nested(payload, "clob_backoff_active", "display.clob_backoff_active")):
+        report.clob_backoff_active_count += 1
+    if _as_bool(_get_nested(payload, "clob_circuit_open", "display.clob_circuit_open")):
+        report.clob_circuit_open_count += 1
+    report.max_clob_error_rate = max(
+        report.max_clob_error_rate,
+        _as_float(_get_nested(payload, "clob_error_rate", "display.clob_error_rate")),
+    )
+    report.clob_recovery_count = max(
+        report.clob_recovery_count,
+        int(_as_float(_get_nested(payload, "clob_recovery_count", "display.clob_recovery_count"))),
+    )
+
+
 def _payload(event: dict[str, Any]) -> dict[str, Any]:
     payload = event.get("payload")
     return payload if isinstance(payload, dict) else {}
@@ -222,6 +284,8 @@ def load_replay_events(
     base_dir: str | Path = DEFAULT_QUANT_DATA_DIR,
     date_from: str,
     date_to: str,
+    since_utc: datetime | None = None,
+    until_utc: datetime | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     events: list[dict[str, Any]] = []
     bad_json_lines = 0
@@ -239,7 +303,8 @@ def load_replay_events(
                         continue
                     if isinstance(event, dict):
                         event["_category"] = path.parent.name
-                        events.append(event)
+                        if _event_in_time_window(event, since_utc=since_utc, until_utc=until_utc):
+                            events.append(event)
                     else:
                         bad_json_lines += 1
         except OSError:
@@ -256,6 +321,8 @@ def analyze_replay(
     report_dir: str | Path | None = None,
     write_reports: bool = False,
     write_csv: bool = False,
+    since_utc: datetime | None = None,
+    until_utc: datetime | None = None,
 ) -> ReplayReport:
     if date:
         date_from = date_to = date
@@ -264,7 +331,13 @@ def analyze_replay(
     if not date_to:
         date_to = date_from
 
-    events, bad_json_lines = load_replay_events(base_dir=base_dir, date_from=date_from, date_to=date_to)
+    events, bad_json_lines = load_replay_events(
+        base_dir=base_dir,
+        date_from=date_from,
+        date_to=date_to,
+        since_utc=since_utc,
+        until_utc=until_utc,
+    )
     report = ReplayReport(
         date_from=date_from,
         date_to=date_to,
@@ -290,6 +363,10 @@ def analyze_replay(
     decision_latency_ms_values: list[float] = []
     cutoff_block_seconds_remaining_values: list[float] = []
     adaptive_cutoff_reasons: Counter[str] = Counter()
+    orderbook_readiness_reasons: Counter[str] = Counter()
+    clob_error_categories: Counter[str] = Counter()
+    clob_exception_types: Counter[str] = Counter()
+    clob_error_classes: Counter[str] = Counter()
 
     for event in events:
         event_type = str(event.get("event_type", "") or "")
@@ -298,6 +375,21 @@ def analyze_replay(
 
         if category == "decision_log" or event_type == "decision":
             _analyze_decision(payload, report, skip_reasons)
+            readiness_reason = str(
+                _get_nested(
+                    payload,
+                    "orderbook_unavailable_reason",
+                    "display.orderbook_unavailable_reason",
+                    "orderbook_readiness_reason",
+                    "display.orderbook_readiness_reason",
+                    "clob_error_category",
+                    "display.clob_error_category",
+                )
+                or ""
+            )
+            if readiness_reason:
+                orderbook_readiness_reasons[readiness_reason] += 1
+            _track_clob_error(payload, clob_error_categories, clob_exception_types, clob_error_classes, report)
             _append_numeric(seconds_remaining_values, _get_nested(payload, "seconds_remaining", "display.seconds_remaining"))
             _append_age_ms(orderbook_age_ms_values, payload, prefix="orderbook")
             _append_age_ms(oracle_age_ms_values, payload, prefix="oracle")
@@ -307,7 +399,16 @@ def analyze_replay(
             if cutoff_seconds is not None:
                 _append_numeric(cutoff_block_seconds_remaining_values, cutoff_seconds)
             cutoff_policy = str(_get_nested(payload, "cutoff_policy", "display.cutoff_policy") or "").lower()
-            cutoff_reason = str(_get_nested(payload, "adaptive_cutoff_reason", "display.adaptive_cutoff_reason") or "")
+            cutoff_reason = str(
+                _get_nested(
+                    payload,
+                    "adaptive_cutoff_denied_reason",
+                    "display.adaptive_cutoff_denied_reason",
+                    "adaptive_cutoff_reason",
+                    "display.adaptive_cutoff_reason",
+                )
+                or ""
+            )
             if cutoff_policy == "adaptive":
                 if _as_bool(_get_nested(payload, "adaptive_cutoff_allowed", "display.adaptive_cutoff_allowed")):
                     report.adaptive_cutoff_allowed_count += 1
@@ -332,6 +433,10 @@ def analyze_replay(
             _append_numeric(seconds_remaining_values, _get_nested(payload, "seconds_remaining", "display.seconds_remaining"))
             _append_age_ms(orderbook_age_ms_values, payload, prefix="orderbook")
             _append_age_ms(oracle_age_ms_values, payload, prefix="oracle")
+            readiness_reason = str(_get_nested(payload, "orderbook_readiness_reason", "orderbook_unavailable_reason", "clob_error_category") or "")
+            if readiness_reason:
+                orderbook_readiness_reasons[readiness_reason] += 1
+            _track_clob_error(payload, clob_error_categories, clob_exception_types, clob_error_classes, report)
             asset = _asset_from_payload(payload)
             if asset:
                 latest_market_snapshot[asset] = payload
@@ -428,6 +533,11 @@ def analyze_replay(
         else 0.0
     )
     report.adaptive_cutoff_reasons = adaptive_cutoff_reasons.most_common(10)
+    report.adaptive_cutoff_denied_reasons = adaptive_cutoff_reasons.most_common(10)
+    report.orderbook_readiness_reasons = orderbook_readiness_reasons.most_common(10)
+    report.clob_error_categories = clob_error_categories.most_common(10)
+    report.clob_exception_types = clob_exception_types.most_common(10)
+    report.clob_error_classes = clob_error_classes.most_common(10)
     report.pnl_by_outcome = dict(sorted(pnl_by_outcome.items()))
     report.pnl_by_asset = dict(sorted(pnl_by_asset.items()))
 
@@ -556,11 +666,24 @@ def print_summary(report: ReplayReport) -> None:
     )
     print(
         "adaptive_cutoff_allowed={allowed} adaptive_cutoff_denied={denied} "
-        "late_entry_hard_blocks={hard_blocks} adaptive_reasons={reasons}".format(
+        "late_entry_hard_blocks={hard_blocks} adaptive_denied_reasons={reasons}".format(
             allowed=report.adaptive_cutoff_allowed_count,
             denied=report.adaptive_cutoff_denied_count,
             hard_blocks=report.late_entry_hard_block_count,
-            reasons=report.adaptive_cutoff_reasons,
+            reasons=report.adaptive_cutoff_denied_reasons,
+        )
+    )
+    print(f"orderbook_readiness_reasons={report.orderbook_readiness_reasons}")
+    print(f"clob_error_categories={report.clob_error_categories}")
+    print(f"clob_exception_types={report.clob_exception_types}")
+    print(
+        "clob_health error_classes={classes} backoff_active={backoff} circuit_open={circuit} "
+        "max_error_rate={error_rate:.4f} recovery_count={recovery}".format(
+            classes=report.clob_error_classes,
+            backoff=report.clob_backoff_active_count,
+            circuit=report.clob_circuit_open_count,
+            error_rate=report.max_clob_error_rate,
+            recovery=report.clob_recovery_count,
         )
     )
 

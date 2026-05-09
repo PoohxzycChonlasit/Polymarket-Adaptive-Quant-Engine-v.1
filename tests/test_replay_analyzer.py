@@ -73,7 +73,7 @@ def _write_sample_replay(base_dir: Path) -> None:
             "cutoff_block_seconds_remaining": 80,
             "cutoff_policy": "adaptive",
             "adaptive_cutoff_allowed": False,
-            "adaptive_cutoff_reason": "hard_close_zone",
+            "adaptive_cutoff_denied_reason": "hard_close_zone",
             "late_entry_hard_block": True,
         }),
     ])
@@ -173,6 +173,7 @@ def test_replay_metrics_are_correct(tmp_path: Path) -> None:
     assert report.late_entry_hard_block_count == 1
     assert ("healthy_late_entry", 1) in report.adaptive_cutoff_reasons
     assert ("hard_close_zone", 1) in report.adaptive_cutoff_reasons
+    assert ("hard_close_zone", 1) in report.adaptive_cutoff_denied_reasons
     assert report.pnl_by_outcome == {"NO": -0.5, "YES": 1.5}
     assert report.pnl_by_asset == {"BTC": 1.5, "ETH": -0.5}
 
@@ -219,6 +220,56 @@ def test_replay_still_counts_real_execution_errors(tmp_path: Path) -> None:
     report = analyze_replay(base_dir=base_dir, date=DATE)
 
     assert report.execution_failure_count == 3
+
+
+def test_replay_reports_orderbook_readiness_reason_breakdown(tmp_path: Path) -> None:
+    base_dir = tmp_path / "runtime" / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T00:00:00Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "warmup_pending",
+            "orderbook_unavailable_reason": "warmup_pending",
+        }),
+        _event("decision", f"{DATE}T00:00:01Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "missing_token_id",
+            "orderbook_unavailable_reason": "missing_token_id",
+        }),
+        _event("decision", f"{DATE}T00:00:02Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "stale_book",
+            "orderbook_readiness_reason": "stale_book",
+        }),
+        _event("decision", f"{DATE}T00:00:03Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "clob_timeout",
+            "clob_error_category": "clob_timeout",
+            "clob_error_class": "transient_api_issue",
+            "clob_exception_type": "TimeoutError",
+            "clob_backoff_active": True,
+            "clob_circuit_open": True,
+            "clob_error_rate": 1.0,
+            "clob_recovery_count": 2,
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+
+    assert ("warmup_pending", 1) in report.orderbook_readiness_reasons
+    assert ("missing_token_id", 1) in report.orderbook_readiness_reasons
+    assert ("stale_book", 1) in report.orderbook_readiness_reasons
+    assert ("clob_timeout", 1) in report.orderbook_readiness_reasons
+    assert ("clob_timeout", 1) in report.clob_error_categories
+    assert ("TimeoutError", 1) in report.clob_exception_types
+    assert ("transient_api_issue", 1) in report.clob_error_classes
+    assert report.clob_backoff_active_count == 1
+    assert report.clob_circuit_open_count == 1
+    assert report.max_clob_error_rate == pytest.approx(1.0)
+    assert report.clob_recovery_count == 2
 
 
 def test_replay_date_range_loading_counts_multiple_days(tmp_path: Path) -> None:

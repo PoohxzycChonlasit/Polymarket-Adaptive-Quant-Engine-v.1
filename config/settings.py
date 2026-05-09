@@ -155,13 +155,20 @@ class Settings(BaseSettings):
     entry_min_seconds_remaining: int = 30   # Legacy minimum; execution_entry_cutoff_seconds is the hard safety gate
     execution_entry_cutoff_seconds: int = 90
     adaptive_entry_cutoff_enabled: bool = True
-    adaptive_entry_cutoff_seconds: int = 60
-    adaptive_entry_hard_block_seconds: int = 60
+    adaptive_entry_cutoff_seconds: int = 45
+    adaptive_entry_hard_block_seconds: int = 45
     adaptive_entry_max_orderbook_age_ms: int = 1000
     adaptive_entry_max_oracle_age_ms: int = 5000
     adaptive_entry_max_decision_latency_ms: int = 2000
     adaptive_entry_max_cycle_duration_ms: int = 2500
     adaptive_entry_max_spread: float = 0.06
+    orderbook_warmup_pending_threshold: int = 3
+    clob_orderbook_retry_count: int = 1
+    clob_orderbook_retry_backoff_ms: int = 150
+    clob_rate_limit_cooldown_seconds: int = 30
+    clob_market_error_cooldown_seconds: int = 10
+    clob_circuit_breaker_threshold: int = 3
+    clob_circuit_breaker_window_seconds: int = 60
     execution_force_exit_seconds: int = 60
     exit_agent_entry_cutoff_seconds: int = 45
     exit_agent_cancel_entries_seconds: int = 35
@@ -174,6 +181,9 @@ class Settings(BaseSettings):
     max_active_positions_per_market: int = 1
     max_entries_per_market: int = 1
     max_risk_per_market: float = 0.06
+    micro_survival_bankroll_threshold: float = 100.0
+    micro_survival_min_position_size: float = 0.05
+    micro_survival_risk_fraction: float = 0.0025
     close_order_retry_attempts: int = 3
     close_order_retry_delay_seconds: float = 0.5
     min_shares_per_order: int = 1           # User Requested: allow minimum 1 share (dynamic 1-5)
@@ -226,6 +236,8 @@ class Settings(BaseSettings):
     # Safety floor: STOP ALL TRADING if balance drops below this
     bankroll_floor: float = 5.00            # $5.00 hard floor
     max_single_trade_risk: float = 0.03     # Hard cap: never risk > 3% in any single trade
+    bankroll_tier_v2_enabled: bool = True
+    bankroll_tier_hysteresis_pct: float = 0.05
 
     bankroll_tiers: list[dict[str, Any]] = Field(default_factory=lambda: [
         # risk scales aggressively as bankroll grows — micro is protected, growth bets near HARD_CAP
@@ -308,11 +320,33 @@ class Settings(BaseSettings):
         "arb_slippage_buffer",
         "arb_fail_risk_buffer",
         "arb_max_leg_spread",
+        "micro_survival_risk_fraction",
     )
     @classmethod
     def validate_execution_fraction(cls, v: float) -> float:
         if not (0 < v <= 1.0):
             raise ValueError(f"execution risk fraction={v:.3f} must be within (0, 1].")
+        return v
+
+    @field_validator("micro_survival_bankroll_threshold")
+    @classmethod
+    def validate_micro_survival_threshold(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("micro_survival_bankroll_threshold must be positive.")
+        return v
+
+    @field_validator("micro_survival_min_position_size")
+    @classmethod
+    def validate_micro_survival_min_position_size(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("micro_survival_min_position_size must be positive.")
+        return v
+
+    @field_validator("bankroll_tier_hysteresis_pct")
+    @classmethod
+    def validate_bankroll_tier_hysteresis_pct(cls, v: float) -> float:
+        if not (0.0 <= v <= 0.50):
+            raise ValueError("bankroll_tier_hysteresis_pct must be between 0.0 and 0.50.")
         return v
 
     @field_validator(
@@ -323,6 +357,13 @@ class Settings(BaseSettings):
         "adaptive_entry_max_oracle_age_ms",
         "adaptive_entry_max_decision_latency_ms",
         "adaptive_entry_max_cycle_duration_ms",
+        "orderbook_warmup_pending_threshold",
+        "clob_orderbook_retry_count",
+        "clob_orderbook_retry_backoff_ms",
+        "clob_rate_limit_cooldown_seconds",
+        "clob_market_error_cooldown_seconds",
+        "clob_circuit_breaker_threshold",
+        "clob_circuit_breaker_window_seconds",
         "execution_force_exit_seconds",
         "exit_agent_entry_cutoff_seconds",
         "exit_agent_cancel_entries_seconds",

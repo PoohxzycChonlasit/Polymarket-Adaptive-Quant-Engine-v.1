@@ -35,6 +35,9 @@ def _settings(**overrides):
         "max_active_positions_per_market": 1,
         "max_entries_per_market": 1,
         "max_risk_per_market": 0.20,
+        "micro_survival_bankroll_threshold": 100.0,
+        "micro_survival_min_position_size": 0.05,
+        "micro_survival_risk_fraction": 0.0025,
         "close_order_retry_attempts": 3,
         "close_order_retry_delay_seconds": 0.0,
         "entry_min_seconds_remaining": 30,
@@ -127,6 +130,27 @@ def _risk_plan(size: float = 10.0, price: float = 0.50) -> RiskPlan:
     )
 
 
+def _zero_min_size_plan(balance: float = 20.0, price: float = 0.50) -> RiskPlan:
+    return RiskPlan(
+        account_balance=balance,
+        entry_price=price,
+        stop_loss_price=price,
+        take_profit_price=price,
+        partial_tp_price=price,
+        risk_amount=0.0,
+        kelly_fraction=0.0,
+        capped_fraction=0.0,
+        position_size=0.0,
+        notional_size=0.0,
+        stop_loss_pct=0.08,
+        diagnostics={
+            "reason_from_order_manager": "below_min_position_size",
+            "blocked_reasons": ["below_min_position_size"],
+            "min_position_size_usd": 1.0,
+        },
+    )
+
+
 class ExecutionRiskControlTests(unittest.TestCase):
     def test_forced_exit_closes_position_at_sixty_seconds(self) -> None:
         trader = _trader()
@@ -190,7 +214,7 @@ class ExecutionRiskControlTests(unittest.TestCase):
             price_to_beat=100.0,
             current_price=101.0,
             price_diff_pct=0.01,
-            seconds_remaining=55,
+            seconds_remaining=40,
             epoch_start_ts=123,
         )
         trader.client.get_orderbook.return_value = OrderbookSnapshot("yes-token", 0.49, 0.50, 0.01, 10, 10)
@@ -251,6 +275,23 @@ class ExecutionRiskControlTests(unittest.TestCase):
         trader = _trader()
 
         decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=40,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertTrue(decision.late_entry_hard_block)
+        self.assertEqual(decision.reason, "hard_close_zone")
+
+    def test_live_adaptive_cutoff_keeps_force_exit_hard_block(self) -> None:
+        trader = _trader(_settings(paper_trading=False))
+
+        decision = trader._evaluate_entry_cutoff(
             seconds_remaining=55,
             static_cutoff_seconds=90,
             orderbook_age_ms=10,
@@ -262,6 +303,7 @@ class ExecutionRiskControlTests(unittest.TestCase):
 
         self.assertFalse(decision.allowed)
         self.assertTrue(decision.late_entry_hard_block)
+        self.assertEqual(decision.effective_cutoff_seconds, 60)
         self.assertEqual(decision.reason, "hard_close_zone")
 
     def test_adaptive_cutoff_allowed_when_market_data_and_latency_are_healthy(self) -> None:
@@ -279,8 +321,42 @@ class ExecutionRiskControlTests(unittest.TestCase):
 
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.policy, "adaptive")
-        self.assertEqual(decision.effective_cutoff_seconds, 60)
+        self.assertEqual(decision.effective_cutoff_seconds, 45)
         self.assertEqual(decision.reason, "healthy_late_entry")
+
+    def test_adaptive_cutoff_denied_when_spread_too_wide(self) -> None:
+        trader = _trader(_settings(adaptive_entry_max_spread=0.06))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=75,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.08,
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.policy, "adaptive")
+        self.assertEqual(decision.reason, "spread_too_wide")
+
+    def test_adaptive_cutoff_detail_reports_denied_reason(self) -> None:
+        trader = _trader(_settings(adaptive_entry_max_oracle_age_ms=1000))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=75,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=1500,
+            decision_latency_ms=100,
+            scan_cycle_duration_ms=100,
+            spread=0.01,
+        )
+        detail = trader._cutoff_decision_detail(decision)
+
+        self.assertEqual(detail["adaptive_cutoff_reason"], "oracle_stale")
+        self.assertEqual(detail["adaptive_cutoff_denied_reason"], "oracle_stale")
 
     def test_adaptive_cutoff_does_not_bypass_order_intent_guard(self) -> None:
         trader = _trader()
@@ -406,7 +482,85 @@ class ExecutionRiskControlTests(unittest.TestCase):
         )
         self.assertAlmostEqual(plan.account_balance, 21.0)
 
-    def test_bankroll_tier_lock_holds_until_upgrade_buffer_is_cleared(self) -> None:
+    def test_micro_survival_mode_activates_for_sub_100_paper_bankroll(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+
+        portfolio = trader.dashboard_portfolio_state()
+
+        self.assertEqual(portfolio["bankroll_mode"], "MICRO_SURVIVAL")
+        self.assertTrue(portfolio["micro_survival_active"])
+        self.assertAlmostEqual(portfolio["micro_position_size"], 0.05)
+        self.assertEqual(portfolio["bankroll_tier_id"], BankrollTier.T0_MICRO_SEED.value)
+        self.assertEqual(portfolio["bankroll_tier_name"], "Micro Seed")
+        self.assertEqual(portfolio["bankroll_family"], "MICRO")
+        self.assertEqual(portfolio["bankroll_risk_profile"], "seed_protection")
+
+    def test_standard_mode_remains_for_100_or_more_bankroll(self) -> None:
+        trader = _trader(_settings(account_balance=100.0))
+
+        portfolio = trader.dashboard_portfolio_state()
+
+        self.assertEqual(portfolio["bankroll_mode"], "STANDARD")
+        self.assertFalse(portfolio["micro_survival_active"])
+        self.assertEqual(portfolio["bankroll_tier_id"], BankrollTier.T3_BASE_BUILD.value)
+        self.assertEqual(portfolio["bankroll_family"], "BASE")
+        self.assertAlmostEqual(
+            trader._entry_min_position_size_usd(bankroll=100.0, entry_price=0.50),
+            1.0,
+        )
+
+    def test_micro_survival_rescues_min_size_zero_plan(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+
+        plan = trader._maybe_apply_micro_survival_plan(
+            _zero_min_size_plan(),
+            current_balance=20.0,
+            entry_price=0.50,
+        )
+
+        self.assertGreater(plan.position_size, 0.0)
+        self.assertAlmostEqual(plan.notional_size, 0.05)
+        self.assertAlmostEqual(plan.stop_loss_price, 0.46)
+        self.assertEqual(plan.diagnostics["bankroll_mode"], "MICRO_SURVIVAL")
+        self.assertTrue(plan.diagnostics["micro_survival_active"])
+        self.assertTrue(plan.diagnostics["rescued_from_risk_plan_zero"])
+
+    def test_micro_survival_does_not_rescue_live_mode(self) -> None:
+        trader = _trader(_settings(paper_trading=False, account_balance=20.0))
+        original_plan = _zero_min_size_plan()
+
+        plan = trader._maybe_apply_micro_survival_plan(
+            original_plan,
+            current_balance=20.0,
+            entry_price=0.50,
+        )
+
+        self.assertIs(plan, original_plan)
+        self.assertEqual(trader.dashboard_portfolio_state()["bankroll_mode"], "STANDARD")
+
+    def test_micro_survival_does_not_bypass_order_intent_guard(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+        plan = trader._maybe_apply_micro_survival_plan(
+            _zero_min_size_plan(),
+            current_balance=20.0,
+            entry_price=0.50,
+        )
+
+        receipt = trader._submit_order(
+            "no-token",
+            side="SELL",
+            price=0.50,
+            size=plan.position_size,
+            intent_type=OrderIntentType.ENTRY,
+            risk_plan=plan,
+            source_market_id="pm-5m-btc",
+            outcome="NO",
+        )
+
+        self.assertIsNone(receipt)
+        trader.client.place_limit_order.assert_not_called()
+
+    def test_bankroll_tier_lock_upgrades_at_boundary_and_keeps_metadata_visible(self) -> None:
         trader = _trader(_settings(account_balance=24.0))
         pos = _open_position(trader)
         trader._paper_record_trade(pos.entry_price * pos.size)
@@ -414,13 +568,27 @@ class ExecutionRiskControlTests(unittest.TestCase):
 
         trader._close_position_with_retry(pos, reason="test", exit_price=0.70)
 
-        self.assertEqual(trader.bankroll_state.raw_bankroll_tier, BankrollTier.MICRO.value)
-        self.assertEqual(trader.bankroll_state.current_bankroll_tier, BankrollTier.SEED_TEST.value)
+        self.assertEqual(trader.bankroll_state.raw_bankroll_tier, BankrollTier.T1_MICRO_BUILD.value)
+        self.assertEqual(trader.bankroll_state.current_bankroll_tier, BankrollTier.T1_MICRO_BUILD.value)
+        self.assertEqual(trader.bankroll_state.bankroll_tier_id, BankrollTier.T1_MICRO_BUILD.value)
+        self.assertEqual(trader.bankroll_state.bankroll_family, "MICRO")
+        self.assertFalse(trader.bankroll_state.bankroll_hysteresis_active)
 
         trader.bankroll_state.current_cash_balance = 26.26
         trader._update_bankroll_state()
 
-        self.assertEqual(trader.bankroll_state.current_bankroll_tier, BankrollTier.MICRO.value)
+        self.assertEqual(trader.bankroll_state.current_bankroll_tier, BankrollTier.T1_MICRO_BUILD.value)
+
+    def test_bankroll_tier_lock_holds_standard_tier_inside_downgrade_buffer(self) -> None:
+        trader = _trader(_settings(account_balance=100.0))
+
+        trader.bankroll_state.current_cash_balance = 99.0
+        trader._update_bankroll_state()
+
+        self.assertEqual(trader.bankroll_state.raw_bankroll_tier, BankrollTier.T2_MICRO_SURVIVAL.value)
+        self.assertEqual(trader.bankroll_state.current_bankroll_tier, BankrollTier.T3_BASE_BUILD.value)
+        self.assertTrue(trader.bankroll_state.bankroll_tier_locked)
+        self.assertTrue(trader.bankroll_state.bankroll_hysteresis_active)
 
     def test_daily_drawdown_updates_from_realtime_equity(self) -> None:
         trader = _trader(_settings(account_balance=20.0))

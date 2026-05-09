@@ -31,6 +31,8 @@ import time
 from dataclasses import dataclass, field
 from typing import NamedTuple
 
+from polymarket.bankroll_tiers import get_tier_config as get_bankroll_tier_config
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,8 +42,8 @@ HARD_DAILY_DRAWDOWN        = 0.10   # Stop trading if daily loss exceeds 10%
 FLOOR_BALANCE              = 5.00   # Stop ALL trading below this balance (dollars)
 LOSS_CLUSTER_THRESHOLD     = 3      # Consecutive losses before pause
 LOSS_CLUSTER_PAUSE_SECONDS = 1800   # 30-minute pause after loss cluster
-
-from config.settings import get_settings
+STANDARD_BANKROLL_MODE     = "STANDARD"
+MICRO_SURVIVAL_MODE        = "MICRO_SURVIVAL"
 
 class TierInfo(NamedTuple):
     label: str           # e.g. "micro"
@@ -54,17 +56,20 @@ class TierInfo(NamedTuple):
 
 def get_bankroll_tier(bankroll: float) -> TierInfo:
     """Return the risk tier for a given bankroll size."""
-    settings = get_settings()
-    for tier in settings.bankroll_tiers:
-        if tier["min_balance"] <= bankroll < tier["max_balance"]:
-            return TierInfo(
-                label=tier["label"], description=tier["description"],
-                max_risk_pct=tier["max_risk_pct"], kelly_fraction=tier["kelly_fraction"], min_bet=tier["min_bet"],
-                stop_loss_pct=tier.get("stop_loss_pct", 0.80)
-            )
-    # Fallback (bankroll <= 0)
+    try:
+        config = get_bankroll_tier_config(max(float(bankroll), 0.0))
+        return TierInfo(
+            label=config.tier_id,
+            description=config.description,
+            max_risk_pct=config.max_risk_pct,
+            kelly_fraction=config.kelly_fraction,
+            min_bet=config.min_position_size_hint,
+            stop_loss_pct=config.stop_loss_pct,
+        )
+    except Exception:
+        pass
     return TierInfo(
-        label="micro", description="Micro Bankroll",
+        label="T0_MICRO_SEED", description="Micro Seed",
         max_risk_pct=0.005, kelly_fraction=0.10, min_bet=0.05,
         stop_loss_pct=0.90
     )
@@ -500,4 +505,73 @@ def build_risk_plan(
         kelly_fraction=kelly, capped_fraction=capped_frac,
         position_size=position_size, notional_size=notional_size,
         stop_loss_pct=stop_loss_pct,
+    )
+
+
+def bankroll_mode_for(
+    *,
+    account_balance: float,
+    threshold: float,
+    paper_trading: bool,
+) -> str:
+    if paper_trading and 0.0 < float(account_balance) < float(threshold):
+        return MICRO_SURVIVAL_MODE
+    return STANDARD_BANKROLL_MODE
+
+
+def build_micro_survival_risk_plan(
+    *,
+    account_balance: float,
+    entry_price: float,
+    stop_loss_pct: float,
+    risk_fraction: float,
+    min_position_size_usd: float,
+    max_risk_per_trade: float,
+    take_profit_pct: float = 0.06,
+    partial_tp_pct: float = 0.03,
+    diagnostics: dict[str, object] | None = None,
+) -> RiskPlan:
+    if account_balance <= 0:
+        raise ValueError("account_balance must be positive.")
+    if entry_price <= 0:
+        raise ValueError("entry_price must be positive.")
+    if not 0 < stop_loss_pct < 1:
+        raise ValueError("stop_loss_pct must be between 0 and 1.")
+
+    effective_fraction = min(
+        max(float(risk_fraction), 0.0),
+        max(float(max_risk_per_trade), 0.0),
+        HARD_CAP_SINGLE_TRADE,
+    )
+    risk_cap_usd = account_balance * effective_fraction
+    minimum_usd = max(float(min_position_size_usd), 0.0)
+    notional_size = min(max(risk_cap_usd, minimum_usd), risk_cap_usd, account_balance)
+    notional_size = round(max(notional_size, 0.0), 6)
+    position_size = round(notional_size / max(entry_price, 1e-9), 6)
+    stop_loss_price = entry_price * (1 - stop_loss_pct)
+
+    merged_diagnostics: dict[str, object] = dict(diagnostics or {})
+    merged_diagnostics.update(
+        {
+            "bankroll_mode": MICRO_SURVIVAL_MODE,
+            "micro_survival_active": True,
+            "micro_position_size": notional_size,
+            "micro_survival_risk_fraction": effective_fraction,
+            "micro_survival_min_position_size": minimum_usd,
+        }
+    )
+
+    return RiskPlan(
+        account_balance=account_balance,
+        entry_price=entry_price,
+        stop_loss_price=stop_loss_price,
+        take_profit_price=entry_price * (1 + take_profit_pct),
+        partial_tp_price=entry_price * (1 + partial_tp_pct),
+        risk_amount=notional_size,
+        kelly_fraction=0.0,
+        capped_fraction=(notional_size / account_balance if account_balance > 0 else 0.0),
+        position_size=position_size,
+        notional_size=notional_size,
+        stop_loss_pct=stop_loss_pct,
+        diagnostics=merged_diagnostics,
     )

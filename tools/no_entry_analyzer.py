@@ -29,6 +29,21 @@ DEFAULT_REALTIME_LOG_DIR = Path("runtime/realtime_logs")
 DEFAULT_REPORT_DIR = Path("runtime/reports")
 
 
+HARDBLOCK_ORDERBOOK_REASONS = {
+    "missing_token_id",
+    "empty_book",
+    "clob_error",
+    "token_mapping_mismatch",
+    "clob_http_error",
+    "clob_timeout",
+    "clob_rate_limited",
+    "clob_parse_error",
+    "clob_empty_response",
+    "clob_token_not_found",
+    "clob_client_not_connected",
+}
+
+
 DISCOVERY_SOURCE_LABELS = {
     "decision_log": "decision_log JSONL",
     "market_snapshots": "market_snapshots JSONL",
@@ -50,6 +65,7 @@ class NoEntryRecord:
     entry_cutoff_seconds: int | None
     time_bucket: str
     timing_status: str
+    orderbook_readiness_reason: str = ""
 
 
 @dataclass
@@ -83,6 +99,7 @@ class NoEntryReport:
     count_time_unsafe: int = 0
     count_orderbook_unavailable: int = 0
     count_orderbook_unavailable_or_stale: int = 0
+    orderbook_readiness_reason_counts: dict[str, int] = field(default_factory=dict)
     count_delta_extreme: int = 0
     order_submit_attempt_count: int = 0
     paper_fill_count: int = 0
@@ -312,6 +329,15 @@ def load_decision_records(base_dir: str | Path, date: str) -> list[NoEntryRecord
                     or classify_time_bucket(seconds_remaining, entry_cutoff)
                 ),
                 timing_status=timing_status,
+                orderbook_readiness_reason=str(
+                    payload.get("orderbook_unavailable_reason")
+                    or payload.get("orderbook_readiness_reason")
+                    or _nested(payload, "display.orderbook_unavailable_reason")
+                    or _nested(payload, "display.orderbook_readiness_reason")
+                    or payload.get("clob_error_category")
+                    or _nested(payload, "display.clob_error_category")
+                    or ""
+                ),
             )
         )
     return records
@@ -397,6 +423,7 @@ def load_scan_records(log_dir: str | Path, date: str) -> list[NoEntryRecord]:
                         entry_cutoff_seconds=entry_cutoff,
                         time_bucket=str(row.get("time_bucket") or classify_time_bucket(seconds_remaining, entry_cutoff)),
                         timing_status=timing_status,
+                        orderbook_readiness_reason=str(row.get("orderbook_readiness_reason") or row.get("orderbook_unavailable_reason") or ""),
                     )
                 )
     return records
@@ -467,6 +494,7 @@ def _aggregate_records(report: NoEntryReport, records: list[NoEntryRecord]) -> N
     by_asset: defaultdict[str, Counter[str]] = defaultdict(Counter)
     confidence_values: defaultdict[str, list[float]] = defaultdict(list)
     ev_values: defaultdict[str, list[float]] = defaultdict(list)
+    orderbook_readiness_counts: Counter[str] = Counter()
 
     entered = 0
     skipped = 0
@@ -489,6 +517,8 @@ def _aggregate_records(report: NoEntryReport, records: list[NoEntryRecord]) -> N
             by_asset[asset][reason] += 1
             confidence_values[reason].append(record.confidence)
             ev_values[reason].append(record.ev)
+            if record.orderbook_readiness_reason:
+                orderbook_readiness_counts[record.orderbook_readiness_reason] += 1
         else:
             entered += 1
 
@@ -532,9 +562,14 @@ def _aggregate_records(report: NoEntryReport, records: list[NoEntryRecord]) -> N
     report.count_confidence_too_low = skip_counts.get("confidence_too_low", 0)
     report.count_ev_below_threshold = skip_counts.get("ev_below_threshold", 0)
     report.count_time_unsafe = skip_counts.get("time_unsafe", 0)
-    report.count_orderbook_unavailable = skip_counts.get("orderbook_unavailable", 0)
+    report.orderbook_readiness_reason_counts = dict(orderbook_readiness_counts.most_common())
+    hard_unavailable = sum(
+        orderbook_readiness_counts.get(reason, 0)
+        for reason in HARDBLOCK_ORDERBOOK_REASONS
+    )
+    report.count_orderbook_unavailable = hard_unavailable or skip_counts.get("orderbook_unavailable", 0)
     report.count_orderbook_unavailable_or_stale = (
-        report.count_orderbook_unavailable + skip_counts.get("stale_data", 0)
+        report.count_orderbook_unavailable + skip_counts.get("stale_data", 0) + orderbook_readiness_counts.get("stale_book", 0)
     )
     report.count_delta_extreme = skip_counts.get("delta_extreme", 0)
 
@@ -617,6 +652,9 @@ def _root_cause_details(report: NoEntryReport) -> list[str]:
 def build_market_data_quality(report: NoEntryReport, snapshots: list[dict[str, Any]]) -> dict[str, Any]:
     orderbook_ages: list[float] = []
     token_mapping_warning_count = 0
+    snapshot_reason_counts: Counter[str] = Counter()
+    clob_error_categories: Counter[str] = Counter()
+    clob_exception_types: Counter[str] = Counter()
     for payload in snapshots:
         for key in ("orderbook_age_ms", "yes_orderbook_age_ms", "no_orderbook_age_ms"):
             value = _as_float(payload.get(key), default=0.0)
@@ -624,11 +662,30 @@ def build_market_data_quality(report: NoEntryReport, snapshots: list[dict[str, A
                 orderbook_ages.append(value)
         if payload.get("token_mapping_warning"):
             token_mapping_warning_count += 1
+        reason = str(
+            payload.get("orderbook_readiness_reason")
+            or payload.get("orderbook_unavailable_reason")
+            or payload.get("clob_error_category")
+            or ""
+        )
+        if reason:
+            snapshot_reason_counts[reason] += 1
+        clob_category = str(payload.get("clob_error_category") or "")
+        if clob_category:
+            clob_error_categories[clob_category] += 1
+        clob_exception_type = str(payload.get("clob_exception_type") or "")
+        if clob_exception_type:
+            clob_exception_types[clob_exception_type] += 1
     average_age = round(sum(orderbook_ages) / len(orderbook_ages), 2) if orderbook_ages else 0.0
+    reason_counts = Counter(report.orderbook_readiness_reason_counts)
+    reason_counts.update(snapshot_reason_counts)
     return {
         "market_snapshots_loaded": len(snapshots),
         "stale_data_count": int(report.skip_reason_counts.get("stale_data", 0)),
         "orderbook_unavailable_count": int(report.count_orderbook_unavailable),
+        "orderbook_readiness_reason_counts": dict(reason_counts.most_common()),
+        "clob_error_categories": dict(clob_error_categories.most_common()),
+        "clob_exception_types": dict(clob_exception_types.most_common()),
         "average_orderbook_age_ms": average_age,
         "token_mapping_warning_count": token_mapping_warning_count,
     }

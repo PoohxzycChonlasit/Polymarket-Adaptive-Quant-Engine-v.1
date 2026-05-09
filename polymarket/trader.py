@@ -11,7 +11,7 @@ from pathlib import Path
 from config.settings import Settings, get_settings
 from polymarket.arbitrage import ArbitrageOpportunity, ArbitrageScanner
 from polymarket.arbitrage_executor import ArbitrageExecutor
-from polymarket.client import BUY, SELL, BalanceSnapshot, OrderReceipt, PolymarketClient
+from polymarket.client import BUY, SELL, BalanceSnapshot, ClobOrderbookError, OrderReceipt, PolymarketClient
 from polymarket.delta_engine import DeltaRegime, MicroDeltaInput, estimate_micro_delta
 from polymarket.expected_value import ExpectedValueTier
 from polymarket.gamma_fetcher import GammaFetcher, GammaMarket
@@ -45,13 +45,32 @@ from polymarket.risk_modes import (
     trade_quality_allowed,
 )
 from utils.position_tracker import InventoryClassification, PositionTracker, ReconciliationReport
-from utils.risk_manager import FLOOR_BALANCE, RiskManager, RiskPlan
+from utils.risk_manager import (
+    FLOOR_BALANCE,
+    MICRO_SURVIVAL_MODE,
+    RiskManager,
+    RiskPlan,
+    bankroll_mode_for,
+    build_micro_survival_risk_plan,
+)
 from utils.quant_event_logger import QuantEventLogger
 from utils.telegram_alerts import TelegramAlertLayer
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
 
 
 LOGGER = logging.getLogger(__name__)
+
+
+CLOB_ORDERBOOK_ERROR_CATEGORIES = {
+    "clob_http_error",
+    "clob_timeout",
+    "clob_rate_limited",
+    "clob_parse_error",
+    "clob_empty_response",
+    "clob_token_not_found",
+    "clob_client_not_connected",
+    "clob_auth_or_client_issue",
+}
 
 
 @dataclass(slots=True)
@@ -104,6 +123,22 @@ class MarketDisplayMetrics:
     frequency_multiplier: float = 0.0
     final_size: float = 0.0
     ask_price: float = 0.0
+    orderbook_readiness_reason: str = ""
+    orderbook_unavailable_reason: str = ""
+    orderbook_error: str = ""
+    clob_error_category: str = ""
+    clob_error_class: str = ""
+    clob_exception_type: str = ""
+    clob_status_code: int | None = None
+    clob_parse_failure: bool = False
+    clob_api_failure: bool = False
+    clob_error_rate: float = 0.0
+    clob_backoff_active: bool = False
+    clob_circuit_open: bool = False
+    clob_cooldown_seconds_remaining: float = 0.0
+    clob_recovery_count: int = 0
+    market_data_degraded: bool = False
+    retry_count: int = 0
 
 
 @dataclass(slots=True)
@@ -178,6 +213,12 @@ class BankrollState:
     total_drawdown_pct: float = 0.0
     current_bankroll_tier: str = ""
     raw_bankroll_tier: str = ""
+    bankroll_tier_id: str = ""
+    bankroll_tier_name: str = ""
+    bankroll_family: str = ""
+    bankroll_risk_profile: str = ""
+    bankroll_tier_locked: bool = False
+    bankroll_hysteresis_active: bool = False
 
     def __post_init__(self) -> None:
         if self.equity <= 0:
@@ -194,6 +235,12 @@ class BankrollState:
             self.current_bankroll_tier = get_bankroll_tier(self.equity).value
         if not self.raw_bankroll_tier:
             self.raw_bankroll_tier = get_bankroll_tier(self.equity).value
+        if not self.bankroll_tier_id:
+            config = get_tier_config(self.current_bankroll_tier)
+            self.bankroll_tier_id = config.tier_id
+            self.bankroll_tier_name = config.tier_name
+            self.bankroll_family = config.family
+            self.bankroll_risk_profile = config.risk_profile
 
 
 class PolymarketTrader:
@@ -273,11 +320,19 @@ class PolymarketTrader:
         )
         self._bankroll_rank_lock = BankrollRankLock(
             initial_tier=initial_bankroll,
-            buffer_pct=float(getattr(self.settings, "bankroll_rank_hysteresis_pct", 0.05) or 0.05),
+            buffer_pct=float(
+                getattr(
+                    self.settings,
+                    "bankroll_tier_hysteresis_pct",
+                    getattr(self.settings, "bankroll_rank_hysteresis_pct", 0.05),
+                )
+                or 0.05
+            ),
         )
         self._last_bankroll_rank_lock_log = ""
         self.last_quant_details: dict[str, dict[str, object]] = {}
         self._last_orderbook_age_ms: dict[str, int] = {}
+        self._orderbook_warmup_pending_counts: Counter[str] = Counter()
         self._preloaded_token_ids: dict[tuple[str, int], tuple[str, str]] = {}
         self._preloaded_token_meta: dict[tuple[str, int], dict[str, object]] = {}
         self._warmed_orderbook_epochs: set[tuple[str, int]] = set()
@@ -335,6 +390,100 @@ class PolymarketTrader:
 
     def _runtime_mode(self) -> str:
         return "paper" if self.settings.paper_trading else "live"
+
+    def _micro_survival_threshold(self) -> float:
+        return max(float(getattr(self.settings, "micro_survival_bankroll_threshold", 100.0) or 100.0), 0.0)
+
+    def _micro_survival_min_position_size(self) -> float:
+        return max(float(getattr(self.settings, "micro_survival_min_position_size", 0.05) or 0.05), 0.0)
+
+    def _micro_survival_risk_fraction(self) -> float:
+        return max(float(getattr(self.settings, "micro_survival_risk_fraction", 0.0025) or 0.0025), 0.0)
+
+    def _bankroll_mode(self, bankroll: float | None = None) -> str:
+        balance = self.bankroll_state.current_bankroll_for_sizing if bankroll is None else float(bankroll)
+        return bankroll_mode_for(
+            account_balance=balance,
+            threshold=self._micro_survival_threshold(),
+            paper_trading=bool(self.settings.paper_trading),
+        )
+
+    def _micro_survival_active(self, bankroll: float | None = None) -> bool:
+        return self._bankroll_mode(bankroll) == MICRO_SURVIVAL_MODE
+
+    def _micro_position_size(self, bankroll: float | None = None) -> float:
+        balance = self.bankroll_state.current_bankroll_for_sizing if bankroll is None else float(bankroll)
+        if not self._micro_survival_active(balance):
+            return 0.0
+        effective_fraction = min(
+            self._micro_survival_risk_fraction(),
+            float(getattr(self.settings, "max_risk_per_trade", 0.0) or 0.0),
+            float(getattr(self.settings, "max_single_trade_risk", 0.03) or 0.03),
+        )
+        risk_cap = max(balance * max(effective_fraction, 0.0), 0.0)
+        return round(min(max(self._micro_survival_min_position_size(), risk_cap), risk_cap, balance), 6)
+
+    def _bankroll_mode_detail(self, bankroll: float | None = None) -> dict[str, object]:
+        balance = self.bankroll_state.current_bankroll_for_sizing if bankroll is None else float(bankroll)
+        mode = self._bankroll_mode(balance)
+        active = mode == MICRO_SURVIVAL_MODE
+        return {
+            "bankroll_mode": mode,
+            "micro_survival_active": active,
+            "micro_position_size": self._micro_position_size(balance) if active else 0.0,
+        }
+
+    def _bankroll_tier_detail(self, tier_value: str | None = None) -> dict[str, object]:
+        config = get_tier_config(tier_value or self.bankroll_state.current_bankroll_tier)
+        return {
+            "bankroll_tier_id": config.tier_id,
+            "bankroll_tier_name": config.tier_name,
+            "bankroll_family": config.family,
+            "bankroll_risk_profile": config.risk_profile,
+            "bankroll_tier_locked": bool(self.bankroll_state.bankroll_tier_locked),
+            "bankroll_hysteresis_active": bool(self.bankroll_state.bankroll_hysteresis_active),
+        }
+
+    def _entry_min_position_size_usd(self, *, bankroll: float, entry_price: float) -> float:
+        if self._micro_survival_active(bankroll):
+            return self._micro_survival_min_position_size()
+        return max(float(self.settings.min_shares_per_order) * entry_price, 1.0)
+
+    def _micro_survival_allows_fractional_shares(self, *, bankroll: float) -> bool:
+        return bool(self.settings.paper_trading) and self._micro_survival_active(bankroll)
+
+    def _maybe_apply_micro_survival_plan(
+        self,
+        risk_plan: RiskPlan,
+        *,
+        current_balance: float,
+        entry_price: float,
+    ) -> RiskPlan:
+        if not self._micro_survival_active(current_balance):
+            return risk_plan
+        if float(getattr(risk_plan, "position_size", 0.0) or 0.0) > 0.0:
+            return risk_plan
+
+        diagnostics = getattr(risk_plan, "diagnostics", {}) if risk_plan is not None else {}
+        diagnostics = diagnostics if isinstance(diagnostics, dict) else {}
+        blocked = {str(reason) for reason in diagnostics.get("blocked_reasons", []) or []}
+        if blocked != {"below_min_position_size"}:
+            return risk_plan
+
+        merged_diagnostics = dict(diagnostics)
+        merged_diagnostics["rescued_from_risk_plan_zero"] = True
+        merged_diagnostics["original_position_size"] = float(getattr(risk_plan, "position_size", 0.0) or 0.0)
+        merged_diagnostics["original_notional_size"] = float(getattr(risk_plan, "notional_size", 0.0) or 0.0)
+        return build_micro_survival_risk_plan(
+            account_balance=current_balance,
+            entry_price=entry_price,
+            stop_loss_pct=float(self._setting("execution_stop_loss_pct", self.settings.default_stop_loss_pct)),
+            risk_fraction=self._micro_survival_risk_fraction(),
+            min_position_size_usd=self._micro_survival_min_position_size(),
+            max_risk_per_trade=float(getattr(self.settings, "max_risk_per_trade", 0.0) or 0.0),
+            take_profit_pct=float(self._setting("execution_take_profit_pct", 0.10)),
+            diagnostics=merged_diagnostics,
+        )
 
     def _init_quant_event_logger(self) -> QuantEventLogger | None:
         try:
@@ -512,6 +661,7 @@ class PolymarketTrader:
         started = time.monotonic()
         ok = False
         error = ""
+        clob_error_detail: dict[str, object] = {}
         try:
             yes_ob = self.client.get_orderbook(token_ids[0])
             no_ob = self.client.get_orderbook(token_ids[1])
@@ -523,13 +673,21 @@ class PolymarketTrader:
             self._market_readiness_metrics["token_preload_warmups"] += 1
         except Exception as exc:
             error = str(exc)
+            clob_error_detail = self._clob_orderbook_error_detail(
+                exc,
+                token_id=token_ids[0] if token_ids else "",
+                market_slug=str(meta.get("slug", "") or ""),
+                asset=ticker,
+            )
             self._market_readiness_metrics["token_preload_failures"] += 1
             LOGGER.info(
-                "[MARKET_WARMUP] ticker=%s market_slug=%s epoch=%s status=degraded reason=%s error=%s",
+                "[MARKET_WARMUP] ticker=%s market_slug=%s epoch=%s status=degraded reason=%s category=%s exception_type=%s error=%s",
                 ticker,
                 meta.get("slug", ""),
                 epoch_start,
                 reason,
+                clob_error_detail.get("clob_error_category", ""),
+                clob_error_detail.get("clob_exception_type", ""),
                 exc,
             )
         finally:
@@ -548,6 +706,7 @@ class PolymarketTrader:
                     "warmup_ok": ok,
                     "reason": reason,
                     "error": error,
+                    **clob_error_detail,
                     "metrics": dict(self._market_readiness_metrics),
                     "mode": self._runtime_mode(),
                 },
@@ -584,6 +743,10 @@ class PolymarketTrader:
         return {
             "bankroll": float(getattr(risk_plan, "account_balance", diagnostics.get("bankroll", 0.0)) or 0.0),
             "tier": str(diagnostics.get("tier", "")),
+            **self._bankroll_tier_detail(),
+            "bankroll_mode": str(diagnostics.get("bankroll_mode", self._bankroll_mode())),
+            "micro_survival_active": bool(diagnostics.get("micro_survival_active", self._micro_survival_active())),
+            "micro_position_size": float(diagnostics.get("micro_position_size", self._micro_position_size()) or 0.0),
             "risk_mode": self._risk_mode_state.current_mode.value,
             "confidence": float(confidence or 0.0),
             "edge": self._diagnostic_float(edge),
@@ -691,6 +854,23 @@ class PolymarketTrader:
             "orderbook_age_ms": orderbook_age_ms,
             "orderbook_age": round(orderbook_age_ms / 1000.0, 3),
             "orderbook_age_seconds": round(orderbook_age_ms / 1000.0, 3),
+            "orderbook_readiness_reason": str(display.get("orderbook_readiness_reason", "") or ""),
+            "orderbook_unavailable_reason": str(display.get("orderbook_unavailable_reason", "") or ""),
+            "orderbook_error": str(display.get("orderbook_error", "") or ""),
+            "clob_error_category": str(display.get("clob_error_category", "") or ""),
+            "clob_error_class": str(display.get("clob_error_class", "") or ""),
+            "clob_exception_type": str(display.get("clob_exception_type", "") or ""),
+            "clob_status_code": self._diagnostic_int(display.get("clob_status_code")),
+            "clob_token_id_present": bool(display.get("clob_token_id_present", False)),
+            "clob_parse_failure": bool(display.get("clob_parse_failure", False)),
+            "clob_api_failure": bool(display.get("clob_api_failure", False)),
+            "clob_error_rate": self._diagnostic_float(display.get("clob_error_rate")),
+            "clob_backoff_active": bool(display.get("clob_backoff_active", False)),
+            "clob_circuit_open": bool(display.get("clob_circuit_open", False)),
+            "clob_cooldown_seconds_remaining": self._diagnostic_float(display.get("clob_cooldown_seconds_remaining")),
+            "clob_recovery_count": self._diagnostic_int(display.get("clob_recovery_count")),
+            "market_data_degraded": bool(display.get("market_data_degraded", False)),
+            "retry_count": self._diagnostic_int(display.get("retry_count")),
             "oracle_age_ms": oracle_age_ms,
             "oracle_age": round(oracle_age_ms / 1000.0, 3),
             "oracle_age_seconds": round(oracle_age_ms / 1000.0, 3),
@@ -700,6 +880,8 @@ class PolymarketTrader:
             "paper_virtual_cash": float(self.bankroll_state.current_cash_balance if self.settings.paper_trading else 0.0),
             "paper_available_balance": float(self._paper_available_balance() if self.settings.paper_trading else 0.0),
             "paper_open_position_value": float(self.bankroll_state.open_position_market_value if self.settings.paper_trading else 0.0),
+            **self._bankroll_tier_detail(),
+            **self._bankroll_mode_detail(),
             "live_wallet_reference_balance": (
                 float(self._wallet_reference_balance)
                 if self._wallet_reference_balance is not None and self._paper_wallet_reference_visible()
@@ -848,6 +1030,8 @@ class PolymarketTrader:
                     if self._wallet_reference_balance is not None and self._paper_wallet_reference_visible()
                     else None
                 ),
+                **self._bankroll_tier_detail(),
+                **self._bankroll_mode_detail(),
                 "wallet_reference_source": self._wallet_reference_source,
                 "wallet_reference_error": self._wallet_reference_error,
                 "execution": "PAPER ONLY" if self.settings.paper_trading else "LIVE",
@@ -885,6 +1069,8 @@ class PolymarketTrader:
                 "connected": bool(self._connected),
                 "paper_trading": bool(self.settings.paper_trading),
                 "balance_source": self._balance_source,
+                **self._bankroll_tier_detail(),
+                **self._bankroll_mode_detail(),
                 "risk_mode": self._risk_mode_state.current_mode.value,
                 "open_positions": len(self.tracker.open_positions()),
                 "reconciliation_class": getattr(getattr(reconciliation, "classification", None), "value", ""),
@@ -963,18 +1149,21 @@ class PolymarketTrader:
         }
 
     def _entry_hard_block_seconds(self) -> int:
-        return max(
-            int(self._setting("adaptive_entry_hard_block_seconds", 60)),
+        hard_block = max(
+            int(self._setting("adaptive_entry_hard_block_seconds", 45)),
             int(self._setting("entry_min_seconds_remaining", 30)),
-            int(self._setting("execution_force_exit_seconds", 60)),
+            int(self._setting("exit_agent_entry_cutoff_seconds", 45)),
             int(self._setting("exit_agent_cancel_entries_seconds", 35)),
             int(self._setting("exit_agent_force_exit_seconds", 25)),
         )
+        if not self._paper_enabled():
+            hard_block = max(hard_block, int(self._setting("execution_force_exit_seconds", 60)))
+        return hard_block
 
     def _adaptive_entry_cutoff_seconds(self) -> int:
         return max(
             self._entry_hard_block_seconds(),
-            int(self._setting("adaptive_entry_cutoff_seconds", 60)),
+            int(self._setting("adaptive_entry_cutoff_seconds", 45)),
         )
 
     def _cutoff_decision_detail(self, decision: AdaptiveEntryCutoffDecision) -> dict[str, object]:
@@ -983,6 +1172,7 @@ class PolymarketTrader:
             "cutoff_policy": decision.policy,
             "adaptive_cutoff_allowed": bool(decision.allowed and decision.policy == "adaptive"),
             "adaptive_cutoff_reason": decision.reason,
+            "adaptive_cutoff_denied_reason": decision.reason if decision.policy == "adaptive" and not decision.allowed else "",
             "late_entry_hard_block": bool(decision.late_entry_hard_block),
         }
 
@@ -1270,6 +1460,15 @@ class PolymarketTrader:
         clean = (reason or "").lower()
         if "stale" in clean:
             return "stale_data"
+        if clean in {
+            "missing_token_id",
+            "empty_book",
+            "clob_error",
+            "warmup_pending",
+            "token_mapping_mismatch",
+            *CLOB_ORDERBOOK_ERROR_CATEGORIES,
+        }:
+            return clean
         if "token" in clean or "missing" in clean or "parse" in clean or "api" in clean:
             return "api_missing_fields"
         if "orderbook" in clean or "bid/ask" in clean:
@@ -1634,10 +1833,19 @@ class PolymarketTrader:
         result = self._bankroll_rank_lock.update(balance)
         self.bankroll_state.current_bankroll_tier = result.active_tier.value
         self.bankroll_state.raw_bankroll_tier = result.raw_tier.value
+        active_config = get_tier_config(result.active_tier)
+        self.bankroll_state.bankroll_tier_id = active_config.tier_id
+        self.bankroll_state.bankroll_tier_name = active_config.tier_name
+        self.bankroll_state.bankroll_family = active_config.family
+        self.bankroll_state.bankroll_risk_profile = active_config.risk_profile
+        self.bankroll_state.bankroll_tier_locked = result.tier_locked
+        self.bankroll_state.bankroll_hysteresis_active = result.hysteresis_active
 
         log_body = (
             f"active={result.active_tier.value} raw={result.raw_tier.value} "
-            f"balance=${result.balance:.2f} reason={result.reason}"
+            f"family={active_config.family} profile={active_config.risk_profile} "
+            f"balance=${result.balance:.2f} reason={result.reason} "
+            f"locked={str(result.tier_locked).lower()} hysteresis={str(result.hysteresis_active).lower()}"
         )
         should_log = (
             force_log
@@ -1762,6 +1970,18 @@ class PolymarketTrader:
             f"freq_mult={frequency_multiplier:.2f} final_size={final_size:.4f} "
             f"daily_dd={daily_drawdown_pct * 100:.2f}% risk_off={risk_off}"
         )
+        mode_detail = self._bankroll_mode_detail(bankroll)
+        tier_detail = self._bankroll_tier_detail()
+        body += (
+            f" bankroll_mode={mode_detail['bankroll_mode']} "
+            f"micro_survival_active={str(mode_detail['micro_survival_active']).lower()} "
+            f"micro_position_size={float(mode_detail['micro_position_size']):.4f} "
+            f"tier_id={tier_detail['bankroll_tier_id']} "
+            f"family={tier_detail['bankroll_family']} "
+            f"profile={tier_detail['bankroll_risk_profile']} "
+            f"tier_locked={str(tier_detail['bankroll_tier_locked']).lower()} "
+            f"hysteresis={str(tier_detail['bankroll_hysteresis_active']).lower()}"
+        )
         risk_mode = self._risk_mode_state.current_mode
         body += f" risk_mode={risk_mode.value}"
         if risk_mode != RiskMode.NORMAL:
@@ -1844,6 +2064,8 @@ class PolymarketTrader:
             key=lambda item: (-item[1], item[0]),
         )[:5]
         risk_mode_decision = self._update_risk_mode()
+        bankroll_mode_detail = self._bankroll_mode_detail()
+        bankroll_tier_detail = self._bankroll_tier_detail()
         return {
             "cycles_scanned": stats.cycles_scanned,
             "total_markets_scanned": stats.markets_scanned,
@@ -1858,6 +2080,8 @@ class PolymarketTrader:
             "average_position_size": stats.average_position_size,
             "simulated_pnl": stats.simulated_pnl,
             "simulated_bankroll": self.bankroll_state.current_bankroll_for_sizing,
+            **bankroll_tier_detail,
+            **bankroll_mode_detail,
             "max_drawdown": stats.max_drawdown,
             "trade_frequency_last_hour": len(recent_trades),
             "skipped_trade_reasons": dict(stats.skipped_reasons),
@@ -1893,6 +2117,7 @@ class PolymarketTrader:
             "bankroll_tier": state.current_bankroll_tier,
             "active_bankroll_tier": state.current_bankroll_tier,
             "raw_bankroll_tier": state.raw_bankroll_tier,
+            **self._bankroll_tier_detail(state.current_bankroll_tier),
             "daily_drawdown": state.daily_drawdown_pct,
             "risk_off": self._risk_off(state.daily_drawdown_pct),
             "risk_mode": self._risk_mode_state.current_mode.value,
@@ -1912,6 +2137,7 @@ class PolymarketTrader:
             "no_live_orders": bool(self.settings.paper_trading),
             "paper_cash": state.current_cash_balance,
             "paper_sizing_balance": state.current_bankroll_for_sizing,
+            **self._bankroll_mode_detail(state.current_bankroll_for_sizing),
             "wallet_reference_balance": (
                 float(self._wallet_reference_balance)
                 if self._wallet_reference_balance is not None and self._paper_wallet_reference_visible()
@@ -2292,11 +2518,11 @@ class PolymarketTrader:
                 dedup_key="floor_breach",
                 reason="floor_breach",
             )
-        elif tier.value in {"SEED_TEST", "MICRO", "MICRO_PLUS"}:
+        elif tier_config.family == "MICRO":
             LOGGER.info(
                 "MICRO BANKROLL PROTECTION ACTIVE -- using rank sizing | "
-                "balance=$%.2f active_tier=%s raw_tier=%s risk_range=%.2f%%-%.2f%% max_trades_hour=%d",
-                balance, tier_config.description, raw_tier,
+                "balance=$%.2f active_tier=%s raw_tier=%s family=%s profile=%s risk_range=%.2f%%-%.2f%% max_trades_hour=%d",
+                balance, tier_config.description, raw_tier, tier_config.family, tier_config.risk_profile,
                 tier_config.min_risk_pct * 100, tier_config.max_risk_pct * 100,
                 tier_config.max_trades_per_hour,
             )
@@ -2574,6 +2800,169 @@ class PolymarketTrader:
             )
         return warning
 
+    def _classify_orderbook_readiness_reason(
+        self,
+        ticker: str,
+        *,
+        token_ids: tuple[str, str] | None,
+        token_mapping_warning: str = "",
+        orderbook_error: str = "",
+        clob_error_category: str = "",
+        yes_ask: float = 0.0,
+        no_ask: float = 0.0,
+    ) -> str:
+        warning = (token_mapping_warning or "").lower()
+        if not token_ids or len(token_ids) < 2 or not token_ids[0] or not token_ids[1] or "missing_yes_no_token_ids" in warning:
+            return "missing_token_id"
+        if warning:
+            return "token_mapping_mismatch"
+
+        error = (orderbook_error or "").lower()
+        category = (clob_error_category or self._infer_clob_orderbook_error_category(orderbook_error)).lower()
+        if category in CLOB_ORDERBOOK_ERROR_CATEGORIES:
+            return category
+        if "stale_orderbook" in error:
+            return "stale_book"
+        if error:
+            if "empty_orderbook" not in error and "invalid_orderbook" not in error:
+                return category or "clob_http_error"
+            last_success_ms = int(self._last_orderbook_age_ms.get(ticker.upper(), 0) or 0)
+            if last_success_ms <= 0:
+                self._orderbook_warmup_pending_counts[ticker.upper()] += 1
+                threshold = int(self._setting("orderbook_warmup_pending_threshold", 3))
+                if self._orderbook_warmup_pending_counts[ticker.upper()] <= threshold:
+                    return "warmup_pending"
+            return "empty_book"
+
+        if yes_ask <= 0 or no_ask <= 0:
+            last_success_ms = int(self._last_orderbook_age_ms.get(ticker.upper(), 0) or 0)
+            if last_success_ms <= 0:
+                self._orderbook_warmup_pending_counts[ticker.upper()] += 1
+                threshold = int(self._setting("orderbook_warmup_pending_threshold", 3))
+                if self._orderbook_warmup_pending_counts[ticker.upper()] <= threshold:
+                    return "warmup_pending"
+            return "empty_book"
+
+        self._orderbook_warmup_pending_counts[ticker.upper()] = 0
+        return ""
+
+    def _infer_clob_orderbook_error_category(self, error: object) -> str:
+        if isinstance(error, ClobOrderbookError):
+            return error.category
+        text = str(error or "").lower()
+        if not text:
+            return ""
+        if "empty_orderbook" in text or "invalid_orderbook" in text or "stale_orderbook" in text:
+            return ""
+        if "timeout" in text or "timed out" in text:
+            return "clob_timeout"
+        if "429" in text or "rate limit" in text or "too many requests" in text:
+            return "clob_rate_limited"
+        if "401" in text or "403" in text or "unauthorized" in text or "forbidden" in text:
+            return "clob_auth_or_client_issue"
+        if "400" in text or "404" in text or "not found" in text or "unknown token" in text or "invalid token" in text:
+            return "clob_token_not_found"
+        if "not connected" in text or "not installed" in text or "client_not_connected" in text:
+            return "clob_client_not_connected"
+        if "parse_orderbook_failed" in text or "malformed" in text:
+            return "clob_parse_error"
+        if "empty_orderbook_response" in text:
+            return "clob_empty_response"
+        if "http" in text or "api" in text or "status" in text:
+            return "clob_http_error"
+        return ""
+
+    def _clob_orderbook_error_detail(
+        self,
+        exc: Exception | str,
+        *,
+        token_id: str = "",
+        market_slug: str = "",
+        asset: str = "",
+    ) -> dict[str, object]:
+        category = self._infer_clob_orderbook_error_category(exc)
+        status_code = getattr(exc, "status_code", None)
+        if status_code is None:
+            response = getattr(exc, "response", None)
+            status_code = getattr(response, "status_code", None) if response is not None else None
+        if status_code is None and isinstance(exc, ClobOrderbookError):
+            status_code = exc.status_code
+        try:
+            status_code_int = int(status_code) if status_code is not None else None
+        except (TypeError, ValueError):
+            status_code_int = None
+        retry_count = int(
+            getattr(
+                exc,
+                "retry_count",
+                self._setting("clob_orderbook_retry_count", self._setting("api_retry_attempts", 1)),
+            )
+            or 0
+        )
+        health_detail: dict[str, object] = {}
+        get_health = getattr(self.client, "get_orderbook_health", None)
+        if callable(get_health) and token_id:
+            try:
+                health_detail = dict(get_health(token_id))
+            except Exception:
+                health_detail = {}
+        cooldown_remaining = float(
+            getattr(exc, "cooldown_seconds_remaining", health_detail.get("clob_cooldown_seconds_remaining", 0.0))
+            or 0.0
+        )
+        circuit_open = bool(getattr(exc, "circuit_open", health_detail.get("clob_circuit_open", False)))
+        backoff_active = bool(getattr(exc, "backoff_active", health_detail.get("clob_backoff_active", False)))
+        error_rate = float(getattr(exc, "error_rate", health_detail.get("clob_error_rate", 0.0)) or 0.0)
+        recovery_count = int(getattr(exc, "recovery_count", health_detail.get("clob_recovery_count", 0)) or 0)
+        detail = {
+            "clob_error_category": category,
+            "clob_error_class": str(getattr(exc, "error_class", "") or health_detail.get("clob_last_error_class", "")),
+            "clob_exception_type": getattr(exc, "exception_type", exc.__class__.__name__),
+            "clob_status_code": status_code_int,
+            "clob_token_id_present": bool(token_id),
+            "market_slug": market_slug,
+            "asset": asset.upper(),
+            "retry_count": retry_count,
+            "clob_error_rate": round(error_rate, 4),
+            "clob_backoff_active": backoff_active,
+            "clob_circuit_open": circuit_open,
+            "clob_cooldown_seconds_remaining": round(cooldown_remaining, 3),
+            "clob_recovery_count": recovery_count,
+            "market_data_degraded": bool(category or backoff_active or circuit_open),
+            "clob_parse_failure": bool(getattr(exc, "parse_failure", False)) or category in {"clob_parse_error", "clob_empty_response"},
+            "clob_api_failure": bool(getattr(exc, "api_failure", False)) or category in CLOB_ORDERBOOK_ERROR_CATEGORIES,
+        }
+        for key, value in health_detail.items():
+            detail.setdefault(key, value)
+        return detail
+
+    def _clob_orderbook_health_detail(
+        self,
+        token_id: str,
+        *,
+        market_slug: str = "",
+        asset: str = "",
+    ) -> dict[str, object]:
+        get_health = getattr(self.client, "get_orderbook_health", None)
+        if not callable(get_health) or not token_id:
+            return {}
+        try:
+            health = dict(get_health(token_id))
+        except Exception:
+            return {}
+        health.update(
+            {
+                "market_slug": market_slug,
+                "asset": asset.upper(),
+                "market_data_degraded": bool(
+                    health.get("clob_backoff_active")
+                    or health.get("clob_circuit_open")
+                    or float(health.get("clob_error_rate", 0.0) or 0.0) >= 0.5
+                ),
+            }
+        )
+        return health
+
     def get_market_display_metrics(
         self,
         ticker: str,
@@ -2606,6 +2995,8 @@ class PolymarketTrader:
             skip_reason="api_missing_fields" if missing_token_ids else "",
         )
         metrics.token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta)
+        if missing_token_ids:
+            metrics.skip_reason = "missing_token_id"
         try:
             LOGGER.info(
                 "[ORDERBOOK_FLOW] ticker=%s outcome=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s requested_token_id=%s",
@@ -2644,23 +3035,72 @@ class PolymarketTrader:
                 metrics.no_ask - metrics.no_bid if metrics.no_bid > 0 and metrics.no_ask > 0 else 0.0,
             )
             metrics.has_orderbook = metrics.yes_bid > 0 and metrics.yes_ask > 0 and metrics.no_bid > 0 and metrics.no_ask > 0
+            health_detail = self._clob_orderbook_health_detail(
+                token_id,
+                market_slug=str(meta.get("slug", "") or ""),
+                asset=ticker,
+            )
+            for key, value in health_detail.items():
+                if hasattr(metrics, key):
+                    setattr(metrics, key, value)
+            readiness_reason = self._classify_orderbook_readiness_reason(
+                ticker,
+                token_ids=token_ids,
+                token_mapping_warning=metrics.token_mapping_warning,
+                yes_ask=metrics.yes_ask,
+                no_ask=metrics.no_ask,
+            )
+            metrics.orderbook_readiness_reason = readiness_reason
+            metrics.orderbook_unavailable_reason = readiness_reason
             if not metrics.has_orderbook:
-                metrics.skip_reason = metrics.skip_reason or "no_orderbook"
+                metrics.skip_reason = metrics.skip_reason or readiness_reason or "empty_book"
             if metrics.token_mapping_warning:
-                metrics.skip_reason = metrics.skip_reason or "token_mapping_warning"
+                metrics.skip_reason = metrics.skip_reason or readiness_reason or "token_mapping_mismatch"
             if confidence > 0 and metrics.ask > 0:
                 metrics.edge_pct = confidence - metrics.ask
                 metrics.snipe_score = self._snipe_score(metrics.ask, confidence)
         except Exception as exc:
-            metrics.skip_reason = metrics.skip_reason or ("stale_orderbook" if "stale_orderbook" in str(exc) else "no_orderbook")
+            error_detail = self._clob_orderbook_error_detail(
+                exc,
+                token_id=token_id,
+                market_slug=str(meta.get("slug", "") or ""),
+                asset=ticker,
+            )
+            readiness_reason = self._classify_orderbook_readiness_reason(
+                ticker,
+                token_ids=token_ids,
+                token_mapping_warning=metrics.token_mapping_warning,
+                orderbook_error=str(exc),
+                clob_error_category=str(error_detail.get("clob_error_category", "") or ""),
+            )
+            metrics.skip_reason = metrics.skip_reason or readiness_reason or "clob_error"
+            metrics.orderbook_readiness_reason = readiness_reason
+            metrics.orderbook_unavailable_reason = readiness_reason
+            metrics.orderbook_error = str(exc)
+            metrics.clob_error_category = str(error_detail.get("clob_error_category", "") or "")
+            metrics.clob_error_class = str(error_detail.get("clob_error_class", "") or "")
+            metrics.clob_exception_type = str(error_detail.get("clob_exception_type", "") or "")
+            metrics.clob_status_code = error_detail.get("clob_status_code") if isinstance(error_detail.get("clob_status_code"), int) else None
+            metrics.clob_parse_failure = bool(error_detail.get("clob_parse_failure", False))
+            metrics.clob_api_failure = bool(error_detail.get("clob_api_failure", False))
+            metrics.clob_error_rate = float(error_detail.get("clob_error_rate", 0.0) or 0.0)
+            metrics.clob_backoff_active = bool(error_detail.get("clob_backoff_active", False))
+            metrics.clob_circuit_open = bool(error_detail.get("clob_circuit_open", False))
+            metrics.clob_cooldown_seconds_remaining = float(error_detail.get("clob_cooldown_seconds_remaining", 0.0) or 0.0)
+            metrics.clob_recovery_count = int(error_detail.get("clob_recovery_count", 0) or 0)
+            metrics.market_data_degraded = bool(error_detail.get("market_data_degraded", False))
+            metrics.retry_count = int(error_detail.get("retry_count", 0) or 0)
             LOGGER.warning(
-                "[ORDERBOOK_FLOW] ticker=%s outcome=%s token=%s market_slug=%s last_successful_orderbook_age_ms=%s retry_count=%s failed=%s",
+                "[ORDERBOOK_FLOW] ticker=%s outcome=%s token=%s market_slug=%s category=%s exception_type=%s status_code=%s last_successful_orderbook_age_ms=%s retry_count=%s failed=%s",
                 ticker,
                 outcome,
                 token_id,
                 meta.get("slug", ""),
+                error_detail.get("clob_error_category", ""),
+                error_detail.get("clob_exception_type", ""),
+                error_detail.get("clob_status_code", ""),
                 self._last_orderbook_age_ms.get(ticker, 0),
-                int(self._setting("api_retry_attempts", 1)),
+                error_detail.get("retry_count", 0),
                 exc,
             )
         detail = self.last_quant_details.get(ticker, {})
@@ -3286,9 +3726,15 @@ class PolymarketTrader:
         meta = self._market_token_meta.get(ticker, {})
         yes_orderbook_age_ms = 0
         no_orderbook_age_ms = 0
+        clob_error_detail: dict[str, object] = {}
         token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta)
         if token_mapping_warning:
-            skip_reason = f"token_mapping_warning:{token_mapping_warning}"
+            orderbook_readiness_reason = self._classify_orderbook_readiness_reason(
+                ticker,
+                token_ids=token_ids,
+                token_mapping_warning=token_mapping_warning,
+            )
+            skip_reason = orderbook_readiness_reason or f"token_mapping_warning:{token_mapping_warning}"
             detail = {
                 **timing_detail,
                 "token_id": yes_token_id,
@@ -3299,6 +3745,8 @@ class PolymarketTrader:
                 "outcome": "YES/NO",
                 "source_module": "polymarket.trader",
                 "token_mapping_warning": token_mapping_warning,
+                "orderbook_readiness_reason": orderbook_readiness_reason,
+                "orderbook_unavailable_reason": orderbook_readiness_reason,
                 "orderbook_error": skip_reason,
                 "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
                 "retry_count": int(self._setting("api_retry_attempts", 1)),
@@ -3391,16 +3839,39 @@ class PolymarketTrader:
                 self._last_orderbook_age_ms[ticker] = max(yes_orderbook_age_ms, no_orderbook_age_ms)
         except Exception as exc:
             orderbook_error = str(exc)
+            clob_error_detail = self._clob_orderbook_error_detail(
+                exc,
+                token_id=yes_token_id,
+                market_slug=str(meta.get("slug", "") or ""),
+                asset=ticker,
+            )
             LOGGER.warning(
-                "[OB] Unavailable for %s token_id=%s market_slug=%s outcome=YES/NO last_successful_orderbook_age_ms=%s retry_count=%s error=%s",
+                "[OB] Unavailable for %s token_id=%s market_slug=%s outcome=YES/NO category=%s exception_type=%s status_code=%s last_successful_orderbook_age_ms=%s retry_count=%s error=%s",
                 market.market_id,
                 yes_token_id,
                 meta.get("slug", ""),
+                clob_error_detail.get("clob_error_category", ""),
+                clob_error_detail.get("clob_exception_type", ""),
+                clob_error_detail.get("clob_status_code", ""),
                 self._last_orderbook_age_ms.get(ticker, 0),
-                int(self._setting("api_retry_attempts", 1)),
+                clob_error_detail.get("retry_count", 0),
                 exc,
             )
 
+        orderbook_readiness_reason = self._classify_orderbook_readiness_reason(
+            ticker,
+            token_ids=token_ids,
+            token_mapping_warning=token_mapping_warning,
+            orderbook_error=orderbook_error,
+            clob_error_category=str(clob_error_detail.get("clob_error_category", "") or ""),
+            yes_ask=yes_ask,
+            no_ask=no_ask,
+        )
+        clob_health_detail = clob_error_detail or self._clob_orderbook_health_detail(
+            yes_token_id,
+            market_slug=str(meta.get("slug", "") or ""),
+            asset=ticker,
+        )
         self._emit_quant_event(
             "log_market_snapshot",
             {
@@ -3426,6 +3897,9 @@ class PolymarketTrader:
                 "spread": float(ob_spread),
                 "liquidity_usd": float(ob_liquidity_usd),
                 "orderbook_error": orderbook_error,
+                "orderbook_readiness_reason": orderbook_readiness_reason,
+                "orderbook_unavailable_reason": orderbook_readiness_reason,
+                **clob_health_detail,
                 "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
                 "orderbook_age": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
                 "orderbook_age_seconds": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
@@ -3445,9 +3919,7 @@ class PolymarketTrader:
         )
 
         if yes_ask <= 0 or no_ask <= 0 or token_mapping_warning:
-            skip_reason = "stale_orderbook" if "stale_orderbook" in orderbook_error else "orderbook_unavailable"
-            if token_mapping_warning:
-                skip_reason = f"token_mapping_warning:{token_mapping_warning}"
+            skip_reason = orderbook_readiness_reason or "orderbook_unavailable"
             self._log_risk_section(
                 bankroll=current_balance,
                 tier=tier.value,
@@ -3475,6 +3947,9 @@ class PolymarketTrader:
                     "outcome": "YES/NO",
                     "source_module": "polymarket.trader",
                     "orderbook_error": orderbook_error,
+                    "orderbook_readiness_reason": orderbook_readiness_reason,
+                    "orderbook_unavailable_reason": orderbook_readiness_reason,
+                    **clob_health_detail,
                     "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
                     "retry_count": int(self._setting("api_retry_attempts", 1)),
                     "token_mapping_warning": token_mapping_warning,
@@ -3763,9 +4238,17 @@ class PolymarketTrader:
             size_multiplier = min(size_multiplier, lucky.risk_pct / max(tier_config.max_risk_pct, 1e-9))
 
         self.order_manager.account_balance = current_balance
-        min_position_size_usd = max(float(self.settings.min_shares_per_order) * entry_price, 1.0)
+        min_position_size_usd = self._entry_min_position_size_usd(
+            bankroll=current_balance,
+            entry_price=entry_price,
+        )
         order_request = OrderRequest(market_id=market.market_id, side=model_side, entry_price=entry_price, win_rate=probability.p_yes if model_side == "YES" else probability.p_no, reward_risk_ratio=2.0, edge=model_ev, price_to_beat=ptb_info.price_to_beat, spread=ob_spread, liquidity_usd=ob_liquidity_usd, delta=delta.delta_score, delta_multiplier=delta.delta_multiplier, time_remaining_seconds=ptb_info.seconds_remaining, trades_last_hour=trades_last_hour, drawdown_pct=daily_drawdown_pct, min_position_size_usd=min_position_size_usd, daily_loss_limit_reached=risk_off, hard_drawdown_reached=daily_drawdown_pct >= 0.15)
         risk_plan = self.order_manager.build_order_plan(order_request)
+        risk_plan = self._maybe_apply_micro_survival_plan(
+            risk_plan,
+            current_balance=current_balance,
+            entry_price=entry_price,
+        )
         if risk_plan.position_size > 0 and size_multiplier < 1.0:
             risk_plan.risk_amount = round(risk_plan.risk_amount * size_multiplier, 6)
             risk_plan.position_size = round(risk_plan.position_size * size_multiplier, 6)
@@ -3880,7 +4363,10 @@ class PolymarketTrader:
             self._emit_decision_event(outcome, ticker=ticker)
             return outcome
 
-        if risk_plan.position_size < self.settings.min_shares_per_order:
+        if (
+            risk_plan.position_size < self.settings.min_shares_per_order
+            and not self._micro_survival_allows_fractional_shares(bankroll=current_balance)
+        ):
             skip_msg = f"Min shares: {risk_plan.position_size:.1f} < {self.settings.min_shares_per_order}"
             quant_detail = self._record_quant_detail(
                 ticker,
@@ -6109,6 +6595,8 @@ class PolymarketTrader:
                 "execution_mode": "PAPER ONLY" if self.settings.paper_trading else "LIVE",
                 "wallet_reference_balance": self._wallet_reference_balance,
                 "wallet_reference_error": self._wallet_reference_error,
+                **self._bankroll_tier_detail(),
+                **self._bankroll_mode_detail(),
                 "open_positions": [asdict(p) for p in self.tracker.open_positions()],
                 "is_paper_trading": self.settings.paper_trading,
                 "current_countdown": countdown,
