@@ -1,6 +1,6 @@
 # FILE_INDEX.md
 
-> Last updated: 2026-05-09.
+> Last updated: 2026-05-10.
 > Purpose: quick file map for Codex and human operators. This is an index, not a source of truth for live readiness.
 
 ## Start Here
@@ -99,9 +99,17 @@ python main.py --mode live --interval 60
 | `daily_report.py` | Daily report builder/sender. |
 | `tools/quant_data_quality.py` | Offline JSONL data quality checker. |
 | `tools/replay_analyzer.py` | Offline replay report generator. |
+| `tools/no_entry_analyzer.py` | Offline no-entry paper session diagnostics. |
+| `tools/session_runtime_evaluator.py` | Offline/session paper runtime health and bottleneck evaluator; supports UTC `--since/--until` filters. |
 | `tools/paper_evaluation_report.py` | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
 
 Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
+
+Current paper runtime visibility:
+
+- `utils/display.py` surfaces BANKROLL_TIER_V2 tier metadata, MICRO_SURVIVAL_MODE, MICRO adaptive timing, liquidity/recovery, cutoff reasons, and early-window timing.
+- `polymarket/bankroll_tiers.py` owns centralized bankroll tier metadata and hysteresis.
+- MICRO survival/timing visibility is paper-focused; live readiness and live sizing are unchanged.
 
 ## Tests To Start With
 
@@ -133,6 +141,11 @@ Use `MASTER_AGENT_ROUTER.md` first, then read only the relevant role doc:
 | `docs/quant_agent_setup_md/roles/` | Safety-first role prompts for scoped Codex work. |
 | `docs/quant_agent_setup_md/playbooks/` | Workflow/playbook guidance. |
 | `docs/quant_agent_setup_md/templates/` | Review/status/bug templates. |
+| `docs/quant_agent_setup_md/roles/18_MARKET_REGIME_AGENT.md` | Volatility/trend regime diagnostics. |
+| `docs/quant_agent_setup_md/roles/19_FAIR_VALUE_ENGINE_AGENT.md` | Dynamic fair value and probability estimate research. |
+| `docs/quant_agent_setup_md/roles/20_INVENTORY_ENGINE_AGENT.md` | Controlled inventory accumulation, reload, unload, and runner rules. |
+| `docs/quant_agent_setup_md/roles/21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Spread, liquidity, maker/taker, fill quality, and price improvement. |
+| `docs/quant_agent_setup_md/roles/22_INVENTORY_ANALYTICS_AGENT.md` | Offline missed-opportunity and inventory replay analytics. |
 
 These markdown files guide work. They are not autonomous runtime modules and do not prove code is implemented.
 

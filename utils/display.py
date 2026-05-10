@@ -415,6 +415,23 @@ class _LegacyPolymarketRealtimeDisplay:
                 "final_size":   0.0,
                 "frequency_multiplier": 0.0,
                 "last_tick_ms": 0,
+                "seconds_remaining": 0,
+                "first_seen_seconds_remaining": 0,
+                "first_evaluable_seconds_remaining": 0,
+                "cutoff_policy": "static",
+                "effective_cutoff_seconds": 0,
+                "adaptive_cutoff_reason": "",
+                "adaptive_cutoff_denied_reason": "",
+                "micro_timing_branch_entered": False,
+                "micro_timing_allowed": False,
+                "micro_timing_denied_reason": "",
+                "micro_cutoff_policy": "standard",
+                "effective_micro_cutoff_seconds": 0,
+                "liquidity_state": "HEALTHY",
+                "empty_book_recovery_attempted": False,
+                "empty_book_recovery_success": False,
+                "empty_book_recovery_failed": False,
+                "empty_book_recovery_retry_count": 0,
             }
             for t in self._TICKERS
         }
@@ -1900,6 +1917,13 @@ class PolymarketRealtimeDisplay:
         wallet_reference_label = str(_get_field(s, "wallet_reference_label", "") or "")
         paper_cash = self._as_float(_get_field(s, "paper_cash", cash))
         paper_sizing = self._as_float(_get_field(s, "paper_sizing_balance", sizing))
+        tier_id = str(_get_field(s, "bankroll_tier_id", _get_field(s, "bankroll_tier", "--")))
+        tier_name = str(_get_field(s, "bankroll_tier_name", ""))
+        family = str(_get_field(s, "bankroll_family", "--"))
+        profile = str(_get_field(s, "bankroll_risk_profile", "--"))
+        bankroll_mode = str(_get_field(s, "bankroll_mode", "STANDARD"))
+        micro_active = bool(_get_field(s, "micro_survival_active", False))
+        micro_position_size = self._as_float(_get_field(s, "micro_position_size", 0.0))
 
         eq_style = "bright_green" if equity >= start else "bright_red"
         pnl_style = "bright_green" if realized >= 0 else "bright_red"
@@ -1926,7 +1950,20 @@ class PolymarketRealtimeDisplay:
                 (" | Unrealized ", "grey70"), (f"{upnl:+.4f}", f"bold {upnl_style}"),
             ], spec.panel_width),
             self._line([
-                ("Tier ", "grey70"), (str(_get_field(s, "bankroll_tier", "--")), "bold bright_cyan"),
+                ("Tier ", "grey70"), (self._clip(tier_id, 18), "bold bright_cyan"),
+                (" | ", "grey70"), (self._clip(tier_name, 20), "bright_cyan"),
+            ], spec.panel_width),
+            self._line([
+                ("Family ", "grey70"), (self._clip(family, 12), "bold bright_cyan"),
+                (" | Profile ", "grey70"), (self._clip(profile, 22), "bright_yellow"),
+            ], spec.panel_width),
+            self._line([
+                ("Bankroll Mode ", "grey70"), (self._clip(bankroll_mode, 18), "bold bright_yellow" if micro_active else "bright_white"),
+                (" | Micro ", "grey70"), ("ON" if micro_active else "OFF", "bold bright_green" if micro_active else "grey62"),
+                (" | Size ", "grey70"), (f"${micro_position_size:.4f}" if micro_position_size else "--", "bright_white"),
+            ], spec.panel_width),
+            self._line([
+                ("Legacy Tier ", "grey70"), (str(_get_field(s, "bankroll_tier", "--")), "grey70"),
                 (" | RiskOff ", "grey70"), (str(bool(_get_field(s, "risk_off", False))), "bright_red" if bool(_get_field(s, "risk_off", False)) else "bright_green"),
             ], spec.panel_width),
         ]
@@ -1956,6 +1993,9 @@ class PolymarketRealtimeDisplay:
         s = self._portfolio or {}
         tier = str(_get_field(s, "bankroll_tier", "--"))
         raw_tier = str(_get_field(s, "raw_bankroll_tier", ""))
+        tier_id = str(_get_field(s, "bankroll_tier_id", tier))
+        family = str(_get_field(s, "bankroll_family", "--"))
+        bankroll_mode = str(_get_field(s, "bankroll_mode", "STANDARD"))
         risk_mode = str(_get_field(s, "risk_mode", "NORMAL"))
         risk_off = bool(_get_field(s, "risk_off", False))
         dd = self._as_float(_get_field(s, "daily_drawdown", _get_field(s, "daily_drawdown_pct", 0.0)))
@@ -1967,7 +2007,8 @@ class PolymarketRealtimeDisplay:
         exp_style = "bright_green" if exp < 0.10 else "bright_yellow" if exp < 0.20 else "bright_red"
         lines = [
             self._line([("Mode ", "grey70"), (risk_mode, mode_style), (" | RiskOff ", "grey70"), (str(risk_off), "bright_red" if risk_off else "bright_green")], spec.panel_width),
-            self._line([("Tier ", "grey70"), (tier, "bold bright_cyan"), (" | Raw ", "grey70"), (raw_tier or tier, "bright_yellow" if raw_tier and raw_tier != tier else "grey70")], spec.panel_width),
+            self._line([("Tier ", "grey70"), (self._clip(tier_id, 18), "bold bright_cyan"), (" | Family ", "grey70"), (self._clip(family, 10), "bright_cyan")], spec.panel_width),
+            self._line([("Bankroll ", "grey70"), (self._clip(bankroll_mode, 18), "bold bright_yellow" if "MICRO" in bankroll_mode else "bright_white"), (" | Raw ", "grey70"), (raw_tier or tier, "bright_yellow" if raw_tier and raw_tier != tier else "grey70")], spec.panel_width),
             self._line([("Exposure ", "grey70"), (f"{exp:.1%}", f"bold {exp_style}"), (" | DD ", "grey70"), (f"{dd:.1%}", f"bold {dd_style}")], spec.panel_width),
             self._line([("Positions ", "grey70"), (f"{cnt}/{maxp}", "bold bright_white"), (" | Guard ", "grey70"), ("LOCKED" if risk_off else "OK", "bright_red" if risk_off else "bright_green")], spec.panel_width),
         ]
@@ -2007,6 +2048,20 @@ class PolymarketRealtimeDisplay:
         conf = self._as_float(m.get("confidence", 0.0))
         decision = self._decision_label(m)
         delta = self._delta_label(m)
+        remaining = int(self._as_float(m.get("seconds_remaining", m.get("seconds_until_close", 0))))
+        first_seen = int(self._as_float(m.get("first_seen_seconds_remaining", 0)))
+        first_eval = int(self._as_float(m.get("first_evaluable_seconds_remaining", 0)))
+        cutoff_policy = str(m.get("cutoff_policy", m.get("micro_cutoff_policy", "static")) or "static")
+        effective_cutoff = int(self._as_float(m.get("effective_cutoff_seconds", m.get("effective_micro_cutoff_seconds", 0))))
+        micro_branch = bool(m.get("micro_timing_branch_entered", False))
+        micro_allowed = bool(m.get("micro_timing_allowed", False))
+        micro_denied = str(m.get("micro_timing_denied_reason", "") or "")
+        cutoff_reason = self._compact_deny_reason(m)
+        liquidity_state = str(m.get("liquidity_state", "HEALTHY") or "HEALTHY").upper()
+        recovery_attempted = bool(m.get("empty_book_recovery_attempted", False))
+        recovery_success = bool(m.get("empty_book_recovery_success", False))
+        recovery_failed = bool(m.get("empty_book_recovery_failed", False))
+        recovery_retries = int(self._as_float(m.get("empty_book_recovery_retry_count", 0)))
         price_style = "bright_green" if diff >= 0 else "bright_red"
         lines = [
             self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
@@ -2017,6 +2072,22 @@ class PolymarketRealtimeDisplay:
             self._line([("Model_Y ", "grey70"), (self._fmt_prob(model_y), "bright_green"), (" | Model_N ", "grey70"), (self._fmt_prob(model_n), "bright_red"), (" | Conf ", "grey70"), (self._fmt_pct(conf), self._confidence_style(conf))], spec.panel_width),
             self._line([("EV ", "grey70"), (f"{ev:+.3f}" if ev else "--", "bright_green" if ev > 0 else "bright_red" if ev < 0 else "grey62"), (" | Min ", "grey70"), (f"{min_ev:.3f}" if min_ev else "--", "grey70"), (" | ", "grey70"), (delta, "bright_yellow" if "HIGH" in delta else "bright_green")], spec.panel_width),
             self._line([("Decision ", "grey70"), (decision, self._decision_style(decision))], spec.panel_width),
+            self._line([
+                ("Timing ", "grey70"), (f"remaining={remaining}s" if remaining else "remaining=--", "bright_white"),
+                (" | first=", "grey70"), (f"{first_seen}/{first_eval}" if first_seen or first_eval else "--", "bright_cyan"),
+            ], spec.panel_width),
+            self._line([
+                ("Cutoff ", "grey70"), (f"{cutoff_policy} {effective_cutoff}s" if effective_cutoff else cutoff_policy, "bright_yellow"),
+                (" | reason ", "grey70"), (self._clip(cutoff_reason or "--", 24), "bright_yellow" if cutoff_reason else "grey62"),
+            ], spec.panel_width),
+            self._line([
+                ("Micro ", "grey70"), (f"branch={self._on_off(micro_branch)} allowed={self._on_off(micro_allowed)}", "bright_green" if micro_allowed else "grey62"),
+                (" | deny ", "grey70"), (self._clip(micro_denied or cutoff_reason or "--", 24), "bright_yellow" if micro_denied or cutoff_reason else "grey62"),
+            ], spec.panel_width),
+            self._line([
+                ("Liquidity ", "grey70"), (self._clip(liquidity_state, 12), self._liquidity_style(liquidity_state)),
+                (" | Recovery ", "grey70"), (f"a={self._on_off(recovery_attempted)} s={self._on_off(recovery_success)} f={self._on_off(recovery_failed)} r={recovery_retries}", "bright_green" if recovery_success else "bright_red" if recovery_failed else "grey62"),
+            ], spec.panel_width),
         ]
         if mapping_warning:
             lines.append(self._line([("Token mapping ", "bold bright_yellow"), (self._clip(mapping_warning, max(12, spec.panel_width - 16)), "bold bright_yellow")], spec.panel_width))
@@ -2042,17 +2113,33 @@ class PolymarketRealtimeDisplay:
             ticker = str(r.get("ticker", "--"))
             decision = str(r.get("decision", "SKIP")).upper()
             reason = str(r.get("skip_reason", "") or "")
+            compact_reason = self._compact_deny_reason(r) or reason
             ev = self._as_float(r.get("ev", 0.0))
             min_ev = self._as_float(r.get("min_ev", 0.0))
             conf = self._as_float(r.get("confidence", 0.0))
             label = decision
-            if reason and decision in {"SKIP", "REJECTED"}:
-                label += f" {reason}"
+            if compact_reason and decision in {"SKIP", "REJECTED"}:
+                label += f" {compact_reason}"
             line = f" {ticker:<4} {label} EV={ev:+.3f}"
             if min_ev:
                 line += f" < {min_ev:.3f}" if ev < min_ev else f" min={min_ev:.3f}"
+            remaining = int(self._as_float(r.get("seconds_remaining", r.get("seconds_until_close", 0))))
+            cutoff = int(self._as_float(r.get("effective_cutoff_seconds", r.get("entry_cutoff_seconds", 0))))
+            liquidity = str(r.get("liquidity_state", "") or "")
+            micro_on = bool(r.get("micro_timing_branch_entered", False) or r.get("micro_timing_allowed", False))
+            context_lines: list[str] = []
+            if remaining or cutoff or liquidity or micro_on:
+                timing_context = ""
+                timing_context += f"remaining={remaining}s" if remaining else ""
+                timing_context += f" cutoff={cutoff}s" if cutoff else ""
+                timing_context += f" micro={'ON' if micro_on else 'OFF'}"
+                context_lines.append(timing_context.strip())
+                if liquidity:
+                    context_lines.append(f"liquidity={liquidity.upper()}")
             line += f" CONF={conf:.2f}"
             rows += [Text(self._clip(line, spec.panel_width), style=self._decision_style(label)), "\n"]
+            for context_line in context_lines:
+                rows += [Text(self._clip("      " + context_line, spec.panel_width), style="grey70"), "\n"]
         return Panel(Text.assemble(*rows), title="[bold bright_white]AI Decision[/bold bright_white]", border_style="bright_cyan")
 
     def _execution_panel(self, spec: DashboardLayout | None = None) -> Panel:
@@ -2121,6 +2208,11 @@ class PolymarketRealtimeDisplay:
             f"RISK {risk}",
             f"LATENCY {latency}ms" if latency is not None else "LATENCY --",
             f"LOGGING {self._logging_status}",
+            f"TIER {self._footer_tier_tag()}",
+            f"MICRO {self._footer_micro_tag()}",
+            f"LIQ {self._footer_liquidity_tag()}",
+            f"CUTOFF {self._footer_cutoff_tag()}",
+            f"RECOVERY {self._footer_recovery_tag()}",
         ]
         session = ""
         s = self._session_summary
@@ -2159,7 +2251,7 @@ class PolymarketRealtimeDisplay:
 
     def _decision_label(self, market: Mapping[str, object]) -> str:
         decision = str(market.get("decision", "--") or "--").upper()
-        reason = str(market.get("skip_reason", "") or "")
+        reason = self._compact_deny_reason(market) or str(market.get("skip_reason", "") or "")
         bid = self._as_float(market.get("bid", 0.0))
         ask = self._as_float(market.get("ask", 0.0))
         if decision in {"", "--"}:
@@ -2167,6 +2259,83 @@ class PolymarketRealtimeDisplay:
         if decision == "SKIP" and not reason and bid <= 0 and ask <= 0:
             reason = "no_orderbook"
         return f"{decision} {reason}".strip()
+
+    def _compact_deny_reason(self, source: Mapping[str, object]) -> str:
+        for key in (
+            "micro_timing_denied_reason",
+            "adaptive_cutoff_denied_reason",
+            "adaptive_cutoff_reason",
+            "normalized_skip_reason",
+            "orderbook_readiness_reason",
+            "orderbook_unavailable_reason",
+        ):
+            value = str(source.get(key, "") or "").strip()
+            if value and value not in {"--", "static_safe", "healthy_late_entry", "micro_healthy_late_entry"}:
+                return value
+        reason = str(source.get("skip_reason", "") or "").strip()
+        lowered = reason.lower()
+        if "hard_close_zone" in lowered:
+            return "hard_close_zone"
+        if "micro_adaptive_window_floor" in lowered:
+            return "micro_adaptive_window_floor"
+        if "adaptive_cutoff_floor" in lowered:
+            return "adaptive_cutoff_floor"
+        if "entry cutoff" in lowered:
+            return "time_unsafe"
+        return reason
+
+    def _on_off(self, value: bool) -> str:
+        return "ON" if bool(value) else "OFF"
+
+    def _liquidity_style(self, state: str) -> str:
+        state = str(state).upper()
+        if state == "HEALTHY":
+            return "bright_green"
+        if state == "RECOVERING":
+            return "bright_yellow"
+        if state in {"EMPTY", "THIN"}:
+            return "bright_red"
+        return "grey62"
+
+    def _footer_tier_tag(self) -> str:
+        portfolio = self._portfolio or {}
+        tier = str(_get_field(portfolio, "bankroll_tier_id", _get_field(portfolio, "bankroll_tier", "--")) or "--")
+        return self._clip(tier.replace("_MICRO_", "_"), 18)
+
+    def _footer_micro_tag(self) -> str:
+        portfolio = self._portfolio or {}
+        if bool(_get_field(portfolio, "micro_survival_active", False)):
+            return "ON"
+        if any(bool(m.get("micro_timing_branch_entered") or m.get("micro_timing_allowed")) for m in self._markets.values()):
+            return "TIMING"
+        return "OFF"
+
+    def _footer_liquidity_tag(self) -> str:
+        states = [str(m.get("liquidity_state", "") or "").upper() for m in self._markets.values()]
+        for state in ("EMPTY", "THIN", "RECOVERING"):
+            if state in states:
+                return state
+        return "HEALTHY" if "HEALTHY" in states else "--"
+
+    def _footer_cutoff_tag(self) -> str:
+        for item in self._cycle_results:
+            reason = self._compact_deny_reason(item)
+            if reason:
+                return self._clip(reason, 18)
+        for market in self._markets.values():
+            reason = self._compact_deny_reason(market)
+            if reason:
+                return self._clip(reason, 18)
+        return "--"
+
+    def _footer_recovery_tag(self) -> str:
+        if any(bool(m.get("empty_book_recovery_failed")) for m in self._markets.values()):
+            return "FAIL"
+        if any(bool(m.get("empty_book_recovery_success")) for m in self._markets.values()):
+            return "OK"
+        if any(bool(m.get("empty_book_recovery_attempted")) for m in self._markets.values()):
+            return "TRY"
+        return "--"
 
     def _decision_style(self, decision: str) -> str:
         upper = decision.upper()

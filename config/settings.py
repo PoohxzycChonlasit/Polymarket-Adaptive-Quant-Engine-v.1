@@ -163,6 +163,10 @@ class Settings(BaseSettings):
     adaptive_entry_max_cycle_duration_ms: int = 2500
     adaptive_entry_max_spread: float = 0.06
     orderbook_warmup_pending_threshold: int = 3
+    orderbook_empty_recovery_enabled: bool = True
+    orderbook_empty_recovery_retries: int = 2
+    orderbook_empty_recovery_delay_ms: int = 75
+    orderbook_empty_recovery_max_total_ms: int = 300
     clob_orderbook_retry_count: int = 1
     clob_orderbook_retry_backoff_ms: int = 150
     clob_rate_limit_cooldown_seconds: int = 30
@@ -184,6 +188,9 @@ class Settings(BaseSettings):
     micro_survival_bankroll_threshold: float = 100.0
     micro_survival_min_position_size: float = 0.05
     micro_survival_risk_fraction: float = 0.0025
+    micro_adaptive_timing_enabled: bool = True
+    micro_hard_close_floor_seconds: int = 35
+    micro_adaptive_window_min_seconds: int = 35
     close_order_retry_attempts: int = 3
     close_order_retry_delay_seconds: float = 0.5
     min_shares_per_order: int = 1           # User Requested: allow minimum 1 share (dynamic 1-5)
@@ -358,6 +365,11 @@ class Settings(BaseSettings):
         "adaptive_entry_max_decision_latency_ms",
         "adaptive_entry_max_cycle_duration_ms",
         "orderbook_warmup_pending_threshold",
+        "orderbook_empty_recovery_retries",
+        "orderbook_empty_recovery_delay_ms",
+        "orderbook_empty_recovery_max_total_ms",
+        "micro_hard_close_floor_seconds",
+        "micro_adaptive_window_min_seconds",
         "clob_orderbook_retry_count",
         "clob_orderbook_retry_backoff_ms",
         "clob_rate_limit_cooldown_seconds",

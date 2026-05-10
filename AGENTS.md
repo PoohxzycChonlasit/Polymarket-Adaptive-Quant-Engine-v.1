@@ -73,25 +73,30 @@ The agent playbooks live under `docs/quant_agent_setup_md/roles/`. Use `MASTER_A
 
 Use these as guidance; they are markdown instructions, not autonomous runtime modules.
 
-| Agent doc | Responsibility | Use when |
-|-----------|----------------|----------|
-| `01_PROJECT_MANAGER_AGENT.md` | Scope, sequencing, handoffs | Planning multi-step work. |
-| `02_CODE_ARCHITECT_AGENT.md` | File ownership, interfaces, modularity | Any multi-file change. |
-| `03_RISK_MANAGER_AGENT.md` | Risk rejection rules and safety gates | Risk, sizing, drawdown, exposure, entry approval. |
-| `04_EXIT_EXECUTION_AGENT.md` | Exit, TP/SL, forced/panic exits | Exit-system changes. |
-| `05_MARKET_DATA_AGENT.md` | Freshness, orderbook, token IDs, spread/depth | Market data/orderbook work. |
-| `06_POSITION_RECONCILIATION_AGENT.md` | True inventory, orders, fills, mismatch handling | Reconciliation/order lifecycle work. |
-| `07_TEST_CI_AGENT.md` | Test plan and CI safety gates | Every implementation task. |
-| `08_RESEARCH_QUANT_AGENT.md` | Offline research context | Strategy research only. |
-| `09_SIGNAL_STRATEGY_AGENT.md` | Signal changes | Only when explicitly changing strategy. |
-| `10_BACKTEST_REPLAY_AGENT.md` | Backtest/replay validation | Strategy/import path changes. |
-| `11_OBSERVABILITY_INCIDENT_AGENT.md` | Logs, alerts, health, incidents | Logging/Telegram/monitoring work. |
-| `12_REVIEW_LEARNING_AGENT.md` | Postmortem/review learning | After incidents or paper sessions. |
-| `13_TELEGRAM_ALERT_AGENT.md` | Telegram routing, cooldown, daily copy | Telegram alert or daily summary work. |
-| `14_NO_ENTRY_DIAGNOSTICS_AGENT.md` | Explain zero-trade paper runs | Paper sessions with no entries/fills. |
-| `15_CONFIG_SAFETY_AGENT.md` | Startup config and `.env` safety | Mode, live flags, wallet-reference, validation. |
-| `16_PAPER_EVALUATION_AGENT.md` | PASS/CAUTION/FAIL paper evaluation | Post-run paper evidence review. |
-| `17_CLEAN_SHUTDOWN_AGENT.md` | Feed/logger/thread shutdown | Ctrl+C, teardown, lingering threads. |
+| Agent doc                              | Responsibility                                   | Use when                                                                   |
+| -------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------- |
+| `01_PROJECT_MANAGER_AGENT.md`          | Scope, sequencing, handoffs                      | Planning multi-step work.                                                  |
+| `02_CODE_ARCHITECT_AGENT.md`           | File ownership, interfaces, modularity           | Any multi-file change.                                                     |
+| `03_RISK_MANAGER_AGENT.md`             | Risk rejection rules and safety gates            | Risk, sizing, drawdown, exposure, entry approval.                          |
+| `04_EXIT_EXECUTION_AGENT.md`           | Exit, TP/SL, forced/panic exits                  | Exit-system changes.                                                       |
+| `05_MARKET_DATA_AGENT.md`              | Freshness, orderbook, token IDs, spread/depth    | Market data/orderbook work.                                                |
+| `06_POSITION_RECONCILIATION_AGENT.md`  | True inventory, orders, fills, mismatch handling | Reconciliation/order lifecycle work.                                       |
+| `07_TEST_CI_AGENT.md`                  | Test plan and CI safety gates                    | Every implementation task.                                                 |
+| `08_RESEARCH_QUANT_AGENT.md`           | Offline research context                         | Strategy research only.                                                    |
+| `09_SIGNAL_STRATEGY_AGENT.md`          | Signal changes                                   | Only when explicitly changing strategy.                                    |
+| `10_BACKTEST_REPLAY_AGENT.md`          | Backtest/replay validation                       | Strategy/import path changes.                                              |
+| `11_OBSERVABILITY_INCIDENT_AGENT.md`   | Logs, alerts, health, incidents                  | Logging/Telegram/monitoring work.                                          |
+| `12_REVIEW_LEARNING_AGENT.md`          | Postmortem/review learning                       | After incidents or paper sessions.                                         |
+| `13_TELEGRAM_ALERT_AGENT.md`           | Telegram routing, cooldown, daily copy           | Telegram alert or daily summary work.                                      |
+| `14_NO_ENTRY_DIAGNOSTICS_AGENT.md`     | Explain zero-trade paper runs                    | Paper sessions with no entries/fills.                                      |
+| `15_CONFIG_SAFETY_AGENT.md`            | Startup config and `.env` safety                 | Mode, live flags, wallet-reference, validation.                            |
+| `16_PAPER_EVALUATION_AGENT.md`         | PASS/CAUTION/FAIL paper evaluation               | Post-run paper evidence review.                                            |
+| `17_CLEAN_SHUTDOWN_AGENT.md`           | Feed/logger/thread shutdown                      | Ctrl+C, teardown, lingering threads.                                       |
+| `18_MARKET_REGIME_AGENT.md`            | Market regime diagnostics                        | Volatility/trend regime labels, regime grouping, adaptive-policy research. |
+| `19_FAIR_VALUE_ENGINE_AGENT.md`        | Dynamic fair probability                         | Fair value, mispricing, time-decay probability, EV explanation.            |
+| `20_INVENTORY_ENGINE_AGENT.md`         | Inventory trading logic                          | Controlled accumulation, reload/unload, inventory caps, runner policy.     |
+| `21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Execution quality                                | Spread, liquidity, maker/taker, fill quality, price improvement.           |
+| `22_INVENTORY_ANALYTICS_AGENT.md`      | Offline inventory research                       | Missed reload/unload, inventory replay, MFE/MAE, recycling opportunity.    |
 
 Status labels:
 
@@ -122,33 +127,33 @@ Do not use multiple agent prompts as justification for scope creep. If a task st
 
 ## Active Files
 
-| File | Purpose |
-|------|---------|
-| `main.py` | CLI dispatcher and realtime loop orchestration. |
-| `config/settings.py` | Pydantic settings, env defaults, live/paper validation. |
-| `polymarket/trader.py` | Main Polymarket trading coordinator. |
-| `polymarket/client.py` | CLOB auth, orderbooks, balances, orders, redemption helpers. |
-| `polymarket/gamma_fetcher.py` | Gamma market/event/token discovery. |
-| `polymarket/market_feed.py` | Binance feed singleton. |
-| `polymarket/oracle_price_feed.py` | Oracle/PTB price path used by trader. |
-| `polymarket/virtual_ptb.py` | Virtual price-to-beat tracker. |
-| `polymarket/signal.py` | Realtime signal logic. |
-| `polymarket/backtester_5m.py` | Backtest signal/performance path. |
-| `polymarket/order_manager.py` | Builds order risk plans. |
-| `polymarket/order_intent.py` | ENTRY/EXIT validation guard. |
-| `polymarket/bankroll_tiers.py` | Bankroll tiers and rank hysteresis. |
-| `polymarket/risk_modes.py` | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN. |
-| `polymarket/realtime_logger.py` | Runtime scan/trade CSV and summary logging. |
-| `utils/risk_manager.py` | Canonical hard risk policy for Polymarket path. |
-| `utils/position_tracker.py` | Position and drawdown state. |
-| `utils/display.py` | Terminal UI V2 and other Rich displays. |
-| `utils/logger.py` | Console/file/Telegram logging setup. |
-| `utils/telegram_reporter.py` | Telegram message builders and daily report sender. |
-| `utils/telegram_alerts.py` | Central Telegram cooldown/dedup alert layer. |
-| `utils/quant_event_logger.py` | Structured JSONL quant event writer. |
-| `tools/quant_data_quality.py` | Offline JSONL data quality checker. |
-| `tools/replay_analyzer.py` | Offline replay report generator. |
-| `tools/paper_evaluation_report.py` | Offline paper PASS/CAUTION/FAIL evaluator. |
+| File                               | Purpose                                                      |
+| ---------------------------------- | ------------------------------------------------------------ |
+| `main.py`                          | CLI dispatcher and realtime loop orchestration.              |
+| `config/settings.py`               | Pydantic settings, env defaults, live/paper validation.      |
+| `polymarket/trader.py`             | Main Polymarket trading coordinator.                         |
+| `polymarket/client.py`             | CLOB auth, orderbooks, balances, orders, redemption helpers. |
+| `polymarket/gamma_fetcher.py`      | Gamma market/event/token discovery.                          |
+| `polymarket/market_feed.py`        | Binance feed singleton.                                      |
+| `polymarket/oracle_price_feed.py`  | Oracle/PTB price path used by trader.                        |
+| `polymarket/virtual_ptb.py`        | Virtual price-to-beat tracker.                               |
+| `polymarket/signal.py`             | Realtime signal logic.                                       |
+| `polymarket/backtester_5m.py`      | Backtest signal/performance path.                            |
+| `polymarket/order_manager.py`      | Builds order risk plans.                                     |
+| `polymarket/order_intent.py`       | ENTRY/EXIT validation guard.                                 |
+| `polymarket/bankroll_tiers.py`     | Bankroll tiers and rank hysteresis.                          |
+| `polymarket/risk_modes.py`         | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN.                    |
+| `polymarket/realtime_logger.py`    | Runtime scan/trade CSV and summary logging.                  |
+| `utils/risk_manager.py`            | Canonical hard risk policy for Polymarket path.              |
+| `utils/position_tracker.py`        | Position and drawdown state.                                 |
+| `utils/display.py`                 | Terminal UI V2 and other Rich displays.                      |
+| `utils/logger.py`                  | Console/file/Telegram logging setup.                         |
+| `utils/telegram_reporter.py`       | Telegram message builders and daily report sender.           |
+| `utils/telegram_alerts.py`         | Central Telegram cooldown/dedup alert layer.                 |
+| `utils/quant_event_logger.py`      | Structured JSONL quant event writer.                         |
+| `tools/quant_data_quality.py`      | Offline JSONL data quality checker.                          |
+| `tools/replay_analyzer.py`         | Offline replay report generator.                             |
+| `tools/paper_evaluation_report.py` | Offline paper PASS/CAUTION/FAIL evaluator.                   |
 
 ## Secondary Or Experimental Paths
 

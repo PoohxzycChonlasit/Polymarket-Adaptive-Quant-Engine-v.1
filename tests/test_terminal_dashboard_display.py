@@ -116,6 +116,42 @@ def test_portfolio_panel_shows_realtime_bankroll_state() -> None:
     assert "RiskOff False" in text
 
 
+def test_portfolio_panel_shows_bankroll_tier_v2_and_micro_survival_state() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_portfolio({
+        "starting_bankroll": 20.0,
+        "cash": 20.0,
+        "open_value": 0.0,
+        "realized_pnl": 0.0,
+        "unrealized_pnl": 0.0,
+        "equity": 20.0,
+        "sizing_bankroll": 20.0,
+        "bankroll_tier": "T0_MICRO_SEED",
+        "bankroll_tier_id": "T0_MICRO_SEED",
+        "bankroll_tier_name": "Micro Seed",
+        "bankroll_family": "MICRO",
+        "bankroll_risk_profile": "seed_protection",
+        "bankroll_mode": "MICRO_SURVIVAL",
+        "micro_survival_active": True,
+        "micro_position_size": 0.05,
+        "daily_drawdown": 0.0,
+        "risk_off": False,
+        "open_count": 0,
+        "max_open_positions": 3,
+        "total_exposure_pct": 0.0,
+    })
+
+    text = _render_text(display._portfolio_panel())
+
+    assert "T0_MICRO_SEED" in text
+    assert "Micro Seed" in text
+    assert "Family MICRO" in text
+    assert "Profile seed_protection" in text
+    assert "Bankroll Mode MICRO_SURVIVAL" in text
+    assert "Micro ON" in text
+    assert "$0.0500" in text
+
+
 def test_cycle_and_footer_show_skip_reason_and_session_summary() -> None:
     display = PolymarketRealtimeDisplay()
     display.update_cycle([
@@ -148,6 +184,34 @@ def test_cycle_and_footer_show_skip_reason_and_session_summary() -> None:
     assert "SKIP no_orderbook" in cycle_text
     assert "EV=+0.008" in cycle_text
     assert "Session: scanned=48 opps=5 entered=1 skipped=47 canceled=0" in footer_text
+
+
+def test_cycle_panel_shows_compact_cutoff_micro_liquidity_context() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_cycle([
+        {
+            "ticker": "BTC",
+            "decision": "SKIP",
+            "skip_reason": "Entry cutoff: 12s <= 35s",
+            "normalized_skip_reason": "time_unsafe",
+            "micro_timing_denied_reason": "hard_close_zone",
+            "seconds_remaining": 12,
+            "effective_cutoff_seconds": 35,
+            "micro_timing_branch_entered": True,
+            "micro_timing_allowed": False,
+            "liquidity_state": "HEALTHY",
+            "ev": 0.0,
+            "confidence": 0.0,
+        }
+    ], cycle_num=9)
+
+    text = _render_text(display._cycle_panel(display._resolve_layout()))
+
+    assert "SKIP hard_close_zone" in text
+    assert "remaining=12s" in text
+    assert "cutoff=35s" in text
+    assert "micro=ON" in text
+    assert "liquidity=HEALTHY" in text
 
 
 def test_dashboard_auto_layout_modes_by_terminal_size() -> None:
@@ -227,6 +291,66 @@ def test_dashboard_bottom_status_line_contains_required_health_fields() -> None:
     assert "RISK NORMAL" in footer
     assert "LATENCY" in footer
     assert "LOGGING SAFE" in footer
+
+
+def test_market_card_and_footer_show_timing_liquidity_recovery_tags() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_portfolio({
+        "starting_bankroll": 20.0,
+        "cash": 20.0,
+        "open_value": 0.0,
+        "equity": 20.0,
+        "sizing_bankroll": 20.0,
+        "bankroll_tier": "T0_MICRO_SEED",
+        "bankroll_tier_id": "T0_MICRO_SEED",
+        "bankroll_family": "MICRO",
+        "bankroll_mode": "MICRO_SURVIVAL",
+        "micro_survival_active": True,
+        "micro_position_size": 0.05,
+        "risk_mode": "NORMAL",
+        "risk_off": False,
+    })
+    display.update_market(
+        "BTC",
+        bid=0.52,
+        ask=0.54,
+        yes_bid=0.52,
+        yes_ask=0.54,
+        no_bid=0.46,
+        no_ask=0.48,
+        current_price=100000.0,
+        ref_price=99900.0,
+        seconds_remaining=40,
+        first_seen_seconds_remaining=599,
+        first_evaluable_seconds_remaining=564,
+        cutoff_policy="micro_adaptive",
+        effective_cutoff_seconds=35,
+        micro_timing_branch_entered=True,
+        micro_timing_allowed=True,
+        micro_timing_denied_reason="",
+        liquidity_state="RECOVERING",
+        empty_book_recovery_attempted=True,
+        empty_book_recovery_success=True,
+        empty_book_recovery_failed=False,
+        empty_book_recovery_retry_count=1,
+        decision="SKIP",
+        skip_reason="",
+    )
+
+    card = _render_text(display._market_card("BTC", display._resolve_layout()))
+    footer = str(display._footer())
+
+    assert "remaining=40s" in card
+    assert "599/564" in card
+    assert "Cutoff micro_adaptive 35s" in card
+    assert "Micro branch=ON allowed=ON" in card
+    assert "Liquidity RECOVERING" in card
+    assert "Recovery a=ON s=ON f=OFF r=1" in card
+    assert "TIER T0_SEED" in footer
+    assert "MICRO ON" in footer
+    assert "LIQ RECOVERING" in footer
+    assert "CUTOFF no_orderbook" not in footer
+    assert "RECOVERY OK" in footer
 
 
 def test_portfolio_panel_wallet_reference_paper_shows_expected_labels() -> None:

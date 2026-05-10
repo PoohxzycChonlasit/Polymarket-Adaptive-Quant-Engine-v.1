@@ -1,6 +1,6 @@
 # PolyTrade Bot / Polymarket 5M Binary BTC-ETH Quant Scalper - Current Project Status
 
-> Updated: 2026-05-08
+> Updated: 2026-05-10
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -88,6 +88,14 @@ The following parts are currently working or present in the project:
   - Wallet-reference paper mode shows wallet bankroll, paper sizing balance, paper cash, source, `PAPER ONLY`, and `NO LIVE ORDERS` in startup/dashboard surfaces.
   - If wallet balance fetch fails, paper mode logs a warning, falls back to `paper_virtual`, and continues without enabling live execution.
   - `WALLET_REFERENCE_REFRESH_SECONDS` controls low-frequency refresh; default is 300 seconds.
+- Bankroll/runtime diagnostics work through 2026-05-10:
+  - `BANKROLL_TIER_ARCHITECTURE_V2` is implemented through centralized bankroll tier metadata and hysteresis. Runtime surfaces `bankroll_tier_id`, `bankroll_tier_name`, `bankroll_family`, `bankroll_risk_profile`, tier lock, and hysteresis state.
+  - `MICRO_SURVIVAL_MODE` is available for paper MICRO bankrolls under the configured threshold and remains isolated from live mode and bankrolls >= `$100`.
+  - MICRO adaptive timing is available only for paper MICRO family tiers. It does not loosen STANDARD / BASE / GROWTH / CAPITAL behavior and keeps the hard MICRO close floor.
+  - Orderbook empty-book recovery uses a short bounded recovery window and reports `liquidity_state`, recovery attempt/success/failure, and retry count.
+  - CLOB orderbook resilience classifies HTTP/rate-limit/timeout/token/client issues, uses bounded retry/backoff/cooldowns, and degrades safely without changing strategy or execution behavior.
+  - `tools/session_runtime_evaluator.py` supports same-day UTC filters with `--since HH:MM` and `--until HH:MM`, so current runs can be evaluated without stale same-day events.
+  - Terminal UI V2 now shows compact bankroll tier, MICRO survival, MICRO timing, liquidity/recovery, cutoff reason, and early-window timing fields.
 - Strict startup config validation was implemented on 2026-05-08:
   - `utils/config_validator.py` validates `MODE`, `PAPER_BALANCE_SOURCE`, `TELEGRAM_ENABLED`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `LIVE_TRADING_ENABLED`.
   - Invalid `MODE` or invalid critical boolean values fail startup clearly with allowed values where applicable.
@@ -148,6 +156,7 @@ Stability classification:
 - Implemented offline quant analysis:
   - Quant JSONL data quality checker.
   - Offline replay analyzer and report writer.
+  - Offline no-entry analyzer and session runtime evaluator for paper-session bottleneck classification.
   - Offline paper evaluation report that combines data quality and replay outputs into `PASS`, `CAUTION`, or `FAIL`.
   - Tests covering valid, malformed, empty, and date-range datasets.
 
@@ -221,6 +230,11 @@ Observed terminal evidence:
   - `utils/display.py` now contains a responsive Polymarket dashboard renderer with System Status, Portfolio, Risk, BTC Market, ETH Market, AI Decision, Execution, Skip Reasons, and Rolling Logs panels.
   - The bottom status line now shows `WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING`.
   - This is a UI/display-layer change only. It does not change strategy, risk, wallet, orderbook, or execution behavior.
+- Terminal UI visibility update on 2026-05-10:
+  - Portfolio/Risk panels now surface `BANKROLL_TIER_V2`, bankroll family/profile, bankroll mode, MICRO survival state, and micro position size.
+  - Market/AI panels now show remaining time, first seen/evaluable seconds, cutoff policy/effective cutoff, MICRO timing branch/allow/deny state, latest deny reason, liquidity state, and empty-book recovery status.
+  - Footer tags include compact `TIER | MICRO | LIQ | CUTOFF | RECOVERY` state.
+  - This is observability-only. It does not change strategy, risk sizing, execution, wallet/allowance, order intent, reconciliation, paper/live separation, or websocket/orderbook behavior.
 - Documentation/observability finding on 2026-05-08:
   - Older docs still described stale HFT/live-ready assumptions and fixed `scan_log.csv` daily reporting.
   - Runtime logging now writes per-run CSV files named `scan_log_<timestamp>_<pid>.csv`.
@@ -410,6 +424,7 @@ Fixed in Phase 1/2 observability pass:
 Remaining gap:
 
 - Quant event logger and Telegram alert layer are now wired into the main trader loop for market snapshots, decisions, execution, trade, risk, and health events.
+- Current paper diagnostics include cutoff behavior, MICRO timing branch state, liquidity/recovery state, bankroll tier metadata, and session evaluator UTC time filters.
 - Some existing Telegram daily message content still contains stale wording and needs a dedicated copy/content cleanup.
 - Full retention/compaction and incident-report files remain planned.
 

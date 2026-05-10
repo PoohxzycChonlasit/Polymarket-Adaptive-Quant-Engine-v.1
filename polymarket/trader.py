@@ -26,6 +26,7 @@ from polymarket.opportunity_scanner import (
 )
 from polymarket.position_manager import PositionManagerInput, PositionState, manage_position
 from polymarket.probability_model import ProbabilityModelInput, estimate_probability
+from polymarket.regime_diagnostics import classify_market_regime, classify_market_regime_from_payload
 from polymarket.signal import BACKTEST_WIN_RATE, SignalResult, compute_realtime_signal
 from polymarket.trade_frequency import frequency_multiplier_for_tier
 from polymarket.trend_runner import TrendRunnerInput, evaluate_trend_entry
@@ -139,6 +140,11 @@ class MarketDisplayMetrics:
     clob_recovery_count: int = 0
     market_data_degraded: bool = False
     retry_count: int = 0
+    empty_book_recovery_attempted: bool = False
+    empty_book_recovery_success: bool = False
+    empty_book_recovery_failed: bool = False
+    empty_book_recovery_retry_count: int = 0
+    liquidity_state: str = "HEALTHY"
 
 
 @dataclass(slots=True)
@@ -148,6 +154,13 @@ class AdaptiveEntryCutoffDecision:
     effective_cutoff_seconds: int
     reason: str
     late_entry_hard_block: bool = False
+    micro_timing_allowed: bool = False
+    micro_timing_denied_reason: str = ""
+    effective_micro_cutoff_seconds: int = 0
+    micro_cutoff_policy: str = "standard"
+    micro_timing_branch_entered: bool = False
+    micro_timing_branch_skipped_reason: str = ""
+    micro_timing_candidate: bool = False
 
 
 @dataclass(slots=True)
@@ -336,11 +349,18 @@ class PolymarketTrader:
         self._preloaded_token_ids: dict[tuple[str, int], tuple[str, str]] = {}
         self._preloaded_token_meta: dict[tuple[str, int], dict[str, object]] = {}
         self._warmed_orderbook_epochs: set[tuple[str, int]] = set()
+        self._market_first_seen_seconds_remaining: dict[tuple[str, int], int] = {}
+        self._market_first_evaluable_seconds_remaining: dict[tuple[str, int], int] = {}
+        self._last_empty_book_recovery_detail: dict[str, dict[str, object]] = {}
         self._market_readiness_metrics = {
             "token_preload_hits": 0,
             "token_preload_misses": 0,
             "token_preload_warmups": 0,
             "token_preload_failures": 0,
+            "empty_book_recovery_attempted": 0,
+            "empty_book_recovery_success": 0,
+            "empty_book_recovery_failed": 0,
+            "empty_book_recovery_retries": 0,
         }
         self._recent_display_trades: deque[dict[str, object]] = deque(maxlen=12)
         self._cycle_count = 0
@@ -583,10 +603,9 @@ class PolymarketTrader:
         return now_ts - (now_ts % 300)
 
     def _market_preload_lead_seconds(self) -> int:
-        return max(
-            int(self._setting("execution_entry_cutoff_seconds", 90)),
-            int(self._setting("exit_agent_entry_cutoff_seconds", 45)),
-        ) + 60
+        # Keep next-window tokens ready before the active epoch opens. This is
+        # discovery-only and does not alter entry cutoffs or strategy gates.
+        return 300
 
     @staticmethod
     def _meta_int(meta: dict[str, object], key: str, default: int = 0) -> int:
@@ -594,6 +613,63 @@ class PolymarketTrader:
             return int(float(meta.get(key, default) or default))
         except (TypeError, ValueError):
             return default
+
+    def _active_window_alignment_detail(
+        self,
+        *,
+        ticker: str,
+        epoch_start: int,
+        epoch_end: int,
+        seconds_remaining: int | None,
+        token_ids: tuple[str, str] | None = None,
+        orderbook_ready: bool | None = None,
+    ) -> dict[str, object]:
+        ticker = ticker.upper()
+        now_ts = int(time.time())
+        if epoch_start <= 0 and epoch_end > 0:
+            epoch_start = epoch_end - 300
+        if epoch_end <= 0 and epoch_start > 0:
+            epoch_end = epoch_start + 300
+        seconds_until_close = (
+            max(0, int(seconds_remaining))
+            if seconds_remaining is not None
+            else max(0, epoch_end - now_ts) if epoch_end else 0
+        )
+        seconds_since_open = max(0, min(300, now_ts - epoch_start)) if epoch_start else 0
+        key = (ticker, epoch_start)
+        first_seen = self._market_first_seen_seconds_remaining.setdefault(key, seconds_until_close)
+
+        has_tokens = bool(token_ids and token_ids[0] and token_ids[1])
+        hard_block = self._entry_hard_block_seconds()
+        if not epoch_start or now_ts < epoch_start:
+            reason = "before_active_window"
+        elif seconds_until_close <= hard_block:
+            reason = "late_hard_close_zone"
+        elif not has_tokens:
+            reason = "missing_token_id"
+        elif orderbook_ready is False:
+            reason = "orderbook_not_ready"
+        elif seconds_since_open <= 60:
+            reason = "early_window_ready"
+        else:
+            reason = "active_window_ready"
+
+        first_evaluable = self._market_first_evaluable_seconds_remaining.get(key)
+        if first_evaluable is None and has_tokens and seconds_until_close > hard_block and orderbook_ready is not False:
+            first_evaluable = seconds_until_close
+            self._market_first_evaluable_seconds_remaining[key] = first_evaluable
+
+        return {
+            "market_epoch_start": epoch_start,
+            "market_epoch_end": epoch_end,
+            "epoch_start_ts": epoch_start,
+            "epoch_end_ts": epoch_end,
+            "seconds_since_open": seconds_since_open,
+            "seconds_until_close": seconds_until_close,
+            "first_seen_seconds_remaining": first_seen,
+            "first_evaluable_seconds_remaining": first_evaluable or 0,
+            "active_window_alignment_reason": reason,
+        }
 
     def _cached_active_market_valid(self, ticker: str, now_ts: int) -> bool:
         token_ids = self._real_token_ids.get(ticker)
@@ -628,6 +704,7 @@ class PolymarketTrader:
         key = (ticker, epoch_start)
         self._preloaded_token_ids[key] = (yes_token, no_token)
         self._preloaded_token_meta[key] = meta
+        self._market_first_seen_seconds_remaining.setdefault(key, int(meta["seconds_remaining"]))
         return meta
 
     def _promote_preloaded_market(self, ticker: str, epoch_start: int, *, source: str) -> bool:
@@ -693,6 +770,14 @@ class PolymarketTrader:
         finally:
             self._warmed_orderbook_epochs.add((ticker, epoch_start))
             duration_ms = int(max(0.0, time.monotonic() - started) * 1000)
+            alignment_detail = self._active_window_alignment_detail(
+                ticker=ticker,
+                epoch_start=epoch_start,
+                epoch_end=self._meta_int(meta, "epoch_end_ts", epoch_start + 300),
+                seconds_remaining=self._meta_int(meta, "seconds_remaining"),
+                token_ids=token_ids,
+                orderbook_ready=ok,
+            )
             self._emit_quant_event(
                 "log_system_health",
                 {
@@ -702,6 +787,7 @@ class PolymarketTrader:
                     "condition_id": str(meta.get("condition_id", "")),
                     "epoch_start_ts": epoch_start,
                     "seconds_remaining": self._meta_int(meta, "seconds_remaining"),
+                    **alignment_detail,
                     "orderbook_readiness_ms": duration_ms,
                     "warmup_ok": ok,
                     "reason": reason,
@@ -817,6 +903,7 @@ class PolymarketTrader:
         orderbook_age_ms = self._diagnostic_int(display.get("orderbook_age_ms")) or 0
         oracle_age_ms = self._diagnostic_int(display.get("oracle_age_ms")) or 0
         market_feed_age_ms = self._diagnostic_int(display.get("market_feed_age_ms")) or 0
+        regime_detail = classify_market_regime_from_payload(display).to_payload()
         cutoff_block_seconds_remaining = (
             self._diagnostic_int(seconds_remaining)
             if normalized_reason == "time_unsafe" or "cutoff" in raw_reason.lower()
@@ -839,9 +926,23 @@ class PolymarketTrader:
             "adaptive_cutoff_allowed": bool(display.get("adaptive_cutoff_allowed", False)),
             "adaptive_cutoff_reason": str(display.get("adaptive_cutoff_reason", "") or ""),
             "late_entry_hard_block": bool(display.get("late_entry_hard_block", False)),
+            "micro_timing_allowed": bool(display.get("micro_timing_allowed", False)),
+            "micro_timing_denied_reason": str(display.get("micro_timing_denied_reason", "") or ""),
+            "effective_micro_cutoff_seconds": self._diagnostic_int(display.get("effective_micro_cutoff_seconds")) or 0,
+            "micro_cutoff_policy": str(display.get("micro_cutoff_policy", "") or "standard"),
+            "micro_timing_branch_entered": bool(display.get("micro_timing_branch_entered", False)),
+            "micro_timing_branch_skipped_reason": str(display.get("micro_timing_branch_skipped_reason", "") or ""),
+            "micro_timing_candidate": bool(display.get("micro_timing_candidate", False)),
             "cutoff_block_seconds_remaining": cutoff_block_seconds_remaining,
             "time_bucket": time_bucket,
             "epoch_start": self._diagnostic_int(display.get("epoch_start", display.get("epoch_start_ts"))),
+            "market_epoch_start": self._diagnostic_int(display.get("market_epoch_start", display.get("epoch_start_ts"))),
+            "market_epoch_end": self._diagnostic_int(display.get("market_epoch_end", display.get("epoch_end_ts"))),
+            "seconds_since_open": self._diagnostic_int(display.get("seconds_since_open")),
+            "seconds_until_close": self._diagnostic_int(display.get("seconds_until_close", seconds_remaining)),
+            "first_seen_seconds_remaining": self._diagnostic_int(display.get("first_seen_seconds_remaining")),
+            "first_evaluable_seconds_remaining": self._diagnostic_int(display.get("first_evaluable_seconds_remaining")),
+            "active_window_alignment_reason": str(display.get("active_window_alignment_reason", "") or ""),
             "market_start_time": str(display.get("market_start_time", "") or ""),
             "market_end_time": str(display.get("market_end_time", "") or ""),
             "market_close_timestamp": market_close_timestamp,
@@ -871,11 +972,21 @@ class PolymarketTrader:
             "clob_recovery_count": self._diagnostic_int(display.get("clob_recovery_count")),
             "market_data_degraded": bool(display.get("market_data_degraded", False)),
             "retry_count": self._diagnostic_int(display.get("retry_count")),
+            "empty_book_recovery_attempted": bool(display.get("empty_book_recovery_attempted", False)),
+            "empty_book_recovery_success": bool(display.get("empty_book_recovery_success", False)),
+            "empty_book_recovery_failed": bool(display.get("empty_book_recovery_failed", False)),
+            "empty_book_recovery_retry_count": self._diagnostic_int(display.get("empty_book_recovery_retry_count")) or 0,
+            "liquidity_state": str(display.get("liquidity_state", "") or "HEALTHY"),
             "oracle_age_ms": oracle_age_ms,
             "oracle_age": round(oracle_age_ms / 1000.0, 3),
             "oracle_age_seconds": round(oracle_age_ms / 1000.0, 3),
             "market_feed_age_ms": market_feed_age_ms,
             "market_feed_age_seconds": round(market_feed_age_ms / 1000.0, 3),
+            "volatility_regime": str(display.get("volatility_regime", regime_detail["volatility_regime"]) or "UNKNOWN"),
+            "volatility_score": self._diagnostic_float(display.get("volatility_score", regime_detail["volatility_score"])),
+            "trend_regime": str(display.get("trend_regime", regime_detail["trend_regime"]) or "UNKNOWN"),
+            "trend_strength": self._diagnostic_float(display.get("trend_strength", regime_detail["trend_strength"])),
+            "regime_reason": str(display.get("regime_reason", regime_detail["regime_reason"]) or ""),
             "token_mapping_warning": str(display.get("token_mapping_warning", "") or ""),
             "paper_virtual_cash": float(self.bankroll_state.current_cash_balance if self.settings.paper_trading else 0.0),
             "paper_available_balance": float(self._paper_available_balance() if self.settings.paper_trading else 0.0),
@@ -1138,14 +1249,28 @@ class PolymarketTrader:
                 market_end_time = datetime.fromtimestamp(int(epoch_start) + 300, tz=UTC).isoformat()
             except (TypeError, ValueError, OSError):
                 market_end_time = ""
+        epoch_start_int = self._diagnostic_int(epoch_start) or 0
+        epoch_end_int = int(getattr(ptb_info, "epoch_end_ts", 0) or 0)
+        if epoch_end_int <= 0 and epoch_start_int > 0:
+            epoch_end_int = epoch_start_int + 300
+        ticker = self._ticker_from_market_id(getattr(market, "market_id", ""))
+        token_ids = self._real_token_ids.get(ticker)
+        alignment_detail = self._active_window_alignment_detail(
+            ticker=ticker,
+            epoch_start=epoch_start_int,
+            epoch_end=epoch_end_int,
+            seconds_remaining=self._diagnostic_int(raw_seconds),
+            token_ids=token_ids,
+        )
         return {
             "seconds_remaining": self._diagnostic_int(raw_seconds),
             "entry_cutoff_seconds": self._diagnostic_int(raw_cutoff),
             "time_bucket": classify_time_bucket(raw_seconds, raw_cutoff),
-            "epoch_start": self._diagnostic_int(epoch_start),
+            "epoch_start": epoch_start_int,
             "market_start_time": market_start_time,
             "market_end_time": market_end_time,
             "market_close_timestamp": market_end_time,
+            **alignment_detail,
         }
 
     def _entry_hard_block_seconds(self) -> int:
@@ -1159,6 +1284,45 @@ class PolymarketTrader:
         if not self._paper_enabled():
             hard_block = max(hard_block, int(self._setting("execution_force_exit_seconds", 60)))
         return hard_block
+
+    def _micro_adaptive_timing_active(self) -> bool:
+        if not bool(getattr(self.settings, "paper_trading", True)):
+            return False
+        if not bool(self._setting("micro_adaptive_timing_enabled", True)):
+            return False
+        try:
+            return get_tier_config(self.bankroll_state.current_bankroll_tier).family == "MICRO"
+        except Exception:
+            return False
+
+    def _micro_adaptive_timing_skipped_reason(self) -> str:
+        if not bool(getattr(self.settings, "paper_trading", True)):
+            return "live_mode"
+        if not bool(self._setting("micro_adaptive_timing_enabled", True)):
+            return "disabled"
+        try:
+            tier_config = get_tier_config(self.bankroll_state.current_bankroll_tier)
+        except Exception:
+            return "tier_unknown"
+        if tier_config.family != "MICRO":
+            return "non_micro_tier"
+        return ""
+
+    def _micro_hard_close_floor_seconds(self) -> int:
+        configured = int(self._setting("micro_hard_close_floor_seconds", 35))
+        return max(
+            configured,
+            int(self._setting("entry_min_seconds_remaining", 30)),
+            int(self._setting("exit_agent_force_exit_seconds", 25)),
+            int(self._setting("exit_agent_residual_sweep_seconds", 15)),
+            int(self._setting("exit_agent_emergency_flatten_seconds", 10)),
+        )
+
+    def _micro_adaptive_cutoff_seconds(self) -> int:
+        return max(
+            self._micro_hard_close_floor_seconds(),
+            int(self._setting("micro_adaptive_window_min_seconds", 35)),
+        )
 
     def _adaptive_entry_cutoff_seconds(self) -> int:
         return max(
@@ -1174,10 +1338,22 @@ class PolymarketTrader:
             "adaptive_cutoff_reason": decision.reason,
             "adaptive_cutoff_denied_reason": decision.reason if decision.policy == "adaptive" and not decision.allowed else "",
             "late_entry_hard_block": bool(decision.late_entry_hard_block),
+            "micro_timing_allowed": bool(decision.micro_timing_allowed),
+            "micro_timing_denied_reason": decision.micro_timing_denied_reason,
+            "effective_micro_cutoff_seconds": int(decision.effective_micro_cutoff_seconds),
+            "micro_cutoff_policy": decision.micro_cutoff_policy,
+            "micro_timing_branch_entered": bool(decision.micro_timing_branch_entered),
+            "micro_timing_branch_skipped_reason": decision.micro_timing_branch_skipped_reason,
+            "micro_timing_candidate": bool(decision.micro_timing_candidate),
         }
 
     def _entry_cutoff_skip_reason(self, seconds_remaining: int, decision: AdaptiveEntryCutoffDecision) -> str:
-        label = "hard block" if decision.late_entry_hard_block else "adaptive denied"
+        if decision.late_entry_hard_block:
+            label = "hard block"
+        elif decision.policy == "micro_adaptive":
+            label = "micro adaptive denied"
+        else:
+            label = "adaptive denied"
         return (
             f"Entry cutoff: {seconds_remaining}s <= {decision.effective_cutoff_seconds}s "
             f"({label}: {decision.reason})"
@@ -1193,15 +1369,27 @@ class PolymarketTrader:
         decision_latency_ms: int | None,
         scan_cycle_duration_ms: int | None,
         spread: float,
+        liquidity_state: str = "HEALTHY",
     ) -> AdaptiveEntryCutoffDecision:
-        hard_block = self._entry_hard_block_seconds()
+        micro_timing_active = self._micro_adaptive_timing_active()
+        micro_cutoff = self._micro_adaptive_cutoff_seconds() if micro_timing_active else 0
+        policy = "micro_adaptive" if micro_timing_active else "adaptive"
+        micro_timing_candidate = bool(micro_timing_active and seconds_remaining <= static_cutoff_seconds)
+        micro_branch_skipped_reason = "" if micro_timing_active else self._micro_adaptive_timing_skipped_reason()
+        hard_block = self._micro_hard_close_floor_seconds() if micro_timing_active else self._entry_hard_block_seconds()
         if seconds_remaining <= hard_block:
             return AdaptiveEntryCutoffDecision(
                 allowed=False,
-                policy="adaptive" if bool(self._setting("adaptive_entry_cutoff_enabled", True)) else "static",
+                policy=policy if bool(self._setting("adaptive_entry_cutoff_enabled", True)) else "static",
                 effective_cutoff_seconds=hard_block,
                 reason="hard_close_zone",
                 late_entry_hard_block=True,
+                micro_timing_denied_reason="hard_close_zone" if micro_timing_active else "",
+                effective_micro_cutoff_seconds=micro_cutoff,
+                micro_cutoff_policy=policy if micro_timing_active else "standard",
+                micro_timing_branch_entered=micro_timing_candidate,
+                micro_timing_branch_skipped_reason=micro_branch_skipped_reason,
+                micro_timing_candidate=micro_timing_candidate,
             )
 
         if seconds_remaining > static_cutoff_seconds:
@@ -1210,6 +1398,12 @@ class PolymarketTrader:
                 policy="static",
                 effective_cutoff_seconds=static_cutoff_seconds,
                 reason="static_safe",
+                micro_timing_allowed=micro_timing_active,
+                effective_micro_cutoff_seconds=micro_cutoff,
+                micro_cutoff_policy="static" if micro_timing_active else "standard",
+                micro_timing_branch_entered=False,
+                micro_timing_branch_skipped_reason=micro_branch_skipped_reason,
+                micro_timing_candidate=False,
             )
 
         if not bool(self._setting("adaptive_entry_cutoff_enabled", True)):
@@ -1218,52 +1412,74 @@ class PolymarketTrader:
                 policy="static",
                 effective_cutoff_seconds=static_cutoff_seconds,
                 reason="static_cutoff",
+                micro_timing_denied_reason="static_cutoff" if micro_timing_active else "",
+                effective_micro_cutoff_seconds=micro_cutoff,
+                micro_cutoff_policy="static" if micro_timing_active else "standard",
+                micro_timing_branch_entered=micro_timing_candidate,
+                micro_timing_branch_skipped_reason=micro_branch_skipped_reason,
+                micro_timing_candidate=micro_timing_candidate,
             )
 
-        effective_cutoff = self._adaptive_entry_cutoff_seconds()
+        effective_cutoff = micro_cutoff if micro_timing_active else self._adaptive_entry_cutoff_seconds()
         if seconds_remaining <= effective_cutoff:
+            reason = "micro_adaptive_window_floor" if micro_timing_active else "adaptive_cutoff_floor"
             return AdaptiveEntryCutoffDecision(
                 allowed=False,
-                policy="adaptive",
+                policy=policy,
                 effective_cutoff_seconds=effective_cutoff,
-                reason="adaptive_cutoff_floor",
+                reason=reason,
+                micro_timing_denied_reason=reason if micro_timing_active else "",
+                effective_micro_cutoff_seconds=micro_cutoff,
+                micro_cutoff_policy=policy if micro_timing_active else "standard",
+                micro_timing_branch_entered=micro_timing_candidate,
+                micro_timing_branch_skipped_reason=micro_branch_skipped_reason,
+                micro_timing_candidate=micro_timing_candidate,
             )
 
         if self._risk_mode_state.current_mode == RiskMode.LOCKDOWN:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "lockdown")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "lockdown", micro_timing_denied_reason="lockdown" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
 
         if not self._reconciliation_safe_for_entry():
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "reconciliation_block")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "reconciliation_block", micro_timing_denied_reason="reconciliation_block" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
+
+        if micro_timing_active and str(liquidity_state or "").upper() not in {"", "HEALTHY"}:
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "liquidity_not_healthy", micro_timing_denied_reason="liquidity_not_healthy", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy, micro_timing_branch_entered=micro_timing_candidate, micro_timing_candidate=micro_timing_candidate)
 
         max_orderbook_age_ms = int(self._setting("adaptive_entry_max_orderbook_age_ms", 1000))
         if orderbook_age_ms is None:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "orderbook_age_unknown")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "orderbook_age_unknown", micro_timing_denied_reason="orderbook_age_unknown" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
         if orderbook_age_ms > max_orderbook_age_ms:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "orderbook_stale")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "orderbook_stale", micro_timing_denied_reason="orderbook_stale" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
 
         max_oracle_age_ms = int(self._setting("adaptive_entry_max_oracle_age_ms", 5000))
         if oracle_age_ms is None:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "oracle_age_unknown")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "oracle_age_unknown", micro_timing_denied_reason="oracle_age_unknown" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
         if oracle_age_ms > max_oracle_age_ms:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "oracle_stale")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "oracle_stale", micro_timing_denied_reason="oracle_stale" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
 
         max_decision_latency_ms = int(self._setting("adaptive_entry_max_decision_latency_ms", 2000))
         if decision_latency_ms is not None and decision_latency_ms > max_decision_latency_ms:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "decision_latency_high")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "decision_latency_high", micro_timing_denied_reason="decision_latency_high" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
 
         max_cycle_duration_ms = int(self._setting("adaptive_entry_max_cycle_duration_ms", 2500))
         if scan_cycle_duration_ms is not None and scan_cycle_duration_ms > max_cycle_duration_ms:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "cycle_latency_high")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "cycle_latency_high", micro_timing_denied_reason="cycle_latency_high" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
 
         max_spread = float(self._setting("adaptive_entry_max_spread", 0.06))
         if spread > max_spread:
-            return AdaptiveEntryCutoffDecision(False, "adaptive", effective_cutoff, "spread_too_wide")
+            return AdaptiveEntryCutoffDecision(False, policy, effective_cutoff, "spread_too_wide", micro_timing_denied_reason="spread_too_wide" if micro_timing_active else "", effective_micro_cutoff_seconds=micro_cutoff, micro_cutoff_policy=policy if micro_timing_active else "standard", micro_timing_branch_entered=micro_timing_candidate, micro_timing_branch_skipped_reason=micro_branch_skipped_reason, micro_timing_candidate=micro_timing_candidate)
 
         return AdaptiveEntryCutoffDecision(
             allowed=True,
-            policy="adaptive",
+            policy=policy,
             effective_cutoff_seconds=effective_cutoff,
-            reason="healthy_late_entry",
+            reason="micro_healthy_late_entry" if micro_timing_active else "healthy_late_entry",
+            micro_timing_allowed=micro_timing_active,
+            effective_micro_cutoff_seconds=micro_cutoff,
+            micro_cutoff_policy=policy if micro_timing_active else "standard",
+            micro_timing_branch_entered=micro_timing_candidate,
+            micro_timing_branch_skipped_reason=micro_branch_skipped_reason,
+            micro_timing_candidate=micro_timing_candidate,
         )
 
     def _exit_agent_entry_cutoff_seconds(self) -> int:
@@ -2640,6 +2856,17 @@ class PolymarketTrader:
             )
             for ticker, symbol in crypto_tickers.items()
         ]
+        markets.sort(
+            key=lambda market: (
+                1 if self._real_token_ids.get(self._ticker_from_market_id(market.market_id)) else 0,
+                self._meta_int(
+                    self._market_token_meta.get(self._ticker_from_market_id(market.market_id), {}),
+                    "seconds_remaining",
+                    0,
+                ),
+            ),
+            reverse=True,
+        )
         token_ids_found = sum(1 for t in crypto_tickers if t in self._real_token_ids)
         LOGGER.info(
             "Selected %s Polymarket 5M Crypto markets | Real token IDs cached: %d/%d",
@@ -2676,7 +2903,13 @@ class PolymarketTrader:
 
                 self._market_readiness_metrics["token_preload_misses"] += 1
                 cache_misses += 1
-                active = self.gamma.get_current_5min_market(ticker)
+                active_markets = getattr(
+                    self.gamma,
+                    "get_current_and_next_5min_markets",
+                    lambda _ticker: [self.gamma.get_current_5min_market(_ticker)],
+                )(ticker)
+                active_markets = [market for market in active_markets or [] if market is not None]
+                active = active_markets[0] if active_markets else None
                 if active and active.yes_token_id and active.no_token_id:
                     meta = self._cache_market_tokens(ticker, active, source="current")
                     epoch_start = self._meta_int(meta or {}, "epoch_start_ts", current_epoch)
@@ -2696,7 +2929,7 @@ class PolymarketTrader:
                     else:
                         preloaded += 1
                     if self._meta_int(meta or {}, "seconds_remaining", 999) <= preload_lead:
-                        next_market = getattr(self.gamma, "get_next_5min_market", lambda _ticker: None)(ticker)
+                        next_market = active_markets[1] if len(active_markets) > 1 else getattr(self.gamma, "get_next_5min_market", lambda _ticker: None)(ticker)
                         if next_market and getattr(next_market, "yes_token_id", "") and getattr(next_market, "no_token_id", ""):
                             next_meta = self._cache_market_tokens(ticker, next_market, source="next_preload")
                             if next_meta:
@@ -2750,6 +2983,112 @@ class PolymarketTrader:
             return int(max(0.0, float(getattr(snapshot, "age_seconds", 0.0) or 0.0)) * 1000)
         except (TypeError, ValueError):
             return 0
+
+    @staticmethod
+    def _is_empty_orderbook_error(error: object) -> bool:
+        message = str(error).lower()
+        return (
+            "empty_orderbook" in message
+            or "empty_book" in message
+            or "invalid_orderbook" in message
+            or "clob_empty_response" in message
+        )
+
+    @staticmethod
+    def _empty_book_recovery_detail(*, liquidity_state: str = "HEALTHY") -> dict[str, object]:
+        return {
+            "empty_book_recovery_attempted": False,
+            "empty_book_recovery_success": False,
+            "empty_book_recovery_failed": False,
+            "empty_book_recovery_retry_count": 0,
+            "liquidity_state": liquidity_state,
+        }
+
+    def _fetch_orderbook_pair_once(self, yes_token_id: str, no_token_id: str):
+        yes_ob = self.client.get_orderbook(yes_token_id)
+        no_ob = self.client.get_orderbook(no_token_id) if no_token_id else None
+        return yes_ob, no_ob
+
+    def _fetch_orderbook_pair_with_empty_recovery(
+        self,
+        *,
+        ticker: str,
+        yes_token_id: str,
+        no_token_id: str,
+        seconds_remaining: int | None,
+        market_slug: str = "",
+    ):
+        detail = self._empty_book_recovery_detail()
+        self._last_empty_book_recovery_detail[ticker.upper()] = detail
+        try:
+            return (*self._fetch_orderbook_pair_once(yes_token_id, no_token_id), detail)
+        except Exception as exc:
+            if not (
+                self._paper_enabled()
+                and bool(self._setting("orderbook_empty_recovery_enabled", True))
+                and yes_token_id
+                and no_token_id
+                and self._is_empty_orderbook_error(exc)
+                and seconds_remaining is not None
+                and int(seconds_remaining) > self._entry_hard_block_seconds()
+            ):
+                raise
+
+            retries = max(0, min(3, int(self._setting("orderbook_empty_recovery_retries", 2))))
+            delay_ms = max(0, int(self._setting("orderbook_empty_recovery_delay_ms", 75)))
+            max_total_ms = max(1, int(self._setting("orderbook_empty_recovery_max_total_ms", 300)))
+            if retries <= 0:
+                raise
+
+            detail.update({
+                "empty_book_recovery_attempted": True,
+                "liquidity_state": "RECOVERING",
+            })
+            self._market_readiness_metrics["empty_book_recovery_attempted"] += 1
+            started = time.monotonic()
+            last_exc: Exception = exc
+
+            for retry_index in range(1, retries + 1):
+                elapsed_ms = int((time.monotonic() - started) * 1000)
+                if elapsed_ms >= max_total_ms:
+                    break
+                if delay_ms > 0:
+                    remaining_ms = max(0, max_total_ms - elapsed_ms)
+                    time.sleep(min(delay_ms, remaining_ms) / 1000.0)
+                detail["empty_book_recovery_retry_count"] = retry_index
+                self._market_readiness_metrics["empty_book_recovery_retries"] += 1
+                try:
+                    yes_ob, no_ob = self._fetch_orderbook_pair_once(yes_token_id, no_token_id)
+                    detail.update({
+                        "empty_book_recovery_success": True,
+                        "liquidity_state": "HEALTHY",
+                    })
+                    self._market_readiness_metrics["empty_book_recovery_success"] += 1
+                    LOGGER.info(
+                        "[ORDERBOOK_RECOVERY] ticker=%s market_slug=%s recovered=true retries=%d",
+                        ticker,
+                        market_slug,
+                        retry_index,
+                    )
+                    return yes_ob, no_ob, detail
+                except Exception as retry_exc:
+                    last_exc = retry_exc
+                    if not self._is_empty_orderbook_error(retry_exc):
+                        raise
+
+            detail.update({
+                "empty_book_recovery_failed": True,
+                "liquidity_state": "EMPTY",
+            })
+            self._market_readiness_metrics["empty_book_recovery_failed"] += 1
+            LOGGER.info(
+                "[ORDERBOOK_RECOVERY] ticker=%s market_slug=%s recovered=false retries=%s error=%s",
+                ticker,
+                market_slug,
+                detail["empty_book_recovery_retry_count"],
+                last_exc,
+            )
+            raise last_exc
 
     def _token_mapping_warning(
         self,
@@ -3008,8 +3347,22 @@ class PolymarketTrader:
                 meta.get("no_token_id", token_ids[1] if token_ids else ""),
                 token_id,
             )
-            yes_ob = self.client.get_orderbook(token_ids[0]) if token_ids else None
-            no_ob = self.client.get_orderbook(token_ids[1]) if token_ids else None
+            recovery_detail = self._empty_book_recovery_detail()
+            if token_ids:
+                yes_ob, no_ob, recovery_detail = self._fetch_orderbook_pair_with_empty_recovery(
+                    ticker=ticker,
+                    yes_token_id=token_ids[0],
+                    no_token_id=token_ids[1],
+                    seconds_remaining=300,
+                    market_slug=str(meta.get("slug", "") or ""),
+                )
+            else:
+                yes_ob = no_ob = None
+            metrics.empty_book_recovery_attempted = bool(recovery_detail.get("empty_book_recovery_attempted", False))
+            metrics.empty_book_recovery_success = bool(recovery_detail.get("empty_book_recovery_success", False))
+            metrics.empty_book_recovery_failed = bool(recovery_detail.get("empty_book_recovery_failed", False))
+            metrics.empty_book_recovery_retry_count = int(recovery_detail.get("empty_book_recovery_retry_count", 0) or 0)
+            metrics.liquidity_state = str(recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY")
             metrics.token_mapping_warning = self._token_mapping_warning(
                 ticker,
                 token_ids,
@@ -3090,6 +3443,12 @@ class PolymarketTrader:
             metrics.clob_recovery_count = int(error_detail.get("clob_recovery_count", 0) or 0)
             metrics.market_data_degraded = bool(error_detail.get("market_data_degraded", False))
             metrics.retry_count = int(error_detail.get("retry_count", 0) or 0)
+            recovery_detail = self._last_empty_book_recovery_detail.get(ticker, {})
+            metrics.empty_book_recovery_attempted = bool(recovery_detail.get("empty_book_recovery_attempted", False))
+            metrics.empty_book_recovery_success = bool(recovery_detail.get("empty_book_recovery_success", False))
+            metrics.empty_book_recovery_failed = bool(recovery_detail.get("empty_book_recovery_failed", False))
+            metrics.empty_book_recovery_retry_count = int(recovery_detail.get("empty_book_recovery_retry_count", 0) or 0)
+            metrics.liquidity_state = str(recovery_detail.get("liquidity_state", "EMPTY") or "EMPTY")
             LOGGER.warning(
                 "[ORDERBOOK_FLOW] ticker=%s outcome=%s token=%s market_slug=%s category=%s exception_type=%s status_code=%s last_successful_orderbook_age_ms=%s retry_count=%s failed=%s",
                 ticker,
@@ -3630,13 +3989,21 @@ class PolymarketTrader:
 
         skip_reason = ""
         hard_block_seconds = self._entry_hard_block_seconds()
-        if seconds_to_close <= hard_block_seconds:
-            hard_block_decision = AdaptiveEntryCutoffDecision(
-                allowed=False,
-                policy="adaptive" if bool(self._setting("adaptive_entry_cutoff_enabled", True)) else "static",
-                effective_cutoff_seconds=hard_block_seconds,
-                reason="hard_close_zone",
-                late_entry_hard_block=True,
+        micro_timing_candidate = (
+            self._micro_adaptive_timing_active()
+            and seconds_to_close <= hard_block_seconds
+            and seconds_to_close > self._micro_hard_close_floor_seconds()
+        )
+        if seconds_to_close <= hard_block_seconds and not micro_timing_candidate:
+            hard_block_decision = self._evaluate_entry_cutoff(
+                seconds_remaining=seconds_to_close,
+                static_cutoff_seconds=entry_cutoff,
+                orderbook_age_ms=None,
+                oracle_age_ms=None,
+                decision_latency_ms=None,
+                scan_cycle_duration_ms=None,
+                spread=0.0,
+                liquidity_state="HEALTHY",
             )
             timing_detail.update(self._cutoff_decision_detail(hard_block_decision))
             skip_reason = self._entry_cutoff_skip_reason(seconds_to_close, hard_block_decision)
@@ -3727,6 +4094,7 @@ class PolymarketTrader:
         yes_orderbook_age_ms = 0
         no_orderbook_age_ms = 0
         clob_error_detail: dict[str, object] = {}
+        empty_book_recovery_detail = self._empty_book_recovery_detail()
         token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta)
         if token_mapping_warning:
             orderbook_readiness_reason = self._classify_orderbook_readiness_reason(
@@ -3735,6 +4103,15 @@ class PolymarketTrader:
                 token_mapping_warning=token_mapping_warning,
             )
             skip_reason = orderbook_readiness_reason or f"token_mapping_warning:{token_mapping_warning}"
+            regime_detail = classify_market_regime(
+                price_change_pct=getattr(ptb_info, "price_diff_pct", None),
+                distance_from_ptb_pct=getattr(ptb_info, "price_diff_pct", None),
+                seconds_remaining=seconds_to_close,
+                orderbook_spread=ob_spread,
+                orderbook_age_ms=self._last_orderbook_age_ms.get(ticker, 0),
+                liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "UNKNOWN") or "UNKNOWN"),
+                cutoff_reason=orderbook_readiness_reason,
+            ).to_payload()
             detail = {
                 **timing_detail,
                 "token_id": yes_token_id,
@@ -3750,6 +4127,7 @@ class PolymarketTrader:
                 "orderbook_error": skip_reason,
                 "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
                 "retry_count": int(self._setting("api_retry_attempts", 1)),
+                **regime_detail,
             }
             self._emit_quant_event(
                 "log_market_snapshot",
@@ -3789,7 +4167,13 @@ class PolymarketTrader:
                 no_token_id,
             )
 
-            yes_ob = self.client.get_orderbook(yes_token_id)
+            yes_ob, no_ob, empty_book_recovery_detail = self._fetch_orderbook_pair_with_empty_recovery(
+                ticker=ticker,
+                yes_token_id=yes_token_id,
+                no_token_id=no_token_id,
+                seconds_remaining=seconds_to_close,
+                market_slug=str(meta.get("slug", "") or ""),
+            )
             yes_bid, yes_ask = yes_ob.best_bid, yes_ob.best_ask
             yes_bid_size, yes_ask_size = yes_ob.bid_size, yes_ob.ask_size
             yes_orderbook_age_ms = self._orderbook_age_ms(yes_ob)
@@ -3804,8 +4188,7 @@ class PolymarketTrader:
                 yes_ob.age_seconds,
             )
 
-            if no_token_id:
-                no_ob = self.client.get_orderbook(no_token_id)
+            if no_token_id and no_ob is not None:
                 no_bid, no_ask = no_ob.best_bid, no_ob.best_ask
                 no_bid_size, no_ask_size = no_ob.bid_size, no_ob.ask_size
                 no_orderbook_age_ms = self._orderbook_age_ms(no_ob)
@@ -3839,6 +4222,10 @@ class PolymarketTrader:
                 self._last_orderbook_age_ms[ticker] = max(yes_orderbook_age_ms, no_orderbook_age_ms)
         except Exception as exc:
             orderbook_error = str(exc)
+            empty_book_recovery_detail = self._last_empty_book_recovery_detail.get(
+                ticker,
+                empty_book_recovery_detail,
+            )
             clob_error_detail = self._clob_orderbook_error_detail(
                 exc,
                 token_id=yes_token_id,
@@ -3872,6 +4259,26 @@ class PolymarketTrader:
             market_slug=str(meta.get("slug", "") or ""),
             asset=ticker,
         )
+        timing_detail.update(
+            self._active_window_alignment_detail(
+                ticker=ticker,
+                epoch_start=int(getattr(ptb_info, "epoch_start_ts", 0) or timing_detail.get("market_epoch_start", 0) or 0),
+                epoch_end=int(getattr(ptb_info, "epoch_end_ts", 0) or timing_detail.get("market_epoch_end", 0) or 0),
+                seconds_remaining=seconds_to_close,
+                token_ids=token_ids,
+                orderbook_ready=not bool(orderbook_readiness_reason),
+            )
+        )
+        snapshot_regime_detail = classify_market_regime(
+            price_change_pct=getattr(ptb_info, "price_diff_pct", None),
+            distance_from_ptb_pct=getattr(ptb_info, "price_diff_pct", None),
+            seconds_remaining=seconds_to_close,
+            orderbook_spread=ob_spread,
+            orderbook_age_ms=max(yes_orderbook_age_ms, no_orderbook_age_ms),
+            decision_latency_ms=self._cycle_elapsed_ms(),
+            liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY"),
+            cutoff_reason=orderbook_readiness_reason,
+        ).to_payload()
         self._emit_quant_event(
             "log_market_snapshot",
             {
@@ -3884,6 +4291,8 @@ class PolymarketTrader:
                 "token_id": yes_token_id,
                 "outcome": "YES/NO",
                 "source_module": "polymarket.trader",
+                **timing_detail,
+                **empty_book_recovery_detail,
                 "yes_bid": float(yes_bid),
                 "yes_ask": float(yes_ask),
                 "yes_bid_size": float(yes_bid_size),
@@ -3915,6 +4324,7 @@ class PolymarketTrader:
                 "token_mapping_warning": token_mapping_warning,
                 "seconds_remaining": int(getattr(ptb_info, "seconds_remaining", 0) or 0),
                 "market_close_timestamp": timing_detail.get("market_close_timestamp", ""),
+                **snapshot_regime_detail,
             },
         )
 
@@ -3949,10 +4359,12 @@ class PolymarketTrader:
                     "orderbook_error": orderbook_error,
                     "orderbook_readiness_reason": orderbook_readiness_reason,
                     "orderbook_unavailable_reason": orderbook_readiness_reason,
+                    **empty_book_recovery_detail,
                     **clob_health_detail,
                     "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
                     "retry_count": int(self._setting("api_retry_attempts", 1)),
                     "token_mapping_warning": token_mapping_warning,
+                    **snapshot_regime_detail,
                 },
             )
 
@@ -3966,6 +4378,7 @@ class PolymarketTrader:
             decision_latency_ms=decision_latency_ms,
             scan_cycle_duration_ms=scan_cycle_duration_ms,
             spread=ob_spread,
+            liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY"),
         )
         cutoff_detail = self._cutoff_decision_detail(cutoff_decision)
         timing_detail.update(
@@ -4006,8 +4419,10 @@ class PolymarketTrader:
                     "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
                     "oracle_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
                     "spread": float(ob_spread),
+                    **empty_book_recovery_detail,
                     "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
                     "token_mapping_warning": token_mapping_warning,
+                    **snapshot_regime_detail,
                 },
             )
 
@@ -4021,6 +4436,19 @@ class PolymarketTrader:
         price_velocity = momentum_decimal / 5.0
         recent_volatility = max(abs(momentum_decimal), abs(float(ptb_info.price_diff_pct)) / 100.0) * max(signal.vol_ratio, 0.5)
         yes_mid = (yes_bid + yes_ask) / 2.0 if yes_bid > 0 and yes_ask > 0 else yes_ask
+        distance_from_ptb_pct = (window_delta / max(float(ptb_info.price_to_beat), 1e-9)) * 100.0
+        regime_detail = classify_market_regime(
+            price_change_pct=signal.momentum_pct,
+            realized_volatility=recent_volatility,
+            price_velocity=price_velocity,
+            distance_from_ptb_pct=distance_from_ptb_pct,
+            seconds_remaining=ptb_info.seconds_remaining,
+            orderbook_spread=ob_spread,
+            orderbook_age_ms=max(yes_orderbook_age_ms, no_orderbook_age_ms),
+            decision_latency_ms=decision_latency_ms,
+            liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY"),
+            cutoff_reason=str(cutoff_detail.get("adaptive_cutoff_reason", "") or ""),
+        ).to_payload()
 
         probability = estimate_probability(ProbabilityModelInput(
             underlying_price=ptb_info.current_price,
@@ -4116,6 +4544,11 @@ class PolymarketTrader:
             "market_feed_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
             "market_feed_age_seconds": round(max(0.0, feed_age or 0.0), 3),
             "token_mapping_warning": token_mapping_warning,
+            "price_change_pct": float(signal.momentum_pct),
+            "realized_volatility": float(recent_volatility),
+            "price_velocity": float(price_velocity),
+            "distance_from_ptb_pct": float(distance_from_ptb_pct),
+            **regime_detail,
         }
         quant_detail = self._record_quant_detail(
             ticker,

@@ -22,7 +22,7 @@ from tools.no_entry_analyzer import (
     analyze_no_entries,
 )
 from tools.paper_evaluation_report import DECISION_CAUTION, DECISION_FAIL, DECISION_PASS
-from tools.replay_analyzer import ReplayReport, analyze_replay
+from tools.replay_analyzer import ReplayReport, analyze_replay, load_replay_events
 from utils.no_entry_diagnostics import normalize_skip_reason
 
 
@@ -56,6 +56,21 @@ HARDBLOCK_ORDERBOOK_REASONS = {
 WARMUP_ORDERBOOK_REASONS = {"warmup_pending"}
 STALE_ORDERBOOK_REASONS = {"stale_book"}
 
+BANKROLL_VISIBILITY_FIELDS = (
+    "bankroll_tier_id",
+    "bankroll_tier_name",
+    "bankroll_family",
+    "bankroll_risk_profile",
+    "bankroll_tier_locked",
+    "bankroll_hysteresis_active",
+    "bankroll_mode",
+    "micro_survival_active",
+    "micro_position_size",
+)
+
+REGIME_EVENT_TYPES = {"decision", "market_snapshot"}
+REGIME_CATEGORIES = {"decision_log", "market_snapshots"}
+
 
 @dataclass
 class SessionRuntimeEvaluation:
@@ -72,6 +87,7 @@ class SessionRuntimeEvaluation:
     risk_blocks: dict[str, Any] = field(default_factory=dict)
     execution_summary: dict[str, Any] = field(default_factory=dict)
     orderbook_readiness: dict[str, Any] = field(default_factory=dict)
+    regime_summary: dict[str, Any] = field(default_factory=dict)
     recommendations: list[str] = field(default_factory=list)
     reports_used: dict[str, Any] = field(default_factory=dict)
     time_filter: dict[str, Any] = field(default_factory=dict)
@@ -306,6 +322,169 @@ def _payload_from_event(event: dict[str, Any]) -> dict[str, Any]:
     if isinstance(payload, dict):
         return payload
     return event
+
+
+def _bankroll_visibility_sources(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    sources = [payload]
+    for key in ("display", "risk_blocks", "health_summary"):
+        value = payload.get(key)
+        if isinstance(value, dict):
+            sources.append(value)
+    return sources
+
+
+def _bankroll_visibility_from_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    visibility: dict[str, Any] = {}
+    for source in _bankroll_visibility_sources(payload):
+        for field_name in BANKROLL_VISIBILITY_FIELDS:
+            if field_name not in source:
+                continue
+            value = source.get(field_name)
+            if field_name in {"bankroll_tier_locked", "bankroll_hysteresis_active", "micro_survival_active"}:
+                visibility[field_name] = bool(value)
+            elif field_name == "micro_position_size":
+                visibility[field_name] = _as_float(value)
+            elif str(value or "").strip():
+                visibility[field_name] = str(value)
+    return visibility
+
+
+def _load_bankroll_visibility_from_events(
+    *,
+    base_dir: str | Path,
+    date: str,
+    time_filter: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        events, _bad_lines = load_replay_events(
+            base_dir=base_dir,
+            date_from=date,
+            date_to=date,
+            since_utc=time_filter.get("since_utc"),
+            until_utc=time_filter.get("until_utc"),
+        )
+    except Exception:
+        return {}
+
+    visibility: dict[str, Any] = {}
+    for event in events:
+        payload = _payload_from_event(event)
+        if not payload:
+            continue
+        event_visibility = _bankroll_visibility_from_payload(payload)
+        if event_visibility:
+            visibility.update(event_visibility)
+    return visibility
+
+
+def _merge_bankroll_visibility(
+    *,
+    session_summary: dict[str, Any] | None,
+    event_visibility: dict[str, Any],
+) -> dict[str, Any]:
+    merged = dict(event_visibility)
+    if session_summary:
+        summary_visibility = _bankroll_visibility_from_payload(session_summary)
+        merged.update(summary_visibility)
+    return {
+        "bankroll_tier_id": str(merged.get("bankroll_tier_id", "")),
+        "bankroll_tier_name": str(merged.get("bankroll_tier_name", "")),
+        "bankroll_family": str(merged.get("bankroll_family", "")),
+        "bankroll_risk_profile": str(merged.get("bankroll_risk_profile", "")),
+        "bankroll_tier_locked": bool(merged.get("bankroll_tier_locked", False)),
+        "bankroll_hysteresis_active": bool(merged.get("bankroll_hysteresis_active", False)),
+        "bankroll_mode": str(merged.get("bankroll_mode", "")),
+        "micro_survival_active": bool(merged.get("micro_survival_active", False)),
+        "micro_position_size": _as_float(merged.get("micro_position_size")),
+    }
+
+
+def _counter_from_pairs(value: Any) -> Counter[str]:
+    counts: Counter[str] = Counter()
+    if isinstance(value, dict):
+        iterator = value.items()
+    else:
+        iterator = value or []
+    for item in iterator:
+        if isinstance(item, (list, tuple)) and len(item) >= 2:
+            key, count = item[0], item[1]
+        else:
+            continue
+        label = str(key or "UNKNOWN").strip() or "UNKNOWN"
+        counts[label] += _as_int(count)
+    return counts
+
+
+def _regime_value_from_payload(payload: dict[str, Any], field_name: str) -> str:
+    if field_name in payload and str(payload.get(field_name) or "").strip():
+        return str(payload.get(field_name)).strip()
+    display = payload.get("display")
+    if isinstance(display, dict) and str(display.get(field_name) or "").strip():
+        return str(display.get(field_name)).strip()
+    return "UNKNOWN"
+
+
+def _load_regime_summary_from_events(
+    *,
+    base_dir: str | Path,
+    date: str,
+    time_filter: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        events, _bad_lines = load_replay_events(
+            base_dir=base_dir,
+            date_from=date,
+            date_to=date,
+            since_utc=time_filter.get("since_utc"),
+            until_utc=time_filter.get("until_utc"),
+        )
+    except Exception:
+        return {}
+
+    volatility_counts: Counter[str] = Counter()
+    trend_counts: Counter[str] = Counter()
+    events_counted = 0
+    for event in events:
+        event_type = str(event.get("event_type", "") or "")
+        category = str(event.get("_category", "") or "")
+        if event_type not in REGIME_EVENT_TYPES and category not in REGIME_CATEGORIES:
+            continue
+        payload = _payload_from_event(event)
+        events_counted += 1
+        volatility_counts[_regime_value_from_payload(payload, "volatility_regime")] += 1
+        trend_counts[_regime_value_from_payload(payload, "trend_regime")] += 1
+
+    if not events_counted:
+        return {}
+    return {
+        "events_counted": events_counted,
+        "volatility_regimes": [[name, count] for name, count in volatility_counts.most_common()],
+        "trend_regimes": [[name, count] for name, count in trend_counts.most_common()],
+    }
+
+
+def _merge_regime_summary(
+    *,
+    replay_payload: dict[str, Any],
+    event_summary: dict[str, Any],
+) -> dict[str, Any]:
+    if event_summary:
+        return event_summary
+
+    volatility_counts = _counter_from_pairs(replay_payload.get("volatility_regimes"))
+    trend_counts = _counter_from_pairs(replay_payload.get("trend_regimes"))
+    if not volatility_counts and not trend_counts:
+        return {
+            "events_counted": 0,
+            "volatility_regimes": [],
+            "trend_regimes": [],
+        }
+    events_counted = max(sum(volatility_counts.values()), sum(trend_counts.values()))
+    return {
+        "events_counted": int(events_counted),
+        "volatility_regimes": [[name, count] for name, count in volatility_counts.most_common()],
+        "trend_regimes": [[name, count] for name, count in trend_counts.most_common()],
+    }
 
 
 def _has_failure_detail(payload: dict[str, Any]) -> bool:
@@ -617,6 +796,26 @@ def evaluate_session_runtime(
         no_entry_payload=no_entry_payload,
         raw_execution_summary=raw_execution_summary,
     )
+    bankroll_visibility = _merge_bankroll_visibility(
+        session_summary=session_summary,
+        event_visibility=_load_bankroll_visibility_from_events(
+            base_dir=quant_data_dir,
+            date=date,
+            time_filter=time_filter,
+        ),
+    )
+    regime_summary = _merge_regime_summary(
+        replay_payload=replay_payload,
+        event_summary=(
+            _load_regime_summary_from_events(
+                base_dir=quant_data_dir,
+                date=date,
+                time_filter=time_filter,
+            )
+            if load_offline_reports
+            else {}
+        ),
+    )
 
     no_data = bool(
         time_filter_applied
@@ -715,6 +914,11 @@ def evaluate_session_runtime(
         timing_quality={
             "average_seconds_remaining": _as_float(replay_payload.get("average_seconds_remaining")),
             "min_seconds_remaining": _as_float(replay_payload.get("min_seconds_remaining")),
+            "average_seconds_since_open": _as_float(replay_payload.get("average_seconds_since_open")),
+            "average_seconds_until_close": _as_float(replay_payload.get("average_seconds_until_close")),
+            "first_seen_seconds_remaining": _as_float(replay_payload.get("first_seen_seconds_remaining")),
+            "first_evaluable_seconds_remaining": _as_float(replay_payload.get("first_evaluable_seconds_remaining")),
+            "active_window_alignment_reasons": replay_payload.get("active_window_alignment_reasons", []),
             "average_scan_cycle_duration_ms": _as_float(replay_payload.get("average_scan_cycle_duration_ms")),
             "average_decision_latency_ms": _as_float(replay_payload.get("average_decision_latency_ms")),
             "max_decision_latency_ms": _as_float(replay_payload.get("max_decision_latency_ms")),
@@ -730,21 +934,19 @@ def evaluate_session_runtime(
                 "adaptive_cutoff_denied_reasons",
                 replay_payload.get("adaptive_cutoff_reasons", []),
             ),
+            "micro_timing_allowed_count": _as_int(replay_payload.get("micro_timing_allowed_count")),
+            "micro_timing_denied_count": _as_int(replay_payload.get("micro_timing_denied_count")),
+            "micro_timing_branch_entered_count": _as_int(replay_payload.get("micro_timing_branch_entered_count")),
+            "micro_timing_candidate_count": _as_int(replay_payload.get("micro_timing_candidate_count")),
+            "micro_timing_denied_reasons": replay_payload.get("micro_timing_denied_reasons", []),
+            "micro_timing_branch_skipped_reasons": replay_payload.get("micro_timing_branch_skipped_reasons", []),
         },
         risk_blocks={
             "risk_plan_zero_count": int(skip_counts.get("risk_plan_zero", 0)),
             "risk_reject_count": _as_int(replay_payload.get("risk_reject_count")),
             "risk_mode": str((session_summary or {}).get("risk_mode", "")),
             "risk_mode_allow_new_entries": (session_summary or {}).get("risk_mode_allow_new_entries"),
-            "bankroll_tier_id": str((session_summary or {}).get("bankroll_tier_id", "")),
-            "bankroll_tier_name": str((session_summary or {}).get("bankroll_tier_name", "")),
-            "bankroll_family": str((session_summary or {}).get("bankroll_family", "")),
-            "bankroll_risk_profile": str((session_summary or {}).get("bankroll_risk_profile", "")),
-            "bankroll_tier_locked": bool((session_summary or {}).get("bankroll_tier_locked", False)),
-            "bankroll_hysteresis_active": bool((session_summary or {}).get("bankroll_hysteresis_active", False)),
-            "bankroll_mode": str((session_summary or {}).get("bankroll_mode", "")),
-            "micro_survival_active": bool((session_summary or {}).get("micro_survival_active", False)),
-            "micro_position_size": _as_float((session_summary or {}).get("micro_position_size")),
+            **bankroll_visibility,
         },
         execution_summary={
             "execution_failure_count": execution_failure_count,
@@ -783,11 +985,17 @@ def evaluate_session_runtime(
             "clob_circuit_open_count": _as_int(replay_payload.get("clob_circuit_open_count")),
             "max_clob_error_rate": _as_float(replay_payload.get("max_clob_error_rate")),
             "clob_recovery_count": _as_int(replay_payload.get("clob_recovery_count")),
+            "empty_book_recovery_attempted": _as_int(replay_payload.get("empty_book_recovery_attempted_count")),
+            "empty_book_recovery_success": _as_int(replay_payload.get("empty_book_recovery_success_count")),
+            "empty_book_recovery_failed": _as_int(replay_payload.get("empty_book_recovery_failed_count")),
+            "empty_book_recovery_retry_count": _as_int(replay_payload.get("empty_book_recovery_retry_count")),
+            "liquidity_states": replay_payload.get("liquidity_states", []),
             "average_orderbook_age_ms": _as_float(replay_payload.get("average_orderbook_age_ms", no_entry_payload.get("market_data_quality", {}).get("average_orderbook_age_ms", 0.0))),
             "max_orderbook_age_ms": _as_float(replay_payload.get("max_orderbook_age_ms")),
             "average_oracle_age_ms": _as_float(replay_payload.get("average_oracle_age_ms")),
             "token_mapping_warning_count": _as_int(no_entry_payload.get("market_data_quality", {}).get("token_mapping_warning_count", 0)),
         },
+        regime_summary=regime_summary,
         recommendations=recommendations,
         reports_used={
             "session_summary": bool(session_summary),
@@ -854,6 +1062,7 @@ def format_terminal_summary(evaluation: SessionRuntimeEvaluation) -> list[str]:
     timing = evaluation.timing_quality
     cutoff = evaluation.cutoff_behavior
     orderbook = evaluation.orderbook_readiness
+    regimes = evaluation.regime_summary
     risk = evaluation.risk_blocks
     execution = evaluation.execution_summary
     time_filter = evaluation.time_filter or {}
@@ -878,6 +1087,9 @@ def format_terminal_summary(evaluation: SessionRuntimeEvaluation) -> list[str]:
             "timing "
             f"avg_seconds_remaining={timing.get('average_seconds_remaining', 0.0):.2f} "
             f"min_seconds_remaining={timing.get('min_seconds_remaining', 0.0):.2f} "
+            f"first_seen_seconds_remaining={timing.get('first_seen_seconds_remaining', 0.0):.2f} "
+            f"first_evaluable_seconds_remaining={timing.get('first_evaluable_seconds_remaining', 0.0):.2f} "
+            f"alignment_reasons={timing.get('active_window_alignment_reasons', [])} "
             f"avg_cycle_ms={timing.get('average_scan_cycle_duration_ms', 0.0):.2f} "
             f"avg_decision_latency_ms={timing.get('average_decision_latency_ms', 0.0):.2f}"
         ),
@@ -887,7 +1099,13 @@ def format_terminal_summary(evaluation: SessionRuntimeEvaluation) -> list[str]:
             f"blocks={cutoff.get('cutoff_block_count', 0)} "
             f"adaptive_allowed={cutoff.get('adaptive_cutoff_allowed_count', 0)} "
             f"adaptive_denied={cutoff.get('adaptive_cutoff_denied_count', 0)} "
-            f"deny_reasons={cutoff.get('adaptive_cutoff_denied_reasons', [])}"
+            f"deny_reasons={cutoff.get('adaptive_cutoff_denied_reasons', [])} "
+            f"micro_timing_allowed={cutoff.get('micro_timing_allowed_count', 0)} "
+            f"micro_timing_denied={cutoff.get('micro_timing_denied_count', 0)} "
+            f"micro_branch_entered={cutoff.get('micro_timing_branch_entered_count', 0)} "
+            f"micro_candidates={cutoff.get('micro_timing_candidate_count', 0)} "
+            f"micro_deny_reasons={cutoff.get('micro_timing_denied_reasons', [])} "
+            f"micro_branch_skips={cutoff.get('micro_timing_branch_skipped_reasons', [])}"
         ),
         (
             "orderbook "
@@ -899,7 +1117,18 @@ def format_terminal_summary(evaluation: SessionRuntimeEvaluation) -> list[str]:
             f"clob_categories={orderbook.get('clob_error_categories', [])} "
             f"clob_error_rate={orderbook.get('max_clob_error_rate', 0.0):.4f} "
             f"backoff_active={orderbook.get('clob_backoff_active_count', 0)} "
-            f"circuit_open={orderbook.get('clob_circuit_open_count', 0)}"
+            f"circuit_open={orderbook.get('clob_circuit_open_count', 0)} "
+            f"empty_recovery_attempted={orderbook.get('empty_book_recovery_attempted', 0)} "
+            f"empty_recovery_success={orderbook.get('empty_book_recovery_success', 0)} "
+            f"empty_recovery_failed={orderbook.get('empty_book_recovery_failed', 0)} "
+            f"empty_recovery_retries={orderbook.get('empty_book_recovery_retry_count', 0)} "
+            f"liquidity_states={orderbook.get('liquidity_states', [])}"
+        ),
+        (
+            "regimes "
+            f"events={regimes.get('events_counted', 0)} "
+            f"volatility={regimes.get('volatility_regimes', [])} "
+            f"trend={regimes.get('trend_regimes', [])}"
         ),
         (
             "risk_execution "

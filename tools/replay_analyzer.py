@@ -62,6 +62,11 @@ class ReplayReport:
     average_confidence_at_entry: float = 0.0
     average_seconds_remaining: float = 0.0
     min_seconds_remaining: float = 0.0
+    average_seconds_since_open: float = 0.0
+    average_seconds_until_close: float = 0.0
+    first_seen_seconds_remaining: float = 0.0
+    first_evaluable_seconds_remaining: float = 0.0
+    active_window_alignment_reasons: list[tuple[str, int]] = field(default_factory=list)
     average_orderbook_age_ms: float = 0.0
     max_orderbook_age_ms: float = 0.0
     average_oracle_age_ms: float = 0.0
@@ -77,6 +82,12 @@ class ReplayReport:
     late_entry_hard_block_count: int = 0
     adaptive_cutoff_reasons: list[tuple[str, int]] = field(default_factory=list)
     adaptive_cutoff_denied_reasons: list[tuple[str, int]] = field(default_factory=list)
+    micro_timing_allowed_count: int = 0
+    micro_timing_denied_count: int = 0
+    micro_timing_branch_entered_count: int = 0
+    micro_timing_candidate_count: int = 0
+    micro_timing_denied_reasons: list[tuple[str, int]] = field(default_factory=list)
+    micro_timing_branch_skipped_reasons: list[tuple[str, int]] = field(default_factory=list)
     orderbook_readiness_reasons: list[tuple[str, int]] = field(default_factory=list)
     clob_error_categories: list[tuple[str, int]] = field(default_factory=list)
     clob_exception_types: list[tuple[str, int]] = field(default_factory=list)
@@ -85,6 +96,11 @@ class ReplayReport:
     clob_circuit_open_count: int = 0
     max_clob_error_rate: float = 0.0
     clob_recovery_count: int = 0
+    empty_book_recovery_attempted_count: int = 0
+    empty_book_recovery_success_count: int = 0
+    empty_book_recovery_failed_count: int = 0
+    empty_book_recovery_retry_count: int = 0
+    liquidity_states: list[tuple[str, int]] = field(default_factory=list)
     pnl_by_outcome: dict[str, float] = field(default_factory=dict)
     pnl_by_asset: dict[str, float] = field(default_factory=dict)
     trades: list[ReplayTrade] = field(default_factory=list)
@@ -95,10 +111,14 @@ class ReplayReport:
         data["top_skip_reasons"] = [[reason, count] for reason, count in self.top_skip_reasons]
         data["adaptive_cutoff_reasons"] = [[reason, count] for reason, count in self.adaptive_cutoff_reasons]
         data["adaptive_cutoff_denied_reasons"] = [[reason, count] for reason, count in self.adaptive_cutoff_denied_reasons]
+        data["micro_timing_denied_reasons"] = [[reason, count] for reason, count in self.micro_timing_denied_reasons]
+        data["micro_timing_branch_skipped_reasons"] = [[reason, count] for reason, count in self.micro_timing_branch_skipped_reasons]
         data["orderbook_readiness_reasons"] = [[reason, count] for reason, count in self.orderbook_readiness_reasons]
+        data["active_window_alignment_reasons"] = [[reason, count] for reason, count in self.active_window_alignment_reasons]
         data["clob_error_categories"] = [[reason, count] for reason, count in self.clob_error_categories]
         data["clob_exception_types"] = [[reason, count] for reason, count in self.clob_exception_types]
         data["clob_error_classes"] = [[reason, count] for reason, count in self.clob_error_classes]
+        data["liquidity_states"] = [[state, count] for state, count in self.liquidity_states]
         return data
 
 
@@ -232,6 +252,27 @@ def _track_clob_error(
     )
 
 
+def _track_empty_book_recovery(
+    payload: dict[str, Any],
+    liquidity_states: Counter[str],
+    report: ReplayReport,
+) -> None:
+    if _as_bool(_get_nested(payload, "empty_book_recovery_attempted", "display.empty_book_recovery_attempted")):
+        report.empty_book_recovery_attempted_count += 1
+    if _as_bool(_get_nested(payload, "empty_book_recovery_success", "display.empty_book_recovery_success")):
+        report.empty_book_recovery_success_count += 1
+    if _as_bool(_get_nested(payload, "empty_book_recovery_failed", "display.empty_book_recovery_failed")):
+        report.empty_book_recovery_failed_count += 1
+    report.empty_book_recovery_retry_count += int(_as_float(_get_nested(
+        payload,
+        "empty_book_recovery_retry_count",
+        "display.empty_book_recovery_retry_count",
+    )))
+    liquidity_state = str(_get_nested(payload, "liquidity_state", "display.liquidity_state") or "").upper()
+    if liquidity_state:
+        liquidity_states[liquidity_state] += 1
+
+
 def _payload(event: dict[str, Any]) -> dict[str, Any]:
     payload = event.get("payload")
     return payload if isinstance(payload, dict) else {}
@@ -357,16 +398,24 @@ def analyze_replay(
     latest_market_snapshot: dict[str, dict[str, Any]] = {}
     latest_confidence_by_asset: dict[str, float] = {}
     seconds_remaining_values: list[float] = []
+    seconds_since_open_values: list[float] = []
+    seconds_until_close_values: list[float] = []
+    first_seen_seconds_remaining_values: list[float] = []
+    first_evaluable_seconds_remaining_values: list[float] = []
     orderbook_age_ms_values: list[float] = []
     oracle_age_ms_values: list[float] = []
     scan_cycle_duration_ms_values: list[float] = []
     decision_latency_ms_values: list[float] = []
     cutoff_block_seconds_remaining_values: list[float] = []
     adaptive_cutoff_reasons: Counter[str] = Counter()
+    micro_timing_denied_reasons: Counter[str] = Counter()
+    micro_timing_branch_skipped_reasons: Counter[str] = Counter()
+    active_window_alignment_reasons: Counter[str] = Counter()
     orderbook_readiness_reasons: Counter[str] = Counter()
     clob_error_categories: Counter[str] = Counter()
     clob_exception_types: Counter[str] = Counter()
     clob_error_classes: Counter[str] = Counter()
+    liquidity_states: Counter[str] = Counter()
 
     for event in events:
         event_type = str(event.get("event_type", "") or "")
@@ -390,7 +439,15 @@ def analyze_replay(
             if readiness_reason:
                 orderbook_readiness_reasons[readiness_reason] += 1
             _track_clob_error(payload, clob_error_categories, clob_exception_types, clob_error_classes, report)
+            _track_empty_book_recovery(payload, liquidity_states, report)
             _append_numeric(seconds_remaining_values, _get_nested(payload, "seconds_remaining", "display.seconds_remaining"))
+            _append_numeric(seconds_since_open_values, _get_nested(payload, "seconds_since_open", "display.seconds_since_open"))
+            _append_numeric(seconds_until_close_values, _get_nested(payload, "seconds_until_close", "display.seconds_until_close"))
+            _append_numeric(first_seen_seconds_remaining_values, _get_nested(payload, "first_seen_seconds_remaining", "display.first_seen_seconds_remaining"))
+            _append_numeric(first_evaluable_seconds_remaining_values, _get_nested(payload, "first_evaluable_seconds_remaining", "display.first_evaluable_seconds_remaining"))
+            alignment_reason = str(_get_nested(payload, "active_window_alignment_reason", "display.active_window_alignment_reason") or "")
+            if alignment_reason:
+                active_window_alignment_reasons[alignment_reason] += 1
             _append_age_ms(orderbook_age_ms_values, payload, prefix="orderbook")
             _append_age_ms(oracle_age_ms_values, payload, prefix="oracle")
             _append_numeric(decision_latency_ms_values, _get_nested(payload, "decision_latency_ms", "display.decision_latency_ms"))
@@ -418,6 +475,19 @@ def analyze_replay(
                     adaptive_cutoff_reasons[cutoff_reason] += 1
             if _as_bool(_get_nested(payload, "late_entry_hard_block", "display.late_entry_hard_block")):
                 report.late_entry_hard_block_count += 1
+            if _as_bool(_get_nested(payload, "micro_timing_allowed", "display.micro_timing_allowed")):
+                report.micro_timing_allowed_count += 1
+            if _as_bool(_get_nested(payload, "micro_timing_branch_entered", "display.micro_timing_branch_entered")):
+                report.micro_timing_branch_entered_count += 1
+            if _as_bool(_get_nested(payload, "micro_timing_candidate", "display.micro_timing_candidate")):
+                report.micro_timing_candidate_count += 1
+            micro_denied_reason = str(_get_nested(payload, "micro_timing_denied_reason", "display.micro_timing_denied_reason") or "")
+            if micro_denied_reason:
+                report.micro_timing_denied_count += 1
+                micro_timing_denied_reasons[micro_denied_reason] += 1
+            micro_skipped_reason = str(_get_nested(payload, "micro_timing_branch_skipped_reason", "display.micro_timing_branch_skipped_reason") or "")
+            if micro_skipped_reason:
+                micro_timing_branch_skipped_reasons[micro_skipped_reason] += 1
             asset = _asset_from_payload(payload)
             confidence = _as_float(payload.get("confidence"), default=float("nan"))
             if asset and confidence == confidence:
@@ -431,12 +501,20 @@ def analyze_replay(
 
         if category == "market_snapshots" or event_type == "market_snapshot":
             _append_numeric(seconds_remaining_values, _get_nested(payload, "seconds_remaining", "display.seconds_remaining"))
+            _append_numeric(seconds_since_open_values, _get_nested(payload, "seconds_since_open", "display.seconds_since_open"))
+            _append_numeric(seconds_until_close_values, _get_nested(payload, "seconds_until_close", "display.seconds_until_close"))
+            _append_numeric(first_seen_seconds_remaining_values, _get_nested(payload, "first_seen_seconds_remaining", "display.first_seen_seconds_remaining"))
+            _append_numeric(first_evaluable_seconds_remaining_values, _get_nested(payload, "first_evaluable_seconds_remaining", "display.first_evaluable_seconds_remaining"))
+            alignment_reason = str(_get_nested(payload, "active_window_alignment_reason", "display.active_window_alignment_reason") or "")
+            if alignment_reason:
+                active_window_alignment_reasons[alignment_reason] += 1
             _append_age_ms(orderbook_age_ms_values, payload, prefix="orderbook")
             _append_age_ms(oracle_age_ms_values, payload, prefix="oracle")
             readiness_reason = str(_get_nested(payload, "orderbook_readiness_reason", "orderbook_unavailable_reason", "clob_error_category") or "")
             if readiness_reason:
                 orderbook_readiness_reasons[readiness_reason] += 1
             _track_clob_error(payload, clob_error_categories, clob_exception_types, clob_error_classes, report)
+            _track_empty_book_recovery(payload, liquidity_states, report)
             asset = _asset_from_payload(payload)
             if asset:
                 latest_market_snapshot[asset] = payload
@@ -444,6 +522,13 @@ def analyze_replay(
 
         if category == "system_health" or event_type == "system_health":
             _append_numeric(scan_cycle_duration_ms_values, payload.get("scan_cycle_duration_ms"))
+            _append_numeric(seconds_since_open_values, _get_nested(payload, "seconds_since_open", "display.seconds_since_open"))
+            _append_numeric(seconds_until_close_values, _get_nested(payload, "seconds_until_close", "display.seconds_until_close", "seconds_remaining"))
+            _append_numeric(first_seen_seconds_remaining_values, _get_nested(payload, "first_seen_seconds_remaining", "display.first_seen_seconds_remaining"))
+            _append_numeric(first_evaluable_seconds_remaining_values, _get_nested(payload, "first_evaluable_seconds_remaining", "display.first_evaluable_seconds_remaining"))
+            alignment_reason = str(_get_nested(payload, "active_window_alignment_reason", "display.active_window_alignment_reason") or "")
+            if alignment_reason:
+                active_window_alignment_reasons[alignment_reason] += 1
             continue
 
         if category == "trade_journal" and event_type == "trade_open":
@@ -510,6 +595,10 @@ def analyze_replay(
     report.average_confidence_at_entry = sum(confidences) / len(confidences) if confidences else 0.0
     report.average_seconds_remaining = sum(seconds_remaining_values) / len(seconds_remaining_values) if seconds_remaining_values else 0.0
     report.min_seconds_remaining = min(seconds_remaining_values) if seconds_remaining_values else 0.0
+    report.average_seconds_since_open = sum(seconds_since_open_values) / len(seconds_since_open_values) if seconds_since_open_values else 0.0
+    report.average_seconds_until_close = sum(seconds_until_close_values) / len(seconds_until_close_values) if seconds_until_close_values else 0.0
+    report.first_seen_seconds_remaining = max(first_seen_seconds_remaining_values) if first_seen_seconds_remaining_values else 0.0
+    report.first_evaluable_seconds_remaining = max(first_evaluable_seconds_remaining_values) if first_evaluable_seconds_remaining_values else 0.0
     report.average_orderbook_age_ms = sum(orderbook_age_ms_values) / len(orderbook_age_ms_values) if orderbook_age_ms_values else 0.0
     report.max_orderbook_age_ms = max(orderbook_age_ms_values) if orderbook_age_ms_values else 0.0
     report.average_oracle_age_ms = sum(oracle_age_ms_values) / len(oracle_age_ms_values) if oracle_age_ms_values else 0.0
@@ -534,10 +623,14 @@ def analyze_replay(
     )
     report.adaptive_cutoff_reasons = adaptive_cutoff_reasons.most_common(10)
     report.adaptive_cutoff_denied_reasons = adaptive_cutoff_reasons.most_common(10)
+    report.micro_timing_denied_reasons = micro_timing_denied_reasons.most_common(10)
+    report.micro_timing_branch_skipped_reasons = micro_timing_branch_skipped_reasons.most_common(10)
+    report.active_window_alignment_reasons = active_window_alignment_reasons.most_common(10)
     report.orderbook_readiness_reasons = orderbook_readiness_reasons.most_common(10)
     report.clob_error_categories = clob_error_categories.most_common(10)
     report.clob_exception_types = clob_exception_types.most_common(10)
     report.clob_error_classes = clob_error_classes.most_common(10)
+    report.liquidity_states = liquidity_states.most_common(10)
     report.pnl_by_outcome = dict(sorted(pnl_by_outcome.items()))
     report.pnl_by_asset = dict(sorted(pnl_by_asset.items()))
 

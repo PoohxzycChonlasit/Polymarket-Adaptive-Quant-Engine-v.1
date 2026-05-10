@@ -1,6 +1,6 @@
 # Project Structure
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-10.
 > Scope: current implementation map for the Polymarket BTC/ETH 5-minute bot.
 
 This document describes the current working structure without changing strategy, risk, orderbook, wallet, or execution logic.
@@ -126,6 +126,9 @@ Orderbook path status:
 
 - Implemented and verified in read-only mode for BTC/ETH in latest evidence.
 - Rejects stale books older than 3 seconds in the trader/display metrics path.
+- Uses bounded CLOB retry/backoff/cooldown and per-market circuit-breaker state for transient orderbook HTTP errors, timeouts, rate limits, and token/client issues.
+- Uses a short bounded empty-book recovery window in paper runtime and reports `liquidity_state`, recovery attempt/success/failure, and retry count.
+- Emits early-window timing diagnostics including market epoch, seconds since open/until close, first seen seconds remaining, first evaluable seconds remaining, and alignment reason.
 - Logs token flow and best bid/ask.
 - Must be monitored for regression; do not claim orderbook works if terminal lacks `BID`, `ASK`, and `SPREAD`.
 
@@ -161,6 +164,9 @@ Implemented:
 - Hard floor balance.
 - Max risk / single-trade caps from settings and risk code.
 - Bankroll Rank Lock / hysteresis.
+- `BANKROLL_TIER_ARCHITECTURE_V2` centralized tier metadata in `polymarket/bankroll_tiers.py`.
+- Paper-only `MICRO_SURVIVAL_MODE` for MICRO family bankrolls under the configured threshold.
+- MICRO adaptive timing for paper MICRO tiers only; STANDARD / BASE / GROWTH / CAPITAL tiers do not inherit MICRO timing behavior.
 - Risk Mode Ladder: NORMAL, DEFENSIVE, MICRO_RECOVERY, LOCKDOWN.
 - Daily drawdown and loss-cluster controls.
 - Reconciliation gate before new entries.
@@ -304,8 +310,14 @@ Implemented panels:
 Bottom status line:
 
 ```text
-WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING
+WS | ORACLE | ORDERBOOK | MODE | RISK | LATENCY | LOGGING | TIER | MICRO | LIQ | CUTOFF | RECOVERY
 ```
+
+Current compact runtime visibility:
+
+- Portfolio/Risk show BANKROLL_TIER_V2 tier id/name, family/profile, bankroll mode, `micro_survival_active`, and `micro_position_size`.
+- Market/AI panels show seconds remaining, first seen/evaluable seconds, cutoff policy/effective cutoff, MICRO timing branch/allow/deny state, latest deny reason, liquidity state, and empty-book recovery state.
+- This dashboard visibility is observability-only and does not alter strategy, risk sizing, execution, wallet/allowance, order intent, reconciliation, paper/live separation, or websocket/orderbook behavior.
 
 ## Logging Flow
 
@@ -331,11 +343,14 @@ Implemented resilience:
 
 - Windows `PermissionError` on log setup, rollover, CSV open/write/flush/close disables only that file logger for the session.
 - Trading loop should continue safely.
+- `tools/session_runtime_evaluator.py` provides offline/session runtime evaluation and supports UTC same-day filters:
+  - `python tools/session_runtime_evaluator.py --date YYYY-MM-DD --since HH:MM`
+  - `python tools/session_runtime_evaluator.py --date YYYY-MM-DD --since HH:MM --until HH:MM`
 
-Known observability mismatch:
+Current observability status:
 
-- `daily_report.py` and `utils/telegram_reporter.py` still read fixed `scan_log.csv`.
-- They need to read latest/all `scan_log_*.csv` files before daily Telegram summaries can be considered accurate.
+- `daily_report.py` and `utils/telegram_reporter.py` read `scan_log*.csv` through `utils/scan_log_loader.py`.
+- Offline analyzers and evaluators remain reporting-only and must not feed automatic runtime decisions without a separately scoped phase.
 
 ## Notifier Flow
 
@@ -358,12 +373,12 @@ Implemented:
 - Async Telegram send via one-worker thread pool.
 - Retry adapter for HTTP failures.
 - HTML message builders.
+- Central alert cooldown/dedup helpers in `utils/telegram_alerts.py`.
 
 Missing:
 
-- Central alert cooldown/dedup.
 - Structured alert event store.
-- Accurate daily report reader for per-run CSV names.
+- Daily Telegram copy/content cleanup before treating summaries as operationally authoritative.
 
 ## Secondary Paths
 

@@ -855,6 +855,87 @@ def test_orderbook_readiness_classifier_categorizes_clob_errors() -> None:
     )
 
 
+def test_empty_orderbook_recovery_succeeds_before_rejecting() -> None:
+    trader = _trader(_settings(
+        orderbook_empty_recovery_enabled=True,
+        orderbook_empty_recovery_retries=2,
+        orderbook_empty_recovery_delay_ms=0,
+        orderbook_empty_recovery_max_total_ms=100,
+    ))
+    trader.client.get_orderbook.side_effect = [
+        RuntimeError("empty_orderbook bids=0 asks=0"),
+        OrderbookSnapshot("yes-token", 0.50, 0.51, 0.01, 10.0, 10.0),
+        OrderbookSnapshot("no-token", 0.49, 0.50, 0.01, 10.0, 10.0),
+    ]
+
+    yes_ob, no_ob, detail = trader._fetch_orderbook_pair_with_empty_recovery(
+        ticker="BTC",
+        yes_token_id="yes-token",
+        no_token_id="no-token",
+        seconds_remaining=200,
+        market_slug="btc-updown-5m",
+    )
+
+    assert yes_ob.best_ask == pytest.approx(0.51)
+    assert no_ob.best_ask == pytest.approx(0.50)
+    assert detail["empty_book_recovery_attempted"] is True
+    assert detail["empty_book_recovery_success"] is True
+    assert detail["empty_book_recovery_failed"] is False
+    assert detail["empty_book_recovery_retry_count"] == 1
+    assert detail["liquidity_state"] == "HEALTHY"
+    assert trader._market_readiness_metrics["empty_book_recovery_success"] == 1
+
+
+def test_empty_orderbook_recovery_does_not_retry_inside_hard_close_zone() -> None:
+    trader = _trader(_settings(
+        orderbook_empty_recovery_enabled=True,
+        orderbook_empty_recovery_retries=2,
+        orderbook_empty_recovery_delay_ms=0,
+        orderbook_empty_recovery_max_total_ms=100,
+    ))
+    trader.client.get_orderbook.side_effect = RuntimeError("empty_orderbook bids=0 asks=0")
+
+    with pytest.raises(RuntimeError):
+        trader._fetch_orderbook_pair_with_empty_recovery(
+            ticker="BTC",
+            yes_token_id="yes-token",
+            no_token_id="no-token",
+            seconds_remaining=30,
+            market_slug="btc-updown-5m",
+        )
+
+    assert trader.client.get_orderbook.call_count == 1
+    assert trader._market_readiness_metrics["empty_book_recovery_attempted"] == 0
+
+
+def test_empty_orderbook_recovery_fails_bounded_with_metrics() -> None:
+    trader = _trader(_settings(
+        orderbook_empty_recovery_enabled=True,
+        orderbook_empty_recovery_retries=2,
+        orderbook_empty_recovery_delay_ms=0,
+        orderbook_empty_recovery_max_total_ms=100,
+    ))
+    trader.client.get_orderbook.side_effect = RuntimeError("empty_orderbook bids=0 asks=0")
+
+    with pytest.raises(RuntimeError):
+        trader._fetch_orderbook_pair_with_empty_recovery(
+            ticker="BTC",
+            yes_token_id="yes-token",
+            no_token_id="no-token",
+            seconds_remaining=200,
+            market_slug="btc-updown-5m",
+        )
+
+    detail = trader._last_empty_book_recovery_detail["BTC"]
+    assert trader.client.get_orderbook.call_count == 3
+    assert detail["empty_book_recovery_attempted"] is True
+    assert detail["empty_book_recovery_success"] is False
+    assert detail["empty_book_recovery_failed"] is True
+    assert detail["empty_book_recovery_retry_count"] == 2
+    assert detail["liquidity_state"] == "EMPTY"
+    assert trader._market_readiness_metrics["empty_book_recovery_failed"] == 1
+
+
 def test_clob_client_classifies_orderbook_api_errors_without_fetching_network() -> None:
     client = PolymarketClient()
 
@@ -1047,6 +1128,79 @@ def test_paper_mode_uses_quant_decision_path() -> None:
 
     assert outcome is expected
     trader._analyze_market_quant.assert_called_once_with(market, "BTC", ptb_info)
+
+
+def test_market_timing_detail_includes_early_window_alignment(monkeypatch: pytest.MonkeyPatch) -> None:
+    trader = _trader()
+    now_ts = 1_700_000_060
+    epoch_start = now_ts - 60
+    monkeypatch.setattr("polymarket.trader.time.time", lambda: now_ts)
+    trader._real_token_ids["BTC"] = ("yes-token", "no-token")
+    market = SimpleNamespace(market_id="pm-5m-btc", question="Will BTC close above PTB?", end_date_iso="")
+    ptb_info = SimpleNamespace(
+        seconds_remaining=240,
+        epoch_start_ts=epoch_start,
+        epoch_end_ts=epoch_start + 300,
+    )
+
+    detail = trader._market_timing_detail(
+        market,
+        ptb_info,
+        seconds_remaining=240,
+        entry_cutoff_seconds=90,
+    )
+
+    assert detail["market_epoch_start"] == epoch_start
+    assert detail["market_epoch_end"] == epoch_start + 300
+    assert detail["seconds_since_open"] == 60
+    assert detail["seconds_until_close"] == 240
+    assert detail["first_seen_seconds_remaining"] == 240
+    assert detail["first_evaluable_seconds_remaining"] == 240
+    assert detail["active_window_alignment_reason"] == "early_window_ready"
+
+
+def test_select_markets_preloads_next_window_tokens_for_early_alignment(monkeypatch: pytest.MonkeyPatch) -> None:
+    trader = _trader()
+    now_ts = 1_700_000_060
+    current_epoch = now_ts - (now_ts % 300)
+    monkeypatch.setattr("polymarket.trader.time.time", lambda: now_ts)
+
+    def _markets(ticker: str):
+        return [
+            SimpleNamespace(
+                slug=f"{ticker.lower()}-current",
+                condition_id=f"{ticker}-current",
+                market_id=f"{ticker}-market-current",
+                epoch_start_ts=current_epoch,
+                epoch_end_ts=current_epoch + 300,
+                seconds_remaining=current_epoch + 300 - now_ts,
+                yes_token_id=f"{ticker}-yes-current",
+                no_token_id=f"{ticker}-no-current",
+            ),
+            SimpleNamespace(
+                slug=f"{ticker.lower()}-next",
+                condition_id=f"{ticker}-next",
+                market_id=f"{ticker}-market-next",
+                epoch_start_ts=current_epoch + 300,
+                epoch_end_ts=current_epoch + 600,
+                seconds_remaining=current_epoch + 600 - now_ts,
+                yes_token_id=f"{ticker}-yes-next",
+                no_token_id=f"{ticker}-no-next",
+            ),
+        ]
+
+    trader.gamma = SimpleNamespace(
+        get_current_and_next_5min_markets=_markets,
+        get_next_5min_market=lambda ticker: _markets(ticker)[1],
+        get_exact_5min_ptb=lambda _ticker: None,
+    )
+
+    markets = trader._select_markets(top_n=2)
+
+    assert trader._market_preload_lead_seconds() == 300
+    assert ("BTC", current_epoch + 300) in trader._preloaded_token_ids
+    assert ("ETH", current_epoch + 300) in trader._preloaded_token_ids
+    assert [market.market_id for market in markets] == ["pm-5m-btc", "pm-5m-eth"]
 
 
 def test_paper_close_tracks_simulated_bankroll_and_pnl() -> None:

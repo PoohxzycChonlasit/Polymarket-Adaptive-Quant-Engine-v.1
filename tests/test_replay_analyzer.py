@@ -272,6 +272,127 @@ def test_replay_reports_orderbook_readiness_reason_breakdown(tmp_path: Path) -> 
     assert report.clob_recovery_count == 2
 
 
+def test_replay_reports_early_window_alignment_diagnostics(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T00:00:00Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "time_unsafe",
+            "seconds_remaining": 44,
+            "seconds_since_open": 256,
+            "seconds_until_close": 44,
+            "first_seen_seconds_remaining": 288,
+            "first_evaluable_seconds_remaining": 240,
+            "active_window_alignment_reason": "late_hard_close_zone",
+        }),
+    ])
+    _append_jsonl(base_dir, "market_snapshots", DATE, [
+        _event("market_snapshot", f"{DATE}T00:00:01Z", {
+            "ticker": "BTC",
+            "seconds_remaining": 240,
+            "seconds_since_open": 60,
+            "seconds_until_close": 240,
+            "first_seen_seconds_remaining": 288,
+            "first_evaluable_seconds_remaining": 240,
+            "active_window_alignment_reason": "early_window_ready",
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+
+    assert report.first_seen_seconds_remaining == pytest.approx(288)
+    assert report.first_evaluable_seconds_remaining == pytest.approx(240)
+    assert report.average_seconds_since_open == pytest.approx((256 + 60) / 2)
+    assert report.average_seconds_until_close == pytest.approx((44 + 240) / 2)
+    assert ("early_window_ready", 1) in report.active_window_alignment_reasons
+    assert ("late_hard_close_zone", 1) in report.active_window_alignment_reasons
+
+
+def test_replay_reports_empty_book_recovery_metrics(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "market_snapshots", DATE, [
+        _event("market_snapshot", f"{DATE}T00:00:00Z", {
+            "ticker": "BTC",
+            "orderbook_readiness_reason": "",
+            "empty_book_recovery_attempted": True,
+            "empty_book_recovery_success": True,
+            "empty_book_recovery_failed": False,
+            "empty_book_recovery_retry_count": 1,
+            "liquidity_state": "HEALTHY",
+        }),
+        _event("market_snapshot", f"{DATE}T00:01:00Z", {
+            "ticker": "ETH",
+            "orderbook_readiness_reason": "empty_book",
+            "empty_book_recovery_attempted": True,
+            "empty_book_recovery_success": False,
+            "empty_book_recovery_failed": True,
+            "empty_book_recovery_retry_count": 2,
+            "liquidity_state": "EMPTY",
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+
+    assert report.empty_book_recovery_attempted_count == 2
+    assert report.empty_book_recovery_success_count == 1
+    assert report.empty_book_recovery_failed_count == 1
+    assert report.empty_book_recovery_retry_count == 3
+    assert ("HEALTHY", 1) in report.liquidity_states
+    assert ("EMPTY", 1) in report.liquidity_states
+
+
+def test_replay_reports_micro_adaptive_timing_metrics(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T00:00:00Z", {
+            "decision_type": "approved",
+            "ticker": "BTC",
+            "decision": "buy",
+            "cutoff_policy": "micro_adaptive",
+            "micro_timing_allowed": True,
+            "micro_timing_branch_entered": True,
+            "micro_timing_candidate": True,
+            "effective_micro_cutoff_seconds": 35,
+            "micro_cutoff_policy": "micro_adaptive",
+        }),
+        _event("decision", f"{DATE}T00:01:00Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "ticker": "ETH",
+            "skip_reason": "Entry cutoff: 34s <= 35s",
+            "cutoff_policy": "micro_adaptive",
+            "micro_timing_allowed": False,
+            "micro_timing_branch_entered": True,
+            "micro_timing_candidate": True,
+            "micro_timing_denied_reason": "hard_close_zone",
+            "effective_micro_cutoff_seconds": 35,
+            "micro_cutoff_policy": "micro_adaptive",
+        }),
+        _event("decision", f"{DATE}T00:02:00Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "ticker": "ETH",
+            "skip_reason": "Entry cutoff: 40s <= 45s",
+            "cutoff_policy": "adaptive",
+            "micro_timing_allowed": False,
+            "micro_timing_branch_entered": False,
+            "micro_timing_candidate": False,
+            "micro_timing_branch_skipped_reason": "non_micro_tier",
+            "micro_cutoff_policy": "standard",
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+
+    assert report.micro_timing_allowed_count == 1
+    assert report.micro_timing_denied_count == 1
+    assert report.micro_timing_branch_entered_count == 2
+    assert report.micro_timing_candidate_count == 2
+    assert ("hard_close_zone", 1) in report.micro_timing_denied_reasons
+    assert ("non_micro_tier", 1) in report.micro_timing_branch_skipped_reasons
+
+
 def test_replay_date_range_loading_counts_multiple_days(tmp_path: Path) -> None:
     base_dir = tmp_path / "runtime" / "quant_data"
     _append_jsonl(base_dir, "trade_journal", DATE, [

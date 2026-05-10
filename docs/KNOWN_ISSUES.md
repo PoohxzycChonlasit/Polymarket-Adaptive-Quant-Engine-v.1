@@ -1,6 +1,6 @@
 # Known Issues
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-10.
 > Purpose: truthful list of bugs, technical debt, risky areas, TODO items, and unfinished systems.
 
 ## Critical / Live Blockers
@@ -65,7 +65,7 @@ Evidence:
 
 ### OBS-002 - JSONL quant event logging and offline analysis are wired, deeper analytics/retention pending
 
-Status: implemented for main trader runtime and Phase 5 offline analysis, follow-up planned.
+Status: implemented for main trader runtime, offline analysis, and session runtime evaluation; retention follow-up planned.
 
 Implemented:
 
@@ -82,6 +82,9 @@ Implemented:
 - `polymarket/trader.py` emits JSONL events for market snapshots, decisions, execution, trade open/close, risk, reconciliation, and low-frequency system health.
 - `tools/quant_data_quality.py` validates emitted JSONL files offline.
 - `tools/replay_analyzer.py` produces offline replay metrics and report files.
+- `tools/no_entry_analyzer.py` classifies zero-entry paper sessions from existing evidence.
+- `tools/session_runtime_evaluator.py` summarizes paper session health, PASS/CAUTION/FAIL state, bottlenecks, cutoff behavior, MICRO timing, liquidity/recovery, bankroll tier metadata, and execution failures.
+- `tools/session_runtime_evaluator.py --date YYYY-MM-DD --since HH:MM --until HH:MM` filters same-day events by `timestamp_utc` using UTC `HH:MM`.
 
 Impact:
 
@@ -92,6 +95,7 @@ Impact:
 Next:
 
 - Review real paper-session JSONL output with the data quality checker and replay analyzer.
+- Use `--since/--until` on days with multiple paper runs so old same-day events do not pollute the current-run diagnosis.
 - Add retention/compaction only in a scoped phase.
 - Keep analyzer output offline-only until a separate approved phase explicitly scopes feedback into strategy or risk research.
 
@@ -216,23 +220,26 @@ Current correction:
 
 ## Trading Logic / Strategy Risk Areas
 
-### STRAT-001 - Strategy may be too strict for small bankroll paper sessions
+### STRAT-001 - Paper sessions may still produce no entries under current gates
 
-Status: monitor, do not loosen yet.
+Status: monitor, do not loosen strategy.
 
 Evidence:
 
-- Short paper validation produced real orderbook EV candidates but no paper orders because risk/strategy gates blocked all entries.
-- Skip reasons included confidence too low, entry cutoff, EV below threshold, and zero-size risk plan.
+- Earlier short paper validation produced real orderbook EV candidates but no paper orders because risk/strategy gates blocked all entries.
+- MICRO_SURVIVAL_MODE mitigates zero-size risk planning for paper MICRO bankrolls.
+- Recent diagnostics shifted the main no-entry blockers toward cutoff/hard-close timing and transient liquidity/readiness states, not live execution failure.
 
 Impact:
 
 - Paper sessions can validate safety/data flow without generating trades.
+- A no-entry paper session is not proof that live execution is broken.
 
 Next:
 
 - Run longer paper sessions.
 - Analyze top skip reasons before changing strategy/risk thresholds.
+- Keep MICRO timing isolated to paper MICRO tiers; do not loosen STANDARD / GROWTH / CAPITAL behavior from MICRO evidence.
 
 ### STRAT-002 - HFT path is experimental
 
@@ -250,7 +257,7 @@ Next:
 
 ### UI-001 - Old terminal overflow/misalignment
 
-Status: mitigated.
+Status: mitigated and upgraded for current paper diagnostics.
 
 Implemented:
 
@@ -258,6 +265,8 @@ Implemented:
 - Layout modes and refresh modes.
 - Rolling logs and safe truncation.
 - Resize detection.
+- Compact BANKROLL_TIER_V2, MICRO_SURVIVAL, MICRO timing, liquidity/recovery, cutoff reason, and early-window timing visibility.
+- Footer tags: `TIER | MICRO | LIQ | CUTOFF | RECOVERY`.
 
 Remaining:
 

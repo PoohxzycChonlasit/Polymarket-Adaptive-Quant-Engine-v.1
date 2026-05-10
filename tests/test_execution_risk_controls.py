@@ -11,7 +11,7 @@ from polymarket.order_manager import OrderRequest, PolymarketOrderManager
 from polymarket.order_intent import OrderIntentType
 from polymarket.risk_modes import RiskMode
 from polymarket.signal import SignalResult
-from polymarket.trader import BankrollState, PolymarketTrader
+from polymarket.trader import AdaptiveEntryCutoffDecision, BankrollState, PolymarketTrader
 from utils.risk_manager import RiskPlan
 from utils.position_tracker import PositionTracker
 
@@ -323,6 +323,192 @@ class ExecutionRiskControlTests(unittest.TestCase):
         self.assertEqual(decision.policy, "adaptive")
         self.assertEqual(decision.effective_cutoff_seconds, 45)
         self.assertEqual(decision.reason, "healthy_late_entry")
+
+    def test_micro_adaptive_timing_allows_paper_micro_tier_above_micro_floor(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=40,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=10,
+            scan_cycle_duration_ms=20,
+            spread=0.01,
+            liquidity_state="HEALTHY",
+        )
+        detail = trader._cutoff_decision_detail(decision)
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(decision.policy, "micro_adaptive")
+        self.assertEqual(decision.effective_cutoff_seconds, 35)
+        self.assertEqual(decision.reason, "micro_healthy_late_entry")
+        self.assertTrue(decision.micro_timing_branch_entered)
+        self.assertTrue(decision.micro_timing_candidate)
+        self.assertEqual(decision.micro_timing_branch_skipped_reason, "")
+        self.assertTrue(detail["micro_timing_allowed"])
+        self.assertTrue(detail["micro_timing_branch_entered"])
+        self.assertTrue(detail["micro_timing_candidate"])
+        self.assertEqual(detail["effective_micro_cutoff_seconds"], 35)
+        self.assertEqual(detail["micro_cutoff_policy"], "micro_adaptive")
+
+    def test_micro_adaptive_timing_branch_activates_for_micro_tiers(self) -> None:
+        for balance, expected_tier in (
+            (20.0, BankrollTier.T0_MICRO_SEED),
+            (40.0, BankrollTier.T1_MICRO_BUILD),
+            (75.0, BankrollTier.T2_MICRO_SURVIVAL),
+        ):
+            with self.subTest(balance=balance, expected_tier=expected_tier):
+                trader = _trader(_settings(account_balance=balance))
+
+                decision = trader._evaluate_entry_cutoff(
+                    seconds_remaining=40,
+                    static_cutoff_seconds=90,
+                    orderbook_age_ms=10,
+                    oracle_age_ms=100,
+                    decision_latency_ms=10,
+                    scan_cycle_duration_ms=20,
+                    spread=0.01,
+                    liquidity_state="HEALTHY",
+                )
+
+                self.assertEqual(trader.bankroll_state.current_bankroll_tier, expected_tier)
+                self.assertEqual(trader.bankroll_state.bankroll_family, "MICRO")
+                self.assertTrue(decision.micro_timing_branch_entered)
+                self.assertTrue(decision.micro_timing_candidate)
+                self.assertEqual(decision.micro_timing_branch_skipped_reason, "")
+                self.assertTrue(decision.allowed)
+
+    def test_micro_adaptive_timing_denies_below_micro_hard_floor(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=34,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=10,
+            scan_cycle_duration_ms=20,
+            spread=0.01,
+            liquidity_state="HEALTHY",
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertTrue(decision.late_entry_hard_block)
+        self.assertEqual(decision.policy, "micro_adaptive")
+        self.assertEqual(decision.reason, "hard_close_zone")
+        self.assertEqual(decision.micro_timing_denied_reason, "hard_close_zone")
+        self.assertTrue(decision.micro_timing_branch_entered)
+        self.assertTrue(decision.micro_timing_candidate)
+
+    def test_micro_adaptive_timing_does_not_apply_to_standard_tier(self) -> None:
+        trader = _trader(_settings(account_balance=100.0))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=40,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=10,
+            scan_cycle_duration_ms=20,
+            spread=0.01,
+            liquidity_state="HEALTHY",
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertTrue(decision.late_entry_hard_block)
+        self.assertEqual(decision.effective_cutoff_seconds, 45)
+        self.assertEqual(decision.micro_cutoff_policy, "standard")
+        self.assertFalse(decision.micro_timing_branch_entered)
+        self.assertFalse(decision.micro_timing_candidate)
+        self.assertEqual(decision.micro_timing_branch_skipped_reason, "non_micro_tier")
+
+    def test_micro_adaptive_timing_does_not_apply_to_live_mode(self) -> None:
+        trader = _trader(_settings(paper_trading=False, account_balance=20.0))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=55,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=10,
+            scan_cycle_duration_ms=20,
+            spread=0.01,
+            liquidity_state="HEALTHY",
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertTrue(decision.late_entry_hard_block)
+        self.assertEqual(decision.effective_cutoff_seconds, 60)
+        self.assertEqual(decision.micro_cutoff_policy, "standard")
+        self.assertFalse(decision.micro_timing_branch_entered)
+        self.assertFalse(decision.micro_timing_candidate)
+        self.assertEqual(decision.micro_timing_branch_skipped_reason, "live_mode")
+
+    def test_micro_adaptive_timing_denies_when_liquidity_not_healthy(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+
+        decision = trader._evaluate_entry_cutoff(
+            seconds_remaining=40,
+            static_cutoff_seconds=90,
+            orderbook_age_ms=10,
+            oracle_age_ms=100,
+            decision_latency_ms=10,
+            scan_cycle_duration_ms=20,
+            spread=0.01,
+            liquidity_state="EMPTY",
+        )
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.policy, "micro_adaptive")
+        self.assertEqual(decision.reason, "liquidity_not_healthy")
+        self.assertEqual(decision.micro_timing_denied_reason, "liquidity_not_healthy")
+        self.assertTrue(decision.micro_timing_branch_entered)
+        self.assertTrue(decision.micro_timing_candidate)
+
+    def test_micro_timing_candidate_reaches_evaluator_before_generic_hard_close_reject(self) -> None:
+        trader = _trader(_settings(account_balance=20.0))
+        trader._real_token_ids["BTC"] = ("yes-token", "no-token")
+        trader._market_token_meta["BTC"] = {
+            "slug": "btc-up-down-5m",
+            "condition_id": "condition-1",
+            "epoch_start_ts": 123,
+            "epoch_end_ts": 423,
+        }
+        trader.client.get_orderbook.side_effect = [
+            OrderbookSnapshot("yes-token", 0.49, 0.50, 0.01, 10, 10, "condition-1", age_seconds=0.01),
+            OrderbookSnapshot("no-token", 0.49, 0.50, 0.01, 10, 10, "condition-1", age_seconds=0.01),
+        ]
+        trader._evaluate_entry_cutoff = MagicMock(
+            return_value=AdaptiveEntryCutoffDecision(
+                allowed=False,
+                policy="micro_adaptive",
+                effective_cutoff_seconds=35,
+                reason="test_micro_gate",
+                micro_timing_denied_reason="test_micro_gate",
+                effective_micro_cutoff_seconds=35,
+                micro_cutoff_policy="micro_adaptive",
+                micro_timing_branch_entered=True,
+                micro_timing_candidate=True,
+            )
+        )
+        ptb_info = SimpleNamespace(
+            is_above_ptb=True,
+            price_to_beat=100.0,
+            current_price=101.0,
+            price_diff_pct=0.01,
+            seconds_remaining=40,
+            epoch_start_ts=123,
+            epoch_end_ts=423,
+            feed_age_seconds=0.1,
+        )
+
+        outcome = trader._analyze_market_quant(_market(), "BTC", ptb_info)
+
+        self.assertTrue(outcome.skipped)
+        self.assertIn("test_micro_gate", outcome.skip_reason)
+        trader._evaluate_entry_cutoff.assert_called_once()
+        self.assertEqual(trader.client.get_orderbook.call_count, 2)
 
     def test_adaptive_cutoff_denied_when_spread_too_wide(self) -> None:
         trader = _trader(_settings(adaptive_entry_max_spread=0.06))

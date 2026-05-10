@@ -161,6 +161,69 @@ def test_session_evaluator_classifies_cutoff_primary_and_market_readiness_second
     assert evaluation.timing_quality["average_decision_latency_ms"] == pytest.approx(993.22)
 
 
+def test_session_evaluator_groups_regimes_from_replay_payload() -> None:
+    evaluation = evaluate_session_runtime(
+        replay_report=_replay_report(
+            volatility_regimes=[["HIGH_VOL", 3], ["NORMAL_VOL", 2]],
+            trend_regimes=[["BREAKOUT", 4], ["SIDEWAY", 1]],
+        ),
+        date=DATE,
+        load_offline_reports=False,
+    )
+
+    assert evaluation.regime_summary["events_counted"] == 5
+    assert ["HIGH_VOL", 3] in evaluation.regime_summary["volatility_regimes"]
+    assert ["BREAKOUT", 4] in evaluation.regime_summary["trend_regimes"]
+    lines = format_terminal_summary(evaluation)
+    assert any("regimes events=5" in line for line in lines)
+
+
+def test_session_evaluator_groups_regimes_from_jsonl_events(tmp_path: Path) -> None:
+    _write_decision_log(
+        tmp_path,
+        [
+            {
+                "timestamp_utc": f"{DATE}T10:00:00Z",
+                "event_type": "decision",
+                "payload": {
+                    "decision_type": "skipped",
+                    "decision": "skip",
+                    "skipped": True,
+                    "skip_reason": "time_unsafe",
+                    "volatility_regime": "LOW_VOL",
+                    "trend_regime": "SIDEWAY",
+                },
+            },
+            {
+                "timestamp_utc": f"{DATE}T10:01:00Z",
+                "event_type": "decision",
+                "payload": {
+                    "decision_type": "skipped",
+                    "decision": "skip",
+                    "skipped": True,
+                    "skip_reason": "orderbook_unavailable",
+                    "display": {
+                        "volatility_regime": "EXTREME_VOL",
+                        "trend_regime": "REVERSAL_RISK",
+                    },
+                },
+            },
+        ],
+    )
+
+    evaluation = evaluate_session_runtime(
+        date=DATE,
+        quant_data_dir=tmp_path,
+        realtime_log_dir=tmp_path / "realtime",
+        load_offline_reports=True,
+    )
+
+    assert evaluation.regime_summary["events_counted"] == 2
+    assert ["LOW_VOL", 1] in evaluation.regime_summary["volatility_regimes"]
+    assert ["EXTREME_VOL", 1] in evaluation.regime_summary["volatility_regimes"]
+    assert ["REVERSAL_RISK", 1] in evaluation.regime_summary["trend_regimes"]
+
+
 def test_session_evaluator_reports_micro_survival_bankroll_mode() -> None:
     evaluation = evaluate_session_runtime(
         session_summary=_session_summary(
@@ -349,6 +412,58 @@ def test_session_evaluator_reports_orderbook_reason_breakdown_without_counting_w
     assert evaluation.orderbook_readiness["clob_circuit_open_count"] == 2
     assert evaluation.orderbook_readiness["max_clob_error_rate"] == pytest.approx(0.75)
     assert evaluation.orderbook_readiness["clob_recovery_count"] == 1
+
+
+def test_session_evaluator_reports_empty_book_recovery_metrics() -> None:
+    evaluation = evaluate_session_runtime(
+        session_summary=_session_summary(),
+        replay_report=_replay_report(
+            empty_book_recovery_attempted_count=3,
+            empty_book_recovery_success_count=2,
+            empty_book_recovery_failed_count=1,
+            empty_book_recovery_retry_count=4,
+            liquidity_states=[["HEALTHY", 2], ["EMPTY", 1]],
+        ),
+        date=DATE,
+        load_offline_reports=False,
+    )
+
+    lines = format_terminal_summary(evaluation)
+
+    assert evaluation.orderbook_readiness["empty_book_recovery_attempted"] == 3
+    assert evaluation.orderbook_readiness["empty_book_recovery_success"] == 2
+    assert evaluation.orderbook_readiness["empty_book_recovery_failed"] == 1
+    assert evaluation.orderbook_readiness["empty_book_recovery_retry_count"] == 4
+    assert ["HEALTHY", 2] in evaluation.orderbook_readiness["liquidity_states"]
+    assert any("empty_recovery_success=2" in line for line in lines)
+
+
+def test_session_evaluator_reports_micro_adaptive_timing_metrics() -> None:
+    evaluation = evaluate_session_runtime(
+        session_summary=_session_summary(),
+        replay_report=_replay_report(
+            micro_timing_allowed_count=2,
+            micro_timing_denied_count=1,
+            micro_timing_branch_entered_count=3,
+            micro_timing_candidate_count=3,
+            micro_timing_denied_reasons=[["hard_close_zone", 1]],
+            micro_timing_branch_skipped_reasons=[["non_micro_tier", 4], ["live_mode", 1]],
+        ),
+        date=DATE,
+        load_offline_reports=False,
+    )
+
+    lines = format_terminal_summary(evaluation)
+
+    assert evaluation.cutoff_behavior["micro_timing_allowed_count"] == 2
+    assert evaluation.cutoff_behavior["micro_timing_denied_count"] == 1
+    assert evaluation.cutoff_behavior["micro_timing_branch_entered_count"] == 3
+    assert evaluation.cutoff_behavior["micro_timing_candidate_count"] == 3
+    assert ["hard_close_zone", 1] in evaluation.cutoff_behavior["micro_timing_denied_reasons"]
+    assert ["non_micro_tier", 4] in evaluation.cutoff_behavior["micro_timing_branch_skipped_reasons"]
+    assert any("micro_timing_allowed=2" in line for line in lines)
+    assert any("micro_branch_entered=3" in line for line in lines)
+    assert any("micro_candidates=3" in line for line in lines)
     assert evaluation.execution_summary["execution_failure_count"] == 0
 
 
@@ -516,6 +631,45 @@ def test_time_filter_since_excludes_earlier_events(tmp_path: Path) -> None:
     assert evaluation.skip_summary["skip_reason_counts"] == {"time_unsafe": 1}
     assert evaluation.time_filter["range"] == f"{DATE}T01:30:00Z..{DATE}T23:59:59Z"
     assert evaluation.reports_used["no_entry_report"] is False
+
+
+def test_session_evaluator_extracts_bankroll_tier_visibility_from_runtime_events(tmp_path: Path) -> None:
+    quant_dir = tmp_path / "quant_data"
+    _write_decision_log(
+        quant_dir,
+        [
+            {
+                **_decision_event(f"{DATE}T01:00:00Z", "time_unsafe"),
+                "payload": {
+                    **_decision_event(f"{DATE}T01:00:00Z", "time_unsafe")["payload"],
+                    "bankroll_tier_id": "T0_MICRO_SEED",
+                    "bankroll_tier_name": "Micro Seed",
+                    "bankroll_family": "MICRO",
+                    "bankroll_risk_profile": "seed_protection",
+                    "bankroll_mode": "MICRO_SURVIVAL",
+                    "micro_survival_active": True,
+                    "micro_position_size": 0.05,
+                },
+            },
+        ],
+    )
+
+    evaluation = evaluate_session_runtime(
+        date=DATE,
+        quant_data_dir=quant_dir,
+        realtime_log_dir=tmp_path / "realtime_logs",
+    )
+    lines = format_terminal_summary(evaluation)
+
+    assert evaluation.risk_blocks["bankroll_tier_id"] == "T0_MICRO_SEED"
+    assert evaluation.risk_blocks["bankroll_tier_name"] == "Micro Seed"
+    assert evaluation.risk_blocks["bankroll_family"] == "MICRO"
+    assert evaluation.risk_blocks["bankroll_risk_profile"] == "seed_protection"
+    assert evaluation.risk_blocks["bankroll_mode"] == "MICRO_SURVIVAL"
+    assert evaluation.risk_blocks["micro_survival_active"] is True
+    assert evaluation.risk_blocks["micro_position_size"] == pytest.approx(0.05)
+    assert any("tier_id=T0_MICRO_SEED" in line for line in lines)
+    assert any("micro_survival_active=true" in line for line in lines)
 
 
 def test_time_filter_until_excludes_later_events(tmp_path: Path) -> None:
