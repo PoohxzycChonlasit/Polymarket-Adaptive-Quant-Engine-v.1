@@ -7,6 +7,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+from tools.replay_analyzer import build_phase2_coverage_from_events
+
 
 DEFAULT_QUANT_DATA_DIR = Path("runtime/quant_data")
 DEFAULT_REPORT_DIR = Path("runtime/reports")
@@ -47,6 +49,7 @@ class QuantDataQualityReport:
     unreadable_files: int = 0
     empty_files: int = 0
     bad_lines_count: int = 0
+    phase2_coverage: dict[str, Any] = field(default_factory=dict)
     errors: list[dict[str, Any]] = field(default_factory=list)
 
     @property
@@ -148,6 +151,7 @@ def scan_quant_data(
     report = QuantDataQualityReport(date=date, base_dir=str(Path(base_dir)))
     paths = quant_jsonl_paths(base_dir, date)
     report.files_scanned = len(paths)
+    phase2_events: list[dict[str, Any]] = []
 
     for path in paths:
         file_lines = 0
@@ -171,6 +175,8 @@ def scan_quant_data(
                         report.bad_lines_count += 1
                         report.errors.append(_line_error(path, line_number, "bad_json", "event is not an object"))
                         continue
+                    event["_category"] = path.parent.name
+                    phase2_events.append(event)
 
                     event_errors = validate_event(event)
                     if not event_errors:
@@ -196,6 +202,8 @@ def scan_quant_data(
             continue
         if file_lines == 0:
             report.empty_files += 1
+
+    report.phase2_coverage = build_phase2_coverage_from_events(phase2_events)
 
     if write_report:
         write_quality_report(report, report_dir=report_dir)

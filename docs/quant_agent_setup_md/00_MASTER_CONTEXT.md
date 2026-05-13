@@ -1,10 +1,12 @@
 # Master Context - Polymarket BTC/ETH 5-Minute Quant Bot
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-10.
 
 ## Project Goal
 
 Build and validate a Polymarket BTC/ETH 5-minute binary-market trading bot that prioritizes survival, clean execution, measurable edge, paper-first validation, and strong observability before live execution.
+
+Current direction: evolve from single-entry scalping into a paper-first regime-aware probability system, then paper-only inventory replay research, then bounded multi-price inventory design. This roadmap does not authorize runtime execution changes by itself.
 
 ## Current State
 
@@ -29,9 +31,9 @@ Partially implemented:
 
 Planned:
 
-- JSONL quant event log.
-- Telegram cooldown/dedup.
-- Daily report aggregation over `scan_log_*.csv`.
+- Regime/probability diagnostics refinement.
+- Paper-only inventory replay research.
+- Bounded multi-price inventory design.
 - Longer paper validation sessions.
 - Tiny controlled live validation only after explicit approval and readiness.
 
@@ -49,7 +51,10 @@ Priority order:
 6. Observability.
 7. Backtest/replay validation.
 8. Strategy improvement.
-9. Live scaling.
+9. Regime/probability research.
+10. Paper-only inventory replay.
+11. Bounded inventory design.
+12. Live scaling.
 
 ## Non-Negotiable Rules
 
@@ -62,22 +67,22 @@ Priority order:
 - No strategy changes without matching backtest path and tests.
 - No live scaling from paper results alone.
 - No AI/LLM calls in the realtime trading loop.
+- No martingale, unlimited averaging down, or all-in behavior.
+- No automatic runtime decisions from offline analyzers.
 
 ## Current Known Problems
 
 - Live allowance is not ready in latest evidence.
 - Live execution lifecycle is not proven.
-- Daily report and Telegram daily summary still read fixed `scan_log.csv`.
-- JSONL event logging is not implemented.
-- Telegram cooldown/dedup is not implemented.
+- Live allowance is not ready in latest evidence.
+- Live execution lifecycle is not proven.
 - Some older research docs may still overstate HFT/live readiness.
 
 ## Recommended Next Milestone
 
-Documentation is now synced. The next implementation phase should be Observability Sync:
+Documentation is now aligned toward the staged quant roadmap. The next research milestone should keep Phase 1 diagnostics separate from execution:
 
-1. Update daily-report readers for `scan_log_*.csv`.
-2. Add tests for multi-run CSV aggregation.
-3. Add fail-soft JSONL event logging.
-4. Add Telegram cooldown/dedup.
-5. Keep strategy/risk/execution behavior unchanged.
+1. Collect paper evidence with regime/probability fields.
+2. Use offline replay/evaluator output to judge whether probability/regime fields explain no-entry and timing compression.
+3. Only then scope paper-only inventory replay.
+4. Keep strategy/risk/execution behavior unchanged unless a future task explicitly scopes it.

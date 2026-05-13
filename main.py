@@ -329,6 +329,15 @@ def run_polymarket_realtime(
     from utils.display import PolymarketRealtimeDisplay
 
     trader   = PolymarketTrader()
+    cadence_config = getattr(trader, "set_runtime_cadence_observability", None)
+    if callable(cadence_config):
+        cadence_config(
+            configured_decision_interval_seconds=interval,
+            decision_loop_target_seconds=1.0,
+            snapshot_sampling_interval_seconds=5.0,
+            market_discovery_interval_seconds=15.0,
+            outer_loop_poll_interval_seconds=0.25,
+        )
 
     # Pre-fetch balance so the display and logger start with correct data
     LOGGER.info("Fetching initial bankroll...")

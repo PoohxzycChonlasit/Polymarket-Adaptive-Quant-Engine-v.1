@@ -137,6 +137,7 @@ Orderbook path status:
 ```text
 market snapshot
   -> polymarket/signal.py
+  -> polymarket/regime_diagnostics.py
   -> polymarket/probability_model.py
   -> polymarket/expected_value.py
   -> polymarket/opportunity_scanner.py
@@ -146,6 +147,19 @@ market snapshot
 Implemented strategy modules include Counter-Momentum, Markov Bounds, Kelly Sizing, Micro-Grinder mode, ExitAgent protection, and risk floor.
 
 Rule: Do not change realtime signal logic without updating `polymarket/backtester_5m.py` and running an appropriate backtest.
+
+Current Phase 1 direction:
+
+- Regime classification and probability scoring are diagnostics/observability only.
+- Indicator evidence should explain market state; it must not become `IF RSI < X THEN BUY` shortcut logic.
+- Current fields such as `market_regime`, `bullish_probability`, `bearish_probability`, `trend_strength`, `reversal_risk`, and `volatility_score` are review evidence, not trade approvals.
+- Offline analyzers must not feed automatic runtime decisions without a separately scoped phase.
+
+Future phases:
+
+- Phase 2: paper-only inventory replay and MFE/MAE research.
+- Phase 3: bounded multi-price inventory engine design with strict caps, stop loss, forced exit, no martingale, and no unlimited averaging down.
+- Phase 4: continuous probabilistic inventory trading only after paper evidence supports it.
 
 ## Risk Flow
 
@@ -249,6 +263,8 @@ settings.paper_trading=False
 ```
 
 Current live status: not validated end to end.
+
+Future bounded inventory work must preserve this execution flow. Any reload/unload implementation must still pass risk approval, reconciliation, stale-data protection, and OrderIntent validation before runtime behavior can change.
 
 ## Paper Mode Flow
 
@@ -390,6 +406,30 @@ Missing:
 | `dashboard/` | active/overlapping | Streamlit dashboards. |
 | `web-dashboard/` | active/overlapping | Next.js dashboard; not consolidated. |
 | `polymarket/five_min_monitor.py` | utility | Market monitor separate from trade-loop ownership. |
+
+## Documentation Map
+
+Root docs:
+
+- `DOCUMENTATION_MAP.md`
+- `CODEX_START_HERE.md`
+- `PROJECT_RULES.md`
+- `AGENTS.md`
+- `MASTER_AGENT_ROUTER.md`
+- `CURRENT_PROJECT_STATUS.md`
+- `PROJECT_STRUCTURE.md`
+- `KNOWN_ISSUES.md`
+- `FILE_INDEX.md`
+- `QUANT_FUTURE_DECISION_ENGINE.md`
+
+Future-phase docs:
+
+- `QUANT_REGIME_PROBABILITY_ENGINE.md`
+- `INVENTORY_REPLAY_RESEARCH_PLAN.md`
+- `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md`
+- `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md`
+- `CODEX_START_PROMPT.md`
+- `CHATGPT_PROJECT_START_PROMPT.md`
 
 ## Test Structure
 

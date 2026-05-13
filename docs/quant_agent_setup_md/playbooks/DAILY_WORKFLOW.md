@@ -1,50 +1,33 @@
-# Daily Workflow
+# Daily Quant Workflow Playbook
 
-> Last synced: 2026-05-08.
+Status: active daily workflow guidance. This is paper-first and docs/research friendly; it does not authorize live execution.
 
-## Goal
+## Daily Sequence
 
-Work like a small quant desk: review evidence, isolate one problem, implement, test, run paper/replay when needed, and document.
+1. Confirm current status and known blockers.
+2. Review the latest paper evidence supplied by the operator.
+3. Classify the day by lifecycle bottleneck: scanner, token readiness, orderbook readiness, liquidity/spread, candidate timing, risk, execution, or evidence quality.
+4. Check regime/probability field coverage before drawing regime conclusions.
+5. Review Dynamic Quant Risk Budget context: bankroll tier, drawdown, exposure, risk mode, and LOCKDOWN status when available.
+6. Choose one focused next task.
 
-## Daily Schedule
+## Research Focus
 
-```text
-Session Start
-1. Open CURRENT_PROJECT_STATUS.md
-2. Open CODEX_START_HERE.md and AGENTS.md
-3. Open docs/KNOWN_ISSUES.md
-4. Check mode, balance source, latest blockers, and unresolved bugs
-5. Pick one task only
+- Phase 1: improve regime/probability diagnostics and compact observability.
+- Phase 2: run paper-only inventory replay and MFE/MAE analysis.
+- Phase 3: design bounded multi-price inventory only after replay evidence.
+- Phase 4: consider continuous probabilistic inventory trading only after paper evidence and safety gates.
 
-Build Session
-6. Use Project Manager Agent for priority if scope is unclear
-7. Use Code Architect Agent for multi-file design
-8. Use the relevant safety agent docs
-9. Send exact implementation spec to Codex
-10. Review diff
-11. Run targeted tests
+## Daily Output
 
-Trading/Replay Session
-12. Run paper or replay only when behavior changed
-13. Check risk decisions
-14. Check exit decisions
-15. Check logs, terminal dashboard, and skip reasons
+- Root Problem
+- Evidence
+- Quant Interpretation
+- Risk / Safety Impact
+- Recommended Action
+- Tests or checks required
+- What not to touch
 
-End Session
-16. Update CURRENT_PROJECT_STATUS.md if project state changed
-17. Update docs/KNOWN_ISSUES.md if bugs/debt changed
-18. Update daily note or trade review when applicable
-19. Set tomorrow's one fix
-```
+## Safety Reminders
 
-## Useful Test Commands
-
-```bash
-pytest -q tests/test_paper_mode.py tests/test_execution_risk_controls.py tests/test_exit_agent.py
-pytest -q tests/test_logging_resilience.py tests/test_terminal_dashboard_display.py
-python -m pytest tests/ -q
-```
-
-## Daily Rule
-
-If you cannot explain today's single task in one sentence, the scope is too large.
+Do not claim live readiness. Do not loosen thresholds, risk, cutoff, or execution behavior during daily review unless the task explicitly scopes it and safety tests are selected.

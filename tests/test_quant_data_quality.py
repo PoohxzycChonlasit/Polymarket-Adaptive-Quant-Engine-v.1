@@ -50,6 +50,8 @@ def test_quant_data_quality_valid_files_pass_and_report_is_created(tmp_path: Pat
     assert report.lines_scanned == 2
     assert report.valid_events == 2
     assert (report_dir / f"quant_data_quality_{DATE}.json").exists()
+    assert report.phase2_coverage["status"] == "PARTIAL_PHASE2_COVERAGE"
+    assert "mfe_mae_support" in report.phase2_coverage["coverage_gaps"]
 
 
 def test_quant_data_quality_counts_malformed_missing_and_invalid_numeric_lines(tmp_path: Path) -> None:
@@ -71,6 +73,7 @@ def test_quant_data_quality_counts_malformed_missing_and_invalid_numeric_lines(t
     assert report.invalid_modes == 1
     assert report.invalid_numeric_fields == 1
     assert report.bad_lines == 3
+    assert report.phase2_coverage["coverage_gap_count"] >= 1
 
 
 def test_quant_data_quality_empty_dataset_is_safe(tmp_path: Path) -> None:

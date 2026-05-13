@@ -6,6 +6,8 @@ Documentation sync update: 2026-05-08
 
 Markdown prompt cleanup update: 2026-05-09
 
+Documentation roadmap alignment update: 2026-05-10
+
 ## Scope
 
 This cleanup pass focused on structure, documentation, and reducing root-level confusion. It did not change trading strategy logic, order sizing, exits, wallet configuration, runtime logs, trade logs, backtest results, or paper/live execution code.
@@ -22,6 +24,8 @@ The operating reference for future project work is:
 
 Use `docs/OBSERVABILITY_PLAN.md` for logging/Telegram work and `docs/PAPER_TRADING_RUNBOOK.md` for paper operation/review work.
 
+Use `DOCUMENTATION_MAP.md` for the current docs index, `QUANT_REGIME_PROBABILITY_ENGINE.md` for Phase 1 diagnostics, `INVENTORY_REPLAY_RESEARCH_PLAN.md` for Phase 2 paper-only replay research, `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md` for Phase 3 bounded inventory design, and `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md` for spread/liquidity/timing research.
+
 ## Actions Taken
 
 - Created `archive/legacy/docs/`.
@@ -33,6 +37,8 @@ Use `docs/OBSERVABILITY_PLAN.md` for logging/Telegram work and `docs/PAPER_TRADI
 - 2026-05-08 documentation sync rewrote current root docs to reflect the real paper-first implementation, Terminal UI V2, Windows logging resilience, order intent/risk mode/bankroll rank protections, and live blockers.
 - 2026-05-08 documentation sync added `docs/OBSERVABILITY_PLAN.md`, `docs/KNOWN_ISSUES.md`, and root `PROJECT_STRUCTURE.md`.
 - 2026-05-09 markdown prompt cleanup reduced root-level Codex/AI prompt clutter by archiving stale, task-specific, or duplicate `.md` files into `archive/legacy/docs/2026-05-09-md-cleanup/`.
+- 2026-05-10 documentation roadmap alignment added official root docs for the regime/probability and future bounded-inventory roadmap, startup prompts, and a root `KNOWN_ISSUES.md` forwarding note.
+- 2026-05-10 documentation roadmap alignment marked `research/OVERVIEW.md` as historical instead of moving it, because it is a research record.
 
 ## Moved Files
 
@@ -69,6 +75,13 @@ Use this smaller set for normal Codex work:
 | `docs/PROJECT_CLEANUP_REPORT.md` | Cleanup history and active/archived doc decisions. |
 | `docs/PAPER_TRADING_RUNBOOK.md` | Paper operation and review workflow. |
 | `docs/OBSERVABILITY_PLAN.md` | Logging, JSONL, Telegram, and incident observability plan. |
+| `DOCUMENTATION_MAP.md` | Official docs map. |
+| `QUANT_REGIME_PROBABILITY_ENGINE.md` | Phase 1 regime/probability diagnostics roadmap. |
+| `INVENTORY_REPLAY_RESEARCH_PLAN.md` | Phase 2 paper-only inventory replay research plan. |
+| `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md` | Phase 3 bounded multi-price inventory design target. |
+| `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md` | Spread/liquidity/timing research plan. |
+| `CODEX_START_PROMPT.md` | Reusable Codex startup prompt. |
+| `CHATGPT_PROJECT_START_PROMPT.md` | Reusable ChatGPT planning/review prompt. |
 
 Keep `docs/quant_agent_setup_md/roles/` because those files are still referenced by `AGENTS.md` and `MASTER_AGENT_ROUTER.md`. They are guidance prompts, not runtime modules.
 

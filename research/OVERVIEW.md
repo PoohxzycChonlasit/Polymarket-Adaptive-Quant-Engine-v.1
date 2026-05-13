@@ -1,5 +1,6 @@
 # PolyTrade Bot — Research & Strategy Overview
 
+> Historical note, 2026-05-10: this document is research history, not the active source of truth. It contains older Claude-agent, fixed-strategy, and live/readiness assumptions that may conflict with current docs. Use `DOCUMENTATION_MAP.md`, `CURRENT_PROJECT_STATUS.md`, `QUANT_REGIME_PROBABILITY_ENGINE.md`, `INVENTORY_REPLAY_RESEARCH_PLAN.md`, and `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md` for the current paper-first regime/probability and bounded-inventory roadmap.
 > **Purpose:** Reference document for strategy research, design decisions, and ongoing improvement.
 > **Safe to share with Gemini, GPT, or any AI assistant for help and analysis.**
 > **Updated:** 2026-04-19

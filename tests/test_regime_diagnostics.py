@@ -1,6 +1,23 @@
 from __future__ import annotations
 
-from polymarket.regime_diagnostics import classify_market_regime
+import pandas as pd
+
+from polymarket.regime_diagnostics import classify_candle_regime, classify_market_regime
+
+
+def _candles(closes: list[float], *, volume: float = 100.0, range_pct: float = 0.001) -> pd.DataFrame:
+    rows = []
+    previous = closes[0]
+    for close in closes:
+        open_ = previous
+        high = max(open_, close) * (1.0 + range_pct)
+        low = min(open_, close) * (1.0 - range_pct)
+        rows.append({"open": open_, "high": high, "low": low, "close": close, "volume": volume})
+        previous = close
+    frame = pd.DataFrame(rows)
+    frame["rsi"] = 55.0
+    frame["z_score"] = 0.2
+    return frame
 
 
 def test_regime_classifier_missing_fields_returns_unknown() -> None:
@@ -39,3 +56,33 @@ def test_regime_classifier_reversal_risk_when_price_and_velocity_conflict() -> N
 
     assert result.trend_regime == "REVERSAL_RISK"
     assert result.trend_strength > 0
+
+
+def test_candle_regime_classifier_reports_probabilistic_uptrend() -> None:
+    frame = _candles([100, 100.2, 100.4, 100.7, 101.0, 101.3, 101.7, 102.1, 102.5])
+
+    payload = classify_candle_regime(recent_1m=frame.tail(6), recent_5m=frame).to_payload()
+
+    assert payload["market_regime"] == "TREND_UP"
+    assert payload["bullish_probability"] > payload["bearish_probability"]
+    assert payload["trend_strength"] > 0
+    assert "ema_gap" in payload["indicator_evidence"]
+
+
+def test_candle_regime_classifier_reports_compression_without_trade_signal() -> None:
+    frame = _candles([100.00, 100.01, 100.00, 100.01, 100.00, 100.01, 100.00, 100.01], range_pct=0.0001)
+
+    payload = classify_candle_regime(recent_1m=frame.tail(6), recent_5m=frame).to_payload()
+
+    assert payload["market_regime"] == "COMPRESSION"
+    assert 0.0 <= payload["compression_score"] <= 1.0
+    assert abs(payload["bullish_probability"] - payload["bearish_probability"]) < 0.25
+
+
+def test_candle_regime_classifier_reports_extreme_volatility() -> None:
+    frame = _candles([100, 103, 98, 104, 97, 105, 96, 106, 95])
+
+    payload = classify_candle_regime(recent_1m=frame.tail(6), recent_5m=frame).to_payload()
+
+    assert payload["market_regime"] == "EXTREME_VOL"
+    assert payload["volatility_regime"] == "EXTREME_VOL"

@@ -23,6 +23,7 @@ import pandas as pd
 from config.settings import get_settings
 from polymarket.market_feed import get_feed
 from polymarket.quant_indicators import get_quant_feed
+from polymarket.regime_diagnostics import classify_candle_regime
 
 LOGGER = logging.getLogger(__name__)
 
@@ -94,6 +95,15 @@ class SignalResult:
     log_volatility:      float = field(default=0.0)
     cvd_60s_norm:        float = field(default=0.0)
     vpin_score:          float = field(default=0.0)
+    market_regime:       str = field(default="UNKNOWN")
+    bullish_probability: float = field(default=0.5)
+    bearish_probability: float = field(default=0.5)
+    trend_strength:      float = field(default=0.0)
+    reversal_risk:       float = field(default=0.0)
+    volatility_score:    float = field(default=0.0)
+    compression_score:   float = field(default=0.0)
+    regime_reason:       str = field(default="")
+    indicator_evidence:  str = field(default="")
 
 
 def _build_indicators(df: pd.DataFrame) -> pd.DataFrame:
@@ -230,6 +240,7 @@ def compute_realtime_signal(asset: str, imbalance: float = 0.0) -> SignalResult:
 
     df  = _build_indicators(df)
     idx = len(df) - 1
+    regime_payload = classify_candle_regime(recent_1m=df_1m, recent_5m=df).to_payload()
 
     if idx < 3:
         return SignalResult(
@@ -286,6 +297,15 @@ def compute_realtime_signal(asset: str, imbalance: float = 0.0) -> SignalResult:
         LOGGER.info("[STRATEGY] %s selected %s strategy with score %.2f", asset, best_strategy.upper(), best_signal.score)
         best_signal.strategy = best_strategy
 
+    best_signal.market_regime = str(regime_payload.get("market_regime", "UNKNOWN") or "UNKNOWN")
+    best_signal.bullish_probability = float(regime_payload.get("bullish_probability", 0.5) or 0.5)
+    best_signal.bearish_probability = float(regime_payload.get("bearish_probability", 0.5) or 0.5)
+    best_signal.trend_strength = float(regime_payload.get("trend_strength", 0.0) or 0.0)
+    best_signal.reversal_risk = float(regime_payload.get("reversal_risk", 0.0) or 0.0)
+    best_signal.volatility_score = float(regime_payload.get("volatility_score", 0.0) or 0.0)
+    best_signal.compression_score = float(regime_payload.get("compression_score", 0.0) or 0.0)
+    best_signal.regime_reason = str(regime_payload.get("regime_reason", "") or "")
+    best_signal.indicator_evidence = str(regime_payload.get("indicator_evidence", "") or "")
     return best_signal
 
 

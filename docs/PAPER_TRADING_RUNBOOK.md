@@ -1,6 +1,6 @@
 # Paper Trading Runbook
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-10.
 > Scope: offline paper-run evaluation only. This runbook does not change strategy, risk sizing, wallet behavior, orderbooks, execution, or live mode.
 
 ## Purpose
@@ -8,6 +8,12 @@
 Use this runbook to run the Polymarket BTC/ETH 5-minute bot in paper mode, collect runtime evidence, and decide whether the paper run is healthy enough to consider a separately scoped live test.
 
 A passing paper evaluation is not a live-profit guarantee and does not make the bot live-ready by itself. Live testing still requires explicit operator intent, allowance readiness, live order placement validation, fill/cancel/reconcile validation, and active risk gates.
+
+Current paper research direction:
+
+- Phase 1 paper runs should collect regime/probability diagnostics and indicator evidence without changing execution.
+- Phase 2 paper-only inventory replay may analyze reload/unload opportunity, opportunity decay, and MFE/MAE.
+- Offline reports must not become automatic runtime decisions without a separate approved implementation phase.
 
 ## Start Paper Mode
 
@@ -149,6 +155,7 @@ During the run:
 - If using `wallet_reference_paper`, confirm the UI shows Wallet Bankroll, Paper Sizing Balance, Source, Execution `PAPER ONLY`, and `NO LIVE ORDERS`.
 - Confirm BTC and ETH orderbook panels show `BID`, `ASK`, and `SPREAD` when markets are available.
 - Watch risk mode, skip reasons, execution panel, and rolling logs.
+- Watch regime/probability diagnostics when present, but treat them as evidence only.
 - Do not tune strategy thresholds mid-run.
 - Do not enable live mode mid-run.
 

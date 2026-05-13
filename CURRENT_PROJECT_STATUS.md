@@ -1,6 +1,6 @@
-# PolyTrade Bot / Polymarket 5M Binary BTC-ETH Quant Scalper - Current Project Status
+# PolyTrade Bot / Polymarket 5M BTC-ETH Quant System - Current Project Status
 
-> Updated: 2026-05-10
+> Updated: 2026-05-11
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -8,11 +8,23 @@
 
 ## 1. Current Project Identity
 
-This repository is the **PolyTrade Bot / Polymarket 5M Binary BTC-ETH Quant Scalper**.
+This repository is the **PolyTrade Bot / Polymarket 5M BTC-ETH Quant System**.
 
 It is a Python trading bot for Polymarket 5-minute BTC/ETH binary prediction markets. The system is intended to run paper-first, validate real market data and risk behavior, then move toward live execution only after the missing live-risk pieces are verified.
 
 Do not treat this repo as a new project. Do not recommend rebuilding from scratch. The project already has a working terminal UI, market scanner, price/oracle feed path, cycle loop, paper mode, and multiple strategy/risk modules. Current work should focus on validating and completing the existing runtime path.
+
+Current strategic direction:
+
+```text
+single-entry signal trading
+  -> regime-aware probability diagnostics
+  -> paper-only inventory replay research
+  -> bounded multi-price inventory design
+  -> continuous probabilistic inventory trading only after evidence supports it
+```
+
+This roadmap does not change current execution behavior. Phase 1 is observability-only: regime classification, probability scoring, indicator evidence, terminal visibility, and JSONL visibility. Phase 2 is offline/paper-only inventory replay. Phase 3 is bounded inventory design with max inventory cap, max risk cap, stop loss, forced exit, no martingale, and no unlimited averaging down. Phase 4 is future continuous probabilistic inventory trading only after paper evidence supports it.
 
 Canonical safe paper command:
 
@@ -77,6 +89,11 @@ The following parts are currently working or present in the project:
   - `tools/replay_analyzer.py` reads trade, decision, execution, risk, and market snapshot JSONL files and writes offline replay summaries under `runtime/reports/`.
   - Replay metrics include trade count, win rate, PnL, holding time, skip reasons, approved/rejected decisions, risk rejects, execution failures, entry spread/confidence, and PnL by outcome/asset.
   - These tools are offline-only and must not be used to alter strategy, risk sizing, wallet, orderbook, or execution decisions until a separate explicitly scoped phase.
+- Compact Research State Layer was implemented on 2026-05-11:
+  - `tools/research_state_writer.py` writes compact research summaries under `runtime/research_state/`.
+  - Future research/replay/lifecycle/no-entry/observability-review tasks should read `runtime/research_state/latest_research_state.md` before opening large reports, logs, or JSONL.
+  - Compact state files summarize replay maturity, direct/proxy field rates, candidate-loss counts, lifecycle bottlenecks, UNKNOWN lifecycle rate, EV-null reasons, latest run ID, blind spots, and recommended next step.
+  - These files are offline summaries only and must not feed runtime trading decisions.
 - Phase 6 paper trading runbook and evaluation workflow was implemented on 2026-05-08:
   - `docs/PAPER_TRADING_RUNBOOK.md` documents paper start commands, expected files, Telegram expectations, stop conditions, a 24-hour checklist, post-run analysis commands, pass/fail criteria, and live-readiness review items.
   - `tools/paper_evaluation_report.py` reads generated data quality and replay reports and writes `paper_evaluation_YYYY-MM-DD.json` or `paper_evaluation_YYYY-MM-DD_to_YYYY-MM-DD.json` under `runtime/reports/`.
@@ -235,6 +252,9 @@ Observed terminal evidence:
   - Market/AI panels now show remaining time, first seen/evaluable seconds, cutoff policy/effective cutoff, MICRO timing branch/allow/deny state, latest deny reason, liquidity state, and empty-book recovery status.
   - Footer tags include compact `TIER | MICRO | LIQ | CUTOFF | RECOVERY` state.
   - This is observability-only. It does not change strategy, risk sizing, execution, wallet/allowance, order intent, reconciliation, paper/live separation, or websocket/orderbook behavior.
+- Regime/probability documentation alignment on 2026-05-10:
+  - Official roadmap docs now separate Phase 1 regime/probability diagnostics, Phase 2 inventory replay research, Phase 3 bounded multi-price inventory design, and Phase 4 future continuous probabilistic inventory trading.
+  - These docs do not implement inventory trading and do not authorize execution behavior changes.
 - Documentation/observability finding on 2026-05-08:
   - Older docs still described stale HFT/live-ready assumptions and fixed `scan_log.csv` daily reporting.
   - Runtime logging now writes per-run CSV files named `scan_log_<timestamp>_<pid>.csv`.
@@ -451,7 +471,16 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
 
 ## 8. Next Priority Tasks
 
-1. Continue longer safe paper sessions with live market data.
+1. Continue Phase 1 regime/probability evidence collection in safe paper sessions.
+   - Use the existing paper runtime only.
+   - Treat `market_regime`, probability fields, indicator evidence, spread, liquidity, and cutoff diagnostics as research evidence.
+   - Do not use these fields as automatic trade approval.
+
+2. Build Phase 2 paper-only inventory replay research only after enough Phase 1 evidence exists.
+   - Analyze reload/unload opportunity, opportunity decay, MFE/MAE, and regime-specific tradeability.
+   - Keep replay output offline-only.
+
+3. Continue longer safe paper sessions with live market data.
    - Use `python main.py` or `python main.py --mode paper --interval 60`.
    - Confirm the paper banner is visible.
    - Confirm terminal `Source paper_virtual`.
@@ -459,45 +488,45 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
    - Watch whether natural market conditions create `[PAPER ORDER]`, `[PAPER FILL]`, `[PAPER EXIT]`, and `[PAPER PNL]` events without loosening risk rules.
    - If sessions keep skipping, compare top skip reasons before changing any strategy or risk thresholds.
 
-2. Resolve live account allowance.
+4. Resolve live account allowance.
    - Confirm collateral allowance source and required approval path.
    - Do not bypass allowance checks.
    - Keep `[LIVE MODE READY] ready=False` until balance, floor, allowance, and verification checks pass.
 
-3. Validate execution safely after allowance is fixed.
+5. Validate execution safely after allowance is fixed.
    - Confirm order creation code path.
    - Confirm cancel path.
    - Confirm fill detection.
    - Confirm position reconciliation.
    - Use paper mode or a tiny controlled live test only after explicit user approval.
 
-4. Monitor orderbook regression.
+6. Monitor orderbook regression.
    - Confirm full realtime terminal continues showing non-empty `BID`, `ASK`, and `SPREAD`.
    - If books are stale or empty, inspect `[TOKEN_FLOW]`, `[ORDERBOOK_FLOW]`, `[ORDERBOOK_RESPONSE]`, and `[ORDERBOOK_BEST]` logs.
 
-5. Monitor portfolio regression.
+7. Monitor portfolio regression.
    - Confirm paper mode keeps `Source paper_virtual`.
    - Confirm live mode keeps `Source clob_collateral`.
    - Confirm `[PORTFOLIO_SYNC]` logs cash/equity/exposure/positions count.
 
-6. Keep docs aligned.
+8. Keep docs aligned.
    - Update this file when terminal evidence changes.
    - Update `docs/PROJECT_STRUCTURE.md` when main path or data flow changes.
    - Update `docs/PROJECT_CLEANUP_REPORT.md` for cleanup decisions.
    - Update `README.md` only for user-facing command/path changes.
 
-7. Continue observability hardening carefully.
+9. Continue observability hardening carefully.
    - Review generated JSONL during longer paper sessions and adjust payload fields only if needed.
    - Route any future high-volume Telegram alerts through `utils/telegram_alerts.py`.
    - Review and clean stale daily Telegram message wording.
    - Add retention/compaction and incident-report writers only in a scoped phase.
    - Keep logging changes isolated from strategy/risk/execution behavior.
 
-8. Monitor shutdown behavior during longer paper sessions.
+10. Monitor shutdown behavior during longer paper sessions.
    - Confirm Ctrl+C exits stop the oracle/WebSocket feed without delayed logging.
    - If new background helpers are added, give them explicit `stop()` / `close()` / `shutdown()` ownership and tests.
 
-9. Use offline analyzers after paper sessions.
+11. Use offline analyzers after paper sessions.
    - Run `python tools/quant_data_quality.py --date YYYY-MM-DD --write-report` before trusting a replay.
    - Run `python tools/replay_analyzer.py --date YYYY-MM-DD --csv` to summarize JSONL events.
    - Treat analyzer output as review evidence only; do not wire it into trading decisions without a separate approved phase.
@@ -509,11 +538,20 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
 Before modifying code:
 
 1. Read `CURRENT_PROJECT_STATUS.md`.
-2. Read the latest real daily note in `research/daily/YYYY-MM-DD.md`.
-3. Read `docs/PROJECT_STRUCTURE.md`.
-4. Read `docs/PROJECT_CLEANUP_REPORT.md` if the task touches structure or cleanup.
-5. Inspect `.env` and `config/settings.py` before any live-risk work.
-6. For observability tasks, read `docs/OBSERVABILITY_PLAN.md` and `docs/KNOWN_ISSUES.md`.
+2. For research, replay, lifecycle truth, no-entry, observability-review, or paper-session evidence tasks, read `runtime/research_state/latest_research_state.md` before opening large reports/logs/JSONL.
+3. Read the latest real daily note in `research/daily/YYYY-MM-DD.md` when the task depends on daily notes.
+4. Read `docs/PROJECT_STRUCTURE.md`.
+5. Read `docs/PROJECT_CLEANUP_REPORT.md` if the task touches structure or cleanup.
+6. Inspect `.env` and `config/settings.py` before any live-risk work.
+7. For observability tasks, read `docs/OBSERVABILITY_PLAN.md` and `docs/KNOWN_ISSUES.md`.
+
+Compact-state-first rule:
+
+- Prefer `runtime/research_state/latest_research_state.md` over raw logs, JSONL, or large analyzer reports.
+- Use larger reports only when compact state identifies a gap, the task explicitly requests deeper evidence, or targeted debugging requires it.
+- Prefer counts/distributions over dumps.
+- Avoid large report pastes and repeated replay summaries.
+- Keep responses compact unless the user asks for exhaustive evidence.
 
 Testing guidance:
 

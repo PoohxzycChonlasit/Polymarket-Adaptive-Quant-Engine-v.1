@@ -218,6 +218,24 @@ Current correction:
 
 - Root `PROJECT_STRUCTURE.md` points future assistants to `docs/PROJECT_STRUCTURE.md`.
 
+### DOC-004 - Regime/inventory roadmap docs needed clearer official names
+
+Status: fixed in 2026-05-10 docs cleanup.
+
+Current correction:
+
+- Added `DOCUMENTATION_MAP.md`.
+- Added `QUANT_REGIME_PROBABILITY_ENGINE.md`.
+- Added `INVENTORY_REPLAY_RESEARCH_PLAN.md`.
+- Added `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md`.
+- Added `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md`.
+- Added `CODEX_START_PROMPT.md` and `CHATGPT_PROJECT_START_PROMPT.md`.
+- Added root `KNOWN_ISSUES.md` forwarding note.
+
+Rule:
+
+- Treat these roadmap docs as planning and diagnostics guidance only. They do not authorize runtime execution changes.
+
 ## Trading Logic / Strategy Risk Areas
 
 ### STRAT-001 - Paper sessions may still produce no entries under current gates

@@ -16,6 +16,11 @@
 - generated files
   unless explicitly debugging those areas.
 
+Exception for research tasks:
+
+- Read `runtime/research_state/latest_research_state.md` first before opening large reports, logs, or JSONL.
+- Only inspect larger `runtime/reports/`, JSONL, logs, or generated data when the compact state indicates a gap, the task explicitly requires deeper evidence, or targeted debugging requires it.
+
 ---
 
 # Token Efficiency Rules
@@ -27,11 +32,15 @@ Prefer:
 - targeted edits
 - focused tests
 - specific module inspection
+- compact state summaries
+- counts/distributions over dumps
   Avoid:
 - broad grep searches
 - repository-wide analysis
 - unrelated tests
 - historical runtime data
+- large report pastes
+- repeated replay-summary narration
 
 ---
 
@@ -44,9 +53,23 @@ The project is:
 - quant-oriented
 - risk-first
 - paper-safe by default
+- moving toward regime-aware probability diagnostics and paper-only inventory research
   REST APIs are fallback only.
   Never poll REST orderbooks every second across markets.
   Use websocket cache as primary market state source.
+
+---
+
+# Project Phase Rules
+
+Current roadmap:
+
+1. Phase 1: regime classification, probability scoring, indicator evidence, observability only.
+2. Phase 2: paper-only inventory simulation/replay, reload/unload analysis, opportunity decay, and MFE/MAE tracking.
+3. Phase 3: bounded multi-price inventory engine with strict caps, stop loss, forced exit, no martingale, and no unlimited averaging down.
+4. Phase 4: continuous probabilistic inventory trading only after paper evidence supports it.
+
+Offline analyzers, replay outputs, and research tables are evidence only. Do not wire them into automatic runtime decisions without a separate explicit implementation phase.
 
 ---
 
@@ -139,13 +162,26 @@ Before editing:
 3. Read CURRENT_PROJECT_STATUS.md
 4. Read docs/PROJECT_STRUCTURE.md
 5. Read docs/KNOWN_ISSUES.md
-6. Read MASTER_AGENT_ROUTER.md when role guidance is needed
+6. Read MASTER_AGENT_ROUTER.md for every scoped task
+7. Select exactly one PRIMARY role
+8. Select zero to three SUPPORTING roles only when the task crosses boundaries
+9. Read only the selected role docs, not all role docs
+10. Read FILE_INDEX.md and QUANT_FUTURE_DECISION_ENGINE.md for future-phase tasks
    Then:
 
 - inspect only relevant files
 - avoid repository-wide scans
-- avoid runtime/log/generated files
-- keep task-specific prompts in the conversation instead of creating new root `.md` prompt files
+- avoid runtime/log/generated files, except `runtime/research_state/latest_research_state.md` for compact research context
+- prefer compact state over raw logs and large analyzer reports
+- state primary role, supporting roles, why selected, files allowed to inspect, and files intentionally ignored before implementation
+- keep role usage compact and do not paste full role docs into chat
+- keep task-specific prompts in the conversation instead of creating new root `.md` prompt files, except for the official startup prompts `CODEX_START_PROMPT.md` and `CHATGPT_PROJECT_START_PROMPT.md`
+
+Hard rule:
+
+- Never use role docs as permission to expand scope.
+- Role docs guide reasoning only.
+- Runtime behavior, strategy, risk, execution, live-risk, and phase-promotion changes require explicit task scope.
 
 ---
 

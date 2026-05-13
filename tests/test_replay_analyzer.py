@@ -2,11 +2,12 @@ from __future__ import annotations
 
 import csv
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
-from tools.replay_analyzer import analyze_replay
+from tools.replay_analyzer import analyze_replay, main as replay_main
 
 
 DATE = "2026-05-08"
@@ -188,6 +189,130 @@ def test_replay_empty_dataset_produces_safe_zero_report(tmp_path: Path) -> None:
     assert report.top_skip_reasons == []
 
 
+def test_replay_filters_events_by_utc_time_window(tmp_path: Path) -> None:
+    base_dir = tmp_path / "runtime" / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T17:42:59Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "legacy_before_window",
+        }),
+        _event("decision", f"{DATE}T17:44:08Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "fresh_window",
+            "fair_value": None,
+            "fair_value_available": False,
+            "fair_value_null_reason": "no_orderbook",
+        }),
+        _event("decision", f"{DATE}T17:47:00Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "legacy_after_window",
+        }),
+    ])
+
+    report = analyze_replay(
+        base_dir=base_dir,
+        date=DATE,
+        since_utc=datetime(2026, 5, 8, 17, 43, tzinfo=timezone.utc),
+        until_utc=datetime(2026, 5, 8, 17, 47, tzinfo=timezone.utc),
+    )
+
+    assert report.events_loaded == 1
+    assert report.skipped_decisions == 1
+    assert report.top_skip_reasons == [("fresh_window", 1)]
+    assert report.time_filter["applied"] is True
+    assert report.phase2_coverage["ev_null_reason_coverage"]["fields"]["fair_value"]["null_reason_events"] == 1
+
+
+def test_replay_filters_events_by_run_id_and_writes_run_scoped_report(tmp_path: Path) -> None:
+    base_dir = tmp_path / "runtime" / "quant_data"
+    report_dir = tmp_path / "runtime" / "reports"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        {
+            **_event("decision", f"{DATE}T00:00:00Z", {
+                "decision_type": "skipped",
+                "skipped": True,
+                "skip_reason": "target_run",
+            }),
+            "run_id": "run/target",
+        },
+        {
+            **_event("decision", f"{DATE}T00:00:01Z", {
+                "decision_type": "skipped",
+                "skipped": True,
+                "skip_reason": "other_run",
+            }),
+            "run_id": "run-other",
+        },
+        _event("decision", f"{DATE}T00:00:02Z", {
+            "decision_type": "skipped",
+            "skipped": True,
+            "skip_reason": "missing_run_id",
+        }),
+    ])
+
+    report = analyze_replay(
+        base_dir=base_dir,
+        date=DATE,
+        report_dir=report_dir,
+        write_reports=True,
+        write_csv=True,
+        run_id="run/target",
+    )
+
+    assert report.run_id == "run/target"
+    assert report.events_loaded == 1
+    assert report.top_skip_reasons == [("target_run", 1)]
+    assert report.time_filter["run_id"] == "run/target"
+    assert report.time_filter["run_id_applied"] is True
+    assert (report_dir / f"replay_report_{DATE}_run_run_target.json").exists()
+    assert (report_dir / f"replay_trades_{DATE}_run_run_target.csv").exists()
+
+
+def test_replay_cli_lists_run_ids(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    base_dir = tmp_path / "runtime" / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        {
+            **_event("decision", f"{DATE}T00:00:00Z", {"decision_type": "skipped"}),
+            "run_id": "run-a",
+        },
+        {
+            **_event("decision", f"{DATE}T00:01:00Z", {"decision_type": "skipped"}),
+            "run_id": "run-a",
+        },
+        {
+            **_event("decision", f"{DATE}T00:02:00Z", {"decision_type": "skipped"}),
+            "run_id": "run-b",
+            "mode": "paper",
+        },
+        {
+            key: value
+            for key, value in _event("decision", f"{DATE}T00:03:00Z", {"decision_type": "skipped"}).items()
+            if key != "run_id"
+        },
+    ])
+    monkeypatch.setattr("sys.argv", [
+        "replay_analyzer",
+        "--date",
+        DATE,
+        "--base-dir",
+        str(base_dir),
+        "--list-run-ids",
+    ])
+
+    assert replay_main() == 0
+
+    output = capsys.readouterr().out
+    assert "Available run IDs" in output
+    assert "run_id=run-a event_count=2" in output
+    assert "run_id=run-b event_count=1" in output
+    assert "run_id=missing_run_id missing_run_id=true event_count=1" in output
+    assert "categories=decision_log" in output
+    assert "mode=paper" in output
+
+
 def test_replay_does_not_count_rejected_decisions_or_order_intent_rejects_as_execution_failures(tmp_path: Path) -> None:
     base_dir = tmp_path / "runtime" / "quant_data"
     _append_jsonl(base_dir, "decision_log", DATE, [
@@ -340,6 +465,167 @@ def test_replay_reports_empty_book_recovery_metrics(tmp_path: Path) -> None:
     assert report.empty_book_recovery_retry_count == 3
     assert ("HEALTHY", 1) in report.liquidity_states
     assert ("EMPTY", 1) in report.liquidity_states
+
+
+def test_replay_reports_phase2_inventory_coverage_from_synthetic_jsonl(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T00:00:00Z", {
+            "lifecycle_phase": "ACTIVE_INVENTORY_TRADING",
+            "token_ready_at": f"{DATE}T00:00:00Z",
+            "orderbook_ready_at": f"{DATE}T00:00:01Z",
+            "liquidity_ready_at": f"{DATE}T00:00:02Z",
+            "spread_ready_at": f"{DATE}T00:00:03Z",
+            "first_tradable_at": f"{DATE}T00:00:03Z",
+            "first_evaluable_at": f"{DATE}T00:00:01Z",
+            "first_evaluable_seconds_remaining": 244,
+            "yes_token_id": "yes-token",
+            "no_token_id": "no-token",
+            "condition_id": "condition-1",
+            "spread_normalized": True,
+            "spread_gap_to_limit": -0.01,
+            "liquidity_ready": True,
+            "liquidity_state": "HEALTHY",
+            "fair_value": 0.62,
+            "market_price": 0.60,
+            "true_probability": 0.62,
+            "ev_after_spread": 0.04,
+            "yes_bid": 0.58,
+            "yes_ask": 0.60,
+            "no_bid": 0.40,
+            "no_ask": 0.42,
+            "candidate_id": "candidate-1",
+            "signal_id": "signal-1",
+            "inventory_action": "OPEN",
+            "starter_candidate": True,
+            "reload_candidate": False,
+            "unload_candidate": False,
+            "final_derisk_candidate": False,
+            "mfe_candidate_price": 0.60,
+            "mae_candidate_price": 0.60,
+            "candidate_peak_favorable": 0.0,
+            "candidate_peak_adverse": 0.0,
+            "exposure_before": 0.0,
+            "exposure_after": 1.0,
+            "risk_budget_used": 0.0,
+            "remaining_risk_budget": 2.0,
+            "current_exposure": 0.0,
+            "target_exposure": 1.0,
+            "seconds_remaining": 244,
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+    coverage = report.phase2_coverage
+
+    assert coverage["status"] == "READY_FOR_PHASE2_REPLAY_RESEARCH"
+    assert coverage["coverage_gaps"] == []
+    assert coverage["requirements"]["mfe_mae_support"]["status"] == "available"
+    assert coverage["requirements"]["side_specific_yes_no_price_path"]["direct_events"] == 1
+
+
+def test_replay_reports_phase2_ev_null_reason_coverage(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T00:00:00Z", {
+            "decision_type": "skipped",
+            "decision": "skip",
+            "skipped": True,
+            "normalized_skip_reason": "time_unsafe",
+            "fair_value": None,
+            "fair_value_available": False,
+            "fair_value_null_reason": "time_unsafe",
+            "market_price": None,
+            "market_price_available": False,
+            "market_price_null_reason": "time_unsafe",
+            "true_probability": None,
+            "true_probability_available": False,
+            "true_probability_null_reason": "time_unsafe",
+            "ev_after_spread": None,
+            "ev_after_spread_available": False,
+            "ev_after_spread_null_reason": "time_unsafe",
+            "probability_model_stage": "pre_model_skip",
+            "ev_calculation_stage": "pre_model_skip",
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+    null_coverage = report.phase2_coverage["ev_null_reason_coverage"]
+
+    assert null_coverage["status"] == "available"
+    assert null_coverage["does_not_claim_ev_available"] is True
+    assert null_coverage["fields"]["fair_value"]["null_reason_coverage_rate"] == pytest.approx(1.0)
+    assert null_coverage["fields"]["ev_after_spread"]["null_reasons"] == [["time_unsafe", 1]]
+    assert ["pre_model_skip", 1] in null_coverage["probability_model_stages"]
+    assert ["pre_model_skip", 1] in null_coverage["ev_calculation_stages"]
+    assert report.phase2_coverage["requirements"]["fair_value_ev_decay"]["status"] == "coverage_gap"
+
+
+def test_replay_counts_market_snapshot_ev_null_reasons(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "market_snapshots", DATE, [
+        _event("market_snapshot", f"{DATE}T00:00:00Z", {
+            "ticker": "BTC",
+            "orderbook_readiness_reason": "warmup_pending",
+            "fair_value_available": False,
+            "fair_value_null_reason": "no_orderbook",
+            "market_price_available": False,
+            "market_price_null_reason": "no_orderbook",
+            "true_probability_available": False,
+            "true_probability_null_reason": "no_orderbook",
+            "ev_after_spread_available": False,
+            "ev_after_spread_null_reason": "no_orderbook",
+            "probability_model_stage": "pre_model_skip",
+            "ev_calculation_stage": "pre_model_skip",
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+    null_coverage = report.phase2_coverage["ev_null_reason_coverage"]
+
+    assert null_coverage["events_checked"] == 1
+    assert null_coverage["null_reason_coverage_rate"] == pytest.approx(1.0)
+    assert null_coverage["fields"]["market_price"]["null_reasons"] == [["no_orderbook", 1]]
+    assert ["pre_model_skip", 1] in null_coverage["probability_model_stages"]
+
+
+def test_replay_builds_partial_lifecycle_replay_with_proxy_missed_starter(tmp_path: Path) -> None:
+    base_dir = tmp_path / "quant_data"
+    _append_jsonl(base_dir, "decision_log", DATE, [
+        _event("decision", f"{DATE}T00:00:00Z", {
+            "decision_type": "skipped",
+            "decision": "skip",
+            "skipped": True,
+            "skip_reason": "ev_below_threshold",
+            "market_id": "pm-5m-btc",
+            "ticker": "BTC",
+            "seconds_remaining": 180,
+            "entry_cutoff_seconds": 90,
+            "first_evaluable_seconds_remaining": 240,
+            "yes_token_id": "yes-token",
+            "no_token_id": "no-token",
+            "spread": 0.03,
+            "liquidity_state": "HEALTHY",
+            "ev": 0.01,
+            "yes_bid": 0.48,
+            "yes_ask": 0.50,
+            "no_bid": 0.50,
+            "no_ask": 0.52,
+        }),
+    ])
+
+    report = analyze_replay(base_dir=base_dir, date=DATE)
+    replay = report.partial_lifecycle_replay
+
+    assert replay["status"] == "PARTIAL_PROXY_REPLAY"
+    assert report.lifecycle_replay_confidence in {"LOW_PROXY", "MEDIUM_PROXY"}
+    assert report.missed_starter_candidates
+    candidate = report.missed_starter_candidates[0]
+    assert candidate["starter_replay_label"] == "missed_starter_proxy"
+    assert candidate["starter_replay_inference"] == "proxy_inferred"
+    assert any(item["section"] == "mfe_mae_support" for item in report.replay_unsupported_sections)
+    assert report.timing_decay_summary["status"] == "proxy_inferred"
+    assert report.spread_liquidity_readiness_summary["spread_events"] == 1
 
 
 def test_replay_reports_micro_adaptive_timing_metrics(tmp_path: Path) -> None:

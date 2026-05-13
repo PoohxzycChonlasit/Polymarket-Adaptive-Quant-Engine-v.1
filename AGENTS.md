@@ -9,6 +9,17 @@ Build, validate, and operate a Python trading bot for Polymarket BTC/ETH 5-minut
 
 The project is not confirmed live-trading ready. Current work should harden the existing implementation, not rebuild it.
 
+Current strategic direction:
+
+1. Phase 1: regime classification, probability scoring, indicator evidence, and observability only.
+2. Phase 2: paper-only inventory replay research, reload/unload analysis, opportunity decay, and MFE/MAE tracking.
+3. Phase 3: bounded multi-price inventory engine research with max inventory cap, max risk cap, stop loss, forced exit, no martingale, and no unlimited averaging down.
+4. Phase 4: continuous probabilistic inventory trading only after paper evidence supports it.
+
+The agent system now also uses the Quant Lifecycle Inventory System vocabulary: OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, and CLOSED_OR_UNSAFE. Dynamic Quant Risk Budget thinking must include bankroll/current equity, open exposure, realized/unrealized PnL, market/session risk used, drawdown, tier id, risk mode, and target exposure versus current exposure.
+
+These phases do not authorize execution changes unless a future task explicitly scopes them.
+
 ## Documentation Sync Rule
 
 Before implementing any new feature phase, perform a documentation synchronization pass when docs are stale or when the user requests it.
@@ -19,15 +30,20 @@ Before modifying code, read `CURRENT_PROJECT_STATUS.md` and do not assume the pr
 
 Read these first:
 
-1. `CURRENT_PROJECT_STATUS.md`
-2. `CODEX_START_HERE.md`
-3. latest real file in `research/daily/YYYY-MM-DD.md`
-4. `docs/PROJECT_STRUCTURE.md`
-5. `docs/KNOWN_ISSUES.md`
-6. relevant role docs in `docs/quant_agent_setup_md/roles/`
+1. `CODEX_START_HERE.md`
+2. `PROJECT_RULES.md`
+3. `AGENTS.md`
+4. `MASTER_AGENT_ROUTER.md`
+5. `CURRENT_PROJECT_STATUS.md`
+6. `PROJECT_STRUCTURE.md`
+7. `KNOWN_ISSUES.md`
+8. `FILE_INDEX.md`
+9. `QUANT_FUTURE_DECISION_ENGINE.md`
+10. only the selected role docs in `docs/quant_agent_setup_md/roles/`
 
 If the task touches cleanup or structure, also read:
 
+- `DOCUMENTATION_MAP.md`
 - `docs/PROJECT_CLEANUP_REPORT.md`
 
 If the task touches observability or Telegram, also read:
@@ -37,6 +53,35 @@ If the task touches observability or Telegram, also read:
 - `utils/logger.py`
 - `utils/telegram_reporter.py`
 - `daily_report.py`
+
+## Compact-State-First Research Workflow
+
+For research, replay, lifecycle truth, no-entry, observability review, or paper-session evidence tasks, read this compact state before larger reports/logs/JSONL:
+
+```text
+runtime/research_state/latest_research_state.md
+```
+
+Inspect larger reports only when the compact state identifies a gap, the user asks for deeper evidence, or targeted debugging requires it. Prefer counts and distributions over dumps, targeted search over broad scans, and compact summaries over repeated replay narration.
+
+## Role-Routed Compact Workflow v1
+
+For every task, before implementation:
+
+1. For research, replay, lifecycle truth, no-entry, observability review, or paper-session evidence tasks, read `runtime/research_state/latest_research_state.md` before large reports/logs/JSONL.
+2. Read `MASTER_AGENT_ROUTER.md`.
+3. Select exactly one PRIMARY role.
+4. Select zero to three SUPPORTING roles only if the task crosses boundaries.
+5. Read only the selected role docs, not all role docs.
+6. State a compact role-routing block:
+   - primary role
+   - supporting roles
+   - why selected
+   - files allowed to inspect
+   - files intentionally ignored
+7. Keep role usage compact. Do not paste full role docs into chat.
+
+Hard rule: never use role docs as permission to expand scope. Role docs guide reasoning only. Runtime changes still require explicit task scope.
 
 ## Canonical Runtime Path
 
@@ -75,28 +120,29 @@ Use these as guidance; they are markdown instructions, not autonomous runtime mo
 
 | Agent doc                              | Responsibility                                   | Use when                                                                   |
 | -------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------------- |
-| `01_PROJECT_MANAGER_AGENT.md`          | Scope, sequencing, handoffs                      | Planning multi-step work.                                                  |
-| `02_CODE_ARCHITECT_AGENT.md`           | File ownership, interfaces, modularity           | Any multi-file change.                                                     |
-| `03_RISK_MANAGER_AGENT.md`             | Risk rejection rules and safety gates            | Risk, sizing, drawdown, exposure, entry approval.                          |
-| `04_EXIT_EXECUTION_AGENT.md`           | Exit, TP/SL, forced/panic exits                  | Exit-system changes.                                                       |
-| `05_MARKET_DATA_AGENT.md`              | Freshness, orderbook, token IDs, spread/depth    | Market data/orderbook work.                                                |
-| `06_POSITION_RECONCILIATION_AGENT.md`  | True inventory, orders, fills, mismatch handling | Reconciliation/order lifecycle work.                                       |
-| `07_TEST_CI_AGENT.md`                  | Test plan and CI safety gates                    | Every implementation task.                                                 |
-| `08_RESEARCH_QUANT_AGENT.md`           | Offline research context                         | Strategy research only.                                                    |
-| `09_SIGNAL_STRATEGY_AGENT.md`          | Signal changes                                   | Only when explicitly changing strategy.                                    |
-| `10_BACKTEST_REPLAY_AGENT.md`          | Backtest/replay validation                       | Strategy/import path changes.                                              |
-| `11_OBSERVABILITY_INCIDENT_AGENT.md`   | Logs, alerts, health, incidents                  | Logging/Telegram/monitoring work.                                          |
-| `12_REVIEW_LEARNING_AGENT.md`          | Postmortem/review learning                       | After incidents or paper sessions.                                         |
-| `13_TELEGRAM_ALERT_AGENT.md`           | Telegram routing, cooldown, daily copy           | Telegram alert or daily summary work.                                      |
-| `14_NO_ENTRY_DIAGNOSTICS_AGENT.md`     | Explain zero-trade paper runs                    | Paper sessions with no entries/fills.                                      |
-| `15_CONFIG_SAFETY_AGENT.md`            | Startup config and `.env` safety                 | Mode, live flags, wallet-reference, validation.                            |
-| `16_PAPER_EVALUATION_AGENT.md`         | PASS/CAUTION/FAIL paper evaluation               | Post-run paper evidence review.                                            |
-| `17_CLEAN_SHUTDOWN_AGENT.md`           | Feed/logger/thread shutdown                      | Ctrl+C, teardown, lingering threads.                                       |
-| `18_MARKET_REGIME_AGENT.md`            | Market regime diagnostics                        | Volatility/trend regime labels, regime grouping, adaptive-policy research. |
-| `19_FAIR_VALUE_ENGINE_AGENT.md`        | Dynamic fair probability                         | Fair value, mispricing, time-decay probability, EV explanation.            |
-| `20_INVENTORY_ENGINE_AGENT.md`         | Inventory trading logic                          | Controlled accumulation, reload/unload, inventory caps, runner policy.     |
-| `21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Execution quality                                | Spread, liquidity, maker/taker, fill quality, price improvement.           |
-| `22_INVENTORY_ANALYTICS_AGENT.md`      | Offline inventory research                       | Missed reload/unload, inventory replay, MFE/MAE, recycling opportunity.    |
+| `01_PROJECT_MANAGER_AGENT.md`          | Scope, sequencing, handoffs, promotion gates     | Planning multi-step work or controlling phase boundaries.                  |
+| `02_CODE_ARCHITECT_AGENT.md`           | File ownership, interfaces, modularity           | Any multi-file change or architecture boundary decision.                   |
+| `03_RISK_MANAGER_AGENT.md`             | Dynamic Quant Risk Budget and safety gates       | Risk, sizing, drawdown, exposure, tier, LOCKDOWN, entry approval.          |
+| `04_EXIT_EXECUTION_AGENT.md`           | Profit unload, stop loss, final derisk, exits    | Exit-system changes and future runner/final-derisk rules.                  |
+| `05_MARKET_DATA_AGENT.md`              | Scanner lifecycle, token IDs, orderbooks         | Market discovery, readiness, spread/depth, warmup delays.                  |
+| `06_POSITION_RECONCILIATION_AGENT.md`  | True inventory, orders, fills, mismatches        | Reconciliation/order lifecycle and no-sell-without-inventory checks.       |
+| `07_TEST_CI_AGENT.md`                  | Targeted tests and safety proof                  | Every implementation task and docs/reference checks.                       |
+| `08_RESEARCH_QUANT_AGENT.md`           | Hypothesis testing and paper evidence            | Strategy/research interpretation and experiment design.                    |
+| `09_SIGNAL_STRATEGY_AGENT.md`          | Signal/probability/EV model changes             | Only when explicitly changing signal-visible logic.                        |
+| `10_BACKTEST_REPLAY_AGENT.md`          | Backtest, replay, MFE/MAE, opportunity decay     | Replay/evaluator validation and offline lifecycle analysis.                |
+| `11_OBSERVABILITY_INCIDENT_AGENT.md`   | Compact JSONL/log/health/incident evidence       | Logging, JSONL, Telegram evidence quality, monitoring work.                |
+| `12_REVIEW_LEARNING_AGENT.md`          | Paper-session postmortem and learning loop       | After incidents or paper sessions.                                         |
+| `13_TELEGRAM_ALERT_AGENT.md`           | Alert routing, cooldown, daily copy              | Telegram alert or daily summary work.                                      |
+| `14_NO_ENTRY_DIAGNOSTICS_AGENT.md`     | No-entry root cause                              | Paper sessions with no entries/fills or blocked candidates.                |
+| `15_CONFIG_SAFETY_AGENT.md`            | Startup config and mode validation               | Mode, live flags, wallet-reference, .env safety review.                    |
+| `16_PAPER_EVALUATION_AGENT.md`         | PASS/CAUTION/FAIL paper evidence                 | Post-run paper evidence review and phase promotion gates.                  |
+| `17_CLEAN_SHUTDOWN_AGENT.md`           | Feed/logger/thread shutdown                      | Ctrl+C, teardown, lingering workers, locked logs.                          |
+| `18_MARKET_REGIME_AGENT.md`            | Volatility/trend/compression regimes             | Regime labels, coverage, probability context, adaptive-policy research.    |
+| `19_FAIR_VALUE_ENGINE_AGENT.md`        | Fair value, implied probability, EV              | Mispricing, true probability, market price versus fair value.              |
+| `20_INVENTORY_ENGINE_AGENT.md`         | Bounded inventory design                         | Starter/reload/unload/runner design with caps and no martingale.           |
+| `21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Executable edge, spread, liquidity               | Spread, liquidity, maker/taker, fill quality, adverse selection.           |
+| `22_INVENTORY_ANALYTICS_AGENT.md`      | Offline inventory replay analytics              | Missed reload/unload, MFE/MAE, recycling opportunity.                      |
+| `23_QUANT_LIFECYCLE_INVENTORY_AGENT.md`| Lifecycle inventory coordination                 | OPENING_SCAN through FINAL_DERISK, Dynamic Risk Budget, tier-aware design. |
 
 Status labels:
 
@@ -117,11 +163,12 @@ Status labels:
 ## Agent Selection Workflow
 
 1. Read `MASTER_AGENT_ROUTER.md`.
-2. Pick one primary role doc and only add supporting role docs when the task crosses boundaries.
-3. Read the chosen role doc's "Files this agent should read first" section.
-4. Preserve the role doc's Do Not Touch boundaries.
-5. Route tests through `07_TEST_CI_AGENT.md` before claiming completion.
-6. For docs-only work, verify markdown diffs and state that no runtime tests were required.
+2. Pick exactly one primary role doc.
+3. Add zero to three supporting role docs only when the task crosses boundaries.
+4. Read the chosen role docs' "Files this agent should read first" sections.
+5. Preserve each selected role doc's Do Not Touch boundaries.
+6. Route tests through `07_TEST_CI_AGENT.md` before claiming completion when implementation or docs/reference checks require it.
+7. For docs-only work, verify markdown diffs and state that no runtime tests were required.
 
 Do not use multiple agent prompts as justification for scope creep. If a task starts as documentation, observability, Telegram, config, cleanup, or reporting, strategy/risk/execution-sensitive code remains out of scope unless the user explicitly expands it.
 
@@ -204,6 +251,8 @@ Never edit private keys, wallet addresses, live flags, or allowance behavior unl
 - Offline analyzers must remain offline-only and must not feed automatic runtime decisions without a separately scoped phase.
 - `wallet_reference_paper` is read-only paper sizing/visibility; it must never submit, cancel, redeem, sign, or approve live orders.
 - Scan/debug/orderbook raw data must not spam Telegram.
+- Regime/probability diagnostics are evidence only until a separate approved runtime-policy phase.
+- Inventory research must remain paper/offline until bounded caps, exits, reconciliation, and OrderIntent behavior are explicitly implemented and tested.
 
 If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-risk until proven otherwise.
 
@@ -241,7 +290,7 @@ Run strategy smoke only when strategy or import paths changed.
 
 ## Known Manual Review Items
 
-- Review Phase 3 JSONL output during longer paper sessions before building analytics.
+- Review regime/probability JSONL output during longer paper sessions before building inventory replay analytics.
 - Daily Telegram message wording still needs cleanup before relying on daily summaries.
 - Live allowance remains a blocker in latest status.
 - Live fill/cancel/reconcile cycle is not validated.

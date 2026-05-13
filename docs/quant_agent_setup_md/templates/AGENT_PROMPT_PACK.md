@@ -1,63 +1,54 @@
-# AGENT_PROMPT_PACK
+# Agent Prompt Pack
 
-## 1. Start Work Session
-```text
-Act as Project Manager Agent.
-Here is my current project status:
-[paste CURRENT_STATUS]
+Status: reusable prompts for scoped Codex sessions. Prompts are docs guidance and do not authorize runtime behavior changes.
 
-Pick exactly one task for today.
-Prioritize safety, exit, data correctness, and tests before strategy.
-```
+## Standard Scoped Task Prompt
 
-## 2. Design Fix
-```text
-Act as Code Architect Agent.
-I need to fix this issue:
-[paste bug]
+Act as `[PRIMARY_AGENT]` with support from `[SUPPORTING_AGENTS]`.
 
-Design the cleanest implementation.
-Tell me exact files, classes, functions, tests, and Codex prompt.
-```
+Read first:
 
-## 3. Risk Review
-```text
-Act as Risk Manager Agent.
-Review this trade candidate:
-[paste trade state]
+1. `CODEX_START_HERE.md`
+2. `PROJECT_RULES.md`
+3. `AGENTS.md`
+4. `MASTER_AGENT_ROUTER.md`
+5. `CURRENT_PROJECT_STATUS.md`
+6. `PROJECT_STRUCTURE.md`
+7. `KNOWN_ISSUES.md`
+8. `FILE_INDEX.md`
+9. `QUANT_FUTURE_DECISION_ENGINE.md`
+10. Relevant role docs only
 
-Approve/reject and explain reason code.
-```
-
-## 4. Exit Review
-```text
-Act as Exit Execution Agent.
-Review this open position:
-[paste position state]
-
-Decide hold/reduce/force_exit/emergency_flatten.
-```
-
-## 5. Post-Trade Review
-```text
-Act as Review Learning Agent.
-Here is today’s trade log:
-[paste log]
-
-Find mistakes, rule violations, and tomorrow’s one fix.
-```
-
-## 6. Codex Implementation
-```text
-You are implementing a scoped safety change in my Polymarket BTC/ETH 5m bot.
+Task: `[TASK]`
 
 Rules:
-- Add tests.
-- Do not bypass RiskAgent or ExitAgent.
-- Do not change live size.
-- Keep paper mode working.
-- Show changed files and how to run tests.
 
-Task:
-[paste task]
-```
+- Paper-first and risk-first.
+- No live behavior change unless explicitly scoped.
+- No strategy threshold, risk sizing, cutoff, wallet, allowance, execution, OrderIntent, reconciliation, or paper/live separation changes unless explicitly scoped.
+- Preserve no martingale, no unlimited averaging down, and no all-in behavior.
+- Apply exactly three future options before recommending one.
+- Inspect only relevant files and run focused tests/checks only.
+
+Expected output:
+
+- Root Problem
+- Evidence
+- Quant Interpretation
+- Risk / Safety Impact
+- Recommended Action
+- Files To Inspect / Modify
+- Tests Required
+- What Not To Touch
+
+## Lifecycle Inventory Planning Prompt
+
+Act as `23_QUANT_LIFECYCLE_INVENTORY_AGENT` with support from `03_RISK_MANAGER_AGENT.md`, `04_EXIT_EXECUTION_AGENT.md`, `05_MARKET_DATA_AGENT.md`, `18_MARKET_REGIME_AGENT.md`, `19_FAIR_VALUE_ENGINE_AGENT.md`, `20_INVENTORY_ENGINE_AGENT.md`, `21_EXECUTION_MICROSTRUCTURE_AGENT.md`, and `22_INVENTORY_ANALYTICS_AGENT.md`.
+
+Goal: plan or review lifecycle inventory work without implementing runtime behavior unless explicitly scoped.
+
+Must preserve:
+
+- OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, CLOSED_OR_UNSAFE as research/design phases until promoted.
+- Dynamic Quant Risk Budget gates.
+- Bounded inventory only: max risk, max inventory, stop loss, profit unload, final derisk, and tiny runner only after safety gates.

@@ -22,6 +22,131 @@ REPLAY_CATEGORIES = (
     "system_health",
 )
 
+PHASE2_COVERAGE_REQUIREMENTS: tuple[dict[str, Any], ...] = (
+    {
+        "key": "lifecycle_phase_evidence",
+        "direct": (
+            "lifecycle_phase",
+            "market_lifecycle_phase",
+            "inventory_lifecycle_phase",
+            "lifecycle_phase_transition_reason",
+            "lifecycle_phase_entered_at",
+            "lifecycle_phase_exited_at",
+        ),
+        "proxy": ("seconds_remaining", "seconds_since_open", "seconds_until_close"),
+    },
+    {
+        "key": "first_tradable_first_evaluable_timing",
+        "direct": (
+            "first_tradable_second",
+            "first_tradable_seconds_remaining",
+            "first_tradable_at_utc",
+            "first_tradable_at",
+            "first_evaluable_at",
+            "first_evaluable_seconds_remaining",
+        ),
+        "proxy": ("first_seen_seconds_remaining", "seconds_remaining"),
+    },
+    {
+        "key": "token_orderbook_readiness",
+        "direct": (
+            "token_ready_at",
+            "orderbook_ready_at",
+            "token_id",
+            "yes_token_id",
+            "no_token_id",
+            "condition_id",
+            "orderbook_readiness_reason",
+            "orderbook_unavailable_reason",
+            "readiness_transition_reason",
+            "market_readiness_state",
+            "orderbook_state_classification",
+        ),
+        "proxy": ("orderbook_age_ms", "orderbook_age", "clob_error_category"),
+    },
+    {
+        "key": "spread_normalization",
+        "direct": ("spread_ready_at", "spread_normalized", "spread_gap_to_limit", "spread_limit", "max_spread", "max_allowed_spread"),
+        "proxy": ("spread", "orderbook_spread", "ob_spread"),
+    },
+    {
+        "key": "liquidity_readiness",
+        "direct": ("liquidity_ready_at", "liquidity_state", "liquidity_ready", "depth_ready", "market_readiness_state"),
+        "proxy": ("liquidity", "empty_book_recovery_attempted", "empty_book_recovery_success"),
+    },
+    {
+        "key": "fair_value_ev_decay",
+        "direct": ("fair_value", "true_probability", "ev_after_spread", "expected_value", "model_ev", "ev_candidate_ready", "model_output_ready"),
+        "proxy": ("ev", "edge", "confidence", "bullish_probability", "bearish_probability"),
+    },
+    {
+        "key": "side_specific_yes_no_price_path",
+        "direct": (
+            "yes_bid",
+            "yes_ask",
+            "no_bid",
+            "no_ask",
+            "yes_best_bid",
+            "yes_best_ask",
+            "no_best_bid",
+            "no_best_ask",
+            "yes_price",
+            "no_price",
+        ),
+        "proxy": ("best_bid", "best_ask", "bid", "ask", "price", "entry_price"),
+    },
+    {
+        "key": "candidate_identity_linkage",
+        "direct": ("candidate_id", "signal_id", "opportunity_id", "replay_candidate_id", "candidate_survival_ms", "candidate_expiry_reason"),
+        "proxy": ("position_id", "market_id", "condition_id"),
+    },
+    {
+        "key": "starter_reload_unload_replay_support",
+        "direct": (
+            "starter_candidate",
+            "reload_candidate",
+            "unload_candidate",
+            "final_derisk_candidate",
+            "inventory_action",
+            "lifecycle_action",
+            "replay_action",
+            "reload_id",
+            "unload_id",
+        ),
+        "proxy": ("event", "side", "order_id", "position_id"),
+    },
+    {
+        "key": "mfe_mae_support",
+        "direct": (
+            "mfe",
+            "mae",
+            "max_favorable_excursion",
+            "max_adverse_excursion",
+            "mfe_candidate_price",
+            "mae_candidate_price",
+            "candidate_peak_favorable",
+            "candidate_peak_adverse",
+        ),
+        "proxy": (),
+    },
+    {
+        "key": "exposure_final_derisk_pressure",
+        "direct": (
+            "exposure_before",
+            "exposure_after",
+            "risk_budget_used",
+            "remaining_risk_budget",
+            "open_exposure",
+            "current_exposure",
+            "target_exposure",
+            "market_risk_used",
+            "final_derisk_pressure",
+            "derisk_action",
+        ),
+        "proxy": ("seconds_remaining", "cutoff_block_seconds_remaining", "late_entry_hard_block", "pnl"),
+    },
+)
+
 
 @dataclass
 class ReplayTrade:
@@ -36,9 +161,25 @@ class ReplayTrade:
 
 
 @dataclass
+class RunIdSummary:
+    run_id: str
+    event_count: int = 0
+    first_timestamp_utc: str = ""
+    last_timestamp_utc: str = ""
+    event_categories: list[str] = field(default_factory=list)
+    modes: list[str] = field(default_factory=list)
+    missing_run_id: bool = False
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class ReplayReport:
     date_from: str | None = None
     date_to: str | None = None
+    run_id: str = ""
+    time_filter: dict[str, Any] = field(default_factory=dict)
     base_dir: str = ""
     events_loaded: int = 0
     bad_json_lines: int = 0
@@ -103,6 +244,14 @@ class ReplayReport:
     liquidity_states: list[tuple[str, int]] = field(default_factory=list)
     pnl_by_outcome: dict[str, float] = field(default_factory=dict)
     pnl_by_asset: dict[str, float] = field(default_factory=dict)
+    phase2_coverage: dict[str, Any] = field(default_factory=dict)
+    partial_lifecycle_replay: dict[str, Any] = field(default_factory=dict)
+    lifecycle_replay_confidence: str = "INSUFFICIENT"
+    replay_supported_sections: list[dict[str, Any]] = field(default_factory=list)
+    replay_unsupported_sections: list[dict[str, Any]] = field(default_factory=list)
+    missed_starter_candidates: list[dict[str, Any]] = field(default_factory=list)
+    timing_decay_summary: dict[str, Any] = field(default_factory=dict)
+    spread_liquidity_readiness_summary: dict[str, Any] = field(default_factory=dict)
     trades: list[ReplayTrade] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -142,7 +291,10 @@ def _event_in_time_window(
     *,
     since_utc: datetime | None = None,
     until_utc: datetime | None = None,
+    run_id: str | None = None,
 ) -> bool:
+    if run_id is not None and str(event.get("run_id") or "") != run_id:
+        return False
     if since_utc is None and until_utc is None:
         return True
     timestamp = _parse_timestamp(event.get("timestamp_utc"))
@@ -165,6 +317,72 @@ def iter_dates(date_from: str, date_to: str) -> Iterable[str]:
     while current <= end:
         yield current.isoformat()
         current += timedelta(days=1)
+
+
+def _parse_hhmm_utc(date_text: str, value: str | None, *, field_name: str) -> datetime | None:
+    if value is None or str(value).strip() == "":
+        return None
+    text = str(value).strip()
+    try:
+        hour_text, minute_text = text.split(":", 1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+    except (TypeError, ValueError):
+        raise ValueError(f"{field_name} must be HH:MM in UTC") from None
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValueError(f"{field_name} must be HH:MM in UTC")
+    date_value = _parse_date(date_text)
+    return datetime(date_value.year, date_value.month, date_value.day, hour, minute, tzinfo=timezone.utc)
+
+
+def build_time_filter(
+    *,
+    date_from: str,
+    date_to: str,
+    since: str | None = None,
+    until: str | None = None,
+    since_utc: datetime | None = None,
+    until_utc: datetime | None = None,
+    run_id: str | None = None,
+) -> dict[str, Any]:
+    if (since or until) and date_from != date_to:
+        raise ValueError("--since/--until only support a single --date or same-day --from/--to")
+    if since_utc is None:
+        since_utc = _parse_hhmm_utc(date_from, since, field_name="--since")
+    if until_utc is None:
+        until_utc = _parse_hhmm_utc(date_from, until, field_name="--until")
+    if since_utc is not None and until_utc is not None and since_utc >= until_utc:
+        raise ValueError("--since must be earlier than --until")
+    return {
+        "since": since,
+        "until": until,
+        "since_utc": since_utc,
+        "until_utc": until_utc,
+        "run_id": run_id,
+        "run_id_applied": bool(run_id),
+        "applied": since_utc is not None or until_utc is not None,
+        "semantics": "half_open_since_inclusive_until_exclusive",
+    }
+
+
+def _safe_filename_token(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    sanitized = "".join(char if char.isalnum() or char in {"-", "_", "."} else "_" for char in text)
+    return sanitized[:80] or "run"
+
+
+def _report_date_part(date_from: str | None, date_to: str | None, time_filter: dict[str, Any], run_id: str = "") -> str:
+    date_part = date_from if date_from == date_to else f"{date_from}_to_{date_to}"
+    if time_filter.get("applied"):
+        since = str(time_filter.get("since") or "start").replace(":", "")
+        until = str(time_filter.get("until") or "end").replace(":", "")
+        date_part = f"{date_part}_{since}_to_{until}"
+    safe_run_id = _safe_filename_token(run_id or time_filter.get("run_id"))
+    if safe_run_id:
+        date_part = f"{date_part}_run_{safe_run_id}"
+    return str(date_part)
 
 
 def _as_float(value: Any, default: float = 0.0) -> float:
@@ -220,6 +438,501 @@ def _get_nested(payload: dict[str, Any], *paths: str) -> Any:
         if found:
             return current
     return None
+
+
+def _payload_has_any(payload: dict[str, Any], paths: tuple[str, ...]) -> bool:
+    display = payload.get("display")
+    sources = [payload]
+    if isinstance(display, dict):
+        sources.append(display)
+    for source in sources:
+        for path in paths:
+            value = _get_nested(source, path)
+            if value is not None and value != "":
+                return True
+    return False
+
+
+def _phase2_event_payload(event: dict[str, Any]) -> dict[str, Any]:
+    payload = _payload(event)
+    if payload:
+        return payload
+    return event
+
+
+def _first_value(payload: dict[str, Any], *paths: str) -> Any:
+    display = payload.get("display")
+    for path in paths:
+        value = _get_nested(payload, path)
+        if value is not None and value != "":
+            return value
+        if isinstance(display, dict):
+            value = _get_nested(display, path)
+            if value is not None and value != "":
+                return value
+    return None
+
+
+def build_phase2_ev_null_reason_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
+    fields = ("fair_value", "market_price", "true_probability", "ev_after_spread")
+    field_summary: dict[str, Any] = {}
+    reason_counts: Counter[str] = Counter()
+    stage_counts: Counter[str] = Counter()
+    ev_stage_counts: Counter[str] = Counter()
+
+    for field_name in fields:
+        value_events = 0
+        null_events = 0
+        null_reason_events = 0
+        missing_null_reason_events = 0
+        null_reason_counter: Counter[str] = Counter()
+        available_field = f"{field_name}_available"
+        reason_field = f"{field_name}_null_reason"
+        for event in events:
+            payload = _phase2_event_payload(event)
+            value = _first_value(payload, field_name)
+            available_raw = _first_value(payload, available_field)
+            available = _as_bool(available_raw) if available_raw is not None else value is not None
+            reason = str(_first_value(payload, reason_field) or "").strip()
+            if available:
+                value_events += 1
+                continue
+            null_events += 1
+            if reason:
+                null_reason_events += 1
+                null_reason_counter[reason] += 1
+                reason_counts[reason] += 1
+            else:
+                missing_null_reason_events += 1
+        field_summary[field_name] = {
+            "value_events": int(value_events),
+            "null_events": int(null_events),
+            "null_reason_events": int(null_reason_events),
+            "missing_null_reason_events": int(missing_null_reason_events),
+            "null_reason_coverage_rate": round(null_reason_events / null_events, 4) if null_events else 1.0,
+            "null_reasons": [[reason, count] for reason, count in null_reason_counter.most_common()],
+        }
+
+    for event in events:
+        payload = _phase2_event_payload(event)
+        stage = str(_first_value(payload, "probability_model_stage") or "").strip()
+        ev_stage = str(_first_value(payload, "ev_calculation_stage") or "").strip()
+        if stage:
+            stage_counts[stage] += 1
+        if ev_stage:
+            ev_stage_counts[ev_stage] += 1
+
+    total_nulls = sum(int(item["null_events"]) for item in field_summary.values())
+    total_reasons = sum(int(item["null_reason_events"]) for item in field_summary.values())
+    return {
+        "status": "available" if total_reasons else "coverage_gap",
+        "scope": "observability_null_reason_only",
+        "events_checked": len(events),
+        "total_null_value_events": int(total_nulls),
+        "total_null_reason_events": int(total_reasons),
+        "null_reason_coverage_rate": round(total_reasons / total_nulls, 4) if total_nulls else 1.0,
+        "fields": field_summary,
+        "null_reasons": [[reason, count] for reason, count in reason_counts.most_common()],
+        "probability_model_stages": [[stage, count] for stage, count in stage_counts.most_common()],
+        "ev_calculation_stages": [[stage, count] for stage, count in ev_stage_counts.most_common()],
+        "does_not_claim_ev_available": True,
+    }
+
+
+def build_phase2_coverage_from_events(events: list[dict[str, Any]]) -> dict[str, Any]:
+    total_events = len(events)
+    categories = Counter(str(event.get("_category", "") or event.get("event_type", "") or "unknown") for event in events)
+    requirements: dict[str, Any] = {}
+    coverage_gaps: list[str] = []
+    proxy_inferred: list[str] = []
+
+    for requirement in PHASE2_COVERAGE_REQUIREMENTS:
+        key = str(requirement["key"])
+        direct_paths = tuple(requirement["direct"])
+        proxy_paths = tuple(requirement["proxy"])
+        direct_events = 0
+        proxy_events = 0
+        for event in events:
+            payload = _phase2_event_payload(event)
+            if _payload_has_any(payload, direct_paths):
+                direct_events += 1
+            elif proxy_paths and _payload_has_any(payload, proxy_paths):
+                proxy_events += 1
+
+        if direct_events:
+            status = "available"
+            inference = "direct_observed"
+        elif proxy_events:
+            status = "proxy_inferred"
+            inference = "proxy_inferred"
+            proxy_inferred.append(key)
+        else:
+            status = "coverage_gap"
+            inference = "missing"
+            coverage_gaps.append(key)
+
+        requirements[key] = {
+            "status": status,
+            "inference": inference,
+            "direct_events": int(direct_events),
+            "proxy_events": int(proxy_events),
+            "coverage_gap": status == "coverage_gap",
+            "direct_fields_checked": list(direct_paths),
+            "proxy_fields_checked": list(proxy_paths),
+        }
+
+    covered = sum(1 for item in requirements.values() if item["status"] == "available")
+    inferred = sum(1 for item in requirements.values() if item["status"] == "proxy_inferred")
+    if not total_events:
+        overall_status = "INSUFFICIENT_PHASE2_COVERAGE"
+    elif coverage_gaps:
+        overall_status = "PARTIAL_PHASE2_COVERAGE"
+    else:
+        overall_status = "READY_FOR_PHASE2_REPLAY_RESEARCH"
+
+    return {
+        "status": overall_status,
+        "scope": "offline_analyzer_only",
+        "runtime_behavior_changed": False,
+        "live_readiness_claim": False,
+        "events_checked": int(total_events),
+        "event_categories": [[name, count] for name, count in categories.most_common()],
+        "requirements_checked": len(PHASE2_COVERAGE_REQUIREMENTS),
+        "direct_requirements": int(covered),
+        "proxy_inferred_requirements": int(inferred),
+        "coverage_gap_count": len(coverage_gaps),
+        "coverage_gaps": coverage_gaps,
+        "proxy_inferred_items": proxy_inferred,
+        "ev_null_reason_coverage": build_phase2_ev_null_reason_summary(events),
+        "requirements": requirements,
+    }
+
+
+def _phase2_market_key(payload: dict[str, Any]) -> str:
+    for path in ("market_id", "condition_id", "market", "market_slug", "ticker", "asset"):
+        value = str(_first_value(payload, path) or "").strip()
+        if value:
+            return value
+    return "UNKNOWN"
+
+
+def _phase2_lifecycle_phase(payload: dict[str, Any]) -> tuple[str, str]:
+    direct = str(_first_value(payload, "lifecycle_phase", "market_lifecycle_phase", "inventory_lifecycle_phase") or "").strip()
+    if direct:
+        return direct, "direct_observed"
+    seconds = _as_float(_first_value(payload, "seconds_since_open"), default=float("nan"))
+    if seconds != seconds:
+        remaining = _as_float(
+            _first_value(payload, "seconds_remaining", "seconds_until_close", "time_remaining_seconds"),
+            default=float("nan"),
+        )
+        if remaining == remaining:
+            seconds = max(0.0, 300.0 - remaining)
+    if seconds != seconds:
+        return "UNKNOWN", "coverage_gap"
+    if seconds < 35:
+        return "OPENING_SCAN", "proxy_inferred"
+    if seconds < 240:
+        return "ACTIVE_INVENTORY_TRADING", "proxy_inferred"
+    if seconds < 270:
+        return "PROFIT_MANAGEMENT", "proxy_inferred"
+    if seconds <= 300:
+        return "FINAL_DERISK", "proxy_inferred"
+    return "CLOSED_OR_UNSAFE", "proxy_inferred"
+
+
+def _phase2_side_price_path_status(payload: dict[str, Any]) -> str:
+    if _payload_has_any(
+        payload,
+        (
+            "yes_bid",
+            "yes_ask",
+            "no_bid",
+            "no_ask",
+            "yes_best_bid",
+            "yes_best_ask",
+            "no_best_bid",
+            "no_best_ask",
+            "yes_price",
+            "no_price",
+        ),
+    ):
+        return "available"
+    if _payload_has_any(payload, ("best_bid", "best_ask", "bid", "ask", "price", "entry_price")):
+        return "proxy_inferred"
+    return "coverage_gap"
+
+
+def _phase2_bool_status(payload: dict[str, Any], direct: tuple[str, ...], proxy: tuple[str, ...] = ()) -> str:
+    if _payload_has_any(payload, direct):
+        return "available"
+    if proxy and _payload_has_any(payload, proxy):
+        return "proxy_inferred"
+    return "coverage_gap"
+
+
+def _phase2_candidate_key(payload: dict[str, Any], event: dict[str, Any]) -> tuple[str, str]:
+    direct = str(_first_value(payload, "candidate_id", "signal_id", "opportunity_id", "replay_candidate_id") or "").strip()
+    if direct:
+        return direct, "direct_observed"
+    key = "|".join([
+        _phase2_market_key(payload),
+        str(_first_value(payload, "outcome", "side", "best_side", "best_candidate_side") or ""),
+        str(event.get("timestamp_utc", "") or ""),
+    ])
+    return key, "proxy_inferred" if key.strip("|") else "coverage_gap"
+
+
+def _phase2_spread_normalized(payload: dict[str, Any]) -> tuple[bool | None, str]:
+    direct = _first_value(payload, "spread_normalized")
+    if direct is not None:
+        return _as_bool(direct), "direct_observed"
+    gap = _first_value(payload, "spread_gap_to_limit")
+    if gap is not None:
+        return _as_float(gap, default=1.0) <= 0, "proxy_inferred"
+    spread = _first_value(payload, "spread", "orderbook_spread", "ob_spread")
+    limit = _first_value(payload, "spread_limit", "max_spread", "max_allowed_spread", "max_orderbook_spread")
+    if spread is not None:
+        return _as_float(spread) <= _as_float(limit, default=0.10), "proxy_inferred"
+    return None, "coverage_gap"
+
+
+def _phase2_missed_starter_candidate(event: dict[str, Any]) -> dict[str, Any] | None:
+    payload = _phase2_event_payload(event)
+    event_type = str(event.get("event_type", "") or "")
+    category = str(event.get("_category", "") or "")
+    if event_type != "decision" and category != "decision_log":
+        return None
+    skipped = _as_bool(_first_value(payload, "skipped")) or str(_first_value(payload, "decision") or "").lower() in {"skip", "skipped"}
+    if not skipped:
+        return None
+    reason = str(_first_value(payload, "normalized_skip_reason", "skip_reason", "raw_skip_reason") or "").strip()
+    seconds_remaining = _as_float(
+        _first_value(payload, "seconds_remaining", "seconds_until_close", "time_remaining_seconds"),
+        default=float("nan"),
+    )
+    cutoff = _as_float(_first_value(payload, "effective_cutoff_seconds", "entry_cutoff_seconds"), default=90.0)
+    if seconds_remaining != seconds_remaining or seconds_remaining <= cutoff:
+        return None
+    candidate_key, candidate_inference = _phase2_candidate_key(payload, event)
+    spread_ok, spread_inference = _phase2_spread_normalized(payload)
+    phase, phase_inference = _phase2_lifecycle_phase(payload)
+    liquidity_state = str(_first_value(payload, "liquidity_state") or "UNKNOWN").upper()
+    return {
+        "candidate_key": candidate_key,
+        "candidate_key_inference": candidate_inference,
+        "timestamp_utc": str(event.get("timestamp_utc", "") or ""),
+        "market_key": _phase2_market_key(payload),
+        "lifecycle_phase": phase,
+        "lifecycle_phase_inference": phase_inference,
+        "seconds_remaining": seconds_remaining,
+        "seconds_remaining_inference": "direct_observed",
+        "skip_reason": reason,
+        "skip_reason_inference": "direct_observed" if reason else "coverage_gap",
+        "spread_normalized_proxy": spread_ok,
+        "spread_normalized_inference": spread_inference,
+        "liquidity_state": liquidity_state,
+        "liquidity_state_inference": "direct_observed" if liquidity_state != "UNKNOWN" else "coverage_gap",
+        "ev_proxy": _as_float(_first_value(payload, "ev", "edge", "model_ev", "expected_value"), default=0.0),
+        "ev_inference": "proxy_inferred",
+        "fair_value_support": _phase2_bool_status(
+            payload,
+            ("fair_value", "true_probability", "ev_after_spread", "expected_value", "model_ev"),
+            ("ev", "edge", "confidence", "bullish_probability", "bearish_probability"),
+        ),
+        "starter_replay_label": "missed_starter_proxy",
+        "starter_replay_inference": "proxy_inferred",
+    }
+
+
+def build_partial_lifecycle_replay_from_events(events: list[dict[str, Any]]) -> dict[str, Any]:
+    coverage = build_phase2_coverage_from_events(events)
+    requirements = coverage.get("requirements", {})
+    supported_sections = [
+        {
+            "section": section,
+            "status": data.get("status"),
+            "inference": data.get("inference"),
+        }
+        for section, data in sorted(requirements.items())
+        if data.get("status") in {"available", "proxy_inferred"}
+        and section
+        not in {
+            "mfe_mae_support",
+        }
+    ]
+    unsupported_sections = [
+        {
+            "section": section,
+            "status": "coverage_gap",
+            "reason": "direct evidence unavailable in current generated data",
+        }
+        for section, data in sorted(requirements.items())
+        if data.get("status") == "coverage_gap"
+    ]
+    for section in ("reload_unload_truth", "final_derisk_truth", "real_inventory_execution_readiness"):
+        unsupported_sections.append({
+            "section": section,
+            "status": "coverage_gap",
+            "reason": "explicitly unsupported by partial proxy replay",
+        })
+
+    by_market: dict[str, dict[str, Any]] = {}
+    seconds_values: list[float] = []
+    first_evaluable_values: list[float] = []
+    spread_events = 0
+    spread_normalized = 0
+    liquidity_counts: Counter[str] = Counter()
+    readiness_counts: Counter[str] = Counter()
+    missed_starters: list[dict[str, Any]] = []
+
+    for event in events:
+        payload = _phase2_event_payload(event)
+        market_key = _phase2_market_key(payload)
+        market = by_market.setdefault(
+            market_key,
+            {
+                "market_key": market_key,
+                "event_count": 0,
+                "lifecycle_phase_counts": Counter(),
+                "first_seen_seconds_remaining": None,
+                "first_evaluable_seconds_remaining": None,
+                "readiness": {
+                    "token_orderbook": "coverage_gap",
+                    "liquidity": "coverage_gap",
+                    "side_specific_yes_no_price_path": "coverage_gap",
+                    "spread_normalization": "coverage_gap",
+                    "fair_value_ev_decay": "coverage_gap",
+                    "candidate_linkage": "coverage_gap",
+                },
+                "inference": "proxy_inferred",
+            },
+        )
+        market["event_count"] += 1
+        phase, phase_inference = _phase2_lifecycle_phase(payload)
+        market["lifecycle_phase_counts"][phase] += 1
+        market["lifecycle_phase_inference"] = phase_inference if phase_inference == "direct_observed" else "proxy_inferred"
+
+        seconds = _as_float(_first_value(payload, "seconds_remaining", "seconds_until_close"), default=float("nan"))
+        if seconds == seconds:
+            seconds_values.append(seconds)
+            current_first = market["first_seen_seconds_remaining"]
+            market["first_seen_seconds_remaining"] = max(seconds, _as_float(current_first, default=0.0)) if current_first is not None else seconds
+        first_eval = _as_float(_first_value(payload, "first_evaluable_seconds_remaining"), default=float("nan"))
+        if first_eval == first_eval:
+            first_evaluable_values.append(first_eval)
+            current_eval = market["first_evaluable_seconds_remaining"]
+            market["first_evaluable_seconds_remaining"] = max(first_eval, _as_float(current_eval, default=0.0)) if current_eval is not None else first_eval
+
+        for key, status in (
+            ("token_orderbook", _phase2_bool_status(
+                payload,
+                (
+                    "token_ready_at",
+                    "orderbook_ready_at",
+                    "token_id",
+                    "yes_token_id",
+                    "no_token_id",
+                    "condition_id",
+                    "orderbook_readiness_reason",
+                    "orderbook_unavailable_reason",
+                ),
+                ("orderbook_age_ms", "orderbook_age", "clob_error_category"),
+            )),
+            ("liquidity", _phase2_bool_status(payload, ("liquidity_ready_at", "liquidity_state", "liquidity_ready", "depth_ready"), ("liquidity",))),
+            ("side_specific_yes_no_price_path", _phase2_side_price_path_status(payload)),
+            ("fair_value_ev_decay", _phase2_bool_status(
+                payload,
+                ("fair_value", "true_probability", "ev_after_spread", "expected_value", "model_ev"),
+                ("ev", "edge", "confidence", "bullish_probability", "bearish_probability"),
+            )),
+            ("candidate_linkage", _phase2_bool_status(
+                payload,
+                ("candidate_id", "signal_id", "opportunity_id", "replay_candidate_id"),
+                ("position_id", "market_id", "condition_id"),
+            )),
+        ):
+            if status == "available" or (status == "proxy_inferred" and market["readiness"][key] == "coverage_gap"):
+                market["readiness"][key] = status
+
+        spread_status = _phase2_bool_status(
+            payload,
+            ("spread_ready_at", "spread_normalized", "spread_gap_to_limit", "spread_limit", "max_spread", "max_allowed_spread"),
+            ("spread", "orderbook_spread", "ob_spread"),
+        )
+        if spread_status != "coverage_gap":
+            spread_events += 1
+            is_normalized, _spread_inference = _phase2_spread_normalized(payload)
+            if is_normalized:
+                spread_normalized += 1
+            if spread_status == "available" or market["readiness"]["spread_normalization"] == "coverage_gap":
+                market["readiness"]["spread_normalization"] = spread_status
+
+        liquidity_state = str(_first_value(payload, "liquidity_state") or "").upper()
+        if liquidity_state:
+            liquidity_counts[liquidity_state] += 1
+        readiness_reason = str(_first_value(payload, "orderbook_readiness_reason", "orderbook_unavailable_reason") or "")
+        if readiness_reason:
+            readiness_counts[readiness_reason] += 1
+
+        missed = _phase2_missed_starter_candidate(event)
+        if missed is not None:
+            missed_starters.append(missed)
+
+    lifecycle_rows: list[dict[str, Any]] = []
+    for market in by_market.values():
+        phase_counts = market.pop("lifecycle_phase_counts")
+        lifecycle_rows.append({
+            **market,
+            "lifecycle_phase_counts": [[phase, count] for phase, count in phase_counts.most_common()],
+            "unsupported_inventory_metrics": [
+                {"metric": "mfe_mae", "status": "coverage_gap"},
+                {"metric": "reload_unload_truth", "status": "coverage_gap"},
+                {"metric": "final_derisk_truth", "status": "coverage_gap"},
+            ],
+        })
+
+    direct = _as_float(coverage.get("direct_requirements"))
+    proxy = _as_float(coverage.get("proxy_inferred_requirements"))
+    gaps = _as_float(coverage.get("coverage_gap_count"))
+    if not events:
+        confidence = "INSUFFICIENT"
+    elif gaps <= 1 and direct >= 4:
+        confidence = "MEDIUM_PROXY"
+    elif direct + proxy >= 5:
+        confidence = "LOW_PROXY"
+    else:
+        confidence = "INSUFFICIENT"
+
+    return {
+        "status": "PARTIAL_PROXY_REPLAY" if events else "INSUFFICIENT_DATA",
+        "scope": "offline_analyzer_only",
+        "runtime_behavior_changed": False,
+        "live_readiness_claim": False,
+        "inventory_execution_readiness_claim": False,
+        "lifecycle_replay_confidence": confidence,
+        "replay_supported_sections": supported_sections,
+        "replay_unsupported_sections": unsupported_sections,
+        "partial_lifecycle_replay": lifecycle_rows[:50],
+        "missed_starter_candidates": missed_starters[:50],
+        "timing_decay_summary": {
+            "status": "proxy_inferred",
+            "events_with_seconds_remaining": len(seconds_values),
+            "first_seen_seconds_remaining": max(seconds_values) if seconds_values else None,
+            "first_evaluable_seconds_remaining": max(first_evaluable_values) if first_evaluable_values else None,
+            "avg_seconds_remaining": round(sum(seconds_values) / len(seconds_values), 2) if seconds_values else 0.0,
+            "min_seconds_remaining": min(seconds_values) if seconds_values else None,
+            "max_seconds_remaining": max(seconds_values) if seconds_values else None,
+        },
+        "spread_liquidity_readiness_summary": {
+            "status": "proxy_inferred",
+            "spread_events": int(spread_events),
+            "spread_normalized_events": int(spread_normalized),
+            "spread_normalization_rate": round(spread_normalized / spread_events, 4) if spread_events else 0.0,
+            "liquidity_states": [[state, count] for state, count in liquidity_counts.most_common()],
+            "orderbook_readiness_reasons": [[reason, count] for reason, count in readiness_counts.most_common()],
+        },
+    }
 
 
 def _track_clob_error(
@@ -327,6 +1040,7 @@ def load_replay_events(
     date_to: str,
     since_utc: datetime | None = None,
     until_utc: datetime | None = None,
+    run_id: str | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     events: list[dict[str, Any]] = []
     bad_json_lines = 0
@@ -344,13 +1058,105 @@ def load_replay_events(
                         continue
                     if isinstance(event, dict):
                         event["_category"] = path.parent.name
-                        if _event_in_time_window(event, since_utc=since_utc, until_utc=until_utc):
+                        if _event_in_time_window(event, since_utc=since_utc, until_utc=until_utc, run_id=run_id):
                             events.append(event)
                     else:
                         bad_json_lines += 1
         except OSError:
             continue
     return sorted(events, key=lambda event: str(event.get("timestamp_utc", ""))), bad_json_lines
+
+
+def summarize_run_ids_from_events(events: list[dict[str, Any]]) -> list[RunIdSummary]:
+    grouped: dict[str, dict[str, Any]] = {}
+    for event in events:
+        raw_run_id = str(event.get("run_id") or "").strip()
+        missing = not raw_run_id
+        run_id = raw_run_id or "missing_run_id"
+        item = grouped.setdefault(
+            run_id,
+            {
+                "event_count": 0,
+                "timestamps": [],
+                "categories": set(),
+                "modes": set(),
+                "missing_run_id": missing,
+            },
+        )
+        item["event_count"] += 1
+        timestamp = str(event.get("timestamp_utc") or "").strip()
+        if timestamp:
+            item["timestamps"].append(timestamp)
+        category = str(event.get("_category") or event.get("event_type") or "").strip()
+        if category:
+            item["categories"].add(category)
+        mode = str(event.get("mode") or "").strip()
+        if mode:
+            item["modes"].add(mode)
+
+    summaries: list[RunIdSummary] = []
+    for run_id, item in grouped.items():
+        timestamps = sorted(item["timestamps"])
+        summaries.append(
+            RunIdSummary(
+                run_id=run_id,
+                event_count=int(item["event_count"]),
+                first_timestamp_utc=timestamps[0] if timestamps else "",
+                last_timestamp_utc=timestamps[-1] if timestamps else "",
+                event_categories=sorted(item["categories"]),
+                modes=sorted(item["modes"]),
+                missing_run_id=bool(item["missing_run_id"]),
+            )
+        )
+    return sorted(summaries, key=lambda item: (item.missing_run_id, item.first_timestamp_utc, item.run_id))
+
+
+def discover_run_ids(
+    *,
+    base_dir: str | Path = DEFAULT_QUANT_DATA_DIR,
+    date: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    since: str | None = None,
+    until: str | None = None,
+) -> list[RunIdSummary]:
+    if date:
+        date_from = date_to = date
+    if not date_from:
+        date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if not date_to:
+        date_to = date_from
+    time_filter = build_time_filter(date_from=date_from, date_to=date_to, since=since, until=until)
+    events, _bad_json_lines = load_replay_events(
+        base_dir=base_dir,
+        date_from=date_from,
+        date_to=date_to,
+        since_utc=time_filter.get("since_utc"),
+        until_utc=time_filter.get("until_utc"),
+    )
+    return summarize_run_ids_from_events(events)
+
+
+def print_run_id_summary(summaries: list[RunIdSummary]) -> None:
+    print("Available run IDs")
+    if not summaries:
+        print("(none)")
+        return
+    for summary in summaries:
+        marker = " missing_run_id=true" if summary.missing_run_id else ""
+        categories = ",".join(summary.event_categories) if summary.event_categories else "-"
+        modes = ",".join(summary.modes) if summary.modes else "-"
+        print(
+            "run_id={run_id}{marker} event_count={count} first={first} last={last} categories={categories} mode={modes}".format(
+                run_id=summary.run_id,
+                marker=marker,
+                count=summary.event_count,
+                first=summary.first_timestamp_utc or "-",
+                last=summary.last_timestamp_utc or "-",
+                categories=categories,
+                modes=modes,
+            )
+        )
 
 
 def analyze_replay(
@@ -364,6 +1170,9 @@ def analyze_replay(
     write_csv: bool = False,
     since_utc: datetime | None = None,
     until_utc: datetime | None = None,
+    since: str | None = None,
+    until: str | None = None,
+    run_id: str | None = None,
 ) -> ReplayReport:
     if date:
         date_from = date_to = date
@@ -371,6 +1180,17 @@ def analyze_replay(
         date_from = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if not date_to:
         date_to = date_from
+    time_filter = build_time_filter(
+        date_from=date_from,
+        date_to=date_to,
+        since=since,
+        until=until,
+        since_utc=since_utc,
+        until_utc=until_utc,
+        run_id=run_id,
+    )
+    since_utc = time_filter.get("since_utc")
+    until_utc = time_filter.get("until_utc")
 
     events, bad_json_lines = load_replay_events(
         base_dir=base_dir,
@@ -378,10 +1198,22 @@ def analyze_replay(
         date_to=date_to,
         since_utc=since_utc,
         until_utc=until_utc,
+        run_id=run_id,
     )
     report = ReplayReport(
         date_from=date_from,
         date_to=date_to,
+        run_id=str(run_id or ""),
+        time_filter={
+            "since": since,
+            "until": until,
+            "since_utc": since_utc.isoformat().replace("+00:00", "Z") if since_utc else None,
+            "until_utc": until_utc.isoformat().replace("+00:00", "Z") if until_utc else None,
+            "run_id": run_id,
+            "run_id_applied": bool(run_id),
+            "applied": bool(time_filter.get("applied")),
+            "semantics": time_filter.get("semantics"),
+        },
         base_dir=str(Path(base_dir)),
         events_loaded=len(events),
         bad_json_lines=bad_json_lines,
@@ -633,6 +1465,15 @@ def analyze_replay(
     report.liquidity_states = liquidity_states.most_common(10)
     report.pnl_by_outcome = dict(sorted(pnl_by_outcome.items()))
     report.pnl_by_asset = dict(sorted(pnl_by_asset.items()))
+    report.phase2_coverage = build_phase2_coverage_from_events(events)
+    lifecycle_replay = build_partial_lifecycle_replay_from_events(events)
+    report.partial_lifecycle_replay = lifecycle_replay
+    report.lifecycle_replay_confidence = str(lifecycle_replay.get("lifecycle_replay_confidence", "INSUFFICIENT"))
+    report.replay_supported_sections = list(lifecycle_replay.get("replay_supported_sections", []))
+    report.replay_unsupported_sections = list(lifecycle_replay.get("replay_unsupported_sections", []))
+    report.missed_starter_candidates = list(lifecycle_replay.get("missed_starter_candidates", []))
+    report.timing_decay_summary = dict(lifecycle_replay.get("timing_decay_summary", {}))
+    report.spread_liquidity_readiness_summary = dict(lifecycle_replay.get("spread_liquidity_readiness_summary", {}))
 
     if write_reports:
         write_replay_report(report, report_dir=report_dir)
@@ -682,7 +1523,7 @@ def _is_execution_failure(payload: dict[str, Any]) -> bool:
 def write_replay_report(report: ReplayReport, *, report_dir: str | Path | None = None) -> Path:
     output_dir = Path(report_dir or DEFAULT_REPORT_DIR)
     output_dir.mkdir(parents=True, exist_ok=True)
-    date_part = report.date_from if report.date_from == report.date_to else f"{report.date_from}_to_{report.date_to}"
+    date_part = _report_date_part(report.date_from, report.date_to, report.time_filter, report.run_id)
     output_path = output_dir / f"replay_report_{date_part}.json"
     with output_path.open("w", encoding="utf-8") as handle:
         json.dump(report.to_dict(), handle, indent=2, sort_keys=True, default=str)
@@ -692,7 +1533,7 @@ def write_replay_report(report: ReplayReport, *, report_dir: str | Path | None =
 def write_replay_trades_csv(report: ReplayReport, *, report_dir: str | Path | None = None) -> Path:
     output_dir = Path(report_dir or DEFAULT_REPORT_DIR)
     output_dir.mkdir(parents=True, exist_ok=True)
-    date_part = report.date_from if report.date_from == report.date_to else f"{report.date_from}_to_{report.date_to}"
+    date_part = _report_date_part(report.date_from, report.date_to, report.time_filter, report.run_id)
     output_path = output_dir / f"replay_trades_{date_part}.csv"
     with output_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
@@ -716,7 +1557,21 @@ def write_replay_trades_csv(report: ReplayReport, *, report_dir: str | Path | No
 
 def print_summary(report: ReplayReport) -> None:
     print("Replay Analyzer")
-    print(f"range={report.date_from}..{report.date_to} events={report.events_loaded} bad_json={report.bad_json_lines}")
+    if report.time_filter.get("applied"):
+        print(
+            "range={start}..{end} filter={since}..{until} run_id={run_id} semantics={semantics} events={events} bad_json={bad_json}".format(
+                start=report.date_from,
+                end=report.date_to,
+                since=report.time_filter.get("since_utc"),
+                until=report.time_filter.get("until_utc"),
+                run_id=report.run_id or "",
+                semantics=report.time_filter.get("semantics"),
+                events=report.events_loaded,
+                bad_json=report.bad_json_lines,
+            )
+        )
+    else:
+        print(f"range={report.date_from}..{report.date_to} run_id={report.run_id or ''} events={report.events_loaded} bad_json={report.bad_json_lines}")
     print(
         "trades={trades} win_rate={win_rate:.2%} gross_pnl={gross:.4f} avg_pnl={avg:.4f} "
         "max_win={max_win:.4f} max_loss={max_loss:.4f}".format(
@@ -786,6 +1641,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--date", help="Single date to analyze in YYYY-MM-DD format.", default=None)
     parser.add_argument("--from", dest="date_from", help="Start date in YYYY-MM-DD format.", default=None)
     parser.add_argument("--to", dest="date_to", help="End date in YYYY-MM-DD format.", default=None)
+    parser.add_argument("--since", default=None, help="UTC start time HH:MM for same-day filtering; inclusive.")
+    parser.add_argument("--until", default=None, help="UTC end time HH:MM for same-day filtering; exclusive.")
+    parser.add_argument("--run-id", default=None, help="Exact run_id to isolate; events without this run_id are excluded.")
+    parser.add_argument("--list-run-ids", action="store_true", help="List available run_id values for the selected date/range.")
     parser.add_argument("--base-dir", default=str(DEFAULT_QUANT_DATA_DIR), help="Quant data root directory.")
     parser.add_argument("--report-dir", default=str(DEFAULT_REPORT_DIR), help="Output report directory.")
     parser.add_argument("--no-json", action="store_true", help="Do not write replay_report JSON.")
@@ -795,6 +1654,17 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
+    if args.list_run_ids:
+        summaries = discover_run_ids(
+            base_dir=args.base_dir,
+            date=args.date,
+            date_from=args.date_from,
+            date_to=args.date_to,
+            since=args.since,
+            until=args.until,
+        )
+        print_run_id_summary(summaries)
+        return 0
     report = analyze_replay(
         base_dir=args.base_dir,
         date=args.date,
@@ -803,6 +1673,9 @@ def main() -> int:
         report_dir=args.report_dir,
         write_reports=not args.no_json,
         write_csv=args.csv,
+        since=args.since,
+        until=args.until,
+        run_id=args.run_id,
     )
     print_summary(report)
     return 0

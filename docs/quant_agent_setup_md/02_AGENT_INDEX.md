@@ -1,6 +1,6 @@
 # Agent Index
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-10.
 
 Use these role docs for planning, implementation boundaries, review, and test design. They are operating instructions, not runtime proof that an agent module exists.
 
@@ -21,6 +21,10 @@ Use these role docs for planning, implementation boundaries, review, and test de
 3. Backtest Replay Agent - replay/backtest validation.
 4. Observability Incident Agent - logs, alerts, health, incidents.
 5. Review Learning Agent - postmortems and improvement notes.
+6. Market Regime Agent - regime/probability diagnostics and grouping.
+7. Execution Microstructure Agent - spread, liquidity, timing, and fill-quality research.
+8. Inventory Engine Agent - bounded future inventory design.
+9. Inventory Analytics Agent - paper-only inventory replay and MFE/MAE research.
 
 ## How To Use
 
@@ -35,6 +39,15 @@ Use these role docs for planning, implementation boundaries, review, and test de
 - Do not bypass Risk, ExitAgent, Reconciliation, or OrderIntent.
 - Do not treat HFT as canonical live execution.
 - Do not claim planned observability systems are implemented.
+- Treat regime/probability fields as diagnostics until explicitly scoped otherwise.
+- Keep inventory research paper/offline until bounded runtime implementation is approved.
+
+## Current Roadmap
+
+1. Phase 1: regime/probability diagnostics and observability.
+2. Phase 2: paper inventory replay and opportunity-decay research.
+3. Phase 3: bounded multi-price inventory design.
+4. Phase 4: continuous probabilistic inventory trading only after paper evidence.
 
 ## Folder Layout
 

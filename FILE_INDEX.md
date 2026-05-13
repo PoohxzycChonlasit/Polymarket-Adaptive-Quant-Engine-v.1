@@ -10,10 +10,15 @@ Read these first for normal work:
 | File | Use For |
 |------|---------|
 | `CODEX_START_HERE.md` | Minimal session startup context and safe commands. |
-| `AGENTS.md` | Auto-loaded Codex safety rules, role-doc workflow, and project boundaries. |
 | `PROJECT_RULES.md` | Token discipline, safety constraints, and task workflow rules. |
-| `CURRENT_PROJECT_STATUS.md` | Current implementation status, blockers, and latest operational truth. |
+| `AGENTS.md` | Auto-loaded Codex safety rules, role-doc workflow, and project boundaries. |
 | `MASTER_AGENT_ROUTER.md` | Pick the right role doc for scoped tasks. |
+| `CURRENT_PROJECT_STATUS.md` | Current implementation status, blockers, and latest operational truth. |
+| `PROJECT_STRUCTURE.md` | Root pointer to canonical architecture docs. |
+| `KNOWN_ISSUES.md` | Root pointer to known issues. |
+| `FILE_INDEX.md` | This quick map. |
+| `QUANT_FUTURE_DECISION_ENGINE.md` | Exactly 3 future options for research/runtime decisions. |
+| `DOCUMENTATION_MAP.md` | Clean human/AI documentation map. |
 | `docs/PROJECT_STRUCTURE.md` | Canonical architecture, runtime flow, data flow, logging flow, and folder map. |
 | `docs/KNOWN_ISSUES.md` | Current bugs, technical debt, and live blockers. |
 | `docs/PROJECT_CLEANUP_REPORT.md` | Cleanup history and archived-doc decisions. |
@@ -26,6 +31,13 @@ Use these only for specific task types:
 | `docs/PAPER_TRADING_RUNBOOK.md` | Paper run operation and post-run evaluation. |
 | `docs/BANKROLL_TIER_SYSTEM.md` | Bankroll rank/tier context. |
 | `docs/AGENT_WORKFLOW.md` | How to use project role docs. |
+| `QUANT_REGIME_PROBABILITY_ENGINE.md` | Phase 1 regime/probability diagnostics roadmap. |
+| `INVENTORY_REPLAY_RESEARCH_PLAN.md` | Phase 2 paper-only reload/unload replay plan. |
+| `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md` | Phase 3 bounded multi-price inventory design target. |
+| `QUANT_LIFECYCLE_INVENTORY_ENGINE.md` | Official future lifecycle inventory system specification. |
+| `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md` | Spread/liquidity/timing research plan. |
+| `CODEX_START_PROMPT.md` | Reusable Codex startup prompt. |
+| `CHATGPT_PROJECT_START_PROMPT.md` | Reusable ChatGPT planning/review prompt. |
 | `VULTR_PAPER_RUN.md` | Experimental HFT paper utility deployment notes, not canonical live readiness. |
 
 ## Canonical Runtime Files
@@ -71,6 +83,8 @@ python main.py --mode live --interval 60
 | `polymarket/oracle_price_feed.py` | Oracle/PTB price feed path. |
 | `polymarket/virtual_ptb.py` | Virtual price-to-beat tracker used by realtime trader. |
 | `polymarket/signal.py` | Realtime signal logic. Do not change without matching backtest work. |
+| `polymarket/regime_diagnostics.py` | Passive regime/probability diagnostics; not trade approval. |
+| `polymarket/probability_model.py` | Probability model input/output path. |
 | `polymarket/backtester_5m.py` | Backtest path for 5-minute strategy validation. |
 | `polymarket/order_manager.py` | Converts signal/risk inputs into `RiskPlan`. |
 | `polymarket/order_intent.py` | ENTRY/EXIT validation guard. |
@@ -104,6 +118,15 @@ python main.py --mode live --interval 60
 | `tools/paper_evaluation_report.py` | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
 
 Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
+
+## Official Project Phase Roadmap
+
+1. Phase 1: regime classification, probability scoring, indicator evidence, observability only.
+2. Phase 2: paper-only inventory replay, reload/unload analysis, opportunity decay, MFE/MAE tracking.
+3. Phase 3: bounded multi-price inventory engine with max inventory cap, max risk cap, stop loss, forced exit, no martingale, and no unlimited averaging down.
+4. Phase 4: continuous probabilistic inventory trading only after paper evidence supports it.
+
+`QUANT_LIFECYCLE_INVENTORY_ENGINE.md` is the official source-of-truth spec for future lifecycle inventory design. Future inventory docs and role prompts use these lifecycle states: OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, and CLOSED_OR_UNSAFE. They are research/design vocabulary until a separately scoped implementation phase promotes them.
 
 Current paper runtime visibility:
 
@@ -146,6 +169,7 @@ Use `MASTER_AGENT_ROUTER.md` first, then read only the relevant role doc:
 | `docs/quant_agent_setup_md/roles/20_INVENTORY_ENGINE_AGENT.md` | Controlled inventory accumulation, reload, unload, and runner rules. |
 | `docs/quant_agent_setup_md/roles/21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Spread, liquidity, maker/taker, fill quality, and price improvement. |
 | `docs/quant_agent_setup_md/roles/22_INVENTORY_ANALYTICS_AGENT.md` | Offline missed-opportunity and inventory replay analytics. |
+| `docs/quant_agent_setup_md/roles/23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Future lifecycle inventory coordination across opening scan, active inventory, profit management, final derisk, and risk budget. |
 
 These markdown files guide work. They are not autonomous runtime modules and do not prove code is implemented.
 
@@ -192,4 +216,4 @@ Archived prompt/docs from the 2026-05-09 markdown cleanup live under:
 archive/legacy/docs/2026-05-09-md-cleanup/
 ```
 
-Those files are historical references only. Active Codex workflow starts from `CODEX_START_HERE.md`, `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `PROJECT_RULES.md`, `CURRENT_PROJECT_STATUS.md`, `docs/PROJECT_STRUCTURE.md`, and `docs/KNOWN_ISSUES.md`.
+Those files are historical references only. Active Codex workflow starts from `CODEX_START_HERE.md`, `PROJECT_RULES.md`, `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `CURRENT_PROJECT_STATUS.md`, `PROJECT_STRUCTURE.md`, `KNOWN_ISSUES.md`, `FILE_INDEX.md`, and `QUANT_FUTURE_DECISION_ENGINE.md`.

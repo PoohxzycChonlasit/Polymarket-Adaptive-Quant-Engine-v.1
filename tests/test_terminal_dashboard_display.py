@@ -86,6 +86,46 @@ def test_market_card_separates_clob_prices_from_model_probability() -> None:
     assert "Model_N" in text
 
 
+def test_market_card_and_cycle_show_regime_probability_context() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_market(
+        "BTC",
+        yes_bid=0.52,
+        yes_ask=0.54,
+        no_bid=0.46,
+        no_ask=0.48,
+        model_p_yes=0.58,
+        model_p_no=0.42,
+        confidence=0.66,
+        market_regime="TREND_UP",
+        bullish_probability=0.62,
+        bearish_probability=0.38,
+        signal_trend_strength=0.71,
+        signal_volatility_score=0.0042,
+        decision="SKIP",
+    )
+    display.update_cycle([
+        {
+            "ticker": "BTC",
+            "decision": "SKIP",
+            "skip_reason": "ev_below_threshold",
+            "market_regime": "TREND_UP",
+            "bullish_probability": 0.62,
+            "bearish_probability": 0.38,
+            "signal_volatility_score": 0.0042,
+            "ev": 0.008,
+            "confidence": 0.66,
+        }
+    ], cycle_num=4)
+
+    card = _render_text(display._market_card("BTC", display._resolve_layout()))
+    cycle = _render_text(display._cycle_panel(display._resolve_layout()))
+
+    assert "Regime TREND_UP" in card
+    assert "Bull 0.6200" in card
+    assert "regime=TREND_UP bull=0.62 bear=0.38 vol=0.0042" in cycle
+
+
 def test_portfolio_panel_shows_realtime_bankroll_state() -> None:
     display = PolymarketRealtimeDisplay()
     display.update_portfolio({
@@ -212,6 +252,163 @@ def test_cycle_panel_shows_compact_cutoff_micro_liquidity_context() -> None:
     assert "cutoff=35s" in text
     assert "micro=ON" in text
     assert "liquidity=HEALTHY" in text
+
+
+def test_candidate_observability_panel_shows_trace_model_prerisk_and_lifecycle_state() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_cycle([
+        {
+            "ticker": "BTC",
+            "decision": "SKIP",
+            "candidate_trace_id": "ct_abc",
+            "condition_id": "condition-btc",
+            "token_id": "yes-token",
+            "side": "YES",
+            "lifecycle_phase": "OPENING_SCAN",
+            "model_attempted": True,
+            "true_probability": 0.61,
+            "fair_value": 0.61,
+            "ev_after_spread": 0.018,
+            "dominant_model_gap_reason": "MODEL_ATTEMPTED_OUTPUT_MISSING",
+            "decision_to_risk_boundary": "BLOCKED_BEFORE_RISK",
+            "dominant_pre_risk_block_reason": "EV_NOT_VISIBLE",
+            "risk_reachability_status": "RISK_NOT_REACHED",
+            "risk_serialization_visibility": "NO",
+            "seconds_remaining": 44,
+            "cutoff_reason": "time_unsafe",
+            "orderbook_readiness_state": "READY",
+            "liquidity_state": "HEALTHY",
+        }
+    ], cycle_num=10)
+
+    text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
+
+    assert "Candidate Observability" in text
+    assert "Trace OK" in text
+    assert "Cond OK" in text
+    assert "Token OK" in text
+    assert "Side OK" in text
+    assert "EventID STRONG" in text
+    assert "Chain UNKNOWN" in text
+    assert "Enrich TRACE+COND" in text
+    assert "Model YES" in text
+    assert "Prob YES" in text
+    assert "FV YES" in text
+    assert "EV YES" in text
+    assert "MODEL_ATTEMPTED_OUTPUT_MISSING" in text
+    assert "PreRisk blocked 1" in text
+    assert "EV_NOT_VISIBLE" in text
+    assert "Risk reach RISK_NOT_REACHED" in text
+    assert "Serialize NO" in text
+    assert "Phase OPENING_SCAN" in text
+    assert "T-44" in text
+    assert "Cutoff time_unsafe" in text
+    assert "Orderbook READY" in text
+    assert "Liquidity HEALTHY" in text
+
+
+def test_candidate_observability_panel_preserves_unknowns_when_fields_missing() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (118, 30))
+
+    text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
+
+    assert "Trace --" in text
+    assert "Cond --" in text
+    assert "EventID UNKNOWN" in text
+    assert "Chain UNKNOWN" in text
+    assert "Model UNKNOWN" in text
+    assert "Gap UNKNOWN" in text
+
+
+def test_observability_footer_shows_jsonl_trace_condition_producer_and_schema() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_market(
+        "BTC",
+        candidate_trace_id="ct_abc",
+        condition_id="condition-btc",
+        latest_producer="decision_log",
+        latest_schema_version="1.0",
+    )
+    display.update_observability_health(jsonl_ok=True)
+
+    footer = str(display._footer())
+
+    assert "JSONL OK" in footer
+    assert "TRACE OK" in footer
+    assert "COND OK" in footer
+    assert "PROD decision_log" in footer
+    assert "SCHEMA 1.0" in footer
+
+
+def test_candidate_observability_panel_consumes_dedicated_health_state() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_observability_health(
+        jsonl_status="OK",
+        latest_producer="execution_log",
+        latest_schema_version="1.0",
+        trace_enrichment_status="TRACE+COND",
+        condition_enrichment_status="OK",
+        candidate_trace_id_present=True,
+        condition_id_present=True,
+        token_id_present=True,
+        side_present=True,
+        event_identity_readiness="DIRECT",
+        candidate_chain_trace_confidence="STRONG",
+        model_attempted="YES",
+        probability_visible="YES",
+        fair_value_visible="YES",
+        ev_visible="NO",
+        dominant_model_gap="no_probability_model_output",
+        blocked_before_risk_count=3,
+        dominant_pre_risk_cause="EV_NOT_VISIBLE",
+        risk_reachability_status="BLOCKED_BEFORE_RISK",
+        risk_serialization_status="UNKNOWN",
+    )
+
+    panel = _render_text(display._candidate_observability_panel(display._resolve_layout()))
+    footer = str(display._footer())
+
+    assert "Trace OK" in panel
+    assert "EventID DIRECT" in panel
+    assert "Chain STRONG" in panel
+    assert "Model YES" in panel
+    assert "EV NO" in panel
+    assert "no_probability_model_output" in panel
+    assert "PreRisk blocked 3" in panel
+    assert "EV_NOT_VISIBLE" in panel
+    assert "Risk reach BLOCKED_BEFO" in panel
+    assert "JSONL OK" in footer
+    assert "PROD execution_log" in footer
+    assert "SCHEMA 1.0" in footer
+
+
+def test_portfolio_update_can_carry_observability_health_to_footer() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+
+    display.update_portfolio({
+        "starting_bankroll": 20.0,
+        "cash": 20.0,
+        "open_value": 0.0,
+        "equity": 20.0,
+        "sizing_bankroll": 20.0,
+        "bankroll_tier": "T0_MICRO_SEED",
+        "risk_off": False,
+        "observability_health": {
+            "jsonl_status": "OK",
+            "trace_id_enrichment_ok": True,
+            "condition_id_enrichment_ok": True,
+            "latest_producer": "decision_log",
+            "latest_schema_version": "1.0",
+        },
+    })
+
+    footer = str(display._footer())
+
+    assert "JSONL OK" in footer
+    assert "TRACE OK" in footer
+    assert "COND OK" in footer
+    assert "PROD decision_log" in footer
+    assert "SCHEMA 1.0" in footer
 
 
 def test_dashboard_auto_layout_modes_by_terminal_size() -> None:

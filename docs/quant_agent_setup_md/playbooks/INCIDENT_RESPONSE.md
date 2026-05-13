@@ -1,55 +1,44 @@
-# INCIDENT_RESPONSE
+# Incident Response Playbook
 
-## When This Applies
-Use when live/paper bot behaves unexpectedly.
+Status: active incident workflow. Incidents are evidence-first and safety-first.
 
-## Critical Incidents
-- Bot does not exit before close
-- Bot enters more than allowed
-- Position mismatch
-- Unknown open position
-- Feed stale while position open
-- Daily loss limit hit
-- Balance below floor in live mode
-- Exception in execution loop
+## First Response
 
-## Immediate Actions
-```text
-1. Disable new entries
-2. Activate kill switch
-3. Cancel open orders
-4. Reconcile positions
-5. Flatten if safe and state is known
-6. Save logs
-7. Stop live bot
-8. Write incident note
-```
+1. Freeze the scope: identify whether the issue is runtime, paper-only, docs-only, observability, replay, risk, execution, or config.
+2. Preserve evidence and avoid broad scans of generated folders.
+3. Identify the primary agent through `MASTER_AGENT_ROUTER.md`.
+4. Determine whether trading safety could be affected.
+5. If live-risk flags or position truth are uncertain, treat the state as unsafe until proven otherwise.
 
-## Incident Note Template
-```text
-# Incident Report
+## Quant Incident Diagnosis
 
-Date:
-Mode:
-Market:
-Window:
-What happened:
-Expected behavior:
-Actual behavior:
-Position size:
-Loss/risk:
-Root cause hypothesis:
-Files involved:
-Fix required:
-Test required:
-Can live restart? YES/NO
-```
+Classify the incident by likely subsystem:
 
-## Restart Conditions
-Live may restart only when:
-- root cause documented
-- bug fixed
-- test added
-- replay passes
-- paper test passes
-- no position mismatch
+- Scanner lifecycle delay.
+- Token/orderbook readiness.
+- Spread/liquidity microstructure.
+- Regime/probability evidence quality.
+- Risk budget or LOCKDOWN behavior.
+- OrderIntent/reconciliation/position truth.
+- Exit/forced-exit/final-derisk behavior.
+- Observability/logging/Telegram signal quality.
+- Config or mode safety.
+
+## Safety Response
+
+- Do not bypass risk, OrderIntent, reconciliation, stale-book checks, forced exits, or panic exits.
+- Do not alter wallet, allowance, private keys, `.env`, or live flags unless explicitly scoped.
+- Do not wire offline analyzer output into runtime decisions.
+- Keep logging compact; no raw orderbook spam.
+
+## Incident Output
+
+- Root Problem
+- Evidence
+- Suspected Root Cause
+- Safety Impact
+- Immediate Containment
+- Files To Inspect
+- Tests Required
+- What Not To Touch
+- One exact next recommended step

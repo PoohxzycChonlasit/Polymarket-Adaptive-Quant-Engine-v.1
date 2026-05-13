@@ -3,6 +3,7 @@
 import logging
 import time
 import json
+import hashlib
 from collections import Counter, deque
 from dataclasses import dataclass, asdict, field
 from datetime import UTC, datetime
@@ -72,6 +73,36 @@ CLOB_ORDERBOOK_ERROR_CATEGORIES = {
     "clob_client_not_connected",
     "clob_auth_or_client_issue",
 }
+REGIME_PAYLOAD_FIELD_NAMES = (
+    "market_regime",
+    "volatility_regime",
+    "volatility_score",
+    "trend_regime",
+    "trend_strength",
+    "bullish_probability",
+    "bearish_probability",
+    "reversal_risk",
+    "compression_score",
+    "signal_trend_strength",
+    "signal_volatility_score",
+    "indicator_evidence",
+    "regime_reason",
+)
+EMPTY_BOOK_RECOVERY_RESEARCH_FIELD_NAMES = (
+    "empty_book_recovery_research_mode",
+    "liquidity_recovery_grace_entered",
+    "liquidity_recovery_grace_success",
+    "liquidity_recovery_grace_failed",
+    "recovery_wait_seconds",
+    "recovered_before_cutoff",
+    "candidate_survived_recovery",
+    "recovery_exit_reason",
+    "recovery_branch_candidate_seen",
+    "recovery_branch_preempted_by_cutoff",
+    "recovery_branch_skipped_reason",
+    "recovery_branch_mode_disabled",
+    "recovery_branch_enter_condition_failed",
+)
 
 
 @dataclass(slots=True)
@@ -345,12 +376,26 @@ class PolymarketTrader:
         self._last_bankroll_rank_lock_log = ""
         self.last_quant_details: dict[str, dict[str, object]] = {}
         self._last_orderbook_age_ms: dict[str, int] = {}
+        self._last_orderbook_refresh_at_utc: dict[str, str] = {}
+        self._last_orderbook_refresh_monotonic: dict[str, float] = {}
+        self._last_orderbook_refresh_source: dict[str, str] = {}
+        self._last_orderbook_refresh_trigger: dict[str, str] = {}
+        self._last_orderbook_refresh_token_pair_key: dict[str, str] = {}
+        self._last_successful_yes_no_book_at_utc: dict[str, str] = {}
+        self._last_successful_yes_no_book_monotonic: dict[str, float] = {}
+        self._last_successful_yes_no_book_token_pair_key: dict[str, str] = {}
+        self._last_decision_cycle_monotonic: dict[str, float] = {}
+        self._market_evaluation_started_monotonic: dict[str, float] = {}
+        self._market_evaluation_started_at_utc: dict[str, str] = {}
+        self._current_cycle_market_sequence_index: dict[str, int] = {}
+        self._current_cycle_market_sequence_count: dict[str, int] = {}
         self._orderbook_warmup_pending_counts: Counter[str] = Counter()
         self._preloaded_token_ids: dict[tuple[str, int], tuple[str, str]] = {}
         self._preloaded_token_meta: dict[tuple[str, int], dict[str, object]] = {}
         self._warmed_orderbook_epochs: set[tuple[str, int]] = set()
         self._market_first_seen_seconds_remaining: dict[tuple[str, int], int] = {}
         self._market_first_evaluable_seconds_remaining: dict[tuple[str, int], int] = {}
+        self._market_readiness_timestamps: dict[tuple[str, int], dict[str, object]] = {}
         self._last_empty_book_recovery_detail: dict[str, dict[str, object]] = {}
         self._market_readiness_metrics = {
             "token_preload_hits": 0,
@@ -366,8 +411,17 @@ class PolymarketTrader:
         self._cycle_count = 0
         self._cycle_started_monotonic = 0.0
         self._cycle_started_at_utc = ""
+        self._current_cycle_market_count = 0
+        self._previous_cycle_started_monotonic = 0.0
+        self._effective_outer_loop_interval_seconds: float | None = None
+        self._configured_decision_loop_interval_seconds: float | None = None
+        self._intended_decision_loop_target_seconds = 1.0
+        self._snapshot_sampling_interval_seconds = 5.0
+        self._market_discovery_interval_seconds = 15.0
+        self._outer_loop_poll_interval_seconds = 0.25
         self._last_scan_cycle_duration_ms = 0
         self._last_structured_logs: dict[str, str] = {}
+        self._observability_health_display_state: dict[str, object] = self._default_observability_health_display_state()
         self.quant_events = self._init_quant_event_logger()
         self.telegram_alerts = self._init_telegram_alert_layer()
         self._last_system_health_event_ts = 0.0
@@ -519,24 +573,461 @@ class PolymarketTrader:
             LOGGER.warning("[OBSERVABILITY] Telegram alert layer disabled at startup: %s", exc)
             return None
 
+    def _default_observability_health_display_state(self) -> dict[str, object]:
+        return {
+            "jsonl_status": "UNKNOWN",
+            "jsonl_ok": False,
+            "latest_producer": "--",
+            "latest_schema_version": "--",
+            "trace_enrichment_status": "UNKNOWN",
+            "condition_enrichment_status": "UNKNOWN",
+            "trace_id_enrichment_ok": False,
+            "condition_id_enrichment_ok": False,
+            "candidate_trace_id_present": False,
+            "condition_id_present": False,
+            "token_id_present": False,
+            "side_present": False,
+            "event_identity_readiness": "UNKNOWN",
+            "candidate_chain_trace_confidence": "UNKNOWN",
+            "identity_readiness": "UNKNOWN",
+            "model_attempted": "UNKNOWN",
+            "probability_visible": "UNKNOWN",
+            "fair_value_visible": "UNKNOWN",
+            "ev_visible": "UNKNOWN",
+            "dominant_model_gap": "UNKNOWN",
+            "dominant_model_gap_reason": "UNKNOWN",
+            "blocked_before_risk_count": 0,
+            "dominant_pre_risk_cause": "UNKNOWN",
+            "dominant_pre_risk_block_reason": "UNKNOWN",
+            "risk_reachability_status": "UNKNOWN",
+            "risk_serialization_status": "UNKNOWN",
+            "risk_serialization_visibility": "UNKNOWN",
+        }
+
+    def dashboard_observability_health_state(self) -> dict[str, object]:
+        """Return display-only observability health state for terminal UI surfaces."""
+        return dict(getattr(self, "_observability_health_display_state", self._default_observability_health_display_state()))
+
+    def _event_producer_label(self, event_method: str) -> str:
+        return {
+            "log_market_snapshot": "market_snapshots",
+            "log_decision": "decision_log",
+            "log_execution": "execution_log",
+            "log_risk_event": "risk_log",
+            "log_trade_open": "trade_journal",
+            "log_trade_close": "trade_journal",
+            "log_system_health": "system_health",
+        }.get(event_method, "unknown")
+
+    def _display_field_present(self, payload: dict[str, object], *fields: str) -> bool:
+        for field in fields:
+            value = payload.get(field)
+            if value is not None and str(value).strip() not in {"", "--", "None", "UNKNOWN"}:
+                return True
+        return False
+
+    def _display_visibility_status(self, payload: dict[str, object], *fields: str) -> str:
+        for field in fields:
+            if field not in payload:
+                continue
+            value = payload.get(field)
+            if isinstance(value, bool):
+                return "YES" if value else "NO"
+            if isinstance(value, (int, float)):
+                return "YES" if float(value) != 0.0 else "NO"
+            return "YES" if self._display_field_present(payload, field) else "NO"
+        return "UNKNOWN"
+
+    def _display_identity_readiness(self, payload: dict[str, object]) -> str:
+        explicit = str(payload.get("identity_readiness") or payload.get("candidate_trace_confidence") or "").upper()
+        if explicit in {"DIRECT", "STRONG", "WEAK", "PROXY", "UNKNOWN"}:
+            return explicit
+        has_trace = self._display_field_present(payload, "candidate_trace_id")
+        has_parent = self._display_field_present(payload, "parent_candidate_trace_id")
+        has_market = self._display_field_present(payload, "market_key", "market_slug", "condition_id", "market_id", "source_market_id")
+        has_token = self._display_field_present(payload, "token_id")
+        has_side = self._display_field_present(payload, "side", "outcome", "best_side")
+        has_phase = self._display_field_present(payload, "lifecycle_phase")
+        if has_trace and has_parent and has_market and has_token and has_side and has_phase:
+            return "DIRECT"
+        if has_market and has_token and has_side and has_phase:
+            return "STRONG"
+        if sum((has_market, has_token, has_side, has_phase)) >= 3:
+            return "WEAK"
+        if any((has_trace, has_market, has_token, has_side, has_phase)):
+            return "PROXY"
+        return "UNKNOWN"
+
+    def _display_dominant_model_gap(self, payload: dict[str, object]) -> str:
+        for field in (
+            "dominant_model_gap",
+            "dominant_model_gap_reason",
+            "dominant_model_state_gap",
+            "model_state_gap",
+            "ev_after_spread_null_reason",
+            "true_probability_null_reason",
+            "fair_value_null_reason",
+            "market_price_null_reason",
+        ):
+            value = str(payload.get(field) or "").strip()
+            if value and value not in {"--", "UNKNOWN"}:
+                return value
+        if self._display_visibility_status(payload, "ev_after_spread", "ev") == "YES":
+            return "--"
+        return "UNKNOWN"
+
+    def _observability_health_from_payload(
+        self,
+        event_method: str,
+        payload: dict[str, object],
+        *,
+        jsonl_ok: bool,
+    ) -> dict[str, object]:
+        schema_version = str(getattr(getattr(self, "quant_events", None), "schema_version", "") or "--")
+        producer = self._event_producer_label(event_method)
+        has_trace = self._display_field_present(payload, "candidate_trace_id")
+        has_condition = self._display_field_present(payload, "condition_id")
+        has_token = self._display_field_present(payload, "token_id")
+        has_side = self._display_field_present(payload, "side", "outcome", "best_side")
+        has_probability = self._display_visibility_status(payload, "true_probability", "p_yes", "model_p_yes")
+        has_fair_value = self._display_visibility_status(payload, "fair_value")
+        has_ev = self._display_visibility_status(payload, "ev_after_spread", "ev")
+        model_attempted = self._display_visibility_status(
+            payload,
+            "model_attempted",
+            "ev_visibility_attempted",
+            "probability_model_stage",
+            "ev_calculation_stage",
+        )
+        trace_status = (
+            "TRACE+COND"
+            if has_trace and has_condition
+            else "TRACE_ONLY"
+            if has_trace
+            else "COND_ONLY"
+            if has_condition
+            else "UNKNOWN"
+        )
+        boundary = str(payload.get("decision_to_risk_boundary") or "").upper()
+        blocked_before_risk = int(
+            bool(payload.get("candidate_blocked_before_risk_visibility"))
+            or boundary == "BLOCKED_BEFORE_RISK"
+        )
+        risk_reachability = str(payload.get("risk_reachability_status") or boundary or "UNKNOWN")
+        risk_serialization = str(
+            payload.get("risk_serialization_status")
+            or payload.get("risk_serialization_visibility")
+            or "UNKNOWN"
+        )
+        pre_risk_cause = str(
+            payload.get("dominant_pre_risk_cause")
+            or payload.get("dominant_pre_risk_block_reason")
+            or payload.get("pre_risk_block_reason")
+            or payload.get("normalized_skip_reason")
+            or payload.get("skip_reason")
+            or "UNKNOWN"
+        )
+        model_gap = self._display_dominant_model_gap(payload)
+        event_identity = self._display_identity_readiness(payload)
+        chain_confidence = str(
+            payload.get("candidate_chain_trace_confidence")
+            or payload.get("candidate_trace_confidence")
+            or "UNKNOWN"
+        ).upper()
+        if chain_confidence not in {"DIRECT", "STRONG", "WEAK", "PROXY", "UNKNOWN"}:
+            chain_confidence = "UNKNOWN"
+        return {
+            "jsonl_status": "OK" if jsonl_ok else "WARN",
+            "jsonl_ok": bool(jsonl_ok),
+            "latest_producer": producer,
+            "latest_schema_version": schema_version,
+            "trace_enrichment_status": trace_status,
+            "condition_enrichment_status": "OK" if has_condition else "UNKNOWN",
+            "trace_id_enrichment_ok": has_trace,
+            "condition_id_enrichment_ok": has_condition,
+            "candidate_trace_id_present": has_trace,
+            "condition_id_present": has_condition,
+            "token_id_present": has_token,
+            "side_present": has_side,
+            "event_identity_readiness": event_identity,
+            "candidate_chain_trace_confidence": chain_confidence,
+            "identity_readiness": event_identity,
+            "model_attempted": model_attempted,
+            "probability_visible": has_probability,
+            "fair_value_visible": has_fair_value,
+            "ev_visible": has_ev,
+            "dominant_model_gap": model_gap,
+            "dominant_model_gap_reason": model_gap,
+            "blocked_before_risk_count": blocked_before_risk,
+            "dominant_pre_risk_cause": pre_risk_cause,
+            "dominant_pre_risk_block_reason": pre_risk_cause,
+            "risk_reachability_status": risk_reachability,
+            "risk_serialization_status": risk_serialization,
+            "risk_serialization_visibility": risk_serialization,
+        }
+
+    def _display_payload_with_candidate_trace_identity(self, payload: dict[str, object]) -> dict[str, object]:
+        display_payload = dict(payload)
+        timestamp = self._utc_timestamp()
+        logger = getattr(self, "quant_events", None)
+        enrich = getattr(logger, "_with_candidate_trace_identity", None)
+        if callable(enrich):
+            try:
+                return dict(enrich(display_payload, timestamp))
+            except Exception:
+                pass
+        try:
+            for key, value in QuantEventLogger._normalized_identity_companion_fields(display_payload).items():
+                if value and not display_payload.get(key):
+                    display_payload[key] = value
+            for key, value in QuantEventLogger._candidate_trace_identity_fields(display_payload, timestamp).items():
+                if value and not display_payload.get(key):
+                    display_payload[key] = value
+        except Exception:
+            pass
+        return display_payload
+
+    def _execution_parent_detail(self, payload: dict[str, object]) -> tuple[str, dict[str, object]]:
+        details = getattr(self, "last_quant_details", {})
+        if not isinstance(details, dict):
+            return "", {}
+
+        source_market = str(payload.get("source_market_id") or payload.get("market_id") or "")
+        ticker = str(payload.get("ticker") or payload.get("asset") or "").upper()
+        if not ticker and source_market.startswith("pm-5m-"):
+            ticker = self._ticker_from_market_id(source_market)
+        if ticker and isinstance(details.get(ticker), dict):
+            return ticker, details[ticker]
+
+        refs = {
+            str(value).strip()
+            for value in (
+                payload.get("source_market_id"),
+                payload.get("market_id"),
+                payload.get("condition_id"),
+                payload.get("market_slug"),
+            )
+            if str(value or "").strip()
+        }
+        token_id = str(payload.get("token_id") or "").strip()
+        outcome = str(payload.get("outcome") or "").upper()
+        for candidate_ticker, detail in details.items():
+            if not isinstance(detail, dict):
+                continue
+            detail_refs = {
+                str(value).strip()
+                for value in (
+                    detail.get("market_id"),
+                    detail.get("best_market"),
+                    detail.get("source_market_id"),
+                    detail.get("condition_id"),
+                    detail.get("market_slug"),
+                )
+                if str(value or "").strip()
+            }
+            detail_tokens = {
+                str(value).strip()
+                for value in (
+                    detail.get("token_id"),
+                    detail.get("yes_token_id"),
+                    detail.get("no_token_id"),
+                )
+                if str(value or "").strip()
+            }
+            detail_side = str(detail.get("side") or detail.get("best_side") or detail.get("outcome") or "").upper()
+            if refs and detail_refs and refs.intersection(detail_refs):
+                return str(candidate_ticker).upper(), detail
+            if token_id and token_id in detail_tokens and (not outcome or not detail_side or outcome == detail_side):
+                return str(candidate_ticker).upper(), detail
+        return ticker, {}
+
+    def _execution_payload_with_parent_context(self, payload: dict[str, object]) -> dict[str, object]:
+        enriched = dict(payload)
+        ticker, parent = self._execution_parent_detail(enriched)
+        copied = False
+
+        def put_if_missing(key: str, value: object) -> None:
+            nonlocal copied
+            if enriched.get(key) not in {None, ""}:
+                return
+            if value in {None, ""}:
+                return
+            enriched[key] = value
+            copied = True
+
+        def source_available(key: str) -> bool:
+            return enriched.get(key) not in {None, ""}
+
+        def put_model_field(key: str, value: object, source: str) -> None:
+            put_if_missing(key, value)
+            if enriched.get(key) not in {None, ""}:
+                enriched.setdefault(f"{key}_source", source)
+
+        parent_fields = (
+            "candidate_id",
+            "signal_id",
+            "candidate_trace_id",
+            "parent_candidate_trace_id",
+            "trace_link_reason",
+            "market_slug",
+            "condition_id",
+            "lifecycle_phase",
+            "market_epoch_start",
+            "market_epoch_end",
+            "seconds_remaining",
+            "market_price",
+            "fair_value",
+            "true_probability",
+            "ev_after_spread",
+            "model_probability_yes",
+            "model_probability_no",
+            "fair_value_yes",
+            "fair_value_no",
+            "model_p_yes",
+            "model_p_no",
+            "p_yes",
+            "p_no",
+            "probability_model_stage",
+            "ev_calculation_stage",
+            "model_attempted",
+            "probability_model_called",
+            "probability_model_output_visible",
+            "model_output_missing_reason",
+            "model_output_source",
+            "model_handoff_stage",
+            "probability_model_gate_reason",
+            "model_not_run_reason",
+            "ev_missing_reason",
+        )
+        for key in parent_fields:
+            put_if_missing(key, parent.get(key))
+
+        if ticker:
+            put_if_missing("ticker", ticker)
+            put_if_missing("asset", ticker)
+
+        source_market = str(enriched.get("source_market_id") or enriched.get("market_id") or parent.get("market_id") or parent.get("best_market") or "")
+        if source_market:
+            put_if_missing("market_id", source_market)
+        outcome = str(enriched.get("outcome") or parent.get("side") or parent.get("best_side") or parent.get("outcome") or "").upper()
+        token_id = str(enriched.get("token_id") or parent.get("token_id") or "").strip()
+        yes_token_id = str(enriched.get("yes_token_id") or parent.get("yes_token_id") or "").strip()
+        no_token_id = str(enriched.get("no_token_id") or parent.get("no_token_id") or "").strip()
+        if outcome not in {"YES", "NO"} and token_id:
+            if yes_token_id and token_id == yes_token_id:
+                outcome = "YES"
+            elif no_token_id and token_id == no_token_id:
+                outcome = "NO"
+        if outcome in {"YES", "NO"}:
+            put_if_missing("outcome", outcome)
+            if enriched.get("side") in {None, "", "BUY", "SELL"}:
+                enriched["side"] = outcome
+                copied = True
+        epoch_start = self._diagnostic_int(enriched.get("market_epoch_start") or parent.get("market_epoch_start") or parent.get("epoch_start") or parent.get("epoch_start_ts")) or 0
+        if not enriched.get("decision_id") and source_market and ticker:
+            enriched["decision_id"] = self._phase2_candidate_hash(
+                "decision",
+                source_market,
+                ticker,
+                outcome or "UNKNOWN",
+                epoch_start,
+            )
+            copied = True
+
+        if outcome == "YES":
+            put_model_field("true_probability", parent.get("model_probability_yes", parent.get("p_yes", parent.get("model_p_yes"))), "parent_yes_probability_alias")
+            put_model_field("fair_value", parent.get("fair_value_yes", parent.get("p_yes", parent.get("model_p_yes"))), "parent_yes_fair_value_alias")
+        elif outcome == "NO":
+            put_model_field("true_probability", parent.get("model_probability_no", parent.get("p_no", parent.get("model_p_no"))), "parent_no_probability_alias")
+            put_model_field("fair_value", parent.get("fair_value_no", parent.get("p_no", parent.get("model_p_no"))), "parent_no_fair_value_alias")
+        if source_available("ev_after_spread"):
+            enriched.setdefault("ev_after_spread_source", "parent_decision_context")
+
+        if enriched.get("true_probability") not in {None, ""}:
+            enriched.setdefault("true_probability_available", True)
+        if enriched.get("fair_value") not in {None, ""}:
+            enriched.setdefault("fair_value_available", True)
+        if enriched.get("ev_after_spread") not in {None, ""}:
+            enriched.setdefault("ev_after_spread_available", True)
+
+        if enriched.get("risk_state") in {None, ""}:
+            if bool(enriched.get("risk_approved")):
+                enriched["risk_state"] = "approved"
+            elif enriched.get("risk_plan_present") is not None:
+                enriched["risk_state"] = "blocked"
+        put_if_missing("risk_mode", self._risk_mode_state.current_mode.value)
+
+        required = ("decision_id", "true_probability", "fair_value", "lifecycle_phase", "market_slug", "risk_state")
+        missing = [field for field in required if enriched.get(field) in {None, ""}]
+        if missing:
+            enriched["execution_context_missing_fields"] = missing
+            for field in missing:
+                enriched.setdefault(f"{field}_missing_reason", "not_available_at_execution")
+        for field in ("true_probability", "fair_value", "ev_after_spread", "side"):
+            if enriched.get(field) in {None, ""}:
+                enriched.setdefault(f"{field}_propagation_status", "missing_after_parent_context")
+            else:
+                enriched.setdefault(f"{field}_propagation_status", "propagated")
+        enriched["execution_context_source"] = "parent_decision_context" if copied else "execution_payload_only"
+        return enriched
+
     def _emit_quant_event(self, event_method: str, payload: dict[str, object] | None = None) -> bool:
         logger = getattr(self, "quant_events", None)
         if logger is None:
+            state = self._default_observability_health_display_state()
+            state["jsonl_status"] = "UNKNOWN"
+            self._observability_health_display_state = state
             return False
         try:
             logger.mode = self._runtime_mode()
             method = getattr(logger, event_method)
-            return bool(method(payload or {}))
+            producer_label = self._event_producer_label(event_method)
+            raw_payload = dict(payload or {})
+            raw_payload.setdefault("producer_event_type", producer_label)
+            raw_payload.setdefault("producer", producer_label)
+            if event_method == "log_execution":
+                raw_payload = self._execution_payload_with_parent_context(raw_payload)
+            if event_method in {"log_market_snapshot", "log_decision", "log_execution", "log_trade_open", "log_trade_close"}:
+                enriched_payload = self._phase2_complete_lifecycle_observability(raw_payload)
+            else:
+                enriched_payload = raw_payload
+            display_payload = self._display_payload_with_candidate_trace_identity(enriched_payload)
+            emitted = bool(method(display_payload))
+            self._observability_health_display_state = self._observability_health_from_payload(
+                event_method,
+                display_payload,
+                jsonl_ok=emitted,
+            )
+            return emitted
         except Exception as exc:
             LOGGER.warning("[OBSERVABILITY] quant event failed | method=%s error=%s", event_method, exc)
+            state = self._default_observability_health_display_state()
+            state["jsonl_status"] = "WARN"
+            state["jsonl_ok"] = False
+            state["latest_producer"] = self._event_producer_label(event_method)
+            state["latest_schema_version"] = str(getattr(logger, "schema_version", "") or "--")
+            self._observability_health_display_state = state
             return False
 
     def _utc_timestamp(self) -> str:
         return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
     def _begin_cycle_timing(self) -> None:
-        self._cycle_started_monotonic = time.monotonic()
+        now_mono = time.monotonic()
+        previous_started = float(getattr(self, "_previous_cycle_started_monotonic", 0.0) or 0.0)
+        self._effective_outer_loop_interval_seconds = (
+            round(max(0.0, now_mono - previous_started), 3)
+            if previous_started > 0
+            else None
+        )
+        self._previous_cycle_started_monotonic = now_mono
+        self._cycle_started_monotonic = now_mono
         self._cycle_started_at_utc = self._utc_timestamp()
+        self._current_cycle_market_count = 0
+        self._market_evaluation_started_monotonic.clear()
+        self._market_evaluation_started_at_utc.clear()
+        self._current_cycle_market_sequence_index.clear()
+        self._current_cycle_market_sequence_count.clear()
         self._last_scan_cycle_duration_ms = 0
 
     def _cycle_elapsed_ms(self) -> int:
@@ -544,6 +1035,245 @@ class PolymarketTrader:
         if started <= 0:
             return 0
         return int(max(0.0, time.monotonic() - started) * 1000)
+
+    def set_runtime_cadence_observability(
+        self,
+        *,
+        configured_decision_interval_seconds: float | int | None = None,
+        decision_loop_target_seconds: float | int = 1.0,
+        snapshot_sampling_interval_seconds: float | int = 5.0,
+        market_discovery_interval_seconds: float | int = 15.0,
+        outer_loop_poll_interval_seconds: float | int = 0.25,
+    ) -> None:
+        """Store runtime cadence configuration for emitted diagnostics only."""
+        try:
+            self._configured_decision_loop_interval_seconds = (
+                float(configured_decision_interval_seconds)
+                if configured_decision_interval_seconds is not None
+                else None
+            )
+        except (TypeError, ValueError):
+            self._configured_decision_loop_interval_seconds = None
+        self._intended_decision_loop_target_seconds = float(decision_loop_target_seconds)
+        self._snapshot_sampling_interval_seconds = float(snapshot_sampling_interval_seconds)
+        self._market_discovery_interval_seconds = float(market_discovery_interval_seconds)
+        self._outer_loop_poll_interval_seconds = float(outer_loop_poll_interval_seconds)
+
+    def _mark_market_evaluation_started(
+        self,
+        ticker: str,
+        *,
+        sequence_index: int = 0,
+        sequence_count: int = 0,
+    ) -> None:
+        """Record per-market scheduler timing for observability only."""
+        ticker_key = ticker.upper()
+        self._market_evaluation_started_monotonic[ticker_key] = time.monotonic()
+        self._market_evaluation_started_at_utc[ticker_key] = self._utc_timestamp()
+        if sequence_index > 0:
+            self._current_cycle_market_sequence_index[ticker_key] = int(sequence_index)
+        if sequence_count > 0:
+            self._current_cycle_market_sequence_count[ticker_key] = int(sequence_count)
+
+    def _scheduler_cadence_observability_detail(self, ticker: str) -> dict[str, object]:
+        """Expose cycle/market hot-path timing without changing cadence or gates."""
+        ticker_key = ticker.upper()
+        now_mono = time.monotonic()
+        cycle_started = float(getattr(self, "_cycle_started_monotonic", 0.0) or 0.0)
+        market_started = self._market_evaluation_started_monotonic.get(ticker_key)
+        last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
+        recovery_detail = self._last_empty_book_recovery_detail.get(ticker_key, {})
+        try:
+            recovery_seconds = float(recovery_detail.get("recovery_wait_seconds", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            recovery_seconds = 0.0
+        detail: dict[str, object] = {
+            "scheduler_cadence_source": "run_single_cycle_market_loop",
+            "hot_path_timing_source": "runtime_market_evaluation",
+            "configured_decision_loop_interval_seconds": self._configured_decision_loop_interval_seconds,
+            "intended_decision_loop_target_seconds": self._intended_decision_loop_target_seconds,
+            "effective_outer_loop_interval_seconds": self._effective_outer_loop_interval_seconds,
+            "snapshot_sampling_interval_seconds": self._snapshot_sampling_interval_seconds,
+            "market_discovery_interval_seconds": self._market_discovery_interval_seconds,
+            "outer_loop_poll_interval_seconds": self._outer_loop_poll_interval_seconds,
+            "market_evaluation_asset": ticker_key,
+            "market_evaluation_started_at": self._market_evaluation_started_at_utc.get(ticker_key, ""),
+            "market_sequence_index": self._current_cycle_market_sequence_index.get(ticker_key, 0),
+            "market_sequence_count": self._current_cycle_market_sequence_count.get(
+                ticker_key,
+                int(getattr(self, "_current_cycle_market_count", 0) or 0),
+            ),
+            "cycle_elapsed_ms_at_market_evaluation": self._cycle_elapsed_ms(),
+            "empty_book_recovery_duration_ms": int(max(0.0, recovery_seconds) * 1000),
+        }
+        if market_started is not None:
+            detail["market_evaluation_duration_ms"] = int(max(0.0, now_mono - market_started) * 1000)
+            if cycle_started > 0:
+                detail["market_evaluation_started_ms_since_cycle"] = int(
+                    max(0.0, market_started - cycle_started) * 1000
+                )
+        if last_success_mono is not None:
+            candidate_queue_age_ms = int(max(0.0, now_mono - last_success_mono) * 1000)
+            detail.update({
+                "candidate_created_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+                "candidate_enqueue_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+                "candidate_dequeue_at": self._utc_timestamp(),
+                "candidate_queue_age_ms": candidate_queue_age_ms,
+                "hot_path_admission_wait_ms": candidate_queue_age_ms,
+                "candidate_queue_age_source": "last_successful_yes_no_book_to_decision",
+            })
+        detail.update({
+            "candidate_queue_ownership": "implicit_orderbook_refresh_cache",
+            "candidate_revisit_scheduling_source": "scheduled_run_single_cycle",
+            "hot_path_admission_trigger": "scheduled_decision_cycle",
+            "event_vs_polling_classification": "polling_revisit_driven",
+            "executable_liquidity_event_role": "passive_telemetry_only",
+            "executable_liquidity_triggered_hot_path": False,
+            "market_snapshot_decision_pipeline_linkage": "disconnected_passive_snapshot_to_scheduled_decision",
+            "candidate_handoff_boundary": (
+                f"{self._last_orderbook_refresh_source.get(ticker_key, 'unknown')}->scheduled_run_single_cycle"
+            ),
+        })
+        return detail
+
+    @staticmethod
+    def _orderbook_token_pair_key(
+        *,
+        condition_id: object = "",
+        yes_token_id: object = "",
+        no_token_id: object = "",
+        market_slug: object = "",
+    ) -> str:
+        yes = str(yes_token_id or "").strip()
+        no = str(no_token_id or "").strip()
+        if not yes and not no:
+            return ""
+        condition = str(condition_id or market_slug or "").strip()
+        return f"{condition}|YES:{yes}|NO:{no}"
+
+    def _mark_orderbook_refresh(
+        self,
+        ticker: str,
+        *,
+        source: str,
+        trigger: str,
+        executable_yes_no_book: bool = False,
+        condition_id: object = "",
+        yes_token_id: object = "",
+        no_token_id: object = "",
+        market_slug: object = "",
+    ) -> None:
+        """Track orderbook refresh cadence for observability without changing fetch behavior."""
+        ticker_key = ticker.upper()
+        now_mono = time.monotonic()
+        now_utc = self._utc_timestamp()
+        token_pair_key = self._orderbook_token_pair_key(
+            condition_id=condition_id,
+            yes_token_id=yes_token_id,
+            no_token_id=no_token_id,
+            market_slug=market_slug,
+        )
+        self._last_orderbook_refresh_monotonic[ticker_key] = now_mono
+        self._last_orderbook_refresh_at_utc[ticker_key] = now_utc
+        self._last_orderbook_refresh_source[ticker_key] = source
+        self._last_orderbook_refresh_trigger[ticker_key] = trigger
+        self._last_orderbook_refresh_token_pair_key[ticker_key] = token_pair_key
+        if executable_yes_no_book:
+            self._last_successful_yes_no_book_monotonic[ticker_key] = now_mono
+            self._last_successful_yes_no_book_at_utc[ticker_key] = now_utc
+            self._last_successful_yes_no_book_token_pair_key[ticker_key] = token_pair_key
+
+    def _orderbook_refresh_observability_detail(
+        self,
+        ticker: str,
+        *,
+        current_executable_yes_no_book: bool = False,
+        record_decision_cycle: bool = False,
+        current_fetch_succeeded: bool | None = None,
+        condition_id: object = "",
+        yes_token_id: object = "",
+        no_token_id: object = "",
+        market_slug: object = "",
+    ) -> dict[str, object]:
+        ticker_key = ticker.upper()
+        now_mono = time.monotonic()
+        last_refresh_mono = self._last_orderbook_refresh_monotonic.get(ticker_key)
+        last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
+        previous_decision_mono = self._last_decision_cycle_monotonic.get(ticker_key)
+        decision_interval = None
+        if record_decision_cycle:
+            if previous_decision_mono is not None:
+                decision_interval = round(max(0.0, now_mono - previous_decision_mono), 3)
+            self._last_decision_cycle_monotonic[ticker_key] = now_mono
+        refresh_age_ms = (
+            int(max(0.0, now_mono - last_refresh_mono) * 1000)
+            if last_refresh_mono is not None
+            else None
+        )
+        executable_age_ms = (
+            int(max(0.0, now_mono - last_success_mono) * 1000)
+            if last_success_mono is not None
+            else None
+        )
+        decision_token_pair_key = self._orderbook_token_pair_key(
+            condition_id=condition_id,
+            yes_token_id=yes_token_id,
+            no_token_id=no_token_id,
+            market_slug=market_slug,
+        )
+        last_refresh_pair = self._last_orderbook_refresh_token_pair_key.get(ticker_key, "")
+        last_success_pair = self._last_successful_yes_no_book_token_pair_key.get(ticker_key, "")
+        lineage_match = bool(decision_token_pair_key and last_success_pair and decision_token_pair_key == last_success_pair)
+        if current_fetch_succeeded is True and current_executable_yes_no_book:
+            fetch_status = "fresh_fetch_executable"
+            stale_source = "CURRENT_DECISION_FETCH_EXECUTABLE"
+        elif current_fetch_succeeded is True:
+            fetch_status = "fresh_fetch_non_executable"
+            stale_source = (
+                "CURRENT_FETCH_NON_EXECUTABLE_PRIOR_EXECUTABLE_SAME_TOKEN_PAIR"
+                if lineage_match
+                else "CURRENT_FETCH_NON_EXECUTABLE_PRIOR_EXECUTABLE_DIFFERENT_OR_UNKNOWN_PAIR"
+                if last_success_mono is not None
+                else "CURRENT_FETCH_NON_EXECUTABLE_NO_PRIOR_EXECUTABLE"
+            )
+        elif current_fetch_succeeded is False:
+            fetch_status = "fresh_fetch_failed"
+            stale_source = (
+                "CURRENT_FETCH_FAILED_PRIOR_EXECUTABLE_SAME_TOKEN_PAIR"
+                if lineage_match
+                else "CURRENT_FETCH_FAILED_PRIOR_EXECUTABLE_DIFFERENT_OR_UNKNOWN_PAIR"
+                if last_success_mono is not None
+                else "CURRENT_FETCH_FAILED_NO_PRIOR_EXECUTABLE"
+            )
+        else:
+            fetch_status = "fresh_fetch_not_attempted_or_unobserved"
+            stale_source = (
+                "NO_CURRENT_FETCH_PRIOR_EXECUTABLE_SAME_TOKEN_PAIR"
+                if lineage_match
+                else "NO_CURRENT_FETCH_PRIOR_EXECUTABLE_DIFFERENT_OR_UNKNOWN_PAIR"
+                if last_success_mono is not None
+                else "NO_CURRENT_FETCH_NO_PRIOR_EXECUTABLE"
+            )
+        return {
+            "decision_cycle_started_at": str(getattr(self, "_cycle_started_at_utc", "") or ""),
+            "last_orderbook_refresh_at": self._last_orderbook_refresh_at_utc.get(ticker_key, ""),
+            "orderbook_snapshot_age_ms_at_decision": refresh_age_ms,
+            "last_successful_yes_no_book_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+            "orderbook_refresh_source": self._last_orderbook_refresh_source.get(ticker_key, ""),
+            "orderbook_refresh_trigger": self._last_orderbook_refresh_trigger.get(ticker_key, ""),
+            "decision_token_pair_key": decision_token_pair_key,
+            "last_orderbook_refresh_token_pair_key": last_refresh_pair,
+            "last_successful_yes_no_book_token_pair_key": last_success_pair,
+            "orderbook_lineage_match": lineage_match,
+            "orderbook_current_fetch_status": fetch_status,
+            "orderbook_stale_reuse_source": stale_source,
+            "decision_cycle_interval_seconds": decision_interval,
+            "actual_market_revisit_frequency_seconds": decision_interval,
+            "orderbook_reuse_detected": bool(
+                last_success_mono is not None and not current_executable_yes_no_book
+            ),
+            "executable_book_last_seen_age_ms": executable_age_ms,
+        }
 
     def _finish_cycle_timing(self, *, reason: str, force: bool = False) -> None:
         self._last_scan_cycle_duration_ms = self._cycle_elapsed_ms()
@@ -614,6 +1344,952 @@ class PolymarketTrader:
         except (TypeError, ValueError):
             return default
 
+    def _phase2_safe_setting(self, key: str, default: object) -> object:
+        try:
+            return self._setting(key, default)
+        except Exception:
+            return default
+
+    def _phase2_lifecycle_phase(self, seconds_remaining: object = None) -> str:
+        seconds = self._diagnostic_int(seconds_remaining)
+        if seconds is None or seconds <= 0:
+            return "CLOSED_OR_UNSAFE"
+        seconds_since_open = max(0, min(300, 300 - seconds))
+        if seconds_since_open < 35:
+            return "OPENING_SCAN"
+        if seconds_since_open < 240:
+            return "ACTIVE_INVENTORY_TRADING"
+        if seconds_since_open < 270:
+            return "PROFIT_MANAGEMENT"
+        if seconds_since_open <= 300:
+            return "FINAL_DERISK"
+        return "CLOSED_OR_UNSAFE"
+
+    @staticmethod
+    def _phase2_candidate_hash(prefix: str, *parts: object) -> str:
+        raw = "|".join(str(part or "") for part in parts)
+        digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+        return f"{prefix}_{digest}"
+
+    def _phase2_readiness_store(self) -> dict[tuple[str, int], dict[str, object]]:
+        store = getattr(self, "_market_readiness_timestamps", None)
+        if not isinstance(store, dict):
+            store = {}
+            self._market_readiness_timestamps = store
+        return store
+
+    def _phase2_readiness_timestamps(self, ticker: str, epoch_start: int) -> dict[str, object]:
+        fields: dict[str, object] = {
+            "token_ready_at": "",
+            "token_ready_seconds_remaining": 0,
+            "orderbook_ready_at": "",
+            "orderbook_ready_seconds_remaining": 0,
+            "liquidity_ready_at": "",
+            "liquidity_ready_seconds_remaining": 0,
+            "spread_ready_at": "",
+            "spread_ready_seconds_remaining": 0,
+            "first_tradable_at": "",
+            "first_tradable_seconds_remaining": 0,
+            "first_evaluable_at": "",
+            "first_evaluable_ready_seconds_remaining": 0,
+        }
+        if epoch_start <= 0:
+            return fields
+        stored = self._phase2_readiness_store().get((ticker.upper(), int(epoch_start)), {})
+        for key in fields:
+            value = stored.get(key)
+            if key.endswith("_seconds_remaining"):
+                fields[key] = self._diagnostic_int(value) or 0
+            else:
+                fields[key] = str(value or "")
+        return fields
+
+    def _phase2_mark_readiness(
+        self,
+        *,
+        ticker: str,
+        epoch_start: int,
+        token_ready: bool = False,
+        orderbook_ready: bool = False,
+        liquidity_ready: bool = False,
+        spread_ready: bool = False,
+        first_evaluable_ready: bool = False,
+        first_tradable_ready: bool = False,
+        seconds_remaining: int | None = None,
+    ) -> dict[str, object]:
+        ticker = ticker.upper()
+        epoch_start = int(epoch_start or 0)
+        fields = self._phase2_readiness_timestamps(ticker, epoch_start)
+        if epoch_start <= 0:
+            return fields
+        store = self._phase2_readiness_store()
+        bucket = store.setdefault((ticker, epoch_start), {})
+        now = self._utc_timestamp()
+        seconds_value = self._diagnostic_int(seconds_remaining)
+        for ready, key, seconds_key in (
+            (token_ready, "token_ready_at", "token_ready_seconds_remaining"),
+            (orderbook_ready, "orderbook_ready_at", "orderbook_ready_seconds_remaining"),
+            (liquidity_ready, "liquidity_ready_at", "liquidity_ready_seconds_remaining"),
+            (spread_ready, "spread_ready_at", "spread_ready_seconds_remaining"),
+            (first_evaluable_ready, "first_evaluable_at", "first_evaluable_ready_seconds_remaining"),
+            (first_tradable_ready, "first_tradable_at", "first_tradable_seconds_remaining"),
+        ):
+            if ready and not bucket.get(key):
+                bucket[key] = now
+            if ready and seconds_value is not None and not bucket.get(seconds_key):
+                bucket[seconds_key] = seconds_value
+        for key in fields:
+            value = bucket.get(key)
+            if key.endswith("_seconds_remaining"):
+                fields[key] = self._diagnostic_int(value) or 0
+            else:
+                fields[key] = str(value or "")
+        return fields
+
+    def _phase2_exposure_timeline(
+        self,
+        market_id: str,
+        *,
+        risk_plan: RiskPlan | None = None,
+        exposure_after: float | None = None,
+    ) -> dict[str, float]:
+        try:
+            current_market_exposure = sum(
+                float(getattr(pos, "notional_size", 0.0) or 0.0)
+                for pos in self._open_positions_for_market(market_id)
+            )
+        except Exception:
+            current_market_exposure = 0.0
+        state = getattr(self, "bankroll_state", None)
+        current_balance = float(getattr(state, "current_bankroll_for_sizing", 0.0) or 0.0)
+        open_exposure = float(getattr(state, "open_position_market_value", current_market_exposure) or 0.0)
+        try:
+            tier_config = get_tier_config(getattr(state, "current_bankroll_tier", "T0_MICRO_SEED"))
+            configured_cap = float(self._phase2_safe_setting("max_risk_per_market", tier_config.max_market_exposure_pct))
+            max_risk_per_market = min(configured_cap, float(tier_config.max_market_exposure_pct))
+        except Exception:
+            max_risk_per_market = 0.0
+        market_budget = max(current_balance * max(max_risk_per_market, 0.0), 0.0)
+        if exposure_after is None:
+            exposure_after = current_market_exposure
+            if risk_plan is not None:
+                exposure_after += float(getattr(risk_plan, "notional_size", 0.0) or 0.0)
+        return {
+            "exposure_before": float(current_market_exposure),
+            "exposure_after": float(max(exposure_after, 0.0)),
+            "risk_budget_used": float(current_market_exposure),
+            "remaining_risk_budget": float(max(market_budget - current_market_exposure, 0.0)),
+            "current_exposure": float(open_exposure),
+            "target_exposure": float(max(exposure_after, 0.0)),
+        }
+
+    @staticmethod
+    def _phase2_value_available(value: object) -> bool:
+        return value is not None and value != ""
+
+    def _phase2_ev_null_reason(
+        self,
+        *,
+        field_name: str,
+        skip_reason: object = "",
+        orderbook_readiness_reason: object = "",
+        liquidity_state: object = "",
+        spread_normalized: object = None,
+        probability_available: bool = False,
+        market_price_available: bool = False,
+        ev_available: bool = False,
+    ) -> str:
+        reason = str(skip_reason or "").lower()
+        orderbook_reason = str(orderbook_readiness_reason or "").lower()
+        liquidity = str(liquidity_state or "").upper()
+        if "empty_book" in orderbook_reason or "empty_book" in reason:
+            return "empty_book"
+        if orderbook_reason or "orderbook" in reason or "warmup" in reason:
+            return "no_orderbook"
+        if "time_unsafe" in reason or "cutoff" in reason:
+            return "time_unsafe"
+        if liquidity and liquidity not in {"HEALTHY", "UNKNOWN"}:
+            return "liquidity_not_ready"
+        if spread_normalized is False or "spread" in reason:
+            return "spread_not_ready"
+        if "risk" in reason or "balance" in reason or "drawdown" in reason or "lockdown" in reason:
+            return "risk_blocked_after_ev" if ev_available or probability_available else "candidate_blocked_before_ev"
+        if field_name == "market_price":
+            return "no_market_price"
+        if field_name == "ev_after_spread":
+            if not probability_available:
+                return "no_probability_model_output"
+            if not market_price_available:
+                return "no_market_price"
+            return "candidate_blocked_before_ev"
+        if field_name in {"fair_value", "true_probability"}:
+            return "no_probability_model_output"
+        return "candidate_blocked_before_ev"
+
+    def _phase2_pre_model_gate_detail(
+        self,
+        *,
+        skip_reason: object = "",
+        orderbook_readiness_reason: object = "",
+        liquidity_state: object = "",
+        spread_normalized: object = None,
+        readiness_state: object = "",
+        lifecycle_phase: object = "",
+        probability_available: bool = False,
+    ) -> dict[str, object]:
+        if probability_available:
+            return {
+                "pre_model_gate_name": "MODEL_OUTPUT_AVAILABLE",
+                "pre_model_gate_group": "MODEL_READY",
+                "pre_model_gate_reason": "model_output_visible",
+                "pre_model_gate_source": "probability_output",
+                "pre_model_gate_blocks_probability_model": False,
+                "probability_model_call_path": "probability_model_output_serialized",
+            }
+
+        reason_text = str(skip_reason or "").strip()
+        orderbook_text = str(orderbook_readiness_reason or "").strip()
+        readiness_text = str(readiness_state or "").strip()
+        liquidity_text = str(liquidity_state or "").strip()
+        lifecycle_text = str(lifecycle_phase or "").strip().upper()
+        combined = " ".join(
+            part.lower()
+            for part in (reason_text, orderbook_text, readiness_text, liquidity_text, lifecycle_text)
+            if part
+        )
+
+        gate_name = "MODEL_GATE_UNKNOWN"
+        gate_group = "MODEL_GATE_UNKNOWN"
+        source = "unclassified"
+        if any(token in combined for token in ("hard_close", "time_unsafe", "cutoff", "entry timing", "late_hard_close_zone")):
+            gate_name = "TIME_CUTOFF_GATE"
+            gate_group = "TIME_CUTOFF_GATE"
+            source = "time_or_cutoff"
+        elif lifecycle_text in {"FINAL_DERISK", "CLOSED_OR_UNSAFE"}:
+            gate_name = "LIFECYCLE_PHASE_GATE"
+            gate_group = "LIFECYCLE_PHASE_GATE"
+            source = "lifecycle_phase"
+        elif any(token in combined for token in ("stale_feed", "feed", "oracle", "data_stale")):
+            gate_name = "DATA_FRESHNESS_GATE"
+            gate_group = "DATA_FRESHNESS_GATE"
+            source = "market_data_freshness"
+        elif any(token in combined for token in ("token_mapping", "missing_token", "token_not_ready", "api_missing_fields", "missing token")):
+            gate_name = "TOKEN_MAPPING_GATE"
+            gate_group = "ORDERBOOK_GATE"
+            source = "token_mapping"
+        elif any(token in combined for token in ("orderbook", "empty_book", "warmup", "clob_", "bid/ask", "no_orderbook", "unavailable")):
+            gate_name = "ORDERBOOK_COMPLETENESS_GATE"
+            gate_group = "ORDERBOOK_GATE"
+            source = "orderbook_readiness"
+        elif spread_normalized is False or "spread" in combined:
+            gate_name = "SPREAD_GATE"
+            gate_group = "SPREAD_GATE"
+            source = "spread_readiness"
+        elif liquidity_text.upper() not in {"", "HEALTHY", "READY", "UNKNOWN"} or "liquidity" in combined or "min shares" in combined:
+            gate_name = "LIQUIDITY_GATE"
+            gate_group = "LIQUIDITY_GATE"
+            source = "liquidity_readiness"
+        elif any(token in combined for token in ("max entries", "max 1", "frequency", "cooldown")):
+            gate_name = "ENTRY_FREQUENCY_GATE"
+            gate_group = "ENTRY_FREQUENCY_GATE"
+            source = "entry_frequency"
+        elif any(token in combined for token in ("max active", "max position", "position limit")):
+            gate_name = "ENTRY_CAPACITY_GATE"
+            gate_group = "ENTRY_CAPACITY_GATE"
+            source = "entry_capacity"
+        elif any(token in combined for token in ("panic sell", "panic_sold")):
+            gate_name = "PANIC_COOLDOWN_GATE"
+            gate_group = "RUNTIME_SAFETY_GATE"
+            source = "panic_cooldown"
+        elif "risk_plan_zero" in combined or "zero position" in combined:
+            gate_name = "MODEL_GATE_UNKNOWN"
+            gate_group = "MODEL_GATE_UNKNOWN"
+            source = "post_model_risk_plan_or_unknown"
+        elif any(token in combined for token in ("risk", "floor", "balance", "drawdown", "lockdown", "reconciliation")):
+            gate_name = "RISK_SAFETY_GATE"
+            gate_group = "RUNTIME_SAFETY_GATE"
+            source = "runtime_safety"
+
+        reason = orderbook_text or reason_text or readiness_text or liquidity_text or "model_gate_unknown"
+        return {
+            "pre_model_gate_name": gate_name,
+            "pre_model_gate_group": gate_group,
+            "pre_model_gate_reason": reason,
+            "pre_model_gate_source": source,
+            "pre_model_gate_blocks_probability_model": gate_name != "MODEL_GATE_UNKNOWN",
+            "probability_model_call_path": (
+                "blocked_before_probability_model"
+                if gate_name != "MODEL_GATE_UNKNOWN"
+                else "probability_model_call_path_unknown"
+            ),
+        }
+
+    def _phase2_ev_null_reason_detail(
+        self,
+        *,
+        fair_value: object,
+        market_price: object,
+        true_probability: object,
+        ev_after_spread: object,
+        skip_reason: object = "",
+        orderbook_readiness_reason: object = "",
+        liquidity_state: object = "",
+        spread_normalized: object = None,
+    ) -> dict[str, object]:
+        fair_value_available = self._phase2_value_available(fair_value)
+        market_price_available = self._phase2_value_available(market_price)
+        true_probability_available = self._phase2_value_available(true_probability)
+        ev_after_spread_available = self._phase2_value_available(ev_after_spread)
+        probability_available = fair_value_available or true_probability_available
+
+        skip_text = str(skip_reason or "").lower()
+        orderbook_text = str(orderbook_readiness_reason or "").lower()
+        pre_model_block = (
+            "time_unsafe" in skip_text
+            or "cutoff" in skip_text
+            or "orderbook" in skip_text
+            or "warmup" in skip_text
+            or "empty_book" in skip_text
+            or bool(orderbook_text)
+        )
+        if probability_available:
+            probability_model_stage = "probability_model_output"
+        elif pre_model_block:
+            probability_model_stage = "pre_model_skip"
+        else:
+            probability_model_stage = "no_probability_model_output"
+
+        if ev_after_spread_available:
+            ev_calculation_stage = "ev_calculated"
+        elif probability_model_stage == "pre_model_skip":
+            ev_calculation_stage = "pre_model_skip"
+        elif probability_available and not market_price_available:
+            ev_calculation_stage = "no_market_price"
+        else:
+            ev_calculation_stage = "candidate_blocked_before_ev"
+
+        gate_reason = ""
+        if probability_available:
+            gate_reason = "model_output_visible"
+        elif pre_model_block:
+            gate_reason = str(orderbook_readiness_reason or skip_reason or "pre_model_gate").strip()
+        else:
+            gate_reason = "model_output_not_visible"
+
+        gate_detail = self._phase2_pre_model_gate_detail(
+            skip_reason=skip_reason,
+            orderbook_readiness_reason=orderbook_readiness_reason,
+            liquidity_state=liquidity_state,
+            spread_normalized=spread_normalized,
+            probability_available=probability_available,
+        )
+        known_pre_model_gate = str(gate_detail.get("pre_model_gate_name") or "") not in {
+            "",
+            "MODEL_GATE_UNKNOWN",
+            "MODEL_OUTPUT_AVAILABLE",
+        }
+        if not probability_available and known_pre_model_gate:
+            probability_model_stage = "pre_model_skip"
+            if not ev_after_spread_available:
+                ev_calculation_stage = "pre_model_skip"
+            gate_reason = str(gate_detail.get("pre_model_gate_reason") or gate_reason)
+        detail: dict[str, object] = {
+            "fair_value_available": fair_value_available,
+            "fair_value_null_reason": "",
+            "market_price_available": market_price_available,
+            "market_price_null_reason": "",
+            "true_probability_available": true_probability_available,
+            "true_probability_null_reason": "",
+            "ev_after_spread_available": ev_after_spread_available,
+            "ev_after_spread_null_reason": "",
+            "probability_model_stage": probability_model_stage,
+            "ev_calculation_stage": ev_calculation_stage,
+            "model_attempted": bool(probability_available),
+            "probability_model_gate_reason": gate_reason,
+            "model_not_run_reason": "" if probability_available else gate_reason,
+            "probability_model_called": bool(probability_available),
+            "probability_model_output_visible": bool(probability_available),
+            "model_output_missing_reason": "" if probability_available else gate_reason,
+            "model_output_source": "canonical_probability_fields" if probability_available else "",
+            "model_handoff_stage": (
+                "MODEL_OUTPUT_SERIALIZED"
+                if probability_available
+                else "PRE_MODEL_GATE" if pre_model_block or known_pre_model_gate else "MODEL_OUTPUT_NOT_VISIBLE"
+            ),
+            **gate_detail,
+        }
+        for field_name, value, available in (
+            ("fair_value", fair_value, fair_value_available),
+            ("market_price", market_price, market_price_available),
+            ("true_probability", true_probability, true_probability_available),
+            ("ev_after_spread", ev_after_spread, ev_after_spread_available),
+        ):
+            if available:
+                continue
+            detail[f"{field_name}_null_reason"] = self._phase2_ev_null_reason(
+                field_name=field_name,
+                skip_reason=skip_reason,
+                orderbook_readiness_reason=orderbook_readiness_reason,
+                liquidity_state=liquidity_state,
+                spread_normalized=spread_normalized,
+                probability_available=probability_available,
+                market_price_available=market_price_available,
+                ev_available=ev_after_spread_available,
+            )
+        return detail
+
+    @staticmethod
+    def _phase2_iso_from_epoch(epoch_start: int, offset_seconds: int) -> str:
+        if epoch_start <= 0:
+            return ""
+        try:
+            return datetime.fromtimestamp(epoch_start + offset_seconds, UTC).isoformat().replace("+00:00", "Z")
+        except (OSError, OverflowError, ValueError):
+            return ""
+
+    @staticmethod
+    def _phase2_phase_offsets(lifecycle_phase: str) -> tuple[int, int | None]:
+        phase = str(lifecycle_phase or "").upper()
+        if phase == "OPENING_SCAN":
+            return 0, 35
+        if phase == "ACTIVE_INVENTORY_TRADING":
+            return 35, 240
+        if phase == "PROFIT_MANAGEMENT":
+            return 240, 270
+        if phase == "FINAL_DERISK":
+            return 270, 300
+        if phase == "CLOSED_OR_UNSAFE":
+            return 300, None
+        return 0, None
+
+    def _phase2_orderbook_state_classification(self, payload: dict[str, object]) -> str:
+        reason = str(
+            payload.get("orderbook_readiness_reason")
+            or payload.get("orderbook_unavailable_reason")
+            or payload.get("orderbook_error")
+            or ""
+        ).lower()
+        liquidity = str(payload.get("liquidity_state") or "").upper()
+        if "token_mapping" in reason or "token" in reason:
+            return "token_mapping_unavailable"
+        if "empty_book" in reason or "empty_orderbook" in reason or liquidity == "EMPTY":
+            return "empty_book"
+        if "warmup" in reason:
+            return "warmup_pending"
+        if "stale" in reason:
+            return "stale_orderbook"
+        if reason:
+            return "orderbook_unavailable"
+
+        yes_bid = self._diagnostic_float(payload.get("yes_bid"))
+        yes_ask = self._diagnostic_float(payload.get("yes_ask"))
+        no_bid = self._diagnostic_float(payload.get("no_bid"))
+        no_ask = self._diagnostic_float(payload.get("no_ask"))
+        bid = self._diagnostic_float(payload.get("best_bid") or payload.get("bid"))
+        ask = self._diagnostic_float(payload.get("best_ask") or payload.get("ask"))
+        if (yes_bid > 0 and yes_ask > 0 and no_bid > 0 and no_ask > 0) or (bid > 0 and ask > 0):
+            return "ready"
+        if any(value is not None for value in (payload.get("yes_bid"), payload.get("yes_ask"), payload.get("no_bid"), payload.get("no_ask"))):
+            return "empty_book"
+        return "unavailable"
+
+    def _phase2_market_readiness_state(self, payload: dict[str, object], orderbook_state: str) -> str:
+        reason = str(payload.get("active_window_alignment_reason") or "").lower()
+        if reason in {"before_active_window", "late_hard_close_zone"}:
+            return reason
+        seconds = self._diagnostic_int(payload.get("seconds_remaining") or payload.get("seconds_until_close"))
+        try:
+            hard_block = self._entry_hard_block_seconds()
+        except Exception:
+            hard_block = 0
+        if seconds is not None and seconds <= hard_block:
+            return "time_unsafe"
+
+        token_ready = bool(payload.get("token_id") or payload.get("yes_token_id") or payload.get("no_token_id") or payload.get("token_ready_at"))
+        if not token_ready:
+            return "token_not_ready"
+        if orderbook_state != "ready":
+            return orderbook_state
+
+        liquidity = str(payload.get("liquidity_state") or "").upper()
+        if liquidity and liquidity not in {"HEALTHY", "READY", "UNKNOWN"}:
+            return "liquidity_not_ready"
+        spread_ready = payload.get("spread_normalized")
+        if spread_ready is False:
+            return "spread_not_ready"
+        return "ready"
+
+    def _phase2_model_activation_detail(
+        self,
+        payload: dict[str, object],
+        *,
+        lifecycle_phase: str,
+        orderbook_state: str,
+        readiness_state: str,
+        model_output_ready: bool | None,
+    ) -> dict[str, object]:
+        producer = str(payload.get("producer_event_type") or payload.get("producer") or "").strip()
+        probability_stage = str(payload.get("probability_model_stage") or "").lower()
+        gate_reason = str(
+            payload.get("probability_model_gate_reason")
+            or payload.get("model_not_run_reason")
+            or payload.get("active_window_alignment_reason")
+            or payload.get("adaptive_cutoff_reason")
+            or payload.get("orderbook_readiness_reason")
+            or readiness_state
+            or ""
+        )
+        seconds_remaining = self._diagnostic_int(payload.get("seconds_remaining") or payload.get("seconds_until_close"))
+        try:
+            hard_block_seconds = self._entry_hard_block_seconds()
+        except Exception:
+            hard_block_seconds = 0
+        effective_cutoff = self._diagnostic_int(payload.get("effective_cutoff_seconds") or payload.get("entry_cutoff_seconds"))
+        pre_model_gate = self._phase2_pre_model_gate_detail(
+            skip_reason=gate_reason,
+            orderbook_readiness_reason=payload.get("orderbook_readiness_reason") or payload.get("orderbook_unavailable_reason") or "",
+            liquidity_state=payload.get("liquidity_state") or "",
+            spread_normalized=payload.get("spread_normalized"),
+            readiness_state=readiness_state,
+            lifecycle_phase=lifecycle_phase,
+            probability_available=model_output_ready is True,
+        )
+        existing_gate_name = str(payload.get("pre_model_gate_name") or "").strip()
+        if existing_gate_name and existing_gate_name != "MODEL_GATE_UNKNOWN":
+            pre_model_gate["pre_model_gate_name"] = existing_gate_name
+            pre_model_gate["pre_model_gate_group"] = str(
+                payload.get("pre_model_gate_group") or pre_model_gate["pre_model_gate_group"]
+            )
+            pre_model_gate["pre_model_gate_reason"] = str(
+                payload.get("pre_model_gate_reason") or gate_reason or pre_model_gate["pre_model_gate_reason"]
+            )
+            pre_model_gate["pre_model_gate_source"] = str(
+                payload.get("pre_model_gate_source") or pre_model_gate["pre_model_gate_source"]
+            )
+            pre_model_gate["pre_model_gate_blocks_probability_model"] = bool(
+                payload.get("pre_model_gate_blocks_probability_model", True)
+            )
+            pre_model_gate["probability_model_call_path"] = str(
+                payload.get("probability_model_call_path") or pre_model_gate["probability_model_call_path"]
+            )
+        explicit_gate_group = str(pre_model_gate.get("pre_model_gate_group") or "")
+        explicit_gate_name = str(pre_model_gate.get("pre_model_gate_name") or "")
+
+        if model_output_ready is True:
+            state = "MODEL_OUTPUT_VISIBLE"
+            group = "MODEL_READY"
+            reason = "model_output_visible"
+            eligible = True
+        elif producer == "market_snapshots":
+            state = "PRE_MODEL_OBSERVATION"
+            group = "PRODUCER_NOT_RESPONSIBLE"
+            reason = gate_reason or "market_snapshot_pre_model_observation"
+            pre_model_gate["pre_model_gate_name"] = "PRODUCER_PRE_MODEL_OBSERVATION"
+            pre_model_gate["pre_model_gate_group"] = "PRODUCER_NOT_RESPONSIBLE"
+            pre_model_gate["pre_model_gate_reason"] = reason
+            pre_model_gate["pre_model_gate_source"] = "producer_role"
+            pre_model_gate["pre_model_gate_blocks_probability_model"] = False
+            pre_model_gate["probability_model_call_path"] = "producer_not_responsible_pre_model_observation"
+            eligible = False
+        elif explicit_gate_group and explicit_gate_group not in {"MODEL_GATE_UNKNOWN", "MODEL_READY"}:
+            state = "BLOCKED_BEFORE_MODEL"
+            group = explicit_gate_group
+            reason = str(
+                payload.get("adaptive_cutoff_reason")
+                if explicit_gate_group == "TIME_CUTOFF_GATE" and payload.get("adaptive_cutoff_reason")
+                else pre_model_gate.get("pre_model_gate_reason") or explicit_gate_name or gate_reason
+            )
+            eligible = False
+        elif readiness_state == "time_unsafe" or "cutoff" in gate_reason.lower() or "hard_close" in gate_reason.lower():
+            state = "BLOCKED_BEFORE_MODEL"
+            group = "TIME_CUTOFF_GATE"
+            reason = (
+                str(payload.get("adaptive_cutoff_reason") or "").strip()
+                if gate_reason.lower() in {"", "time_unsafe", "pre_model_gate"}
+                else gate_reason
+            ) or readiness_state
+            eligible = False
+        elif readiness_state in {"token_not_ready", "orderbook_unavailable", "empty_book", "warmup_pending", "stale_orderbook"} or orderbook_state != "ready":
+            state = "BLOCKED_BEFORE_MODEL"
+            group = "ORDERBOOK_GATE"
+            reason = gate_reason or readiness_state or orderbook_state
+            eligible = False
+        elif readiness_state == "liquidity_not_ready":
+            state = "BLOCKED_BEFORE_MODEL"
+            group = "LIQUIDITY_GATE"
+            reason = gate_reason or readiness_state
+            eligible = False
+        elif readiness_state == "spread_not_ready":
+            state = "BLOCKED_BEFORE_MODEL"
+            group = "SPREAD_GATE"
+            reason = gate_reason or readiness_state
+            eligible = False
+        elif str(lifecycle_phase).upper() in {"FINAL_DERISK", "CLOSED_OR_UNSAFE"}:
+            state = "BLOCKED_BEFORE_MODEL"
+            group = "LIFECYCLE_PHASE_GATE"
+            reason = gate_reason or lifecycle_phase
+            eligible = False
+        elif probability_stage == "pre_model_skip":
+            state = "BLOCKED_BEFORE_MODEL"
+            group = "MODEL_GATE_UNKNOWN"
+            reason = gate_reason or "pre_model_skip"
+            eligible = False
+        elif probability_stage == "no_probability_model_output":
+            state = "MODEL_OUTPUT_NOT_VISIBLE"
+            group = "MODEL_GATE_UNKNOWN"
+            reason = gate_reason or "model_output_not_visible"
+            eligible = False
+        else:
+            state = "MODEL_ELIGIBILITY_UNKNOWN"
+            group = "MODEL_GATE_UNKNOWN"
+            reason = gate_reason or "model_gate_unknown"
+            eligible = False
+
+        lifecycle_second = self._phase2_elapsed_second(seconds_remaining)
+        return {
+            "model_activation_state": state,
+            "model_activation_block_group": group,
+            "model_activation_block_reason": reason,
+            "model_attempt_eligible": bool(eligible),
+            "model_activation_seconds_remaining": seconds_remaining,
+            "model_activation_effective_cutoff_seconds": effective_cutoff,
+            "model_activation_hard_block_seconds": hard_block_seconds,
+            "model_activation_lifecycle_phase": lifecycle_phase,
+            "model_activation_orderbook_state": orderbook_state,
+            "model_activation_market_readiness_state": readiness_state,
+            "first_model_eligible_second": lifecycle_second if eligible else None,
+            "seconds_remaining_when_eligible": seconds_remaining if eligible else None,
+            "first_probability_output_second": lifecycle_second if model_output_ready is True else None,
+            "seconds_remaining_when_model_output_visible": seconds_remaining if model_output_ready is True else None,
+            "model_eligible_at_or_inside_cutoff": bool(
+                eligible
+                and seconds_remaining is not None
+                and effective_cutoff is not None
+                and seconds_remaining <= effective_cutoff
+            ),
+            **pre_model_gate,
+        }
+
+    def _phase2_candidate_block_detail(self, payload: dict[str, object]) -> tuple[str, str, str]:
+        reason = str(
+            payload.get("normalized_skip_reason")
+            or payload.get("skip_reason")
+            or payload.get("raw_skip_reason")
+            or payload.get("orderbook_readiness_reason")
+            or payload.get("orderbook_unavailable_reason")
+            or payload.get("ev_after_spread_null_reason")
+            or payload.get("fair_value_null_reason")
+            or ""
+        ).strip()
+        skipped = bool(payload.get("skipped")) or str(payload.get("decision") or "").lower() in {"skip", "skipped"}
+        ev_available = bool(payload.get("ev_after_spread_available")) or self._phase2_value_available(payload.get("ev_after_spread"))
+        model_output_ready = bool(payload.get("true_probability_available")) or bool(payload.get("fair_value_available"))
+        probability_stage = str(payload.get("probability_model_stage") or "").lower()
+        ev_stage = str(payload.get("ev_calculation_stage") or "").lower()
+
+        if not reason and not skipped:
+            return "not_blocked", "not_blocked", "candidate_active_or_approved"
+        if not reason:
+            reason = "unavailable"
+
+        if "pre_model_skip" in probability_stage or "candidate_blocked_before_ev" in ev_stage:
+            stage = "pre_ev"
+        elif "risk_blocked_after_ev" in ev_stage or (skipped and (ev_available or model_output_ready)):
+            stage = "post_ev"
+        elif skipped:
+            stage = "pre_ev"
+        else:
+            stage = "unavailable"
+
+        reason_lower = reason.lower()
+        if any(token in reason_lower for token in ("time_unsafe", "cutoff", "hard_close", "too_late")):
+            expiry = "time_unsafe"
+        elif any(token in reason_lower for token in ("orderbook", "empty_book", "warmup", "liquidity", "spread", "token")):
+            expiry = "market_not_ready"
+        elif "risk" in reason_lower or "balance" in reason_lower or "drawdown" in reason_lower or "lockdown" in reason_lower:
+            expiry = "risk_block"
+        elif reason == "unavailable":
+            expiry = "unavailable"
+        else:
+            expiry = "blocked"
+        return reason, stage, expiry
+
+    def _phase2_candidate_survival_ms(self, payload: dict[str, object]) -> int | None:
+        first_seen = self._diagnostic_int(payload.get("first_seen_seconds_remaining"))
+        remaining = self._diagnostic_int(payload.get("seconds_remaining") or payload.get("seconds_until_close"))
+        if first_seen is None or remaining is None:
+            return None
+        return int(max(0, first_seen - remaining) * 1000)
+
+    def _phase2_elapsed_second(self, seconds_remaining: object) -> int | None:
+        remaining = self._diagnostic_int(seconds_remaining)
+        if remaining is None:
+            return None
+        return int(max(0, min(300, 300 - remaining)))
+
+    def _phase2_complete_lifecycle_observability(self, payload: dict[str, object]) -> dict[str, object]:
+        detail = dict(payload)
+        seconds_remaining = detail.get("seconds_remaining", detail.get("seconds_until_close"))
+        lifecycle_phase = str(detail.get("lifecycle_phase") or "").strip()
+        if not lifecycle_phase:
+            lifecycle_phase = (
+                self._phase2_lifecycle_phase(seconds_remaining)
+                if self._diagnostic_int(seconds_remaining) is not None
+                else "UNKNOWN"
+            )
+            detail["lifecycle_phase"] = lifecycle_phase
+
+        market_ref = str(detail.get("market_id") or detail.get("source_market_id") or "")
+        ticker = str(detail.get("ticker") or detail.get("asset") or self._ticker_from_market_id(market_ref) or "UNKNOWN").upper()
+        if not detail.get("condition_id"):
+            meta_cache = getattr(self, "_market_token_meta", {})
+            if not isinstance(meta_cache, dict):
+                meta_cache = {}
+            meta = meta_cache.get(ticker, {})
+            condition_id = str(meta.get("condition_id", "") or "")
+            if not condition_id:
+                market_refs = {
+                    str(value).strip()
+                    for value in (detail.get("market_id"), detail.get("source_market_id"))
+                    if str(value or "").strip()
+                }
+                token_id = str(detail.get("token_id") or "").strip()
+                matching_condition_ids: list[str] = []
+                for candidate_meta in meta_cache.values():
+                    if not isinstance(candidate_meta, dict):
+                        continue
+                    candidate_condition_id = str(candidate_meta.get("condition_id", "") or "").strip()
+                    if not candidate_condition_id:
+                        continue
+                    meta_market_id = str(candidate_meta.get("market_id", "") or "").strip()
+                    meta_yes_token_id = str(candidate_meta.get("yes_token_id", "") or "").strip()
+                    meta_no_token_id = str(candidate_meta.get("no_token_id", "") or "").strip()
+                    market_match = bool(meta_market_id and meta_market_id in market_refs)
+                    token_match = bool(token_id and token_id in {meta_yes_token_id, meta_no_token_id})
+                    if market_match or token_match:
+                        matching_condition_ids.append(candidate_condition_id)
+                if len(matching_condition_ids) == 1:
+                    condition_id = matching_condition_ids[0]
+            if condition_id:
+                detail["condition_id"] = condition_id
+        market_id = str(detail.get("market_id") or detail.get("condition_id") or detail.get("source_market_id") or f"pm-5m-{ticker.lower()}")
+        side = str(detail.get("side") or detail.get("best_side") or detail.get("outcome") or detail.get("decision") or "UNKNOWN").upper()
+        epoch_start = self._diagnostic_int(detail.get("market_epoch_start") or detail.get("epoch_start") or detail.get("epoch_start_ts")) or 0
+        if not detail.get("candidate_id"):
+            detail["candidate_id"] = self._phase2_candidate_hash("candidate", market_id, ticker, side, epoch_start)
+        if not detail.get("signal_id"):
+            detail["signal_id"] = self._phase2_candidate_hash("signal", market_id, ticker, side, epoch_start)
+
+        start_offset, end_offset = self._phase2_phase_offsets(lifecycle_phase)
+        entered_at = self._phase2_iso_from_epoch(epoch_start, start_offset)
+        exited_at = self._phase2_iso_from_epoch(epoch_start, end_offset) if end_offset is not None else ""
+        detail.setdefault("lifecycle_phase_entered_at", entered_at or None)
+        detail.setdefault("lifecycle_phase_exited_at", exited_at or None)
+        if not detail.get("lifecycle_phase_transition_reason"):
+            detail["lifecycle_phase_transition_reason"] = "epoch_window_direct" if entered_at else "seconds_remaining_direct"
+
+        orderbook_state = self._phase2_orderbook_state_classification(detail)
+        detail.setdefault("orderbook_state_classification", orderbook_state)
+        readiness_state = self._phase2_market_readiness_state(detail, orderbook_state)
+        detail.setdefault("market_readiness_state", readiness_state)
+        if not detail.get("readiness_transition_reason"):
+            detail["readiness_transition_reason"] = str(
+                detail.get("active_window_alignment_reason")
+                or detail.get("orderbook_readiness_reason")
+                or readiness_state
+                or "unavailable"
+            )
+
+        block_reason, block_stage, expiry_reason = self._phase2_candidate_block_detail(detail)
+        detail.setdefault("candidate_block_reason", block_reason)
+        detail.setdefault("candidate_block_stage", block_stage)
+        detail.setdefault("candidate_expiry_reason", expiry_reason)
+        detail.setdefault("candidate_survival_ms", self._phase2_candidate_survival_ms(detail))
+
+        model_output_ready = None
+        probability_stage = str(detail.get("probability_model_stage") or "").lower()
+        if probability_stage in {"probability_model_output", "completed"}:
+            model_output_ready = True
+        elif probability_stage in {"pre_model_skip", "no_probability_model_output"}:
+            model_output_ready = False
+        elif bool(detail.get("fair_value_available")) or bool(detail.get("true_probability_available")):
+            model_output_ready = True
+        detail.setdefault("model_output_ready", model_output_ready)
+
+        ev_candidate_ready = None
+        ev_stage = str(detail.get("ev_calculation_stage") or "").lower()
+        if ev_stage == "ev_calculated" or bool(detail.get("ev_after_spread_available")):
+            ev_candidate_ready = True
+        elif any(detail.get(field) for field in ("fair_value_null_reason", "market_price_null_reason", "true_probability_null_reason", "ev_after_spread_null_reason")):
+            ev_candidate_ready = False
+        detail.setdefault("ev_candidate_ready", ev_candidate_ready)
+        activation_detail = self._phase2_model_activation_detail(
+            detail,
+            lifecycle_phase=lifecycle_phase,
+            orderbook_state=orderbook_state,
+            readiness_state=readiness_state,
+            model_output_ready=model_output_ready,
+        )
+        for key, value in activation_detail.items():
+            detail[key] = value
+        detail.setdefault("probability_model_called", bool(model_output_ready))
+        detail.setdefault("probability_model_output_visible", bool(model_output_ready))
+        if not detail.get("model_handoff_stage"):
+            detail["model_handoff_stage"] = (
+                "MODEL_OUTPUT_SERIALIZED"
+                if model_output_ready is True
+                else "PRE_MODEL_GATE"
+                if detail.get("model_activation_state") == "BLOCKED_BEFORE_MODEL"
+                else "MODEL_OUTPUT_NOT_VISIBLE"
+            )
+        detail.setdefault(
+            "model_output_missing_reason",
+            "" if model_output_ready is True else str(detail.get("model_activation_block_reason") or "model_output_not_visible"),
+        )
+        first_seen_remaining = self._diagnostic_int(detail.get("first_seen_seconds_remaining"))
+        first_orderbook_remaining = self._diagnostic_int(detail.get("orderbook_ready_seconds_remaining"))
+        first_tradable_remaining = self._diagnostic_int(detail.get("first_tradable_seconds_remaining"))
+        current_remaining = self._diagnostic_int(detail.get("seconds_remaining") or detail.get("seconds_until_close"))
+        if first_seen_remaining is not None:
+            detail.setdefault("first_seen_second", self._phase2_elapsed_second(first_seen_remaining))
+        if first_orderbook_remaining:
+            detail.setdefault("first_orderbook_ready_second", self._phase2_elapsed_second(first_orderbook_remaining))
+        if first_tradable_remaining:
+            detail.setdefault("first_candidate_ready_second", self._phase2_elapsed_second(first_tradable_remaining))
+        if first_seen_remaining is not None and current_remaining is not None:
+            duration = int(max(0, first_seen_remaining - current_remaining))
+            detail.setdefault("candidate_lifecycle_duration_seconds", duration)
+            detail.setdefault("candidate_lifecycle_duration", duration)
+        return detail
+
+    def _phase2_observability_payload(
+        self,
+        *,
+        ticker: str,
+        market_id: str = "",
+        side: str = "",
+        epoch_start: object = None,
+        seconds_remaining: object = None,
+        market_price: object = None,
+        fair_value: object = None,
+        true_probability: object = None,
+        ev_after_spread: object = None,
+        skip_reason: object = "",
+        orderbook_readiness_reason: object = "",
+        liquidity_state: object = "",
+        spread_normalized: object = None,
+        risk_plan: RiskPlan | None = None,
+    ) -> dict[str, object]:
+        epoch_start_int = self._diagnostic_int(epoch_start) or 0
+        market_id = market_id or f"pm-5m-{ticker.lower()}"
+        side = str(side or "UNKNOWN").upper()
+        ticker_key = str(ticker or "").upper()
+        cached_token_ids = self._real_token_ids.get(ticker_key) or ()
+        cached_meta = self._market_token_meta.get(ticker_key, {})
+        cached_yes_token_id = str(
+            (cached_token_ids[0] if len(cached_token_ids) > 0 else "")
+            or cached_meta.get("yes_token_id", "")
+            or ""
+        )
+        cached_no_token_id = str(
+            (cached_token_ids[1] if len(cached_token_ids) > 1 else "")
+            or cached_meta.get("no_token_id", "")
+            or ""
+        )
+        cached_side_token_id = ""
+        if side == "YES":
+            cached_side_token_id = cached_yes_token_id
+        elif side == "NO":
+            cached_side_token_id = cached_no_token_id
+        cached_condition_id = str(cached_meta.get("condition_id", "") or "")
+        cached_market_slug = str(cached_meta.get("slug", "") or cached_meta.get("market_slug", "") or "")
+        token_handoff_source = "cached_market_token_meta" if cached_yes_token_id and cached_no_token_id else "not_available"
+        lifecycle_phase = self._phase2_lifecycle_phase(seconds_remaining)
+        candidate_id = self._phase2_candidate_hash("candidate", market_id, ticker_key, side, epoch_start_int)
+        signal_id = self._phase2_candidate_hash("signal", market_id, ticker_key, side, epoch_start_int)
+        market_key = (ticker_key, epoch_start_int)
+        first_seen_remaining = self._market_first_seen_seconds_remaining.get(market_key)
+        if first_seen_remaining is None:
+            first_seen_remaining = self._diagnostic_int(seconds_remaining)
+        readiness_timestamps = self._phase2_readiness_timestamps(ticker, epoch_start_int)
+        first_orderbook_remaining = self._diagnostic_int(readiness_timestamps.get("orderbook_ready_seconds_remaining"))
+        first_tradable_remaining = self._diagnostic_int(readiness_timestamps.get("first_tradable_seconds_remaining"))
+        price = self._diagnostic_float(market_price, default=0.0)
+        exposure = self._phase2_exposure_timeline(market_id, risk_plan=risk_plan)
+        starter_candidate = exposure["exposure_before"] <= 0.0 and lifecycle_phase in {
+            "OPENING_SCAN",
+            "ACTIVE_INVENTORY_TRADING",
+        }
+        final_derisk_candidate = exposure["exposure_before"] > 0.0 and lifecycle_phase == "FINAL_DERISK"
+        payload: dict[str, object] = {
+            "lifecycle_phase": lifecycle_phase,
+            "candidate_id": candidate_id,
+            "signal_id": signal_id,
+            "token_id": cached_side_token_id,
+            "yes_token_id": cached_yes_token_id,
+            "no_token_id": cached_no_token_id,
+            "condition_id": cached_condition_id,
+            "market_slug": cached_market_slug,
+            "cached_token_pair_available": bool(cached_yes_token_id and cached_no_token_id),
+            "yes_no_token_pair_present": bool(cached_yes_token_id and cached_no_token_id),
+            "decision_token_handoff_source": token_handoff_source,
+            **readiness_timestamps,
+            "first_seen_seconds_remaining": first_seen_remaining or 0,
+            "first_seen_second": self._phase2_elapsed_second(first_seen_remaining),
+            "first_orderbook_ready_second": (
+                self._phase2_elapsed_second(first_orderbook_remaining) if first_orderbook_remaining else None
+            ),
+            "first_candidate_ready_second": (
+                self._phase2_elapsed_second(first_tradable_remaining) if first_tradable_remaining else None
+            ),
+            "fair_value": fair_value,
+            "market_price": market_price,
+            "true_probability": true_probability,
+            "ev_after_spread": ev_after_spread,
+            **self._phase2_ev_null_reason_detail(
+                fair_value=fair_value,
+                market_price=market_price,
+                true_probability=true_probability,
+                ev_after_spread=ev_after_spread,
+                skip_reason=skip_reason,
+                orderbook_readiness_reason=orderbook_readiness_reason,
+                liquidity_state=liquidity_state,
+                spread_normalized=spread_normalized,
+            ),
+            "mfe_candidate_price": price if price > 0.0 else None,
+            "mae_candidate_price": price if price > 0.0 else None,
+            "candidate_peak_favorable": 0.0,
+            "candidate_peak_adverse": 0.0,
+            "starter_candidate": bool(starter_candidate),
+            "reload_candidate": False,
+            "unload_candidate": False,
+            "final_derisk_candidate": bool(final_derisk_candidate),
+            "inventory_action": (
+                "FINAL_DERISK_CANDIDATE"
+                if final_derisk_candidate
+                else "STARTER_CANDIDATE" if starter_candidate else ""
+            ),
+            **exposure,
+        }
+        orderbook_state = self._phase2_orderbook_state_classification(payload)
+        payload.setdefault("orderbook_state_classification", orderbook_state)
+        readiness_state = self._phase2_market_readiness_state(payload, orderbook_state)
+        payload.setdefault("market_readiness_state", readiness_state)
+        model_output_ready = (
+            self._phase2_value_available(fair_value)
+            or self._phase2_value_available(true_probability)
+        )
+        payload.update(
+            self._phase2_model_activation_detail(
+                payload,
+                lifecycle_phase=lifecycle_phase,
+                orderbook_state=orderbook_state,
+                readiness_state=readiness_state,
+                model_output_ready=model_output_ready,
+            )
+        )
+        return payload
+
     def _active_window_alignment_detail(
         self,
         *,
@@ -623,6 +2299,9 @@ class PolymarketTrader:
         seconds_remaining: int | None,
         token_ids: tuple[str, str] | None = None,
         orderbook_ready: bool | None = None,
+        liquidity_state: str | None = None,
+        spread: float | None = None,
+        spread_limit: float | None = None,
     ) -> dict[str, object]:
         ticker = ticker.upper()
         now_ts = int(time.time())
@@ -658,16 +2337,60 @@ class PolymarketTrader:
         if first_evaluable is None and has_tokens and seconds_until_close > hard_block and orderbook_ready is not False:
             first_evaluable = seconds_until_close
             self._market_first_evaluable_seconds_remaining[key] = first_evaluable
+        liquidity_observed = liquidity_state is not None
+        liquidity_ready = str(liquidity_state or "").upper() == "HEALTHY"
+        if spread_limit is None:
+            spread_limit = float(self._phase2_safe_setting("adaptive_entry_max_spread", 0.06))
+        spread_ready = spread is not None and float(spread or 0.0) <= float(spread_limit)
+        tradable_ready = bool(
+            has_tokens
+            and orderbook_ready is True
+            and liquidity_ready
+            and spread_ready
+            and seconds_until_close > hard_block
+        )
+        readiness_timestamps = self._phase2_mark_readiness(
+            ticker=ticker,
+            epoch_start=epoch_start,
+            token_ready=has_tokens,
+            orderbook_ready=orderbook_ready is True,
+            liquidity_ready=liquidity_ready,
+            spread_ready=spread_ready,
+            first_evaluable_ready=first_evaluable is not None,
+            first_tradable_ready=tradable_ready,
+            seconds_remaining=seconds_until_close,
+        )
+        first_tradable = self._diagnostic_int(readiness_timestamps.get("first_tradable_seconds_remaining")) or 0
+        first_orderbook_ready = self._diagnostic_int(readiness_timestamps.get("orderbook_ready_seconds_remaining")) or 0
+        candidate_lifecycle_duration_seconds = max(0, int(first_seen) - int(seconds_until_close))
 
         return {
             "market_epoch_start": epoch_start,
             "market_epoch_end": epoch_end,
             "epoch_start_ts": epoch_start,
             "epoch_end_ts": epoch_end,
+            "lifecycle_phase": self._phase2_lifecycle_phase(seconds_until_close),
             "seconds_since_open": seconds_since_open,
             "seconds_until_close": seconds_until_close,
             "first_seen_seconds_remaining": first_seen,
             "first_evaluable_seconds_remaining": first_evaluable or 0,
+            "first_tradable_seconds_remaining": first_tradable,
+            "first_seen_second": self._phase2_elapsed_second(first_seen),
+            "first_orderbook_ready_second": self._phase2_elapsed_second(first_orderbook_ready) if first_orderbook_ready else None,
+            "first_candidate_ready_second": self._phase2_elapsed_second(first_tradable) if first_tradable else None,
+            "candidate_lifecycle_duration_seconds": candidate_lifecycle_duration_seconds,
+            "candidate_lifecycle_duration": candidate_lifecycle_duration_seconds,
+            "first_tradable_at_utc": readiness_timestamps.get("first_tradable_at", ""),
+            **readiness_timestamps,
+            "liquidity_ready": bool(liquidity_ready) if liquidity_observed else None,
+            "depth_ready": bool(liquidity_ready) if liquidity_observed else None,
+            "spread_normalized": bool(spread_ready) if spread is not None else None,
+            "spread_limit": float(spread_limit),
+            "spread_gap_to_limit": (
+                round(float(spread or 0.0) - float(spread_limit), 6)
+                if spread is not None
+                else None
+            ),
             "active_window_alignment_reason": reason,
         }
 
@@ -768,6 +2491,16 @@ class PolymarketTrader:
                 exc,
             )
         finally:
+            self._mark_orderbook_refresh(
+                ticker,
+                source="market_warmup",
+                trigger=reason,
+                executable_yes_no_book=bool(ok),
+                condition_id=meta.get("condition_id", ""),
+                yes_token_id=token_ids[0] if token_ids else "",
+                no_token_id=token_ids[1] if token_ids else "",
+                market_slug=meta.get("slug", ""),
+            )
             self._warmed_orderbook_epochs.add((ticker, epoch_start))
             duration_ms = int(max(0.0, time.monotonic() - started) * 1000)
             alignment_detail = self._active_window_alignment_detail(
@@ -893,7 +2626,7 @@ class PolymarketTrader:
             int(self._setting("execution_entry_cutoff_seconds", 90)),
         )
         time_bucket = str(display.get("time_bucket", "") or classify_time_bucket(seconds_remaining, entry_cutoff_seconds))
-        edge = display.get("edge", display.get("ev", 0.0))
+        edge = display.get("edge", display.get("ev"))
         decision_timestamp = self._utc_timestamp()
         market_close_timestamp = str(
             display.get("market_close_timestamp")
@@ -909,10 +2642,209 @@ class PolymarketTrader:
             if normalized_reason == "time_unsafe" or "cutoff" in raw_reason.lower()
             else None
         )
+        candidate_side = str(display.get("side") or display.get("best_side") or display.get("outcome") or outcome.decision)
+        fair_value = display.get("fair_value")
+        true_probability = display.get("true_probability")
+        if fair_value is None or true_probability is None:
+            side_upper = candidate_side.upper()
+            if side_upper == "YES":
+                fair_value = display.get("p_yes", display.get("model_p_yes")) if fair_value is None else fair_value
+                true_probability = fair_value if true_probability is None else true_probability
+            elif side_upper == "NO":
+                fair_value = display.get("p_no", display.get("model_p_no")) if fair_value is None else fair_value
+                true_probability = fair_value if true_probability is None else true_probability
+        ev_after_spread_value = display.get("ev_after_spread")
+        if ev_after_spread_value is None:
+            ev_after_spread_value = display.get("ev")
+        if ev_after_spread_value is None:
+            ev_after_spread_value = edge
+        phase2_detail = self._phase2_observability_payload(
+            ticker=ticker or self._ticker_from_market_id(outcome.market_id),
+            market_id=outcome.market_id,
+            side=candidate_side,
+            epoch_start=display.get("market_epoch_start", display.get("epoch_start", display.get("epoch_start_ts"))),
+            seconds_remaining=seconds_remaining,
+            market_price=display.get("market_price", display.get("ask_price", display.get("entry_price"))),
+            fair_value=fair_value,
+            true_probability=true_probability,
+            ev_after_spread=ev_after_spread_value,
+            skip_reason=normalized_reason or raw_reason,
+            orderbook_readiness_reason=display.get("orderbook_readiness_reason", display.get("orderbook_unavailable_reason", "")),
+            liquidity_state=display.get("liquidity_state", ""),
+            spread_normalized=display.get("spread_normalized"),
+            risk_plan=outcome.risk_plan,
+        )
+        decision_id = self._phase2_candidate_hash(
+            "decision",
+            outcome.market_id,
+            (ticker or self._ticker_from_market_id(outcome.market_id) or "UNKNOWN").upper(),
+            str(candidate_side or "UNKNOWN").upper(),
+            self._diagnostic_int(display.get("market_epoch_start", display.get("epoch_start", display.get("epoch_start_ts")))) or 0,
+        )
+        for field_name in (
+            "lifecycle_phase",
+            "candidate_id",
+            "signal_id",
+            "token_ready_at",
+            "token_ready_seconds_remaining",
+            "orderbook_ready_at",
+            "orderbook_ready_seconds_remaining",
+            "liquidity_ready_at",
+            "liquidity_ready_seconds_remaining",
+            "spread_ready_at",
+            "spread_ready_seconds_remaining",
+            "first_tradable_at",
+            "first_tradable_seconds_remaining",
+            "first_evaluable_at",
+            "first_evaluable_ready_seconds_remaining",
+            "first_seen_second",
+            "first_orderbook_ready_second",
+            "first_candidate_ready_second",
+            "candidate_lifecycle_duration_seconds",
+            "candidate_lifecycle_duration",
+            "fair_value",
+            "fair_value_available",
+            "fair_value_null_reason",
+            "market_price",
+            "market_price_available",
+            "market_price_null_reason",
+            "true_probability",
+            "true_probability_available",
+            "true_probability_null_reason",
+            "ev_after_spread",
+            "ev_after_spread_available",
+            "ev_after_spread_null_reason",
+            "model_probability_yes",
+            "model_probability_no",
+            "fair_value_yes",
+            "fair_value_no",
+            "model_attempted",
+            "probability_model_called",
+            "probability_model_output_visible",
+            "model_output_missing_reason",
+            "model_output_source",
+            "model_handoff_stage",
+            "pre_model_gate_name",
+            "pre_model_gate_group",
+            "pre_model_gate_reason",
+            "pre_model_gate_source",
+            "pre_model_gate_blocks_probability_model",
+            "probability_model_call_path",
+            "model_not_run_reason",
+            "probability_model_gate_reason",
+            "probability_model_stage",
+            "ev_calculation_stage",
+            "mfe_candidate_price",
+            "mae_candidate_price",
+            "candidate_peak_favorable",
+            "candidate_peak_adverse",
+            "starter_candidate",
+            "reload_candidate",
+            "unload_candidate",
+            "final_derisk_candidate",
+            "inventory_action",
+            "exposure_before",
+            "exposure_after",
+            "risk_budget_used",
+            "remaining_risk_budget",
+            "current_exposure",
+            "target_exposure",
+            "model_activation_state",
+            "model_activation_block_group",
+            "model_activation_block_reason",
+            "model_attempt_eligible",
+            "model_activation_effective_cutoff_seconds",
+            "model_activation_hard_block_seconds",
+            "model_activation_lifecycle_phase",
+            "model_activation_orderbook_state",
+            "model_activation_market_readiness_state",
+            "token_id",
+            "yes_token_id",
+            "no_token_id",
+            "condition_id",
+            "market_slug",
+            "cached_token_pair_available",
+            "yes_no_token_pair_present",
+            "decision_token_handoff_source",
+            "yes_bid",
+            "yes_ask",
+            "no_bid",
+            "no_ask",
+            "yes_bid_size",
+            "yes_ask_size",
+            "no_bid_size",
+            "no_ask_size",
+            "yes_mid",
+            "no_mid",
+            "spread",
+            "spread_normalized",
+            "spread_limit",
+            "spread_gap_to_limit",
+            "orderbook_bid",
+            "orderbook_ask",
+            "orderbook_bid_size",
+            "orderbook_ask_size",
+            "first_model_eligible_second",
+            "seconds_remaining_when_eligible",
+            "first_probability_output_second",
+            "seconds_remaining_when_model_output_visible",
+            "model_eligible_at_or_inside_cutoff",
+            "decision_cycle_started_at",
+            "last_orderbook_refresh_at",
+            "orderbook_snapshot_age_ms_at_decision",
+            "last_successful_yes_no_book_at",
+            "orderbook_refresh_source",
+            "orderbook_refresh_trigger",
+            "decision_cycle_interval_seconds",
+            "actual_market_revisit_frequency_seconds",
+            "orderbook_reuse_detected",
+            "executable_book_last_seen_age_ms",
+            "decision_token_pair_key",
+            "last_orderbook_refresh_token_pair_key",
+            "last_successful_yes_no_book_token_pair_key",
+            "orderbook_lineage_match",
+            "orderbook_current_fetch_status",
+            "orderbook_stale_reuse_source",
+            "scheduler_cadence_source",
+            "hot_path_timing_source",
+            "configured_decision_loop_interval_seconds",
+            "intended_decision_loop_target_seconds",
+            "effective_outer_loop_interval_seconds",
+            "snapshot_sampling_interval_seconds",
+            "market_discovery_interval_seconds",
+            "outer_loop_poll_interval_seconds",
+            "market_evaluation_asset",
+            "market_evaluation_started_at",
+            "market_evaluation_started_ms_since_cycle",
+            "market_evaluation_duration_ms",
+            "market_sequence_index",
+            "market_sequence_count",
+            "cycle_elapsed_ms_at_market_evaluation",
+            "candidate_created_at",
+            "candidate_enqueue_at",
+            "candidate_dequeue_at",
+            "candidate_queue_age_ms",
+            "hot_path_admission_wait_ms",
+            "candidate_queue_age_source",
+            "candidate_queue_ownership",
+            "candidate_revisit_scheduling_source",
+            "hot_path_admission_trigger",
+            "event_vs_polling_classification",
+            "executable_liquidity_event_role",
+            "executable_liquidity_triggered_hot_path",
+            "market_snapshot_decision_pipeline_linkage",
+            "candidate_handoff_boundary",
+            "empty_book_recovery_duration_ms",
+        ):
+            value = display.get(field_name)
+            if value is not None and value != "":
+                phase2_detail[field_name] = value
         payload: dict[str, object] = {
+            "decision_id": decision_id,
             "raw_skip_reason": raw_reason,
             "normalized_skip_reason": normalized_reason,
             "asset": ticker or self._ticker_from_market_id(outcome.market_id),
+            "side": str(candidate_side or "UNKNOWN").upper(),
             "market_slug": str(display.get("market_slug", "") or self._market_slug_for_ticker(ticker, outcome.market_id)),
             "edge": self._diagnostic_float(edge),
             "ev": self._diagnostic_float(display.get("ev", edge or 0.0)),
@@ -942,14 +2874,22 @@ class PolymarketTrader:
             "seconds_until_close": self._diagnostic_int(display.get("seconds_until_close", seconds_remaining)),
             "first_seen_seconds_remaining": self._diagnostic_int(display.get("first_seen_seconds_remaining")),
             "first_evaluable_seconds_remaining": self._diagnostic_int(display.get("first_evaluable_seconds_remaining")),
+            "first_tradable_seconds_remaining": self._diagnostic_int(display.get("first_tradable_seconds_remaining")),
+            "first_seen_second": self._diagnostic_int(display.get("first_seen_second", phase2_detail.get("first_seen_second"))),
+            "first_orderbook_ready_second": self._diagnostic_int(display.get("first_orderbook_ready_second", phase2_detail.get("first_orderbook_ready_second"))),
+            "first_candidate_ready_second": self._diagnostic_int(display.get("first_candidate_ready_second", phase2_detail.get("first_candidate_ready_second"))),
+            "candidate_lifecycle_duration_seconds": self._diagnostic_int(display.get("candidate_lifecycle_duration_seconds", phase2_detail.get("candidate_lifecycle_duration_seconds"))),
+            "candidate_lifecycle_duration": self._diagnostic_int(display.get("candidate_lifecycle_duration", phase2_detail.get("candidate_lifecycle_duration"))),
+            "first_tradable_at_utc": str(display.get("first_tradable_at_utc", phase2_detail.get("first_tradable_at", "")) or ""),
+            **phase2_detail,
             "active_window_alignment_reason": str(display.get("active_window_alignment_reason", "") or ""),
             "market_start_time": str(display.get("market_start_time", "") or ""),
             "market_end_time": str(display.get("market_end_time", "") or ""),
             "market_close_timestamp": market_close_timestamp,
-            "token_id": str(display.get("token_id", "") or ""),
-            "yes_token_id": str(display.get("yes_token_id", "") or ""),
-            "no_token_id": str(display.get("no_token_id", "") or ""),
-            "condition_id": str(display.get("condition_id", "") or ""),
+            "token_id": str(display.get("token_id") or phase2_detail.get("token_id") or ""),
+            "yes_token_id": str(display.get("yes_token_id") or phase2_detail.get("yes_token_id") or ""),
+            "no_token_id": str(display.get("no_token_id") or phase2_detail.get("no_token_id") or ""),
+            "condition_id": str(display.get("condition_id") or phase2_detail.get("condition_id") or ""),
             "outcome": str(display.get("outcome", "") or ""),
             "source_module": str(display.get("source_module", "polymarket.trader") or "polymarket.trader"),
             "orderbook_age_ms": orderbook_age_ms,
@@ -977,6 +2917,10 @@ class PolymarketTrader:
             "empty_book_recovery_failed": bool(display.get("empty_book_recovery_failed", False)),
             "empty_book_recovery_retry_count": self._diagnostic_int(display.get("empty_book_recovery_retry_count")) or 0,
             "liquidity_state": str(display.get("liquidity_state", "") or "HEALTHY"),
+            **{
+                field_name: display.get(field_name, self._empty_book_recovery_detail().get(field_name))
+                for field_name in EMPTY_BOOK_RECOVERY_RESEARCH_FIELD_NAMES
+            },
             "oracle_age_ms": oracle_age_ms,
             "oracle_age": round(oracle_age_ms / 1000.0, 3),
             "oracle_age_seconds": round(oracle_age_ms / 1000.0, 3),
@@ -986,6 +2930,14 @@ class PolymarketTrader:
             "volatility_score": self._diagnostic_float(display.get("volatility_score", regime_detail["volatility_score"])),
             "trend_regime": str(display.get("trend_regime", regime_detail["trend_regime"]) or "UNKNOWN"),
             "trend_strength": self._diagnostic_float(display.get("trend_strength", regime_detail["trend_strength"])),
+            "market_regime": str(display.get("market_regime", "") or regime_detail.get("market_regime", "UNKNOWN") or "UNKNOWN"),
+            "bullish_probability": self._diagnostic_float(display.get("bullish_probability", display.get("p_yes", 0.5))),
+            "bearish_probability": self._diagnostic_float(display.get("bearish_probability", display.get("p_no", 0.5))),
+            "reversal_risk": self._diagnostic_float(display.get("reversal_risk", 0.0)),
+            "compression_score": self._diagnostic_float(display.get("compression_score", 0.0)),
+            "signal_trend_strength": self._diagnostic_float(display.get("signal_trend_strength", display.get("trend_strength", 0.0))),
+            "signal_volatility_score": self._diagnostic_float(display.get("signal_volatility_score", display.get("volatility_score", 0.0))),
+            "indicator_evidence": str(display.get("indicator_evidence", "") or ""),
             "regime_reason": str(display.get("regime_reason", regime_detail["regime_reason"]) or ""),
             "token_mapping_warning": str(display.get("token_mapping_warning", "") or ""),
             "paper_virtual_cash": float(self.bankroll_state.current_cash_balance if self.settings.paper_trading else 0.0),
@@ -1002,6 +2954,107 @@ class PolymarketTrader:
             "calculated_order_size": float(getattr(outcome.risk_plan, "position_size", 0.0) or 0.0),
             "risk_plan_zero_reason": "",
         }
+        for key, value in self._scheduler_cadence_observability_detail(
+            str(ticker or self._ticker_from_market_id(outcome.market_id) or "")
+        ).items():
+            if payload.get(key) in (None, ""):
+                payload[key] = value
+        if not bool(payload.get("ev_after_spread_available")) and not self._phase2_value_available(payload.get("ev_after_spread")):
+            ev_stage = str(payload.get("ev_calculation_stage") or "").lower()
+            probability_stage = str(payload.get("probability_model_stage") or "").lower()
+            if probability_stage == "pre_model_skip":
+                payload["ev_missing_reason"] = "model_not_run"
+            elif ev_stage in {"candidate_blocked_before_ev", "pre_model_skip"}:
+                payload["ev_missing_reason"] = "not_computed_at_producer"
+            else:
+                payload["ev_missing_reason"] = str(payload.get("ev_after_spread_null_reason") or "field_not_available")
+        if bool(payload.get("model_attempted")):
+            payload["model_not_run_reason"] = ""
+            payload["probability_model_gate_reason"] = str(
+                payload.get("probability_model_gate_reason") or "model_output_visible"
+            )
+        yes_token_present = bool(str(payload.get("yes_token_id") or "").strip())
+        no_token_present = bool(str(payload.get("no_token_id") or "").strip())
+        payload["yes_no_token_pair_present"] = bool(yes_token_present and no_token_present)
+        if payload["yes_no_token_pair_present"] and str(payload.get("decision_token_handoff_source") or "not_available") == "not_available":
+            payload["decision_token_handoff_source"] = "decision_payload_or_cache"
+        yes_bid_present = self._phase2_value_available(payload.get("yes_bid"))
+        yes_ask_present = self._phase2_value_available(payload.get("yes_ask"))
+        no_bid_present = self._phase2_value_available(payload.get("no_bid"))
+        no_ask_present = self._phase2_value_available(payload.get("no_ask"))
+        payload["decision_orderbook_bid_fields_present"] = bool(yes_bid_present and no_bid_present)
+        payload["decision_orderbook_ask_fields_present"] = bool(yes_ask_present and no_ask_present)
+        if yes_bid_present and yes_ask_present and no_bid_present and no_ask_present:
+            payload["decision_orderbook_completeness_source"] = "serialized_yes_no_bid_ask"
+        elif yes_ask_present or no_ask_present or yes_bid_present or no_bid_present:
+            payload["decision_orderbook_completeness_source"] = "partial_serialized_yes_no_book"
+        else:
+            payload["decision_orderbook_completeness_source"] = "not_serialized_or_unavailable"
+        current_fetch_status = str(
+            display.get("orderbook_current_fetch_status")
+            or phase2_detail.get("orderbook_current_fetch_status")
+            or ""
+        )
+        if current_fetch_status in {"fresh_fetch_executable", "fresh_fetch_non_executable"}:
+            current_fetch_succeeded = True
+        elif current_fetch_status == "fresh_fetch_failed":
+            current_fetch_succeeded = False
+        else:
+            current_fetch_succeeded = None
+        payload.update(
+            self._orderbook_refresh_observability_detail(
+                str(ticker or self._ticker_from_market_id(outcome.market_id) or ""),
+                current_executable_yes_no_book=bool(
+                    yes_bid_present and yes_ask_present and no_bid_present and no_ask_present
+                ),
+                current_fetch_succeeded=current_fetch_succeeded,
+                condition_id=display.get("condition_id") or phase2_detail.get("condition_id", ""),
+                yes_token_id=display.get("yes_token_id") or phase2_detail.get("yes_token_id", ""),
+                no_token_id=display.get("no_token_id") or phase2_detail.get("no_token_id", ""),
+                market_slug=display.get("market_slug") or phase2_detail.get("market_slug", ""),
+                record_decision_cycle=True,
+            )
+        )
+        orderbook_state = self._phase2_orderbook_state_classification(payload)
+        readiness_state = self._phase2_market_readiness_state(payload, orderbook_state)
+        payload["orderbook_state_classification"] = orderbook_state
+        payload["market_readiness_state"] = readiness_state
+        model_output_ready = (
+            bool(payload.get("model_attempted"))
+            or bool(payload.get("fair_value_available"))
+            or bool(payload.get("true_probability_available"))
+            or self._phase2_value_available(payload.get("fair_value"))
+            or self._phase2_value_available(payload.get("true_probability"))
+        )
+        payload.update(
+            self._phase2_model_activation_detail(
+                payload,
+                lifecycle_phase=str(payload.get("lifecycle_phase") or "UNKNOWN"),
+                orderbook_state=orderbook_state,
+                readiness_state=readiness_state,
+                model_output_ready=model_output_ready,
+            )
+        )
+        if model_output_ready:
+            payload["probability_model_called"] = bool(payload.get("probability_model_called")) or True
+            payload["probability_model_output_visible"] = True
+            payload["model_handoff_stage"] = "MODEL_OUTPUT_SERIALIZED"
+            payload["model_output_missing_reason"] = ""
+            payload.setdefault("model_output_source", "decision_payload")
+        else:
+            payload["probability_model_called"] = bool(payload.get("probability_model_called"))
+            payload["probability_model_output_visible"] = False
+            payload["model_handoff_stage"] = str(
+                payload.get("model_handoff_stage")
+                or ("PRE_MODEL_GATE" if payload.get("model_activation_state") == "BLOCKED_BEFORE_MODEL" else "MODEL_OUTPUT_NOT_VISIBLE")
+            )
+            payload["model_output_missing_reason"] = str(
+                payload.get("model_activation_block_reason")
+                or payload.get("model_output_missing_reason")
+                or payload.get("probability_model_gate_reason")
+                or "model_output_not_visible"
+            )
+            payload.setdefault("model_output_source", "")
         is_zero_plan = (
             outcome.skipped
             and normalized_reason == "risk_plan_zero"
@@ -1021,6 +3074,157 @@ class PolymarketTrader:
                 payload["risk_plan_zero_reason"] = classified
         return payload
 
+    def _risk_boundary_payload_from_decision(
+        self,
+        decision_payload: dict[str, object],
+        *,
+        decision_type: str,
+        outcome: TradeOutcome,
+    ) -> dict[str, object] | None:
+        if not outcome.skipped and decision_type != "risk_rejected":
+            return None
+
+        normalized_reason = str(decision_payload.get("normalized_skip_reason") or "").lower()
+        raw_reason = str(decision_payload.get("raw_skip_reason") or outcome.skip_reason or "")
+        risk_zero_reason = str(decision_payload.get("risk_plan_zero_reason") or "")
+        risk_plan = outcome.risk_plan
+        risk_plan_present = risk_plan is not None
+        risk_plan_size = float(getattr(risk_plan, "position_size", 0.0) or 0.0)
+
+        if decision_type == "risk_rejected" or normalized_reason == "risk_plan_zero" or risk_zero_reason:
+            risk_decision = "blocked"
+            risk_block_reason = risk_zero_reason or normalized_reason or raw_reason or "risk_rejected"
+        elif risk_plan_present and risk_plan_size > 0.0:
+            risk_decision = "approved"
+            risk_block_reason = ""
+        else:
+            risk_decision = "not_reached"
+            risk_block_reason = "blocked_before_risk_evaluation"
+
+        wanted_fields = (
+            "decision_id",
+            "candidate_id",
+            "signal_id",
+            "candidate_trace_id",
+            "parent_candidate_trace_id",
+            "trace_link_reason",
+            "market_id",
+            "market_key",
+            "market_slug",
+            "condition_id",
+            "token_id",
+            "yes_token_id",
+            "no_token_id",
+            "side",
+            "outcome",
+            "asset",
+            "ticker",
+            "lifecycle_phase",
+            "seconds_remaining",
+            "market_epoch_start",
+            "first_seen_second",
+            "first_orderbook_ready_second",
+            "first_candidate_ready_second",
+            "first_model_eligible_second",
+            "first_probability_output_second",
+            "seconds_remaining_when_eligible",
+            "seconds_remaining_when_model_output_visible",
+            "candidate_lifecycle_duration_seconds",
+            "fair_value",
+            "fair_value_available",
+            "fair_value_null_reason",
+            "market_price",
+            "market_price_available",
+            "market_price_null_reason",
+            "true_probability",
+            "true_probability_available",
+            "true_probability_null_reason",
+            "ev",
+            "ev_after_spread",
+            "ev_after_spread_available",
+            "ev_after_spread_null_reason",
+            "ev_missing_reason",
+            "probability_model_called",
+            "probability_model_output_visible",
+            "model_output_missing_reason",
+            "model_output_source",
+            "model_handoff_stage",
+            "pre_model_gate_name",
+            "pre_model_gate_group",
+            "pre_model_gate_reason",
+            "pre_model_gate_source",
+            "pre_model_gate_blocks_probability_model",
+            "probability_model_call_path",
+            "probability_model_stage",
+            "ev_calculation_stage",
+            "candidate_block_stage",
+            "candidate_block_reason",
+            "orderbook_state_classification",
+            "market_readiness_state",
+            "liquidity_state",
+            "risk_budget_used",
+            "remaining_risk_budget",
+            "model_activation_state",
+            "model_activation_block_group",
+            "model_activation_block_reason",
+            "model_attempt_eligible",
+            "model_activation_effective_cutoff_seconds",
+            "model_activation_hard_block_seconds",
+            "model_activation_lifecycle_phase",
+            "model_activation_orderbook_state",
+            "model_activation_market_readiness_state",
+            "decision_cycle_started_at",
+            "last_orderbook_refresh_at",
+            "orderbook_snapshot_age_ms_at_decision",
+            "last_successful_yes_no_book_at",
+            "orderbook_refresh_source",
+            "orderbook_refresh_trigger",
+            "decision_cycle_interval_seconds",
+            "orderbook_reuse_detected",
+            "executable_book_last_seen_age_ms",
+            "decision_token_pair_key",
+            "last_orderbook_refresh_token_pair_key",
+            "last_successful_yes_no_book_token_pair_key",
+            "orderbook_lineage_match",
+            "orderbook_current_fetch_status",
+            "orderbook_stale_reuse_source",
+        )
+        payload = {
+            field: decision_payload.get(field)
+            for field in wanted_fields
+            if decision_payload.get(field) not in {None, ""}
+        }
+        payload.update({
+            "event": "decision_risk_boundary",
+            "mode": self._runtime_mode(),
+            "risk_decision": risk_decision,
+            "risk_state": risk_decision,
+            "risk_block_reason": risk_block_reason,
+            "candidate_block_stage": payload.get("candidate_block_stage") or (
+                "risk_boundary" if risk_decision != "not_reached" else "pre_risk"
+            ),
+            "candidate_block_reason": payload.get("candidate_block_reason") or risk_block_reason,
+            "risk_mode": self._risk_mode_state.current_mode.value,
+            "available_risk_budget": decision_payload.get("remaining_risk_budget"),
+            "risk_plan_present": risk_plan_present,
+            "risk_approved": bool(risk_decision == "approved"),
+            "risk_serialization_source": "decision_boundary_observability",
+            "does_not_change_risk_decision": True,
+            "run_id": str(getattr(getattr(self, "quant_events", None), "run_id", "") or ""),
+        })
+        return self._display_payload_with_candidate_trace_identity(payload)
+
+    def _regime_pass_through_fields(self, source: dict[str, object] | None) -> dict[str, object]:
+        if not isinstance(source, dict):
+            return {}
+        fields: dict[str, object] = {}
+        for key in REGIME_PAYLOAD_FIELD_NAMES:
+            value = source.get(key)
+            if value is None or str(value).strip() == "":
+                continue
+            fields[key] = value
+        return fields
+
     def _emit_decision_event(
         self,
         outcome: TradeOutcome,
@@ -1038,24 +3242,34 @@ class PolymarketTrader:
             decision_type = "rejected"
         else:
             decision_type = "skipped"
-        self._emit_quant_event(
-            "log_decision",
-            {
-                "stage": stage,
-                "decision_type": decision_type,
-                "market_id": outcome.market_id,
-                "ticker": ticker or self._ticker_from_market_id(outcome.market_id),
-                "decision": outcome.decision,
-                "confidence": float(outcome.confidence or 0.0),
-                "skipped": bool(outcome.skipped),
-                "skip_reason": reason,
-                "has_receipt": outcome.receipt is not None,
-                "receipt_status": getattr(outcome.receipt, "status", "") if outcome.receipt else "",
-                "risk_plan": self._risk_plan_payload(outcome.risk_plan),
-                "display": outcome.display,
-                **self._decision_diagnostics_payload(outcome, ticker=ticker or self._ticker_from_market_id(outcome.market_id)),
-            },
+        decision_diagnostics = self._decision_diagnostics_payload(
+            outcome,
+            ticker=ticker or self._ticker_from_market_id(outcome.market_id),
         )
+        decision_payload = {
+            "stage": stage,
+            "decision_type": decision_type,
+            "market_id": outcome.market_id,
+            "ticker": ticker or self._ticker_from_market_id(outcome.market_id),
+            "decision": outcome.decision,
+            "confidence": float(outcome.confidence or 0.0),
+            "skipped": bool(outcome.skipped),
+            "skip_reason": reason,
+            "has_receipt": outcome.receipt is not None,
+            "receipt_status": getattr(outcome.receipt, "status", "") if outcome.receipt else "",
+            "risk_plan": self._risk_plan_payload(outcome.risk_plan),
+            "display": outcome.display,
+            **decision_diagnostics,
+            **self._regime_pass_through_fields(outcome.display),
+        }
+        risk_boundary_payload = self._risk_boundary_payload_from_decision(
+            decision_payload,
+            decision_type=decision_type,
+            outcome=outcome,
+        )
+        if risk_boundary_payload is not None:
+            self._emit_quant_event("log_risk_event", risk_boundary_payload)
+        self._emit_quant_event("log_decision", decision_payload)
 
     def _emit_trade_opened_event(
         self,
@@ -1068,7 +3282,25 @@ class PolymarketTrader:
         risk_plan: RiskPlan,
         entry_price: float,
         strategy: str,
+        seconds_remaining: int | None = None,
+        epoch_start: int | None = None,
     ) -> None:
+        phase2_detail = self._phase2_observability_payload(
+            ticker=ticker,
+            market_id=market_id,
+            side=outcome,
+            epoch_start=epoch_start,
+            seconds_remaining=seconds_remaining,
+            market_price=entry_price,
+            skip_reason="",
+            risk_plan=None,
+        )
+        exposure_after = float(phase2_detail.get("exposure_after", 0.0) or 0.0)
+        exposure_before = max(exposure_after - float(risk_plan.notional_size), 0.0)
+        phase2_detail.update({
+            "exposure_before": exposure_before,
+            "risk_budget_used": exposure_before,
+        })
         self._emit_quant_event(
             "log_trade_open",
             {
@@ -1083,6 +3315,7 @@ class PolymarketTrader:
                 "receipt": asdict(receipt),
                 "strategy": strategy,
                 "mode": self._runtime_mode(),
+                **phase2_detail,
             },
         )
 
@@ -1651,11 +3884,97 @@ class PolymarketTrader:
     def _record_quant_detail(self, ticker: str, **values: object) -> dict[str, object]:
         ticker = ticker.upper()
         detail = self.last_quant_details.get(ticker, {"ticker": ticker})
+        scheduler_detail = self._scheduler_cadence_observability_detail(ticker)
+        market_id = str(
+            values.get("market_id")
+            or values.get("best_market")
+            or detail.get("market_id")
+            or f"pm-5m-{ticker.lower()}"
+        )
+        side = str(values.get("side") or values.get("best_side") or values.get("outcome") or detail.get("side") or "")
+        market_price = values.get("market_price", values.get("ask_price", values.get("entry_price")))
+        current_model_output_visible = any(
+            self._phase2_value_available(values.get(key))
+            for key in (
+                "p_yes",
+                "p_no",
+                "model_p_yes",
+                "model_p_no",
+                "model_probability_yes",
+                "model_probability_no",
+                "true_probability",
+                "fair_value",
+            )
+        )
+        current_model_called = bool(values.get("probability_model_called")) or current_model_output_visible
+        model_p_yes = values.get("model_probability_yes", values.get("p_yes", values.get("model_p_yes", detail.get("model_probability_yes", detail.get("p_yes")))))
+        model_p_no = values.get("model_probability_no", values.get("p_no", values.get("model_p_no", detail.get("model_probability_no", detail.get("p_no")))))
+        fair_value = values.get("fair_value")
+        true_probability = values.get("true_probability")
+        if fair_value is None or true_probability is None:
+            side_upper = side.upper()
+            if side_upper == "YES":
+                fair_value = model_p_yes if fair_value is None else fair_value
+                true_probability = fair_value if true_probability is None else true_probability
+            elif side_upper == "NO":
+                fair_value = model_p_no if fair_value is None else fair_value
+                true_probability = fair_value if true_probability is None else true_probability
+        ev_after_spread = values.get("ev_after_spread", values.get("ev", values.get("edge")))
+        detail.update(
+            self._phase2_observability_payload(
+                ticker=ticker,
+                market_id=market_id,
+                side=side,
+                epoch_start=values.get("market_epoch_start", values.get("epoch_start", values.get("epoch_start_ts"))),
+                seconds_remaining=values.get("seconds_remaining", values.get("seconds_until_close")),
+                market_price=market_price,
+                fair_value=fair_value,
+                true_probability=true_probability,
+                ev_after_spread=ev_after_spread,
+                skip_reason=values.get("normalized_skip_reason", values.get("raw_skip_reason", values.get("skip_reason", ""))),
+                orderbook_readiness_reason=values.get("orderbook_readiness_reason", values.get("orderbook_unavailable_reason", "")),
+                liquidity_state=values.get("liquidity_state", ""),
+                spread_normalized=values.get("spread_normalized"),
+            )
+        )
+        detail.update(scheduler_detail)
         detail.update(values)
         if "p_yes" in values:
             detail["model_p_yes"] = values["p_yes"]
         if "p_no" in values:
             detail["model_p_no"] = values["p_no"]
+        model_output_visible = self._phase2_value_available(model_p_yes) or self._phase2_value_available(model_p_no)
+        detail["probability_model_called"] = bool(detail.get("probability_model_called")) or current_model_called
+        detail["probability_model_output_visible"] = bool(model_output_visible)
+        if model_output_visible:
+            if self._phase2_value_available(model_p_yes):
+                detail["model_probability_yes"] = model_p_yes
+                detail["fair_value_yes"] = model_p_yes
+            if self._phase2_value_available(model_p_no):
+                detail["model_probability_no"] = model_p_no
+                detail["fair_value_no"] = model_p_no
+            detail["model_attempted"] = True
+            detail["probability_model_stage"] = "probability_model_output"
+            detail["probability_model_gate_reason"] = "model_output_visible"
+            detail["model_not_run_reason"] = ""
+            detail["true_probability_available"] = True
+            detail["fair_value_available"] = True
+            detail["true_probability_null_reason"] = ""
+            detail["fair_value_null_reason"] = ""
+            detail["model_handoff_stage"] = "MODEL_OUTPUT_SERIALIZED"
+            detail["model_output_missing_reason"] = ""
+            detail["model_output_source"] = (
+                "current_probability_model_result"
+                if current_model_output_visible
+                else "cached_quant_detail"
+            )
+        else:
+            detail.setdefault("model_handoff_stage", "MODEL_OUTPUT_NOT_VISIBLE")
+            detail.setdefault(
+                "model_output_missing_reason",
+                str(detail.get("probability_model_gate_reason") or detail.get("model_not_run_reason") or "model_output_not_visible"),
+            )
+            detail.setdefault("model_output_source", "")
         detail["ticker"] = ticker
         self.last_quant_details[ticker] = detail
         LOGGER.debug(
@@ -2314,6 +4633,7 @@ class PolymarketTrader:
         }
 
     def dashboard_portfolio_state(self) -> dict[str, object]:
+        observability_health = self.dashboard_observability_health_state()
         state = self._update_bankroll_state(fetch_live_cash=not self.settings.paper_trading and self._connected)
         summary = self.tracker.summary()
         total_exposure = float(getattr(summary, "total_exposure", 0.0) or 0.0)
@@ -2367,6 +4687,7 @@ class PolymarketTrader:
                 if self._balance_source == "wallet_reference_paper"
                 else ""
             ),
+            "observability_health": observability_health,
         }
 
     def dashboard_session_summary(self) -> dict[str, object]:
@@ -2994,6 +5315,13 @@ class PolymarketTrader:
             or "clob_empty_response" in message
         )
 
+    def _is_liquidity_recovery_error(self, error: object, *, research_mode: bool = False) -> bool:
+        if self._is_empty_orderbook_error(error):
+            return True
+        if not research_mode:
+            return False
+        return self._infer_clob_orderbook_error_category(error) in {"clob_timeout"}
+
     @staticmethod
     def _empty_book_recovery_detail(*, liquidity_state: str = "HEALTHY") -> dict[str, object]:
         return {
@@ -3002,12 +5330,74 @@ class PolymarketTrader:
             "empty_book_recovery_failed": False,
             "empty_book_recovery_retry_count": 0,
             "liquidity_state": liquidity_state,
+            "empty_book_recovery_research_mode": False,
+            "liquidity_recovery_grace_entered": False,
+            "liquidity_recovery_grace_success": False,
+            "liquidity_recovery_grace_failed": False,
+            "recovery_wait_seconds": 0.0,
+            "recovered_before_cutoff": False,
+            "candidate_survived_recovery": False,
+            "recovery_exit_reason": "",
+            "recovery_branch_candidate_seen": False,
+            "recovery_branch_preempted_by_cutoff": False,
+            "recovery_branch_skipped_reason": "",
+            "recovery_branch_mode_disabled": False,
+            "recovery_branch_enter_condition_failed": False,
         }
 
     def _fetch_orderbook_pair_once(self, yes_token_id: str, no_token_id: str):
         yes_ob = self.client.get_orderbook(yes_token_id)
         no_ob = self.client.get_orderbook(no_token_id) if no_token_id else None
         return yes_ob, no_ob
+
+    def _empty_book_recovery_research_enabled(self) -> bool:
+        return bool(
+            self._paper_enabled()
+            and self._setting("empty_book_recovery_research_mode", False)
+        )
+
+    def _recovery_exit_reason_for_block(
+        self,
+        *,
+        exc: object,
+        yes_token_id: str,
+        no_token_id: str,
+        seconds_remaining: int | None,
+    ) -> str:
+        if not self._paper_enabled():
+            return "live_mode_disabled"
+        if not bool(self._setting("orderbook_empty_recovery_enabled", True)):
+            return "recovery_disabled"
+        if not yes_token_id or not no_token_id:
+            return "missing_token_id"
+        if not self._is_liquidity_recovery_error(exc, research_mode=self._empty_book_recovery_research_enabled()):
+            return "non_empty_book_error"
+        if seconds_remaining is None:
+            return "missing_seconds_remaining"
+        if int(seconds_remaining) <= self._entry_hard_block_seconds():
+            return "hard_close_zone"
+        return "unknown_recovery_block"
+
+    def _recovery_candidate_survival_detail(
+        self,
+        *,
+        yes_ob,
+        no_ob,
+        seconds_remaining: int | None,
+    ) -> tuple[bool, str]:
+        if seconds_remaining is None or int(seconds_remaining) <= self._entry_hard_block_seconds():
+            return False, "hard_close_zone"
+        yes_spread = float(getattr(yes_ob, "spread", 0.0) or 0.0)
+        no_spread = float(getattr(no_ob, "spread", 0.0) or 0.0)
+        spread = max(yes_spread, no_spread)
+        max_spread = float(self._setting("adaptive_entry_max_spread", 0.06))
+        if spread > max_spread:
+            return False, "spread_too_wide_after_recovery"
+        max_age_ms = int(self._setting("adaptive_entry_max_orderbook_age_ms", 1000))
+        orderbook_age_ms = max(self._orderbook_age_ms(yes_ob), self._orderbook_age_ms(no_ob))
+        if orderbook_age_ms > max_age_ms:
+            return False, "orderbook_stale_after_recovery"
+        return True, "recovered"
 
     def _fetch_orderbook_pair_with_empty_recovery(
         self,
@@ -3019,38 +5409,67 @@ class PolymarketTrader:
         market_slug: str = "",
     ):
         detail = self._empty_book_recovery_detail()
+        research_mode = self._empty_book_recovery_research_enabled()
+        detail["empty_book_recovery_research_mode"] = research_mode
         self._last_empty_book_recovery_detail[ticker.upper()] = detail
         try:
             return (*self._fetch_orderbook_pair_once(yes_token_id, no_token_id), detail)
         except Exception as exc:
+            branch_skipped_reason = self._recovery_exit_reason_for_block(
+                exc=exc,
+                yes_token_id=yes_token_id,
+                no_token_id=no_token_id,
+                seconds_remaining=seconds_remaining,
+            )
+            detail.update({
+                "recovery_branch_candidate_seen": True,
+                "recovery_branch_mode_disabled": not research_mode,
+                "recovery_branch_preempted_by_cutoff": branch_skipped_reason == "hard_close_zone",
+            })
             if not (
                 self._paper_enabled()
                 and bool(self._setting("orderbook_empty_recovery_enabled", True))
                 and yes_token_id
                 and no_token_id
-                and self._is_empty_orderbook_error(exc)
+                and self._is_liquidity_recovery_error(exc, research_mode=research_mode)
                 and seconds_remaining is not None
                 and int(seconds_remaining) > self._entry_hard_block_seconds()
             ):
+                detail.update({
+                    "liquidity_recovery_grace_failed": research_mode,
+                    "recovery_exit_reason": branch_skipped_reason if research_mode else "",
+                    "recovery_branch_skipped_reason": branch_skipped_reason,
+                    "recovery_branch_enter_condition_failed": True,
+                })
                 raise
 
             retries = max(0, min(3, int(self._setting("orderbook_empty_recovery_retries", 2))))
             delay_ms = max(0, int(self._setting("orderbook_empty_recovery_delay_ms", 75)))
             max_total_ms = max(1, int(self._setting("orderbook_empty_recovery_max_total_ms", 300)))
             if retries <= 0:
+                detail.update({
+                    "liquidity_recovery_grace_failed": research_mode,
+                    "recovery_exit_reason": "bounded_retries_disabled" if research_mode else "",
+                    "recovery_branch_skipped_reason": "bounded_retries_disabled",
+                    "recovery_branch_enter_condition_failed": True,
+                })
                 raise
 
             detail.update({
                 "empty_book_recovery_attempted": True,
+                "liquidity_recovery_grace_entered": research_mode,
+                "recovery_exit_reason": "retrying_empty_book" if research_mode else "",
                 "liquidity_state": "RECOVERING",
             })
             self._market_readiness_metrics["empty_book_recovery_attempted"] += 1
             started = time.monotonic()
             last_exc: Exception = exc
+            grace_expired = False
 
             for retry_index in range(1, retries + 1):
                 elapsed_ms = int((time.monotonic() - started) * 1000)
                 if elapsed_ms >= max_total_ms:
+                    grace_expired = True
                     break
                 if delay_ms > 0:
                     remaining_ms = max(0, max_total_ms - elapsed_ms)
@@ -3063,6 +5482,22 @@ class PolymarketTrader:
                         "empty_book_recovery_success": True,
                         "liquidity_state": "HEALTHY",
                     })
+                    if research_mode:
+                        survived, exit_reason = self._recovery_candidate_survival_detail(
+                            yes_ob=yes_ob,
+                            no_ob=no_ob,
+                            seconds_remaining=seconds_remaining,
+                        )
+                        detail.update({
+                            "liquidity_recovery_grace_success": True,
+                            "recovery_wait_seconds": round(time.monotonic() - started, 3),
+                            "recovered_before_cutoff": bool(
+                                seconds_remaining is not None
+                                and int(seconds_remaining) > self._entry_hard_block_seconds()
+                            ),
+                            "candidate_survived_recovery": survived,
+                            "recovery_exit_reason": exit_reason,
+                        })
                     self._market_readiness_metrics["empty_book_recovery_success"] += 1
                     LOGGER.info(
                         "[ORDERBOOK_RECOVERY] ticker=%s market_slug=%s recovered=true retries=%d",
@@ -3073,11 +5508,15 @@ class PolymarketTrader:
                     return yes_ob, no_ob, detail
                 except Exception as retry_exc:
                     last_exc = retry_exc
-                    if not self._is_empty_orderbook_error(retry_exc):
+                    if not self._is_liquidity_recovery_error(retry_exc, research_mode=research_mode):
                         raise
 
             detail.update({
                 "empty_book_recovery_failed": True,
+                "liquidity_recovery_grace_failed": research_mode,
+                "recovery_wait_seconds": round(time.monotonic() - started, 3) if research_mode else 0.0,
+                "recovery_exit_reason": "grace_window_expired" if research_mode and grace_expired else "empty_book_retries_exhausted" if research_mode else "",
+                "recovery_branch_skipped_reason": "grace_window_expired" if grace_expired else "empty_book_retries_exhausted",
                 "liquidity_state": "EMPTY",
             })
             self._market_readiness_metrics["empty_book_recovery_failed"] += 1
@@ -3412,6 +5851,16 @@ class PolymarketTrader:
             if confidence > 0 and metrics.ask > 0:
                 metrics.edge_pct = confidence - metrics.ask
                 metrics.snipe_score = self._snipe_score(metrics.ask, confidence)
+            self._mark_orderbook_refresh(
+                ticker,
+                source="display_snapshot_sampling",
+                trigger="terminal_orderbook_panel",
+                executable_yes_no_book=bool(metrics.has_orderbook),
+                condition_id=metrics.condition_id,
+                yes_token_id=metrics.yes_token_id,
+                no_token_id=metrics.no_token_id,
+                market_slug=metrics.market_slug,
+            )
         except Exception as exc:
             error_detail = self._clob_orderbook_error_detail(
                 exc,
@@ -3443,6 +5892,16 @@ class PolymarketTrader:
             metrics.clob_recovery_count = int(error_detail.get("clob_recovery_count", 0) or 0)
             metrics.market_data_degraded = bool(error_detail.get("market_data_degraded", False))
             metrics.retry_count = int(error_detail.get("retry_count", 0) or 0)
+            self._mark_orderbook_refresh(
+                ticker,
+                source="display_snapshot_sampling",
+                trigger="terminal_orderbook_panel_failed",
+                executable_yes_no_book=False,
+                condition_id=metrics.condition_id,
+                yes_token_id=metrics.yes_token_id,
+                no_token_id=metrics.no_token_id,
+                market_slug=metrics.market_slug,
+            )
             recovery_detail = self._last_empty_book_recovery_detail.get(ticker, {})
             metrics.empty_book_recovery_attempted = bool(recovery_detail.get("empty_book_recovery_attempted", False))
             metrics.empty_book_recovery_success = bool(recovery_detail.get("empty_book_recovery_success", False))
@@ -4093,6 +6552,7 @@ class PolymarketTrader:
         meta = self._market_token_meta.get(ticker, {})
         yes_orderbook_age_ms = 0
         no_orderbook_age_ms = 0
+        orderbook_fetch_succeeded = False
         clob_error_detail: dict[str, object] = {}
         empty_book_recovery_detail = self._empty_book_recovery_detail()
         token_mapping_warning = self._token_mapping_warning(ticker, token_ids, meta)
@@ -4114,6 +6574,16 @@ class PolymarketTrader:
             ).to_payload()
             detail = {
                 **timing_detail,
+                **self._orderbook_refresh_observability_detail(
+                    ticker,
+                    current_executable_yes_no_book=False,
+                    current_fetch_succeeded=None,
+                    condition_id=meta.get("condition_id", ""),
+                    yes_token_id=yes_token_id,
+                    no_token_id=no_token_id,
+                    market_slug=meta.get("slug", ""),
+                    record_decision_cycle=False,
+                ),
                 "token_id": yes_token_id,
                 "yes_token_id": yes_token_id,
                 "no_token_id": no_token_id,
@@ -4125,9 +6595,20 @@ class PolymarketTrader:
                 "orderbook_readiness_reason": orderbook_readiness_reason,
                 "orderbook_unavailable_reason": orderbook_readiness_reason,
                 "orderbook_error": skip_reason,
+                **self._phase2_ev_null_reason_detail(
+                    fair_value=None,
+                    market_price=None,
+                    true_probability=None,
+                    ev_after_spread=None,
+                    skip_reason=skip_reason,
+                    orderbook_readiness_reason=orderbook_readiness_reason,
+                    liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "UNKNOWN") or "UNKNOWN"),
+                    spread_normalized=timing_detail.get("spread_normalized"),
+                ),
                 "last_successful_orderbook_age_ms": self._last_orderbook_age_ms.get(ticker, 0),
                 "retry_count": int(self._setting("api_retry_attempts", 1)),
                 **regime_detail,
+                **self._regime_pass_through_fields(regime_detail),
             }
             self._emit_quant_event(
                 "log_market_snapshot",
@@ -4174,6 +6655,7 @@ class PolymarketTrader:
                 seconds_remaining=seconds_to_close,
                 market_slug=str(meta.get("slug", "") or ""),
             )
+            orderbook_fetch_succeeded = True
             yes_bid, yes_ask = yes_ob.best_bid, yes_ob.best_ask
             yes_bid_size, yes_ask_size = yes_ob.bid_size, yes_ob.ask_size
             yes_orderbook_age_ms = self._orderbook_age_ms(yes_ob)
@@ -4220,11 +6702,31 @@ class PolymarketTrader:
                 ob_liquidity_usd = total_size * avg_price
             if yes_orderbook_age_ms or no_orderbook_age_ms:
                 self._last_orderbook_age_ms[ticker] = max(yes_orderbook_age_ms, no_orderbook_age_ms)
+            self._mark_orderbook_refresh(
+                ticker,
+                source="decision_cycle_fetch",
+                trigger="candidate_evaluation",
+                executable_yes_no_book=bool(yes_bid > 0 and yes_ask > 0 and no_bid > 0 and no_ask > 0),
+                condition_id=meta.get("condition_id", ""),
+                yes_token_id=yes_token_id,
+                no_token_id=no_token_id,
+                market_slug=meta.get("slug", ""),
+            )
         except Exception as exc:
             orderbook_error = str(exc)
             empty_book_recovery_detail = self._last_empty_book_recovery_detail.get(
                 ticker,
                 empty_book_recovery_detail,
+            )
+            self._mark_orderbook_refresh(
+                ticker,
+                source="decision_cycle_fetch",
+                trigger="candidate_evaluation_failed",
+                executable_yes_no_book=False,
+                condition_id=meta.get("condition_id", ""),
+                yes_token_id=yes_token_id,
+                no_token_id=no_token_id,
+                market_slug=meta.get("slug", ""),
             )
             clob_error_detail = self._clob_orderbook_error_detail(
                 exc,
@@ -4259,6 +6761,17 @@ class PolymarketTrader:
             market_slug=str(meta.get("slug", "") or ""),
             asset=ticker,
         )
+        current_executable_yes_no_book = bool(yes_bid > 0 and yes_ask > 0 and no_bid > 0 and no_ask > 0)
+        orderbook_refresh_detail = self._orderbook_refresh_observability_detail(
+            ticker,
+            current_executable_yes_no_book=current_executable_yes_no_book,
+            current_fetch_succeeded=orderbook_fetch_succeeded,
+            condition_id=meta.get("condition_id", ""),
+            yes_token_id=yes_token_id,
+            no_token_id=no_token_id,
+            market_slug=meta.get("slug", ""),
+            record_decision_cycle=False,
+        )
         timing_detail.update(
             self._active_window_alignment_detail(
                 ticker=ticker,
@@ -4267,6 +6780,9 @@ class PolymarketTrader:
                 seconds_remaining=seconds_to_close,
                 token_ids=token_ids,
                 orderbook_ready=not bool(orderbook_readiness_reason),
+                liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY"),
+                spread=ob_spread,
+                spread_limit=float(self._phase2_safe_setting("adaptive_entry_max_spread", 0.06)),
             )
         )
         snapshot_regime_detail = classify_market_regime(
@@ -4292,6 +6808,7 @@ class PolymarketTrader:
                 "outcome": "YES/NO",
                 "source_module": "polymarket.trader",
                 **timing_detail,
+                **orderbook_refresh_detail,
                 **empty_book_recovery_detail,
                 "yes_bid": float(yes_bid),
                 "yes_ask": float(yes_ask),
@@ -4308,6 +6825,16 @@ class PolymarketTrader:
                 "orderbook_error": orderbook_error,
                 "orderbook_readiness_reason": orderbook_readiness_reason,
                 "orderbook_unavailable_reason": orderbook_readiness_reason,
+                **self._phase2_ev_null_reason_detail(
+                    fair_value=None,
+                    market_price=None,
+                    true_probability=None,
+                    ev_after_spread=None,
+                    skip_reason=orderbook_readiness_reason,
+                    orderbook_readiness_reason=orderbook_readiness_reason,
+                    liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY"),
+                    spread_normalized=timing_detail.get("spread_normalized"),
+                ),
                 **clob_health_detail,
                 "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
                 "orderbook_age": round(max(yes_orderbook_age_ms, no_orderbook_age_ms) / 1000.0, 3),
@@ -4325,6 +6852,7 @@ class PolymarketTrader:
                 "seconds_remaining": int(getattr(ptb_info, "seconds_remaining", 0) or 0),
                 "market_close_timestamp": timing_detail.get("market_close_timestamp", ""),
                 **snapshot_regime_detail,
+                **self._regime_pass_through_fields(snapshot_regime_detail),
             },
         )
 
@@ -4356,6 +6884,7 @@ class PolymarketTrader:
                     "condition_id": meta.get("condition_id", ""),
                     "outcome": "YES/NO",
                     "source_module": "polymarket.trader",
+                    **orderbook_refresh_detail,
                     "orderbook_error": orderbook_error,
                     "orderbook_readiness_reason": orderbook_readiness_reason,
                     "orderbook_unavailable_reason": orderbook_readiness_reason,
@@ -4417,6 +6946,7 @@ class PolymarketTrader:
                     "outcome": "YES/NO",
                     "source_module": "polymarket.trader",
                     "orderbook_age_ms": max(yes_orderbook_age_ms, no_orderbook_age_ms),
+                    **orderbook_refresh_detail,
                     "oracle_age_ms": int(max(0.0, feed_age or 0.0) * 1000),
                     "spread": float(ob_spread),
                     **empty_book_recovery_detail,
@@ -4549,6 +7079,15 @@ class PolymarketTrader:
             "price_velocity": float(price_velocity),
             "distance_from_ptb_pct": float(distance_from_ptb_pct),
             **regime_detail,
+            "market_regime": str(getattr(signal, "market_regime", "") or regime_detail.get("market_regime", "UNKNOWN")),
+            "bullish_probability": float(getattr(signal, "bullish_probability", probability.p_yes) or probability.p_yes),
+            "bearish_probability": float(getattr(signal, "bearish_probability", probability.p_no) or probability.p_no),
+            "reversal_risk": float(getattr(signal, "reversal_risk", 0.0) or 0.0),
+            "compression_score": float(getattr(signal, "compression_score", 0.0) or 0.0),
+            "signal_trend_strength": float(getattr(signal, "trend_strength", regime_detail.get("trend_strength", 0.0)) or 0.0),
+            "signal_volatility_score": float(getattr(signal, "volatility_score", regime_detail.get("volatility_score", 0.0)) or 0.0),
+            "indicator_evidence": str(getattr(signal, "indicator_evidence", "") or ""),
+            **orderbook_refresh_detail,
         }
         quant_detail = self._record_quant_detail(
             ticker,
@@ -4916,6 +7455,8 @@ class PolymarketTrader:
                 risk_plan=risk_plan,
                 entry_price=entry_price,
                 strategy=quant_decision,
+                seconds_remaining=int(ptb_info.seconds_remaining),
+                epoch_start=int(getattr(ptb_info, "epoch_start_ts", 0) or 0),
             )
             self._notify_telegram(
                 "notify_entry",
@@ -6294,6 +8835,9 @@ class PolymarketTrader:
                     "source_market_id": source_market_id,
                     "outcome": outcome,
                     "position_id": position_id,
+                    "risk_state": "missing_intent",
+                    "risk_mode": self._risk_mode_state.current_mode.value,
+                    "execution_context_source": "order_intent_validation",
                 },
             )
             return False
@@ -6344,6 +8888,11 @@ class PolymarketTrader:
                     "position_id": position_id,
                     "reason": decision.reason,
                     "tracked_inventory_size": float(tracked_inventory),
+                    "risk_state": "approved",
+                    "risk_mode": self._risk_mode_state.current_mode.value,
+                    "risk_plan_present": risk_plan is not None,
+                    "risk_approved": bool(risk_plan and risk_plan.position_size > 0 and risk_plan.notional_size > 0),
+                    "execution_context_source": "order_intent_validation",
                     "mode": self._runtime_mode(),
                 },
             )
@@ -6373,6 +8922,11 @@ class PolymarketTrader:
                 "position_id": position_id,
                 "reason": decision.reason,
                 "tracked_inventory_size": float(tracked_inventory),
+                "risk_state": "blocked",
+                "risk_mode": self._risk_mode_state.current_mode.value,
+                "risk_plan_present": risk_plan is not None,
+                "risk_approved": False,
+                "execution_context_source": "order_intent_validation",
                 "mode": self._runtime_mode(),
             },
         )
@@ -6416,6 +8970,13 @@ class PolymarketTrader:
             if isinstance(intent_type, OrderIntentType)
             else str(intent_type or "")
         )
+        risk_approved = bool(risk_plan and risk_plan.position_size > 0 and risk_plan.notional_size > 0)
+        execution_risk_context = {
+            "risk_state": "approved" if risk_approved else "blocked",
+            "risk_mode": self._risk_mode_state.current_mode.value,
+            "risk_plan_present": risk_plan is not None,
+            "risk_approved": risk_approved,
+        }
 
         # â”€â”€ Tier-based live limit price calculation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         live_limit_price = price  # default: use signal price
@@ -6448,6 +9009,7 @@ class PolymarketTrader:
                 "limit_price": float(live_limit_price),
                 "size": float(size),
                 "paper": bool(self.settings.paper_trading),
+                **execution_risk_context,
                 "mode": self._runtime_mode(),
             },
         )
@@ -6491,6 +9053,7 @@ class PolymarketTrader:
                     "outcome": outcome,
                     "position_id": position_id,
                     "receipt": asdict(receipt),
+                    **execution_risk_context,
                     "mode": self._runtime_mode(),
                 },
             )
@@ -6526,6 +9089,7 @@ class PolymarketTrader:
                     "outcome": outcome,
                     "position_id": position_id,
                     "receipt": asdict(receipt),
+                    **execution_risk_context,
                     "mode": self._runtime_mode(),
                 },
             )
@@ -6554,6 +9118,7 @@ class PolymarketTrader:
                     "side": side,
                     "limit_price": float(live_limit_price),
                     "size": float(size),
+                    **execution_risk_context,
                     "mode": self._runtime_mode(),
                 },
             )
@@ -6982,9 +9547,15 @@ class PolymarketTrader:
             self._finish_cycle_timing(reason="cycle_end_no_markets", force=True)
             return []
 
+        self._current_cycle_market_count = len(markets)
         outcomes: list[TradeOutcome] = []
-        for market in markets:
+        for sequence_index, market in enumerate(markets, start=1):
             try:
+                self._mark_market_evaluation_started(
+                    self._ticker_from_market_id(market.market_id),
+                    sequence_index=sequence_index,
+                    sequence_count=len(markets),
+                )
                 outcome = self._analyze_market(market)
                 outcomes.append(outcome)
                 if outcome.skipped:

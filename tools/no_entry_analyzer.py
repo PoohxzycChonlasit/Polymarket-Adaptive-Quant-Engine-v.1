@@ -22,6 +22,7 @@ from utils.no_entry_diagnostics import (
     classify_timing_status,
     normalize_skip_reason,
 )
+from tools.replay_analyzer import build_partial_lifecycle_replay_from_events, build_phase2_coverage_from_events, discover_run_ids, print_run_id_summary
 
 
 DEFAULT_QUANT_DATA_DIR = Path("runtime/quant_data")
@@ -71,6 +72,8 @@ class NoEntryRecord:
 @dataclass
 class NoEntryReport:
     date: str
+    run_id: str = ""
+    time_filter: dict[str, Any] = field(default_factory=dict)
     quant_data_dir: str = ""
     realtime_log_dir: str = ""
     decision_events_loaded: int = 0
@@ -108,6 +111,14 @@ class NoEntryReport:
     root_cause_counts: dict[str, int] = field(default_factory=dict)
     root_cause_details: list[str] = field(default_factory=list)
     market_data_quality: dict[str, Any] = field(default_factory=dict)
+    phase2_coverage: dict[str, Any] = field(default_factory=dict)
+    partial_lifecycle_replay: dict[str, Any] = field(default_factory=dict)
+    lifecycle_replay_confidence: str = "INSUFFICIENT"
+    replay_supported_sections: list[dict[str, Any]] = field(default_factory=list)
+    replay_unsupported_sections: list[dict[str, Any]] = field(default_factory=list)
+    missed_starter_candidates: list[dict[str, Any]] = field(default_factory=list)
+    timing_decay_summary: dict[str, Any] = field(default_factory=dict)
+    spread_liquidity_readiness_summary: dict[str, Any] = field(default_factory=dict)
     recommendations: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
@@ -125,6 +136,121 @@ def _as_float(value: Any, default: float = 0.0) -> float:
         except ValueError:
             return default
     return default
+
+
+def _parse_event_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = f"{text[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _parse_hhmm_utc(date_text: str, value: str | None, *, field_name: str) -> datetime | None:
+    if value is None or str(value).strip() == "":
+        return None
+    try:
+        hour_text, minute_text = str(value).strip().split(":", 1)
+        hour = int(hour_text)
+        minute = int(minute_text)
+    except (TypeError, ValueError):
+        raise ValueError(f"{field_name} must be HH:MM in UTC") from None
+    if not (0 <= hour <= 23 and 0 <= minute <= 59):
+        raise ValueError(f"{field_name} must be HH:MM in UTC")
+    parsed_date = datetime.strptime(date_text, "%Y-%m-%d").date()
+    return datetime(parsed_date.year, parsed_date.month, parsed_date.day, hour, minute, tzinfo=timezone.utc)
+
+
+def build_time_filter(date: str, *, since: str | None = None, until: str | None = None, run_id: str | None = None) -> dict[str, Any]:
+    since_utc = _parse_hhmm_utc(date, since, field_name="--since")
+    until_utc = _parse_hhmm_utc(date, until, field_name="--until")
+    if since_utc is not None and until_utc is not None and since_utc >= until_utc:
+        raise ValueError("--since must be earlier than --until")
+    return {
+        "since": since,
+        "until": until,
+        "since_utc": since_utc,
+        "until_utc": until_utc,
+        "run_id": run_id,
+        "run_id_applied": bool(run_id),
+        "applied": since_utc is not None or until_utc is not None,
+        "semantics": "half_open_since_inclusive_until_exclusive",
+    }
+
+
+def _event_in_time_window(event: dict[str, Any], time_filter: dict[str, Any] | None = None) -> bool:
+    time_filter = time_filter or {}
+    run_id = time_filter.get("run_id")
+    if run_id and str(event.get("run_id") or "") != str(run_id):
+        return False
+    if not time_filter.get("applied"):
+        return True
+    timestamp = _parse_event_timestamp(event.get("timestamp_utc"))
+    if timestamp is None:
+        payload = _payload(event)
+        timestamp = _parse_event_timestamp(payload.get("timestamp_utc"))
+    if timestamp is None:
+        return False
+    since_utc = time_filter.get("since_utc")
+    until_utc = time_filter.get("until_utc")
+    if since_utc is not None and timestamp < since_utc:
+        return False
+    if until_utc is not None and timestamp >= until_utc:
+        return False
+    return True
+
+
+def _row_in_time_window(row: dict[str, Any], time_filter: dict[str, Any] | None = None) -> bool:
+    time_filter = time_filter or {}
+    run_id = time_filter.get("run_id")
+    if run_id and str(row.get("run_id") or "") != str(run_id):
+        return False
+    if not time_filter.get("applied"):
+        return True
+    timestamp = None
+    for key in ("timestamp_utc", "timestamp", "time"):
+        timestamp = _parse_event_timestamp(row.get(key))
+        if timestamp is not None:
+            break
+    if timestamp is None:
+        return False
+    since_utc = time_filter.get("since_utc")
+    until_utc = time_filter.get("until_utc")
+    if since_utc is not None and timestamp < since_utc:
+        return False
+    if until_utc is not None and timestamp >= until_utc:
+        return False
+    return True
+
+
+def _serializable_time_filter(time_filter: dict[str, Any]) -> dict[str, Any]:
+    since_utc = time_filter.get("since_utc")
+    until_utc = time_filter.get("until_utc")
+    return {
+        "since": time_filter.get("since"),
+        "until": time_filter.get("until"),
+        "since_utc": since_utc.isoformat().replace("+00:00", "Z") if isinstance(since_utc, datetime) else None,
+        "until_utc": until_utc.isoformat().replace("+00:00", "Z") if isinstance(until_utc, datetime) else None,
+        "run_id": time_filter.get("run_id"),
+        "run_id_applied": bool(time_filter.get("run_id")),
+        "applied": bool(time_filter.get("applied")),
+        "semantics": time_filter.get("semantics"),
+    }
+
+
+def _safe_filename_token(value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    sanitized = "".join(char if char.isalnum() or char in {"-", "_", "."} else "_" for char in text)
+    return sanitized[:80] or "run"
 
 
 def _as_int_or_none(value: Any) -> int | None:
@@ -269,7 +395,7 @@ def print_missing_date_diagnostics(
         print("suggestion: run python -m tools.no_entry_analyzer --list-dates after the bot writes logs")
 
 
-def _load_jsonl_events(path: Path) -> tuple[list[dict[str, Any]], int]:
+def _load_jsonl_events(path: Path, *, time_filter: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], int]:
     if not path.is_file():
         return [], 0
     events: list[dict[str, Any]] = []
@@ -285,15 +411,17 @@ def _load_jsonl_events(path: Path) -> tuple[list[dict[str, Any]], int]:
                 bad_json_lines += 1
                 continue
             if isinstance(event, dict):
+                if not _event_in_time_window(event, time_filter):
+                    continue
                 events.append(event)
             else:
                 bad_json_lines += 1
     return events, bad_json_lines
 
 
-def load_decision_records(base_dir: str | Path, date: str) -> list[NoEntryRecord]:
+def load_decision_records(base_dir: str | Path, date: str, *, time_filter: dict[str, Any] | None = None) -> list[NoEntryRecord]:
     records: list[NoEntryRecord] = []
-    events, _bad_json_lines = _load_jsonl_events(decision_log_path(base_dir, date))
+    events, _bad_json_lines = _load_jsonl_events(decision_log_path(base_dir, date), time_filter=time_filter)
     for event in events:
         payload = _payload(event)
         decision = str(payload.get("decision", "") or "").lower()
@@ -343,9 +471,9 @@ def load_decision_records(base_dir: str | Path, date: str) -> list[NoEntryRecord
     return records
 
 
-def load_market_snapshot_payloads(base_dir: str | Path, date: str) -> list[dict[str, Any]]:
+def load_market_snapshot_payloads(base_dir: str | Path, date: str, *, time_filter: dict[str, Any] | None = None) -> list[dict[str, Any]]:
     payloads: list[dict[str, Any]] = []
-    events, _bad_json_lines = _load_jsonl_events(market_snapshot_path(base_dir, date))
+    events, _bad_json_lines = _load_jsonl_events(market_snapshot_path(base_dir, date), time_filter=time_filter)
     for event in events:
         payload = _payload(event)
         if payload:
@@ -353,8 +481,8 @@ def load_market_snapshot_payloads(base_dir: str | Path, date: str) -> list[dict[
     return payloads
 
 
-def load_execution_summary(base_dir: str | Path, date: str) -> dict[str, int]:
-    events, _bad_json_lines = _load_jsonl_events(execution_log_path(base_dir, date))
+def load_execution_summary(base_dir: str | Path, date: str, *, time_filter: dict[str, Any] | None = None) -> dict[str, int]:
+    events, _bad_json_lines = _load_jsonl_events(execution_log_path(base_dir, date), time_filter=time_filter)
     summary = {
         "execution_events_loaded": len(events),
         "order_submit_attempt_count": 0,
@@ -395,12 +523,14 @@ def count_bad_json_lines(base_dir: str | Path, date: str) -> int:
     return sum(_load_jsonl_events(path)[1] for path in paths)
 
 
-def load_scan_records(log_dir: str | Path, date: str) -> list[NoEntryRecord]:
+def load_scan_records(log_dir: str | Path, date: str, *, time_filter: dict[str, Any] | None = None) -> list[NoEntryRecord]:
     records: list[NoEntryRecord] = []
     for path in scan_log_paths(log_dir, date):
         with path.open(encoding="utf-8", newline="") as handle:
             reader = csv.DictReader(handle)
             for row in reader:
+                if not _row_in_time_window(row, time_filter):
+                    continue
                 decision = str(row.get("decision", "") or "").lower()
                 skipped = decision not in {"buy", "long", "approved", "enter", "entered"}
                 raw_reason = str(row.get("raw_skip_reason") or row.get("skip_reason") or "")
@@ -456,15 +586,21 @@ def analyze_no_entries(
     realtime_log_dir: str | Path = DEFAULT_REALTIME_LOG_DIR,
     report_dir: str | Path | None = None,
     write_report: bool = False,
+    since: str | None = None,
+    until: str | None = None,
+    run_id: str | None = None,
 ) -> NoEntryReport:
-    decision_records = load_decision_records(quant_data_dir, date)
-    scan_records = load_scan_records(realtime_log_dir, date)
-    market_snapshots = load_market_snapshot_payloads(quant_data_dir, date)
-    execution_summary = load_execution_summary(quant_data_dir, date)
+    time_filter = build_time_filter(date, since=since, until=until, run_id=run_id)
+    decision_records = load_decision_records(quant_data_dir, date, time_filter=time_filter)
+    scan_records = load_scan_records(realtime_log_dir, date, time_filter=time_filter)
+    market_snapshots = load_market_snapshot_payloads(quant_data_dir, date, time_filter=time_filter)
+    execution_summary = load_execution_summary(quant_data_dir, date, time_filter=time_filter)
     primary_records = decision_records if decision_records else scan_records
 
     report = NoEntryReport(
         date=date,
+        run_id=str(run_id or ""),
+        time_filter=_serializable_time_filter(time_filter),
         quant_data_dir=str(Path(quant_data_dir)),
         realtime_log_dir=str(Path(realtime_log_dir)),
         decision_events_loaded=len(decision_records),
@@ -478,12 +614,60 @@ def analyze_no_entries(
     report.paper_fill_count = execution_summary["paper_fill_count"]
     report.execution_failure_count = execution_summary["execution_failure_count"]
     report.market_data_quality = build_market_data_quality(report, market_snapshots)
+    phase2_events = _phase2_no_entry_events(
+        quant_data_dir=quant_data_dir,
+        date=date,
+        scan_records=scan_records,
+        time_filter=time_filter,
+    )
+    report.phase2_coverage = build_phase2_coverage_from_events(phase2_events)
+    lifecycle_replay = build_partial_lifecycle_replay_from_events(phase2_events)
+    report.partial_lifecycle_replay = lifecycle_replay
+    report.lifecycle_replay_confidence = str(lifecycle_replay.get("lifecycle_replay_confidence", "INSUFFICIENT"))
+    report.replay_supported_sections = list(lifecycle_replay.get("replay_supported_sections", []))
+    report.replay_unsupported_sections = list(lifecycle_replay.get("replay_unsupported_sections", []))
+    report.missed_starter_candidates = list(lifecycle_replay.get("missed_starter_candidates", []))
+    report.timing_decay_summary = dict(lifecycle_replay.get("timing_decay_summary", {}))
+    report.spread_liquidity_readiness_summary = dict(lifecycle_replay.get("spread_liquidity_readiness_summary", {}))
     classify_root_cause(report)
     report.recommendations = build_recommendations(report)
 
     if write_report:
         write_no_entry_report(report, report_dir=report_dir)
     return report
+
+
+def _phase2_no_entry_events(
+    *,
+    quant_data_dir: str | Path,
+    date: str,
+    scan_records: list[NoEntryRecord],
+    time_filter: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    decision_events, _decision_bad = _load_jsonl_events(decision_log_path(quant_data_dir, date), time_filter=time_filter)
+    snapshot_events, _snapshot_bad = _load_jsonl_events(market_snapshot_path(quant_data_dir, date), time_filter=time_filter)
+    events = [*decision_events, *snapshot_events]
+    if decision_events:
+        return events
+    for record in scan_records:
+        events.append({
+            "event_type": "decision",
+            "_category": "scan_csv",
+            "payload": {
+                "asset": record.asset,
+                "decision": record.decision,
+                "skipped": record.skipped,
+                "skip_reason": record.raw_skip_reason,
+                "normalized_skip_reason": record.normalized_skip_reason,
+                "confidence": record.confidence,
+                "ev": record.ev,
+                "seconds_remaining": record.seconds_remaining,
+                "entry_cutoff_seconds": record.entry_cutoff_seconds,
+                "time_bucket": record.time_bucket,
+                "orderbook_readiness_reason": record.orderbook_readiness_reason,
+            },
+        })
+    return events
 
 
 def _aggregate_records(report: NoEntryReport, records: list[NoEntryRecord]) -> None:
@@ -730,7 +914,15 @@ def build_recommendations(report: NoEntryReport) -> list[str]:
 def write_no_entry_report(report: NoEntryReport, *, report_dir: str | Path | None = None) -> Path:
     output_dir = Path(report_dir or DEFAULT_REPORT_DIR)
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"no_entry_report_{report.date}.json"
+    suffix = ""
+    if report.time_filter.get("applied"):
+        since = str(report.time_filter.get("since") or "start").replace(":", "")
+        until = str(report.time_filter.get("until") or "end").replace(":", "")
+        suffix = f"_{since}_to_{until}"
+    safe_run_id = _safe_filename_token(report.run_id or report.time_filter.get("run_id"))
+    if safe_run_id:
+        suffix = f"{suffix}_run_{safe_run_id}"
+    output_path = output_dir / f"no_entry_report_{report.date}{suffix}.json"
     with output_path.open("w", encoding="utf-8") as handle:
         json.dump(report.to_dict(), handle, indent=2, sort_keys=True)
     return output_path
@@ -738,7 +930,21 @@ def write_no_entry_report(report: NoEntryReport, *, report_dir: str | Path | Non
 
 def print_summary(report: NoEntryReport) -> None:
     print("No-Entry Diagnostics")
-    print(f"date={report.date} scanned={report.total_scanned} entered={report.total_entered} skipped={report.total_skipped}")
+    if report.time_filter.get("applied"):
+        print(
+            "date={date} filter={since}..{until} run_id={run_id} semantics={semantics} scanned={scanned} entered={entered} skipped={skipped}".format(
+                date=report.date,
+                since=report.time_filter.get("since_utc"),
+                until=report.time_filter.get("until_utc"),
+                run_id=report.run_id or "",
+                semantics=report.time_filter.get("semantics"),
+                scanned=report.total_scanned,
+                entered=report.total_entered,
+                skipped=report.total_skipped,
+            )
+        )
+    else:
+        print(f"date={report.date} run_id={report.run_id or ''} scanned={report.total_scanned} entered={report.total_entered} skipped={report.total_skipped}")
     print(
         "decision_events={decision_events} scan_rows={scan_rows} execution_events={execution_events} "
         "bad_json={bad_json}".format(
@@ -784,6 +990,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--date", default=datetime.now(timezone.utc).strftime("%Y-%m-%d"), help="Date in YYYY-MM-DD format.")
     parser.add_argument("--today-local", action="store_true", help="Use today's date in the local timezone.")
     parser.add_argument("--today-utc", action="store_true", help="Use today's date in UTC.")
+    parser.add_argument("--since", default=None, help="UTC start time HH:MM for same-day filtering; inclusive.")
+    parser.add_argument("--until", default=None, help="UTC end time HH:MM for same-day filtering; exclusive.")
+    parser.add_argument("--run-id", default=None, help="Exact run_id to isolate; events without this run_id are excluded.")
+    parser.add_argument("--list-run-ids", action="store_true", help="List available run_id values for the selected date.")
     parser.add_argument("--list-dates", action="store_true", help="List available dates from decision logs, market snapshots, and scan CSVs.")
     parser.add_argument("--quant-data-dir", default=str(DEFAULT_QUANT_DATA_DIR), help="Quant data root directory.")
     parser.add_argument("--realtime-log-dir", default=str(DEFAULT_REALTIME_LOG_DIR), help="Realtime log root directory.")
@@ -804,6 +1014,14 @@ def main() -> int:
         return 0
 
     requested_date = resolve_requested_date(args)
+    if args.list_run_ids:
+        print_run_id_summary(discover_run_ids(
+            base_dir=args.quant_data_dir,
+            date=requested_date,
+            since=args.since,
+            until=args.until,
+        ))
+        return 0
     output_report_dir = DEFAULT_REPORT_DIR if args.write_report else Path(args.report_dir)
     report = analyze_no_entries(
         date=requested_date,
@@ -811,10 +1029,19 @@ def main() -> int:
         realtime_log_dir=args.realtime_log_dir,
         report_dir=output_report_dir,
         write_report=args.write_report,
+        since=args.since,
+        until=args.until,
+        run_id=args.run_id,
     )
     print_summary(report)
     if args.write_report:
-        print(f"report={DEFAULT_REPORT_DIR / f'no_entry_report_{requested_date}.json'}")
+        suffix = ""
+        if args.since or args.until:
+            suffix = f"_{str(args.since or 'start').replace(':', '')}_to_{str(args.until or 'end').replace(':', '')}"
+        safe_run_id = _safe_filename_token(args.run_id)
+        if safe_run_id:
+            suffix = f"{suffix}_run_{safe_run_id}"
+        print(f"report={DEFAULT_REPORT_DIR / f'no_entry_report_{requested_date}{suffix}.json'}")
     if report.total_scanned == 0 and report.market_data_quality.get("market_snapshots_loaded", 0) == 0:
         print_missing_date_diagnostics(
             date=requested_date,

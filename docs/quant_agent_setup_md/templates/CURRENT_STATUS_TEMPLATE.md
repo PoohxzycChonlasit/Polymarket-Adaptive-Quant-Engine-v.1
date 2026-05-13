@@ -1,24 +1,47 @@
-# CURRENT_STATUS
+# Current Status Template
 
-Date:
-Mode: PAPER / LIVE_SMALL / LIVE_DISABLED
-Balance:
-Bot version / branch:
-Last deployed commit:
+## Project Phase
 
-## Today’s Main Problem
+- Current phase: `[Phase 1 / Phase 2 / Phase 3 / Phase 4]`
+- Runtime posture: paper-first; live not ready unless explicitly proven.
+- Current primary bottleneck: `[scanner / token / orderbook / liquidity / spread / signal / risk / execution / evidence quality / unknown]`
 
-## Current Safety Status
-- Balance floor ok:
-- Kill switch off:
-- Market feed ok:
-- User feed ok:
-- Reference feed ok:
-- Position reconciled:
-- Tests passing:
+## Quant Lifecycle State
 
-## Last Fix
+- OPENING_SCAN:
+- ACTIVE_INVENTORY_TRADING:
+- PROFIT_MANAGEMENT:
+- FINAL_DERISK:
+- CLOSED_OR_UNSAFE:
 
-## Next Single Fix
+## Dynamic Quant Risk Budget Snapshot
 
-## Notes
+- Bankroll/current equity:
+- Tier id:
+- Risk mode:
+- Open exposure:
+- Market risk used:
+- Session risk used:
+- Drawdown:
+- Available risk budget:
+- Target exposure vs current exposure:
+
+## Evidence Quality
+
+- JSONL coverage:
+- Regime/probability coverage:
+- Scanner lifecycle coverage:
+- Position/reconciliation evidence:
+- Missing fields or unknowns:
+
+## Current Findings
+
+- Root Problem:
+- Evidence:
+- Quant Interpretation:
+- Risk / Safety Impact:
+- Recommended Action:
+
+## Next Step
+
+One exact next recommended task:

@@ -83,6 +83,9 @@ def test_risk_plan_zero_diagnostics_emitted() -> None:
         current_bankroll_for_sizing=8.7,
         current_cash_balance=8.7,
         open_position_market_value=0.0,
+        current_bankroll_tier="T0_MICRO_SEED",
+        bankroll_tier_locked=False,
+        bankroll_hysteresis_active=False,
     )
     trader._wallet_reference_balance = None
     trader._paper_available_balance = lambda: 8.7
@@ -119,6 +122,11 @@ def test_risk_plan_zero_diagnostics_emitted() -> None:
             "raw_skip_reason": "risk_plan_zero",
             "normalized_skip_reason": "risk_plan_zero",
             "ev": 0.01,
+            "p_yes": 0.57,
+            "p_no": 0.43,
+            "outcome": "YES",
+            "ask_price": 0.52,
+            "market_epoch_start": 1_778_000_000,
             "seconds_remaining": 180,
             "entry_cutoff_seconds": 90,
         },
@@ -130,6 +138,35 @@ def test_risk_plan_zero_diagnostics_emitted() -> None:
     assert payload["raw_skip_reason"] == "risk_plan_zero"
     assert payload["normalized_skip_reason"] == "risk_plan_zero"
     assert payload["time_bucket"] == "mid_window"
+    assert payload["lifecycle_phase"] == "ACTIVE_INVENTORY_TRADING"
+    assert payload["candidate_id"].startswith("candidate_")
+    assert payload["signal_id"].startswith("signal_")
+    assert payload["fair_value"] == pytest.approx(0.57)
+    assert payload["fair_value_available"] is True
+    assert payload["fair_value_null_reason"] == ""
+    assert payload["market_price"] == pytest.approx(0.52)
+    assert payload["market_price_available"] is True
+    assert payload["market_price_null_reason"] == ""
+    assert payload["true_probability"] == pytest.approx(0.57)
+    assert payload["true_probability_available"] is True
+    assert payload["true_probability_null_reason"] == ""
+    assert payload["ev_after_spread"] == pytest.approx(0.01)
+    assert payload["ev_after_spread_available"] is True
+    assert payload["ev_after_spread_null_reason"] == ""
+    assert payload["probability_model_stage"] == "probability_model_output"
+    assert payload["ev_calculation_stage"] == "ev_calculated"
+    assert payload["mfe_candidate_price"] == pytest.approx(0.52)
+    assert payload["mae_candidate_price"] == pytest.approx(0.52)
+    assert payload["starter_candidate"] is True
+    assert payload["reload_candidate"] is False
+    assert payload["unload_candidate"] is False
+    assert payload["final_derisk_candidate"] is False
+    assert "token_ready_at" in payload
+    assert "first_tradable_at" in payload
+    assert payload["exposure_before"] == pytest.approx(0.0)
+    assert payload["exposure_after"] == pytest.approx(0.0)
+    assert payload["risk_budget_used"] == pytest.approx(0.0)
+    assert "remaining_risk_budget" in payload
     diagnostics = payload["risk_plan_zero_diagnostics"]
     assert diagnostics["bankroll"] == pytest.approx(8.7)
     assert diagnostics["tier"] == "micro"
@@ -141,6 +178,62 @@ def test_risk_plan_zero_diagnostics_emitted() -> None:
     assert diagnostics["final_notional_size"] == 0.0
     assert diagnostics["min_position_size_usd"] == pytest.approx(1.0)
     assert diagnostics["reason_from_order_manager"] == "confidence_too_low,below_min_position_size"
+
+
+def test_phase2_ev_null_reasons_emitted_for_pre_model_skip() -> None:
+    trader = PolymarketTrader.__new__(PolymarketTrader)
+    trader.settings = SimpleNamespace(paper_trading=True, execution_entry_cutoff_seconds=90)
+    trader.quant_events = _CollectingDecisionLogger()
+    trader._market_token_meta = {"BTC": {"slug": "btc-up-down-5m"}}
+    trader._risk_mode_state = RiskModeState()
+    trader.bankroll_state = SimpleNamespace(
+        current_bankroll_for_sizing=8.7,
+        current_cash_balance=8.7,
+        open_position_market_value=0.0,
+        current_bankroll_tier="T0_MICRO_SEED",
+        bankroll_tier_locked=False,
+        bankroll_hysteresis_active=False,
+    )
+    trader._wallet_reference_balance = None
+    trader._paper_available_balance = lambda: 8.7
+    trader._paper_wallet_reference_visible = lambda: False
+
+    outcome = TradeOutcome(
+        market_id="pm-5m-btc",
+        question="BTC above?",
+        decision="skip",
+        confidence=0.0,
+        risk_plan=None,
+        receipt=None,
+        skipped=True,
+        skip_reason="Entry cutoff: 40s <= 90s",
+        display={
+            "raw_skip_reason": "Entry cutoff: 40s <= 90s",
+            "normalized_skip_reason": "time_unsafe",
+            "seconds_remaining": 40,
+            "entry_cutoff_seconds": 90,
+            "market_epoch_start": 1_778_000_000,
+            "ev_after_spread": None,
+        },
+    )
+
+    trader._emit_decision_event(outcome, ticker="BTC")
+
+    payload = trader.quant_events.payloads[0]
+    assert payload["fair_value"] is None
+    assert payload["fair_value_available"] is False
+    assert payload["fair_value_null_reason"] == "time_unsafe"
+    assert payload["market_price"] is None
+    assert payload["market_price_available"] is False
+    assert payload["market_price_null_reason"] == "time_unsafe"
+    assert payload["true_probability"] is None
+    assert payload["true_probability_available"] is False
+    assert payload["true_probability_null_reason"] == "time_unsafe"
+    assert payload["ev_after_spread"] is None
+    assert payload["ev_after_spread_available"] is False
+    assert payload["ev_after_spread_null_reason"] == "time_unsafe"
+    assert payload["probability_model_stage"] == "pre_model_skip"
+    assert payload["ev_calculation_stage"] == "pre_model_skip"
 
 
 def test_analyzer_handles_empty_data(tmp_path: Path) -> None:
@@ -155,6 +248,222 @@ def test_analyzer_handles_empty_data(tmp_path: Path) -> None:
     assert report.total_skipped == 0
     assert report.root_cause_category == "data"
     assert report.recommendations == ["No decision_log JSONL or scan_log CSV rows found for this date."]
+
+
+def test_no_entry_filters_jsonl_by_utc_time_window(tmp_path: Path) -> None:
+    quant_dir = tmp_path / "quant_data"
+    decision_dir = quant_dir / "decision_log"
+    decision_dir.mkdir(parents=True)
+    (decision_dir / "2026-05-08.jsonl").write_text(
+        "\n".join([
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:42:59Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "legacy",
+                "source_module": "test",
+                "schema_version": "1.0",
+                "payload": {
+                    "asset": "BTC",
+                    "decision": "skip",
+                    "skipped": True,
+                    "raw_skip_reason": "legacy_before_window",
+                },
+            }),
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:44:08Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "fresh",
+                "source_module": "test",
+                "schema_version": "1.0",
+                "payload": {
+                    "asset": "BTC",
+                    "decision": "skip",
+                    "skipped": True,
+                    "raw_skip_reason": "warmup_pending",
+                    "orderbook_readiness_reason": "warmup_pending",
+                    "fair_value_available": False,
+                    "fair_value_null_reason": "no_orderbook",
+                },
+            }),
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:47:00Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "legacy",
+                "source_module": "test",
+                "schema_version": "1.0",
+                "payload": {
+                    "asset": "BTC",
+                    "decision": "skip",
+                    "skipped": True,
+                    "raw_skip_reason": "legacy_after_window",
+                },
+            }),
+        ])
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = analyze_no_entries(
+        date="2026-05-08",
+        quant_data_dir=quant_dir,
+        realtime_log_dir=tmp_path / "realtime_logs",
+        since="17:43",
+        until="17:47",
+    )
+
+    assert report.time_filter["applied"] is True
+    assert report.decision_events_loaded == 1
+    assert report.total_scanned == 1
+    assert report.skip_reason_counts == {"warmup_pending": 1}
+    assert report.phase2_coverage["ev_null_reason_coverage"]["fields"]["fair_value"]["null_reason_events"] == 1
+
+
+def test_no_entry_filters_jsonl_by_run_id_and_writes_run_scoped_report(tmp_path: Path) -> None:
+    quant_dir = tmp_path / "quant_data"
+    reports_dir = tmp_path / "reports"
+    decision_dir = quant_dir / "decision_log"
+    decision_dir.mkdir(parents=True)
+    (decision_dir / "2026-05-08.jsonl").write_text(
+        "\n".join([
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:44:08Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "run/target",
+                "payload": {
+                    "asset": "BTC",
+                    "decision": "skip",
+                    "skipped": True,
+                    "raw_skip_reason": "warmup_pending",
+                    "orderbook_readiness_reason": "warmup_pending",
+                },
+            }),
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:44:09Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "run-other",
+                "payload": {
+                    "asset": "BTC",
+                    "decision": "skip",
+                    "skipped": True,
+                    "raw_skip_reason": "other_run",
+                },
+            }),
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:44:10Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "payload": {
+                    "asset": "BTC",
+                    "decision": "skip",
+                    "skipped": True,
+                    "raw_skip_reason": "missing_run_id",
+                },
+            }),
+        ])
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = analyze_no_entries(
+        date="2026-05-08",
+        quant_data_dir=quant_dir,
+        realtime_log_dir=tmp_path / "realtime_logs",
+        report_dir=reports_dir,
+        write_report=True,
+        run_id="run/target",
+    )
+
+    assert report.run_id == "run/target"
+    assert report.decision_events_loaded == 1
+    assert report.total_scanned == 1
+    assert report.skip_reason_counts == {"warmup_pending": 1}
+    assert report.time_filter["run_id"] == "run/target"
+    assert report.time_filter["run_id_applied"] is True
+    assert (reports_dir / "no_entry_report_2026-05-08_run_run_target.json").exists()
+
+
+def test_no_entry_cli_lists_run_ids(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    quant_dir = tmp_path / "quant_data"
+    decision_dir = quant_dir / "decision_log"
+    decision_dir.mkdir(parents=True)
+    (decision_dir / "2026-05-08.jsonl").write_text(
+        "\n".join([
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:44:08Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "run-a",
+                "payload": {"asset": "BTC"},
+            }),
+            json.dumps({
+                "timestamp_utc": "2026-05-08T17:45:08Z",
+                "event_type": "decision",
+                "mode": "paper",
+                "run_id": "run-b",
+                "payload": {"asset": "ETH"},
+            }),
+        ])
+        + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "no_entry_analyzer",
+        "--date",
+        "2026-05-08",
+        "--quant-data-dir",
+        str(quant_dir),
+        "--realtime-log-dir",
+        str(tmp_path / "realtime_logs"),
+        "--list-run-ids",
+    ])
+
+    assert no_entry_main() == 0
+
+    output = capsys.readouterr().out
+    assert "Available run IDs" in output
+    assert "run_id=run-a event_count=1" in output
+    assert "run_id=run-b event_count=1" in output
+    assert "categories=decision_log" in output
+
+
+def test_no_entry_phase2_coverage_reads_market_snapshot_ev_null_reasons(tmp_path: Path) -> None:
+    quant_dir = tmp_path / "quant_data"
+    snapshot_dir = quant_dir / "market_snapshots"
+    snapshot_dir.mkdir(parents=True)
+    (snapshot_dir / "2026-05-08.jsonl").write_text(
+        _jsonl_event({
+            "ticker": "BTC",
+            "orderbook_readiness_reason": "warmup_pending",
+            "fair_value_available": False,
+            "fair_value_null_reason": "no_orderbook",
+            "market_price_available": False,
+            "market_price_null_reason": "no_orderbook",
+            "true_probability_available": False,
+            "true_probability_null_reason": "no_orderbook",
+            "ev_after_spread_available": False,
+            "ev_after_spread_null_reason": "no_orderbook",
+            "probability_model_stage": "pre_model_skip",
+            "ev_calculation_stage": "pre_model_skip",
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = analyze_no_entries(
+        date="2026-05-08",
+        quant_data_dir=quant_dir,
+        realtime_log_dir=tmp_path / "realtime_logs",
+    )
+
+    null_coverage = report.phase2_coverage["ev_null_reason_coverage"]
+    assert null_coverage["events_checked"] == 1
+    assert null_coverage["fields"]["ev_after_spread"]["null_reasons"] == [["no_orderbook", 1]]
+    assert ["pre_model_skip", 1] in null_coverage["ev_calculation_stages"]
 
 
 def test_analyzer_counts_malformed_events(tmp_path: Path) -> None:
@@ -697,6 +1006,44 @@ def test_analyzer_reports_market_data_quality_section(tmp_path: Path) -> None:
     assert report.market_data_quality["average_orderbook_age_ms"] == pytest.approx(100.0)
     assert report.market_data_quality["token_mapping_warning_count"] == 1
     assert any("Token mapping warnings" in item for item in report.recommendations)
+
+
+def test_no_entry_report_includes_phase2_coverage_gaps(tmp_path: Path) -> None:
+    quant_dir = tmp_path / "quant_data"
+    decision_dir = quant_dir / "decision_log"
+    decision_dir.mkdir(parents=True)
+    (decision_dir / "2026-05-08.jsonl").write_text(
+        _jsonl_event({
+            "asset": "BTC",
+            "decision": "skip",
+            "skipped": True,
+            "raw_skip_reason": "ev_below_threshold",
+            "seconds_remaining": 180,
+            "entry_cutoff_seconds": 90,
+            "orderbook_readiness_reason": "ready",
+            "spread": 0.03,
+            "liquidity_state": "HEALTHY",
+            "ev": 0.01,
+        })
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = analyze_no_entries(
+        date="2026-05-08",
+        quant_data_dir=quant_dir,
+        realtime_log_dir=tmp_path / "realtime_logs",
+    )
+    coverage = report.phase2_coverage
+
+    assert coverage["status"] == "PARTIAL_PHASE2_COVERAGE"
+    assert "mfe_mae_support" in coverage["coverage_gaps"]
+    assert coverage["requirements"]["fair_value_ev_decay"]["status"] == "proxy_inferred"
+    assert coverage["requirements"]["token_orderbook_readiness"]["status"] == "available"
+    assert report.partial_lifecycle_replay["status"] == "PARTIAL_PROXY_REPLAY"
+    assert report.missed_starter_candidates
+    assert report.missed_starter_candidates[0]["starter_replay_inference"] == "proxy_inferred"
+    assert any(item["status"] == "coverage_gap" for item in report.replay_unsupported_sections)
 
 
 def test_list_dates_finds_available_data(tmp_path: Path) -> None:

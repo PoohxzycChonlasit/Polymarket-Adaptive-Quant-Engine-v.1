@@ -1565,6 +1565,23 @@ class PolymarketRealtimeDisplay:
                 "final_size": 0.0,
                 "frequency_multiplier": 0.0,
                 "last_tick_ms": 0,
+                "candidate_trace_id": "",
+                "parent_candidate_trace_id": "",
+                "trace_link_reason": "",
+                "identity_readiness": "",
+                "trace_enrichment_status": "",
+                "model_attempted": None,
+                "probability_visible": None,
+                "fair_value_visible": None,
+                "ev_visible": None,
+                "dominant_model_gap_reason": "",
+                "blocked_before_risk_count": 0,
+                "dominant_pre_risk_block_reason": "",
+                "risk_reachability_status": "",
+                "risk_serialization_visibility": "",
+                "lifecycle_phase": "",
+                "latest_producer": "",
+                "latest_schema_version": "",
             }
             for t in self._TICKERS
         }
@@ -1579,6 +1596,7 @@ class PolymarketRealtimeDisplay:
         self._ai_layer: list[dict] = []
         self._arbitrage: dict[str, dict] = {}
         self._session_summary: dict[str, object] = {}
+        self._observability_health: dict[str, object] = {}
         self._ws_status = "connecting"
         self._logging_status = "SAFE"
         self._started_at = datetime.now(tz=UTC)
@@ -1624,6 +1642,9 @@ class PolymarketRealtimeDisplay:
 
     def update_portfolio(self, summary: object) -> None:
         self._portfolio = summary
+        health = _get_field(summary, "observability_health", None)
+        if isinstance(health, Mapping):
+            self._observability_health.update(health)
         self._safe_live_update()
 
     def update_countdown(self, next_in: int) -> None:
@@ -1701,6 +1722,10 @@ class PolymarketRealtimeDisplay:
 
     def update_session_summary(self, summary: dict[str, object]) -> None:
         self._session_summary = summary
+        self._safe_live_update()
+
+    def update_observability_health(self, **kwargs: object) -> None:
+        self._observability_health.update(kwargs)
         self._safe_live_update()
 
     def add_log(self, message: str, *, level: str = "INFO", redraw: bool = True) -> None:
@@ -1834,7 +1859,7 @@ class PolymarketRealtimeDisplay:
             layout["center"].update(self._market_table(spec))
             layout["bottom"].split_row(
                 Layout(self._cycle_panel(spec), name="ai"),
-                Layout(self._rolling_logs_panel(spec), name="logs"),
+                Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
             )
             return layout
 
@@ -1850,7 +1875,7 @@ class PolymarketRealtimeDisplay:
             )
             layout["bottom"].split_row(
                 Layout(self._cycle_panel(spec), name="ai"),
-                Layout(self._execution_panel(spec), name="execution"),
+                Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
                 Layout(self._rolling_logs_panel(spec), name="logs"),
             )
         else:
@@ -1861,7 +1886,7 @@ class PolymarketRealtimeDisplay:
             )
             layout["bottom"].split_row(
                 Layout(self._execution_panel(spec), name="execution"),
-                Layout(self._skip_reasons_panel(spec), name="skip"),
+                Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
                 Layout(self._rolling_logs_panel(spec), name="logs"),
             )
         return layout
@@ -2034,6 +2059,11 @@ class PolymarketRealtimeDisplay:
         spread = self._as_float(m.get("spread", 0.0))
         model_y = self._as_float(m.get("model_p_yes", m.get("p_yes", 0.0)))
         model_n = self._as_float(m.get("model_p_no", m.get("p_no", 0.0)))
+        regime = str(m.get("market_regime", m.get("trend_regime", "UNKNOWN")) or "UNKNOWN").upper()
+        bull_prob = self._as_float(m.get("bullish_probability", model_y or m.get("p_yes", 0.0)))
+        bear_prob = self._as_float(m.get("bearish_probability", model_n or m.get("p_no", 0.0)))
+        trend_strength = self._as_float(m.get("signal_trend_strength", m.get("trend_strength", 0.0)))
+        vol_score = self._as_float(m.get("signal_volatility_score", m.get("volatility_score", 0.0)))
         yes_bid = self._as_float(m.get("yes_bid", bid if str(m.get("outcome", "")).upper() == "YES" else 0.0))
         yes_ask = self._as_float(m.get("yes_ask", ask if str(m.get("outcome", "")).upper() == "YES" else 0.0))
         no_bid = self._as_float(m.get("no_bid", bid if str(m.get("outcome", "")).upper() == "NO" else 0.0))
@@ -2070,6 +2100,7 @@ class PolymarketRealtimeDisplay:
             self._line([("YES Mid ", "grey70"), (self._fmt_prob(yes_mid), "bright_green"), (" | NO Mid ", "grey70"), (self._fmt_prob(no_mid), "bright_red"), (" | Age ", "grey70"), (f"{age_ms}ms" if age_ms else "--", "bright_green" if age_ms and age_ms <= 1500 else "bright_yellow")], spec.panel_width),
             self._line([("Source ", "grey70"), (self._clip(clob_source, 18), "bright_cyan"), (" | Token ", "grey70"), (self._clip(str(m.get("token_id", "") or "--"), 16), "grey62")], spec.panel_width),
             self._line([("Model_Y ", "grey70"), (self._fmt_prob(model_y), "bright_green"), (" | Model_N ", "grey70"), (self._fmt_prob(model_n), "bright_red"), (" | Conf ", "grey70"), (self._fmt_pct(conf), self._confidence_style(conf))], spec.panel_width),
+            self._line([("Regime ", "grey70"), (self._clip(regime, 16), "bold bright_cyan"), (" | Bull ", "grey70"), (self._fmt_prob(bull_prob), "bright_green"), (" | Bear ", "grey70"), (self._fmt_prob(bear_prob), "bright_red"), (" | T ", "grey70"), (f"{trend_strength:.2f}", "bright_yellow"), (" V ", "grey70"), (f"{vol_score:.4f}", "grey70")], spec.panel_width),
             self._line([("EV ", "grey70"), (f"{ev:+.3f}" if ev else "--", "bright_green" if ev > 0 else "bright_red" if ev < 0 else "grey62"), (" | Min ", "grey70"), (f"{min_ev:.3f}" if min_ev else "--", "grey70"), (" | ", "grey70"), (delta, "bright_yellow" if "HIGH" in delta else "bright_green")], spec.panel_width),
             self._line([("Decision ", "grey70"), (decision, self._decision_style(decision))], spec.panel_width),
             self._line([
@@ -2126,6 +2157,10 @@ class PolymarketRealtimeDisplay:
             remaining = int(self._as_float(r.get("seconds_remaining", r.get("seconds_until_close", 0))))
             cutoff = int(self._as_float(r.get("effective_cutoff_seconds", r.get("entry_cutoff_seconds", 0))))
             liquidity = str(r.get("liquidity_state", "") or "")
+            regime = str(r.get("market_regime", r.get("trend_regime", "")) or "").upper()
+            bull_prob = self._as_float(r.get("bullish_probability", r.get("p_yes", 0.0)))
+            bear_prob = self._as_float(r.get("bearish_probability", r.get("p_no", 0.0)))
+            vol_score = self._as_float(r.get("signal_volatility_score", r.get("volatility_score", 0.0)))
             micro_on = bool(r.get("micro_timing_branch_entered", False) or r.get("micro_timing_allowed", False))
             context_lines: list[str] = []
             if remaining or cutoff or liquidity or micro_on:
@@ -2136,11 +2171,102 @@ class PolymarketRealtimeDisplay:
                 context_lines.append(timing_context.strip())
                 if liquidity:
                     context_lines.append(f"liquidity={liquidity.upper()}")
+            if regime or bull_prob or bear_prob or vol_score:
+                context_lines.append(
+                    f"regime={regime or '--'} bull={bull_prob:.2f} bear={bear_prob:.2f} vol={vol_score:.4f}"
+                )
             line += f" CONF={conf:.2f}"
             rows += [Text(self._clip(line, spec.panel_width), style=self._decision_style(label)), "\n"]
             for context_line in context_lines:
                 rows += [Text(self._clip("      " + context_line, spec.panel_width), style="grey70"), "\n"]
         return Panel(Text.assemble(*rows), title="[bold bright_white]AI Decision[/bold bright_white]", border_style="bright_cyan")
+
+    def _candidate_observability_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        source = self._candidate_observability_source()
+        trace_id = self._present_status(source, "candidate_trace_id")
+        condition_id = self._present_status(source, "condition_id")
+        token_id = self._present_status(source, "token_id")
+        side = self._present_status(source, "side", "outcome", "best_side")
+        readiness = self._identity_readiness(source)
+        chain_confidence = self._candidate_chain_trace_confidence(source)
+        trace_status = self._trace_enrichment_status(source)
+        model_attempted = self._visibility_status(source, "model_attempted", "ev_visibility_attempted")
+        probability_visible = self._visibility_status(source, "probability_visible", "true_probability", "p_yes", "model_p_yes")
+        fair_value_visible = self._visibility_status(source, "fair_value_visible", "fair_value")
+        ev_visible = self._visibility_status(source, "ev_visible", "ev_after_spread", "ev")
+        model_gap = self._first_text_value(
+            source,
+            "dominant_model_gap",
+            "dominant_model_gap_reason",
+            "dominant_model_state_gap",
+            "model_state_gap",
+            "sparse_ev_path_reason",
+            "skip_reason",
+        ) or "UNKNOWN"
+        blocked_before_risk = self._blocked_before_risk_count()
+        pre_risk_reason = self._first_text_value(
+            source,
+            "dominant_pre_risk_cause",
+            "dominant_pre_risk_block_reason",
+            "dominant_pre_risk_block_cause",
+            "pre_risk_block_reason",
+            "model_attempt_gate",
+        ) or self._compact_deny_reason(source) or "UNKNOWN"
+        risk_reachability = self._first_text_value(source, "risk_reachability_status", "decision_to_risk_boundary") or "UNKNOWN"
+        risk_serialization = self._first_text_value(source, "risk_serialization_visibility", "risk_serialization_visibility_rate") or "UNKNOWN"
+        lifecycle_phase = self._first_text_value(source, "lifecycle_phase") or "UNKNOWN"
+        remaining = self._first_text_value(source, "seconds_remaining", "seconds_until_close", "time_remaining_seconds") or "--"
+        cutoff_reason = self._compact_deny_reason(source) or self._first_text_value(source, "cutoff_reason") or "--"
+        orderbook_ready = self._orderbook_readiness_label(source)
+        liquidity = self._first_text_value(source, "liquidity_state") or "--"
+
+        lines = [
+            self._line([
+                ("Trace ", "grey70"), (trace_id, self._status_word_style(trace_id)),
+                (" | Cond ", "grey70"), (condition_id, self._status_word_style(condition_id)),
+                (" | Token ", "grey70"), (token_id, self._status_word_style(token_id)),
+                (" | Side ", "grey70"), (side, self._status_word_style(side)),
+            ], spec.panel_width),
+            self._line([
+                ("EventID ", "grey70"), (readiness, self._identity_style(readiness)),
+                (" | Chain ", "grey70"), (chain_confidence, self._identity_style(chain_confidence)),
+            ], spec.panel_width),
+            self._line([
+                ("Enrich ", "grey70"), (trace_status, self._status_word_style(trace_status)),
+            ], spec.panel_width),
+            self._line([
+                ("Model ", "grey70"), (model_attempted, self._status_word_style(model_attempted)),
+                (" | Prob ", "grey70"), (probability_visible, self._status_word_style(probability_visible)),
+                (" | FV ", "grey70"), (fair_value_visible, self._status_word_style(fair_value_visible)),
+                (" | EV ", "grey70"), (ev_visible, self._status_word_style(ev_visible)),
+            ], spec.panel_width),
+            self._line([
+                ("Gap ", "grey70"), (self._clip(model_gap, max(8, spec.panel_width - 5)), "bright_yellow" if model_gap != "UNKNOWN" else "grey62"),
+            ], spec.panel_width),
+            self._line([
+                ("PreRisk blocked ", "grey70"), (str(blocked_before_risk), "bright_yellow" if blocked_before_risk else "grey62"),
+                (" | Cause ", "grey70"), (self._clip(pre_risk_reason, 22), "bright_yellow" if pre_risk_reason != "UNKNOWN" else "grey62"),
+            ], spec.panel_width),
+            self._line([
+                ("Risk reach ", "grey70"), (self._clip(risk_reachability, 16), self._status_word_style(risk_reachability)),
+                (" | Serialize ", "grey70"), (self._clip(risk_serialization, 16), self._status_word_style(risk_serialization)),
+            ], spec.panel_width),
+            self._line([
+                ("Phase ", "grey70"), (self._clip(lifecycle_phase, 18), "bright_cyan" if lifecycle_phase != "UNKNOWN" else "grey62"),
+                (" | T-", "grey70"), (str(remaining), "bright_white" if remaining != "--" else "grey62"),
+                (" | Cutoff ", "grey70"), (self._clip(cutoff_reason, 18), "bright_yellow" if cutoff_reason != "--" else "grey62"),
+            ], spec.panel_width),
+            self._line([
+                ("Orderbook ", "grey70"), (self._clip(orderbook_ready, 14), self._status_word_style(orderbook_ready)),
+                (" | Liquidity ", "grey70"), (self._clip(liquidity.upper(), 14), self._liquidity_style(liquidity)),
+            ], spec.panel_width),
+        ]
+        return Panel(
+            Text.assemble(*self._with_breaks(lines)),
+            title="[bold bright_white]Candidate Observability[/bold bright_white]",
+            border_style="bright_magenta",
+        )
 
     def _execution_panel(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
@@ -2213,6 +2339,11 @@ class PolymarketRealtimeDisplay:
             f"LIQ {self._footer_liquidity_tag()}",
             f"CUTOFF {self._footer_cutoff_tag()}",
             f"RECOVERY {self._footer_recovery_tag()}",
+            f"JSONL {self._footer_jsonl_tag()}",
+            f"TRACE {self._footer_trace_tag()}",
+            f"COND {self._footer_condition_tag()}",
+            f"PROD {self._footer_producer_tag()}",
+            f"SCHEMA {self._footer_schema_tag()}",
         ]
         session = ""
         s = self._session_summary
@@ -2336,6 +2467,219 @@ class PolymarketRealtimeDisplay:
         if any(bool(m.get("empty_book_recovery_attempted")) for m in self._markets.values()):
             return "TRY"
         return "--"
+
+    def _footer_jsonl_tag(self) -> str:
+        status = str(self._observability_health.get("jsonl_status", "") or "").upper()
+        if status in {"OK", "WARN", "UNKNOWN"}:
+            return status
+        value = self._observability_health.get("jsonl_ok")
+        if value is not None:
+            return "OK" if bool(value) else "WARN"
+        return "OK" if self._logging_status == "SAFE" else "WARN"
+
+    def _footer_trace_tag(self) -> str:
+        value = self._observability_health.get("trace_id_enrichment_ok")
+        if value is not None:
+            return "OK" if bool(value) else "--"
+        return "OK" if self._any_observability_field("candidate_trace_id") else "--"
+
+    def _footer_condition_tag(self) -> str:
+        value = self._observability_health.get("condition_id_enrichment_ok")
+        if value is not None:
+            return "OK" if bool(value) else "--"
+        return "OK" if self._any_observability_field("condition_id") else "--"
+
+    def _footer_producer_tag(self) -> str:
+        value = self._first_text_value(
+            self._observability_health,
+            "latest_producer",
+            "producer",
+            "event_category",
+        )
+        if not value:
+            value = self._first_text_value(
+                self._candidate_observability_source(),
+                "latest_producer",
+                "producer",
+                "event_category",
+                "source_module",
+            )
+        return self._clip(value or "--", 16)
+
+    def _footer_schema_tag(self) -> str:
+        value = self._first_text_value(
+            self._observability_health,
+            "latest_schema_version",
+            "schema_generation_version",
+            "schema_version",
+        )
+        if not value:
+            value = self._first_text_value(
+                self._candidate_observability_source(),
+                "latest_schema_version",
+                "schema_generation_version",
+                "schema_version",
+            )
+        return self._clip(value or "--", 14)
+
+    def _candidate_observability_source(self) -> Mapping[str, object]:
+        keys = {
+            "candidate_trace_id",
+            "candidate_trace_id_present",
+            "condition_id",
+            "condition_id_present",
+            "token_id",
+            "token_id_present",
+            "side",
+            "side_present",
+            "outcome",
+            "event_identity_readiness",
+            "identity_readiness",
+            "candidate_chain_trace_confidence",
+            "candidate_trace_confidence",
+            "model_attempted",
+            "probability_visible",
+            "fair_value_visible",
+            "ev_visible",
+            "true_probability",
+            "fair_value",
+            "ev_after_spread",
+            "lifecycle_phase",
+            "decision_to_risk_boundary",
+            "risk_reachability_status",
+        }
+        if any(self._observability_health.get(key) not in (None, "") for key in keys):
+            return self._observability_health
+        for item in self._cycle_results:
+            if any(item.get(key) not in (None, "") for key in keys):
+                return item
+        for market in self._markets.values():
+            if any(market.get(key) not in (None, "") for key in keys):
+                return market
+        return {}
+
+    def _any_observability_field(self, field: str) -> bool:
+        if self._observability_health.get(field):
+            return True
+        if any(bool(item.get(field)) for item in self._cycle_results):
+            return True
+        return any(bool(market.get(field)) for market in self._markets.values())
+
+    def _present_status(self, source: Mapping[str, object], *fields: str) -> str:
+        for field in fields:
+            present_key = f"{field}_present"
+            if present_key in source:
+                return "OK" if bool(source.get(present_key)) else "--"
+        return "OK" if any(self._value_present(source.get(field)) for field in fields) else "--"
+
+    def _visibility_status(self, source: Mapping[str, object], *fields: str) -> str:
+        for field in fields:
+            if field in source:
+                value = source.get(field)
+                if isinstance(value, bool):
+                    return "YES" if value else "NO"
+                if isinstance(value, (int, float)):
+                    return "YES" if float(value) != 0.0 else "NO"
+                if isinstance(value, str) and value.upper() in {"YES", "NO", "UNKNOWN", "OK", "--"}:
+                    return "YES" if value.upper() == "OK" else value.upper()
+                return "YES" if self._value_present(value) else "NO"
+        return "UNKNOWN"
+
+    def _identity_readiness(self, source: Mapping[str, object]) -> str:
+        explicit = self._first_text_value(source, "event_identity_readiness", "identity_readiness")
+        if explicit:
+            upper = explicit.upper()
+            if upper in {"DIRECT", "STRONG", "WEAK", "PROXY", "UNKNOWN"}:
+                return upper
+        has_trace = self._value_present(source.get("candidate_trace_id"))
+        has_parent = self._value_present(source.get("parent_candidate_trace_id"))
+        has_market = any(self._value_present(source.get(field)) for field in ("market_key", "market_slug", "condition_id", "market_id", "source_market_id"))
+        has_token = self._value_present(source.get("token_id"))
+        has_side = any(self._value_present(source.get(field)) for field in ("side", "outcome", "best_side"))
+        has_phase = self._value_present(source.get("lifecycle_phase"))
+        if has_trace and has_parent and has_market and has_token and has_side and has_phase:
+            return "DIRECT"
+        if has_market and has_token and has_side and has_phase:
+            return "STRONG"
+        if sum((has_market, has_token, has_side, has_phase)) >= 3:
+            return "WEAK"
+        if any((has_trace, has_market, has_token, has_side, has_phase)):
+            return "PROXY"
+        return "UNKNOWN"
+
+    def _candidate_chain_trace_confidence(self, source: Mapping[str, object]) -> str:
+        explicit = self._first_text_value(source, "candidate_chain_trace_confidence", "candidate_trace_confidence")
+        if explicit:
+            upper = explicit.upper()
+            if upper in {"DIRECT", "STRONG", "WEAK", "PROXY", "UNKNOWN"}:
+                return upper
+        return "UNKNOWN"
+
+    def _trace_enrichment_status(self, source: Mapping[str, object]) -> str:
+        explicit = self._first_text_value(source, "trace_enrichment_status")
+        if explicit:
+            return explicit.upper()
+        has_trace = self._value_present(source.get("candidate_trace_id"))
+        has_condition = self._value_present(source.get("condition_id"))
+        if has_trace and has_condition:
+            return "TRACE+COND"
+        if has_trace:
+            return "TRACE_ONLY"
+        if has_condition:
+            return "COND_ONLY"
+        return "UNKNOWN"
+
+    def _blocked_before_risk_count(self) -> int:
+        count = int(self._as_float(self._observability_health.get("blocked_before_risk_count", 0)))
+        if count:
+            return count
+        total = 0
+        for item in self._cycle_results:
+            boundary = str(item.get("decision_to_risk_boundary", "") or "").upper()
+            if boundary == "BLOCKED_BEFORE_RISK" or bool(item.get("candidate_blocked_before_risk_visibility")):
+                total += 1
+        return total
+
+    def _orderbook_readiness_label(self, source: Mapping[str, object]) -> str:
+        for key in ("orderbook_readiness_state", "market_readiness_state", "orderbook_state_classification"):
+            value = self._first_text_value(source, key)
+            if value:
+                return value.upper()
+        reason = self._first_text_value(source, "orderbook_readiness_reason", "orderbook_unavailable_reason", "orderbook_error")
+        if reason:
+            return reason
+        bid = self._as_float(source.get("bid", 0.0))
+        ask = self._as_float(source.get("ask", 0.0))
+        return "READY" if bid > 0 and ask > 0 else "UNKNOWN"
+
+    def _first_text_value(self, source: Mapping[str, object], *fields: str) -> str:
+        for field in fields:
+            value = source.get(field)
+            if self._value_present(value):
+                return str(value)
+        return ""
+
+    def _value_present(self, value: object) -> bool:
+        return value is not None and str(value).strip() not in {"", "--", "None", "UNKNOWN"}
+
+    def _status_word_style(self, value: str) -> str:
+        upper = str(value).upper()
+        if upper in {"OK", "YES", "READY", "TRACE+COND", "DIRECT", "STRONG"}:
+            return "bright_green"
+        if upper in {"NO", "FAIL", "MISSING", "BLOCKED_BEFORE_RISK"}:
+            return "bright_red"
+        if upper in {"UNKNOWN", "--"}:
+            return "grey62"
+        return "bright_yellow"
+
+    def _identity_style(self, value: str) -> str:
+        return {
+            "DIRECT": "bold bright_green",
+            "STRONG": "bright_green",
+            "WEAK": "bright_yellow",
+            "PROXY": "bright_magenta",
+            "UNKNOWN": "grey62",
+        }.get(str(value).upper(), "grey62")
 
     def _decision_style(self, decision: str) -> str:
         upper = decision.upper()

@@ -1,11 +1,11 @@
-# PolyTrade Bot / Polymarket 5M BTC-ETH Quant Scalper
+# PolyTrade Bot / Polymarket 5M BTC-ETH Quant System
 
 > Current status: paper-first, partially live-wired, not live-trading ready.
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-10.
 
 PolyTrade Bot is a Python trading system for Polymarket BTC/ETH 5-minute binary prediction markets. The current main path runs real market data and real CLOB orderbooks through a paper-mode execution simulator by default.
 
-Do not treat this repository as a new project or a rebuild candidate. It already has a working market scanner, oracle/feed path, terminal dashboard, paper execution path, risk modules, order intent guards, observability utilities, and tests. The remaining work is validation, observability integration, and live-readiness hardening.
+Do not treat this repository as a new project or a rebuild candidate. It already has a working market scanner, oracle/feed path, terminal dashboard, paper execution path, risk modules, order intent guards, observability utilities, and tests. The current direction is to evolve from single-entry scalping into regime-aware probability diagnostics, paper-only inventory replay research, and eventually bounded multi-price inventory research after evidence supports it.
 
 ## Safety Disclaimer
 
@@ -137,6 +137,7 @@ main.py
      -> polymarket/oracle_price_feed.py
      -> polymarket/virtual_ptb.py
      -> polymarket/signal.py
+     -> polymarket/regime_diagnostics.py
      -> polymarket/probability_model.py
      -> polymarket/expected_value.py
      -> polymarket/position_sizing.py
@@ -185,6 +186,9 @@ Implemented:
 - Risk Mode Ladder supports NORMAL, DEFENSIVE, MICRO_RECOVERY, and LOCKDOWN.
 - ExitAgent, panic/forced exit, partial TP, and runner controls are present.
 - Windows file-lock logging failures disable only the affected file logger and do not crash the loop.
+- Offline analyzers and replay outputs must not feed automatic runtime decisions without a separately approved phase.
+- Regime/probability diagnostics are evidence only until a future runtime-policy task explicitly scopes behavior changes.
+- No martingale, unlimited averaging down, all-in behavior, or loss-chasing inventory scaling.
 
 Partially implemented / needs validation:
 
@@ -256,6 +260,42 @@ Data quality checks include readable files, valid JSON lines, required base fiel
 Replay metrics include total closed trades, win rate, gross and average PnL, max win/loss, average holding time, skipped decisions, top skip reasons, approved/rejected ratio, risk reject count, execution failure count, average entry spread/confidence, and PnL by YES/NO outcome and BTC/ETH asset.
 
 Paper evaluation reads the generated `quant_data_quality_*.json` and `replay_report_*.json` files, writes `paper_evaluation_*.json`, and returns `PASS`, `CAUTION`, or `FAIL`. It is conservative: malformed data, severe risk incidents, execution failures, system-health errors, or high drawdown can fail a run, while small samples, high spreads, and liquidity/spread-heavy skips usually produce caution. See `docs/PAPER_TRADING_RUNBOOK.md` for the 24-hour paper checklist, post-run workflow, and live-readiness checklist.
+
+## Current Quant Roadmap
+
+Phase 1:
+
+- Regime classification.
+- Probability scoring.
+- Indicator evidence.
+- Terminal/decision-log/JSONL observability only.
+- No execution change.
+
+Phase 2:
+
+- Paper-only inventory replay.
+- Reload/unload opportunity analysis.
+- Opportunity decay.
+- MFE/MAE tracking.
+
+Phase 3:
+
+- Bounded multi-price inventory engine design.
+- Max inventory cap, max risk cap, max reload count.
+- Stop loss, forced exit, panic exit.
+- No martingale and no unlimited averaging down.
+
+Phase 4:
+
+- Continuous probabilistic inventory trading only after paper evidence supports it.
+
+Planning docs:
+
+- `DOCUMENTATION_MAP.md`
+- `QUANT_REGIME_PROBABILITY_ENGINE.md`
+- `INVENTORY_REPLAY_RESEARCH_PLAN.md`
+- `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md`
+- `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md`
 
 ## Telegram Alert System
 
@@ -362,24 +402,27 @@ pytest -q tests/test_execution_risk_controls.py tests/test_paper_mode.py tests/t
 Next priorities:
 
 1. Keep documentation synchronized before new feature phases.
-2. Review Phase 3 JSONL output during longer paper sessions and add retention/incident reports later.
-3. Run longer paper sessions with real BTC/ETH market/orderbook data.
-4. Resolve live allowance.
-5. Validate tiny controlled live order, fill, cancel, and reconciliation only after explicit approval.
-6. Consolidate dashboards and stale docs after runtime safety is stable.
+2. Collect Phase 1 regime/probability paper evidence without changing execution.
+3. Use offline replay/evaluator output to decide whether Phase 2 paper inventory replay is justified.
+4. Run longer paper sessions with real BTC/ETH market/orderbook data.
+5. Resolve live allowance.
+6. Validate tiny controlled live order, fill, cancel, and reconciliation only after explicit approval.
+7. Consolidate dashboards and stale docs after runtime safety is stable.
 
 ## AI Assistant Instructions
 
 Before modifying code, read:
 
-1. `CURRENT_PROJECT_STATUS.md`
-2. `CODEX_START_HERE.md`
+1. `CODEX_START_HERE.md`
+2. `PROJECT_RULES.md`
 3. `AGENTS.md`
 4. `MASTER_AGENT_ROUTER.md`
-5. `docs/AGENT_WORKFLOW.md`
-6. `docs/PROJECT_STRUCTURE.md`
-7. `docs/KNOWN_ISSUES.md`
-8. Relevant role docs under `docs/quant_agent_setup_md/roles/`
+5. `CURRENT_PROJECT_STATUS.md`
+6. `PROJECT_STRUCTURE.md`
+7. `KNOWN_ISSUES.md`
+8. `FILE_INDEX.md`
+9. `QUANT_FUTURE_DECISION_ENGINE.md`
+10. Relevant role docs under `docs/quant_agent_setup_md/roles/`
 
 Never rebuild the bot from scratch unless explicitly requested.
 

@@ -55,6 +55,130 @@ def test_quant_event_logger_writes_required_jsonl_fields(tmp_path: Path) -> None
     assert event["payload"]["asset"] == "BTC"
 
 
+def test_quant_event_logger_adds_deterministic_candidate_trace_id(tmp_path: Path) -> None:
+    logger = QuantEventLogger(
+        base_dir=tmp_path,
+        enabled=True,
+        mode="paper",
+        run_id="run-test",
+        schema_version="1.0",
+        now=_fixed_now,
+    )
+    payload = {
+        "market_id": "btc-5m-20260508",
+        "condition_id": "condition-1",
+        "token_id": "token-yes",
+        "side": "YES",
+        "lifecycle_phase": "OPENING_SCAN",
+        "market_epoch_start": 1770000000,
+        "candidate_id": "candidate-existing",
+    }
+
+    first = QuantEventLogger._candidate_trace_identity_fields(payload, "2026-05-08T12:30:00Z")
+    second = QuantEventLogger._candidate_trace_identity_fields(dict(reversed(list(payload.items()))), "2026-05-08T12:30:00Z")
+
+    assert first["candidate_trace_id"] == second["candidate_trace_id"]
+    assert first["candidate_trace_id"].startswith("ct_")
+    assert first["parent_candidate_trace_id"] == "candidate-existing"
+    assert first["trace_link_reason"] == "passive_deterministic_existing_fields"
+
+    original = dict(payload)
+    assert logger.log_market_snapshot(payload)
+    assert payload == original
+    event = _read_jsonl(tmp_path / "market_snapshots" / "2026-05-08.jsonl")[0]
+    assert event["payload"]["candidate_trace_id"] == first["candidate_trace_id"]
+    assert event["payload"]["market_key"] == "btc-5m-20260508"
+    assert event["payload"]["condition_id"] == "condition-1"
+    assert event["payload"]["token_id"] == "token-yes"
+    assert event["payload"]["side"] == "YES"
+    assert event["payload"]["lifecycle_phase"] == "OPENING_SCAN"
+
+
+def test_quant_event_logger_normalizes_identity_aliases_before_emission(tmp_path: Path) -> None:
+    logger = QuantEventLogger(
+        base_dir=tmp_path,
+        enabled=True,
+        mode="paper",
+        run_id="run-test",
+        schema_version="1.0",
+        now=_fixed_now,
+    )
+    alias_payload = {
+        "market_id": "btc-5m-20260508",
+        "slug": "btc-5m-slug",
+        "conditionId": "condition-alias",
+        "tokenId": "token-alias",
+        "asset_side": "NO",
+        "lifecycle_phase": "OPENING_SCAN",
+        "market_epoch_start": 1770000000,
+    }
+    canonical_payload = {
+        "market_key": "btc-5m-20260508",
+        "market_slug": "btc-5m-slug",
+        "condition_id": "condition-alias",
+        "token_id": "token-alias",
+        "side": "NO",
+        "lifecycle_phase": "OPENING_SCAN",
+        "market_epoch_start": 1770000000,
+    }
+
+    alias_identity = QuantEventLogger._candidate_trace_identity_fields(alias_payload, "2026-05-08T12:30:00Z")
+    canonical_identity = QuantEventLogger._candidate_trace_identity_fields(canonical_payload, "2026-05-08T12:30:00Z")
+    assert alias_identity["candidate_trace_id"] == canonical_identity["candidate_trace_id"]
+
+    original = dict(alias_payload)
+    assert logger.log_market_snapshot(alias_payload)
+    assert alias_payload == original
+
+    event = _read_jsonl(tmp_path / "market_snapshots" / "2026-05-08.jsonl")[0]
+    payload = event["payload"]
+    assert payload["candidate_trace_id"] == canonical_identity["candidate_trace_id"]
+    assert payload["market_key"] == "btc-5m-20260508"
+    assert payload["market_slug"] == "btc-5m-slug"
+    assert payload["condition_id"] == "condition-alias"
+    assert payload["token_id"] == "token-alias"
+    assert payload["side"] == "NO"
+    assert payload["conditionId"] == "condition-alias"
+    assert payload["tokenId"] == "token-alias"
+    assert payload["asset_side"] == "NO"
+
+
+def test_quant_event_logger_trace_identity_handles_missing_fields_safely(tmp_path: Path) -> None:
+    logger = QuantEventLogger(base_dir=tmp_path, enabled=True, run_id="run-test", now=_fixed_now)
+
+    assert QuantEventLogger._candidate_trace_identity_fields({"decision": "SKIP"}, "2026-05-08T12:30:00Z") == {}
+    assert logger.log_decision({"decision": "SKIP"})
+
+    event = _read_jsonl(tmp_path / "decision_log" / "2026-05-08.jsonl")[0]
+    assert event["payload"]["decision"] == "SKIP"
+    assert "candidate_trace_id" not in event["payload"]
+    assert "condition_id" not in event["payload"]
+    assert "token_id" not in event["payload"]
+    assert "side" not in event["payload"]
+
+
+def test_quant_event_logger_trace_id_remains_observability_only_for_execution(tmp_path: Path) -> None:
+    logger = QuantEventLogger(base_dir=tmp_path, enabled=True, mode="live", run_id="run-test", now=_fixed_now)
+
+    assert logger.log_execution({
+        "event": "order_intent_approved",
+        "token_id": "token-yes",
+        "source_market_id": "condition-1",
+        "outcome": "YES",
+        "side": "BUY",
+        "size": 1.0,
+        "price": 0.51,
+    })
+
+    event = _read_jsonl(tmp_path / "execution_log" / "2026-05-08.jsonl")[0]
+    assert event["event_type"] == "execution"
+    assert event["mode"] == "live"
+    assert event["payload"]["candidate_trace_id"].startswith("ct_")
+    assert event["payload"]["event"] == "order_intent_approved"
+    assert event["payload"]["size"] == 1.0
+    assert event["payload"]["price"] == 0.51
+
+
 def test_quant_event_logger_disables_only_locked_writer(monkeypatch, tmp_path: Path) -> None:
     real_open = builtins.open
 

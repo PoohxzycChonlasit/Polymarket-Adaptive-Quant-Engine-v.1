@@ -164,6 +164,7 @@ class Settings(BaseSettings):
     adaptive_entry_max_spread: float = 0.06
     orderbook_warmup_pending_threshold: int = 3
     orderbook_empty_recovery_enabled: bool = True
+    empty_book_recovery_research_mode: bool = False
     orderbook_empty_recovery_retries: int = 2
     orderbook_empty_recovery_delay_ms: int = 75
     orderbook_empty_recovery_max_total_ms: int = 300
