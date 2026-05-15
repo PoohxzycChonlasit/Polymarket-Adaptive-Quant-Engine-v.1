@@ -67,6 +67,7 @@ class QuantEventLogger:
         "trade_close": "trade_journal",
         "risk_event": "risk_log",
         "system_health": "system_health",
+        "research_snapshot": "research_log",
     }
 
     def __init__(
@@ -89,6 +90,7 @@ class QuantEventLogger:
             settings = None
 
         self.enabled = bool(getattr(settings, "quant_data_enabled", True) if enabled is None else enabled)
+        self.research_enabled = bool(getattr(settings, "research_data_enabled", True))
         self.base_dir = Path(base_dir or getattr(settings, "quant_data_dir", "runtime/quant_data"))
         self.mode = mode
         self.run_id = run_id or f"{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
@@ -122,6 +124,11 @@ class QuantEventLogger:
     def log_system_health(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("system_health", payload)
 
+    def log_research_snapshot(self, payload: dict[str, Any] | None = None) -> bool:
+        if not self.research_enabled:
+            return False
+        return self._write_event("research_snapshot", payload)
+
     def _write_event(self, event_type: str, payload: dict[str, Any] | None) -> bool:
         category = self._CATEGORY_BY_METHOD[event_type]
         if not self.enabled or category in self._disabled_categories:
@@ -150,6 +157,52 @@ class QuantEventLogger:
         for key, value in identity.items():
             if value and not enriched.get(key):
                 enriched[key] = value
+        # --- Additive canonical lineage fields (observability-only, backward-compatible) ---
+        enriched.setdefault("packet_schema_version", self.schema_version)
+        candidate_trace_id = str(enriched.get("candidate_trace_id") or "")
+        if candidate_trace_id:
+            # replay_chain_id: stable per candidate+run, diagnosable across producers
+            run_fragment = self.run_id[:8] if self.run_id else "norund"
+            enriched.setdefault("replay_chain_id", f"rc_{run_fragment}_{candidate_trace_id[3:]}")
+            # lifecycle_instance_id: groups events in the same market window
+            market_key = str(enriched.get("market_key") or enriched.get("condition_id") or enriched.get("market_slug") or "")
+            time_bucket = str(enriched.get("time_bucket") or self._trace_time_bucket(enriched, timestamp_utc))
+            li_input = f"{market_key}|{time_bucket}"
+            li_digest = hashlib.sha1(li_input.encode("utf-8")).hexdigest()[:12] if li_input.strip("|") else "nokey"
+            enriched.setdefault("lifecycle_instance_id", f"li_{li_digest}")
+            # inventory_context_id: ties execution/trade_journal events to a bounded context
+            enriched.setdefault("inventory_context_id", f"inv_{run_fragment}_{li_digest}")
+            # producer-specific trace IDs — only emitted at the relevant producer stage
+            producer_stage = self._lineage_propagation_stage(enriched)
+            if not enriched.get("identity_propagation_stage") or str(enriched.get("identity_propagation_stage")).lower() == "unknown":
+                enriched["identity_propagation_stage"] = producer_stage
+            if producer_stage == "risk":
+                enriched.setdefault("risk_trace_id", f"rt_{candidate_trace_id[3:]}")
+            elif producer_stage == "execution":
+                enriched.setdefault("execution_trace_id", f"et_{candidate_trace_id[3:]}")
+            # identity_source and lineage_confidence
+            enriched.setdefault("identity_source", str(enriched.get("trace_link_reason") or "passive_deterministic_existing_fields"))
+            enriched.setdefault("lineage_confidence", self._lineage_confidence(enriched))
+            enriched.setdefault("lineage_drop_reason", "none")
+        else:
+            # Identity not derivable — emit explicit missing reasons
+            has_identity_source = any(self._first_text(enriched, (field,)) for field in TRACE_ID_SOURCE_FIELDS)
+            if not has_identity_source:
+                missing_reason = "no_identity_source_fields"
+            else:
+                missing_reason = "empty_digest_input_after_alias_resolution"
+            enriched.setdefault("candidate_trace_id_missing_reason", missing_reason)
+            enriched.setdefault("replay_chain_id_missing_reason", "candidate_trace_id_not_derivable")
+            producer_stage = self._lineage_propagation_stage(enriched)
+            if not enriched.get("identity_propagation_stage") or str(enriched.get("identity_propagation_stage")).lower() == "unknown":
+                enriched["identity_propagation_stage"] = producer_stage
+            if producer_stage == "risk":
+                enriched.setdefault("risk_trace_id_missing_reason", missing_reason)
+            elif producer_stage == "execution":
+                enriched.setdefault("execution_trace_id_missing_reason", missing_reason)
+            enriched.setdefault("lineage_drop_reason", missing_reason)
+            enriched.setdefault("lineage_confidence", "UNKNOWN")
+            enriched.setdefault("identity_source", "not_derivable")
         return enriched
 
     @classmethod
@@ -187,7 +240,7 @@ class QuantEventLogger:
             "candidate_trace_id": f"ct_{digest}",
             "trace_link_reason": "passive_deterministic_existing_fields",
         }
-        parent = cls._first_text(payload, ("parent_candidate_trace_id", "candidate_id", "signal_id"))
+        parent = cls._first_text(payload, ("parent_candidate_trace_id", "candidate_id", "signal_id", "decision_id"))
         if parent:
             identity["parent_candidate_trace_id"] = parent
         for key, value in (
@@ -200,6 +253,12 @@ class QuantEventLogger:
         ):
             if value:
                 identity[key] = value
+        # candidate_seen_ts: forward-compatible replay envelope field
+        for ts_key in TRACE_TIME_FIELDS:
+            ts_val = cls._first_text(payload, (ts_key,))
+            if ts_val and "candidate_seen_ts" not in identity:
+                identity["candidate_seen_ts"] = ts_val
+                break
         return identity
 
     @classmethod
@@ -233,6 +292,47 @@ class QuantEventLogger:
         except (TypeError, ValueError):
             pass
         return raw[:16]
+
+    @classmethod
+    def _lineage_propagation_stage(cls, payload: dict[str, Any]) -> str:
+        """Derive the producer lifecycle stage from serialized producer labels."""
+        producer = str(
+            payload.get("producer_event_type")
+            or payload.get("producer")
+            or ""
+        ).strip().lower()
+        if producer in {"risk_log", "risk_event", "risk"}:
+            return "risk"
+        if producer in {"execution_log", "execution", "trade_open", "trade_close", "trade_journal"}:
+            return "execution"
+        if producer in {"decision_log", "decision"}:
+            return "decision"
+        if producer in {"market_snapshots", "market_snapshot"}:
+            return "pre_decision"
+        if producer in {"system_health"}:
+            return "system"
+        return "unknown"
+
+    @classmethod
+    def _lineage_confidence(cls, payload: dict[str, Any]) -> str:
+        """Classify lineage confidence from available canonical fields."""
+        has_trace = bool(str(payload.get("candidate_trace_id") or "").strip())
+        has_parent = bool(str(payload.get("parent_candidate_trace_id") or "").strip())
+        has_market = bool(
+            str(payload.get("market_key") or payload.get("condition_id") or payload.get("market_slug") or "").strip()
+        )
+        has_token = bool(str(payload.get("token_id") or "").strip())
+        has_side = bool(str(payload.get("side") or "").strip())
+        has_phase = bool(str(payload.get("lifecycle_phase") or "").strip())
+        if has_trace and has_parent and has_market and has_token and has_side and has_phase:
+            return "DIRECT"
+        if has_trace and has_market and has_token and has_side and has_phase:
+            return "STRONG"
+        if has_trace and has_market:
+            return "WEAK"
+        if has_trace:
+            return "PROXY"
+        return "UNKNOWN"
 
     def _timestamp(self) -> str:
         now = self._now()

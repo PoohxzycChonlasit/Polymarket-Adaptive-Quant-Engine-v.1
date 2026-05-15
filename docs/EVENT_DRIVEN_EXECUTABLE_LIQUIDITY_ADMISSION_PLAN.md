@@ -209,6 +209,44 @@ The existing compact summary should eventually report:
 - median event-to-probe latency
 - missed due to cutoff/lifecycle/spread/risk
 
+## 8.1 Minimal Event-Driven Admission Packet Schema
+
+This packet is an observability/replay contract only. It is the minimum compact packet required to simulate whether an executable-liquidity event could have reached probability, fair-value, and EV evaluation. It does not approve trades, consume risk, bypass gates, or authorize live behavior.
+
+| Field | Required | Purpose | Source |
+| --- | --- | --- | --- |
+| `run_id` | Required | Replay isolation | Quant event envelope |
+| `event_ts` / `timestamp_utc` | Required | Freshness and lifecycle timing | Orderbook event envelope |
+| `condition_id` | Required | Stable market identity | Gamma market discovery / market metadata |
+| `market_slug` or `market_key` | Required | Same-market joins and human audit | Gamma market discovery / market metadata |
+| `yes_token_id` | Required | YES book identity | Gamma token discovery / cached token metadata |
+| `no_token_id` | Required | NO book identity | Gamma token discovery / cached token metadata |
+| `underlying_price` | Required | Probability model input | BTC/ETH price feed or oracle/PTB context |
+| `target_price` / `price_to_beat` / `strike` | Required | Event boundary input | Market metadata, Gamma boundary, or PTB tracker |
+| `seconds_remaining` | Required | Probability timing and cutoff context | Lifecycle engine / market clock |
+| `lifecycle_phase` | Required | Admission window safety | Lifecycle engine |
+| `yes_bid`, `yes_ask`, `no_bid`, `no_ask` | Required | Executable YES/NO book completeness | Orderbook event |
+| `book_freshness` / `orderbook_age_ms` | Required | Stale-book protection | Orderbook event / cache freshness |
+| `spread` or derived bid/ask spread | Required | EV after spread and executable edge | Derived from orderbook event |
+| `liquidity` / `liquidity_state` | Required | Liquidity feasibility | Orderbook event / liquidity classifier |
+| `risk_context` | Optional for model, required for risk observability | Downstream risk explanation only | Risk state snapshot |
+| `side` | Optional until side selection | Side-specific fair value and EV attribution | Model side selection / candidate context |
+
+### Field Source Expectations
+
+- Market metadata / Gamma discovery owns `condition_id`, `market_slug`, `market_key`, and YES/NO token IDs.
+- BTC/ETH price feed or oracle/PTB context owns `underlying_price`.
+- Market boundary metadata or PTB tracker owns `target_price`, `price_to_beat`, or `strike`.
+- Orderbook events own compact top-of-book fields, freshness age, and spread derivation.
+- Lifecycle engine owns `seconds_remaining` and `lifecycle_phase`.
+- Risk state owns `risk_context`; it must remain downstream and explanatory, not an admission approval.
+
+### Current Offline Gap
+
+The first offline simulator pass found simulated model-eligible executable book events but no recoverable `underlying_price`, `target_price`, or risk context on those packets. Alias search did not recover the fields, so the current blocker is replay/serialization evidence coverage. This does not prove the runtime lacks the values internally.
+
+The next safe patch is to add offline source or join evidence for `underlying_price` and `target_price` before any probability or EV simulation claims are made.
+
 ## 9. Offline Replay Simulation Plan
 
 Before any runtime behavior change, build an offline simulator that uses existing compact/analyzer outputs plus targeted JSONL fields only when needed.
@@ -361,4 +399,3 @@ fresh executable same-token-pair liquidity event can request immediate model-eli
 ```
 
 The event should own admission timing, but existing gates must still own approval.
-

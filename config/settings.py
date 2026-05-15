@@ -60,8 +60,15 @@ class Settings(BaseSettings):
     verbose_risk_logs: bool = True
     summary_interval_cycles: int = 5
     quant_data_enabled: bool = True
+    research_data_enabled: bool = True
     quant_data_dir: str = "runtime/quant_data"
     quant_event_schema_version: str = "1.0"
+    # --- Hybrid Phase v1 settings ---
+    hybrid_phase_v1_enabled: bool = True
+    research_decision_snapshots_enabled: bool = True
+    market_state_snapshots_enabled: bool = True
+    lifecycle_phase_classification_enabled: bool = True
+    shadow_inventory_tracking_enabled: bool = True
     quant_log_retention_days: int = 90
     market_snapshot_retention_days: int = 14
     trade_journal_retention_days: int = 3650

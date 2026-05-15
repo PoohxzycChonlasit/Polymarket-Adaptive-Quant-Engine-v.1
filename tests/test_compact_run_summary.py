@@ -245,6 +245,13 @@ def test_compact_summary_writes_prompt_sized_observability_report(tmp_path, monk
     assert summary["model_output_propagation"]["execution_log"]["canonical_present"]["fair_value"] == 1
     assert summary["model_output_propagation"]["decision_log"]["alias_present"]["ev_after_spread<-ev"] == 1
     assert summary["model_output_propagation"]["risk_log"]["missing"]["true_probability"] == 1
+    assert summary["identity_continuity_diagnostics"]["orphan_risk_count"] == 1
+    assert summary["identity_continuity_diagnostics"]["decision_to_risk_identity_gap_count"] == 2
+    assert summary["identity_continuity_diagnostics"]["risk_to_execution_identity_gap_count"] == 0
+    assert summary["identity_continuity_diagnostics"]["deterministic_chain_rate"] == 0.0
+    assert summary["orphan_risk_count"] == 1
+    assert summary["decision_to_risk_identity_gap_count"] == 2
+    assert summary["deterministic_chain_rate"] == 0.0
     assert summary["root_cause_candidate"] == "EV_AND_RISK_CHAIN_NOT_VISIBLE"
     written = json.loads(path.read_text(encoding="utf-8"))
     assert written["recommended_next_codex_patch_target"].startswith("offline replay continuity")

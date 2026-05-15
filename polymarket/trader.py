@@ -15,7 +15,7 @@ from polymarket.arbitrage_executor import ArbitrageExecutor
 from polymarket.client import BUY, SELL, BalanceSnapshot, ClobOrderbookError, OrderReceipt, PolymarketClient
 from polymarket.delta_engine import DeltaRegime, MicroDeltaInput, estimate_micro_delta
 from polymarket.expected_value import ExpectedValueTier
-from polymarket.gamma_fetcher import GammaFetcher, GammaMarket
+from polymarket.gamma_fetcher import GammaFetcher, GammaMarket, ActiveFiveMinMarket
 from polymarket.lucky_shot import LuckyShotInput, evaluate_lucky_shot
 from polymarket.order_manager import OrderRequest, PolymarketOrderManager
 from polymarket.order_intent import OrderIntent, OrderIntentType, validate_order_intent
@@ -393,6 +393,29 @@ class PolymarketTrader:
         self._preloaded_token_ids: dict[tuple[str, int], tuple[str, str]] = {}
         self._preloaded_token_meta: dict[tuple[str, int], dict[str, object]] = {}
         self._warmed_orderbook_epochs: set[tuple[str, int]] = set()
+
+        # Preload Next Market v1
+        self._preloaded_next_markets: dict[str, ActiveFiveMinMarket] = {}
+        self._preload_attempted: bool = False
+        self._preload_success: bool = False
+        self._preload_started_ts: int = 0
+        self._preload_success_ts: int = 0
+        self._preload_failed_reason: str | None = None
+        self._preload_ticker: str = ""
+        self._preload_market_slug: str = ""
+        self._preload_condition_id: str = ""
+        self._preload_yes_token_id_present: bool = False
+        self._preload_no_token_id_present: bool = False
+        self._preload_orderbook_warmed: bool = False
+        self._preload_orderbook_state: str = "UNKNOWN"
+        self._preload_seconds_before_epoch: int = 0
+        self._preload_latency_ms: int = 0
+        self._preload_cache_hit: bool = False
+        self._preload_cache_age_seconds: int = 0
+        self._preload_next_epoch_start: int = 0
+        self._preload_next_epoch_remaining_seconds: int = 0
+        self._preload_lead_seconds: int = 0
+        self._preload_book_ready_ts: int = 0
         self._market_first_seen_seconds_remaining: dict[tuple[str, int], int] = {}
         self._market_first_evaluable_seconds_remaining: dict[tuple[str, int], int] = {}
         self._market_readiness_timestamps: dict[tuple[str, int], dict[str, object]] = {}
@@ -1392,59 +1415,312 @@ class PolymarketTrader:
             "first_tradable_seconds_remaining": 0,
             "first_evaluable_at": "",
             "first_evaluable_ready_seconds_remaining": 0,
+            # Market Readiness Timing Layer v1
+            "first_discovered_ts": "",
+            "first_discovered_seconds_remaining": 0,
+            "first_token_ready_ts": "",
+            "first_token_ready_seconds_remaining": 0,
+            "first_orderbook_seen_ts": "",
+            "first_orderbook_seen_seconds_remaining": 0,
+            "first_nonzero_bidask_ts": "",
+            "first_nonzero_bidask_seconds_remaining": 0,
+            "first_spread_normalized_ts": "",
+            "first_spread_normalized_seconds_remaining": 0,
+            "first_tradable_ts": "",
+            "first_tradable_seconds_remaining": 0,
+            "readiness_confidence": 0.0,
+            "executable_book_state": "UNKNOWN",
+            "executable_spread_state": "UNKNOWN",
+            # Liquidity Depth Observability v1
+            "best_bid_size": 0.0,
+            "best_ask_size": 0.0,
+            "top_bid_depth": 0.0,
+            "top_ask_depth": 0.0,
+            "total_bid_depth_l1_l3": 0.0,
+            "total_ask_depth_l1_l3": 0.0,
+            "min_fillable_size_usd": 0.0,
+            "liquidity_depth_state": "UNKNOWN",
+            "liquidity_depth_confidence": 0.0,
+            "time_to_min_depth_seconds": 0,
+            "first_min_depth_ts": "",
+            "first_min_depth_seconds_remaining": 0,
+            "depth_oscillation_count": 0,
+            "spread_oscillation_count": 0,
+            "tradable_but_thin_count": 0,
         }
         if epoch_start <= 0:
             return fields
         stored = self._phase2_readiness_store().get((ticker.upper(), int(epoch_start)), {})
         for key in fields:
-            value = stored.get(key)
-            if key.endswith("_seconds_remaining"):
-                fields[key] = self._diagnostic_int(value) or 0
-            else:
-                fields[key] = str(value or "")
+            if key in stored:
+                fields[key] = stored[key]
         return fields
+
+    def _compute_lifecycle_latency_ms(self, bucket: dict[str, object]) -> dict[str, object]:
+        """
+        Computes wall-clock ms durations between lifecycle milestone timestamps.
+        Lifecycle Latency Observatory v1 — observability only, fail-soft.
+        All fields default to 0 on any error or missing data.
+        """
+        _STAGES = (
+            "DISCOVERY", "TOKEN_READY", "ORDERBOOK", "SPREAD_NORMALIZATION",
+            "DECISION", "CUTOFF",
+        )
+        _ZERO: dict[str, object] = {
+            "discovery_to_token_ready_ms": 0,
+            "token_ready_to_book_ms": 0,
+            "book_to_nonzero_ms": 0,
+            "nonzero_to_normalized_ms": 0,
+            "normalized_to_executable_ms": 0,
+            "executable_to_decision_ms": 0,
+            "total_discovery_to_decision_ms": 0,
+            "dominant_latency_stage": "",
+            "lifecycle_latency_classification": "",
+        }
+        try:
+            from datetime import datetime as _dt
+
+            def _parse(ts: object) -> _dt | None:
+                s = str(ts or "").strip()
+                if not s:
+                    return None
+                try:
+                    return _dt.fromisoformat(s.replace("Z", "+00:00"))
+                except Exception:
+                    return None
+
+            def _ms(a: _dt | None, b: _dt | None) -> int:
+                if a is None or b is None or b <= a:
+                    return 0
+                return max(0, int((b - a).total_seconds() * 1000))
+
+            t_disc = _parse(bucket.get("first_discovered_ts"))
+            t_tok = _parse(bucket.get("first_token_ready_ts"))
+            t_book = _parse(bucket.get("first_orderbook_seen_ts"))
+            t_nonzero = _parse(bucket.get("first_nonzero_bidask_ts"))
+            t_norm = _parse(bucket.get("first_spread_normalized_ts"))
+            t_exec = _parse(bucket.get("first_tradable_ts"))
+            t_dec = _parse(bucket.get("decision_complete_ts"))
+
+            d_disc_tok = _ms(t_disc, t_tok)
+            d_tok_book = _ms(t_tok, t_book)
+            d_book_nonzero = _ms(t_book, t_nonzero)
+            d_nonzero_norm = _ms(t_nonzero, t_norm)
+            d_norm_exec = _ms(t_norm, t_exec)
+            d_exec_dec = _ms(t_exec, t_dec)
+            d_total = _ms(t_disc, t_dec)
+
+            stage_durations = {
+                "DISCOVERY": d_disc_tok,
+                "TOKEN_READY": d_tok_book,
+                "ORDERBOOK": d_book_nonzero,
+                "SPREAD_NORMALIZATION": d_nonzero_norm,
+                "DECISION": d_norm_exec,
+                "CUTOFF": d_exec_dec,
+            }
+            dominant = max(stage_durations, key=lambda k: stage_durations[k]) if any(stage_durations.values()) else ""
+
+            total = d_total or sum(stage_durations.values())
+            if total >= 15000:
+                classification = "CRITICAL"
+            elif total >= 5000:
+                classification = "SLOW"
+            elif total >= 2000:
+                classification = "NORMAL"
+            elif total > 0:
+                classification = "FAST"
+            else:
+                classification = ""
+
+            return {
+                "discovery_to_token_ready_ms": d_disc_tok,
+                "token_ready_to_book_ms": d_tok_book,
+                "book_to_nonzero_ms": d_book_nonzero,
+                "nonzero_to_normalized_ms": d_nonzero_norm,
+                "normalized_to_executable_ms": d_norm_exec,
+                "executable_to_decision_ms": d_exec_dec,
+                "total_discovery_to_decision_ms": d_total,
+                "dominant_latency_stage": dominant,
+                "lifecycle_latency_classification": classification,
+            }
+        except Exception:
+            return dict(_ZERO)
 
     def _phase2_mark_readiness(
         self,
         *,
         ticker: str,
         epoch_start: int,
+        epoch_end: int = 0,
         token_ready: bool = False,
         orderbook_ready: bool = False,
+        nonzero_bidask: bool = False,
         liquidity_ready: bool = False,
         spread_ready: bool = False,
         first_evaluable_ready: bool = False,
         first_tradable_ready: bool = False,
         seconds_remaining: int | None = None,
+        yes_ob: OrderbookSnapshot | None = None,
+        no_ob: OrderbookSnapshot | None = None,
     ) -> dict[str, object]:
         ticker = ticker.upper()
         epoch_start = int(epoch_start or 0)
-        fields = self._phase2_readiness_timestamps(ticker, epoch_start)
         if epoch_start <= 0:
-            return fields
+            return self._phase2_readiness_timestamps(ticker, epoch_start)
+            
         store = self._phase2_readiness_store()
         bucket = store.setdefault((ticker, epoch_start), {})
         now = self._utc_timestamp()
         seconds_value = self._diagnostic_int(seconds_remaining)
-        for ready, key, seconds_key in (
+
+        # Clamp seconds_remaining to [0, epoch_length] to prevent impossible values
+        # (e.g. preload detecting next epoch before it starts yields >300 raw values)
+        _epoch_end_int = int(epoch_end or 0)
+        _epoch_length = (
+            max(300, _epoch_end_int - epoch_start)
+            if _epoch_end_int > epoch_start
+            else max(300, int(bucket.get("_epoch_length", 300)))
+        )
+        bucket["_epoch_length"] = _epoch_length
+        if seconds_value is not None:
+            seconds_value = max(0, min(seconds_value, _epoch_length))
+
+        # Original fields (backwards compatibility)
+        readiness_map = [
             (token_ready, "token_ready_at", "token_ready_seconds_remaining"),
             (orderbook_ready, "orderbook_ready_at", "orderbook_ready_seconds_remaining"),
             (liquidity_ready, "liquidity_ready_at", "liquidity_ready_seconds_remaining"),
             (spread_ready, "spread_ready_at", "spread_ready_seconds_remaining"),
             (first_evaluable_ready, "first_evaluable_at", "first_evaluable_ready_seconds_remaining"),
             (first_tradable_ready, "first_tradable_at", "first_tradable_seconds_remaining"),
-        ):
+        ]
+        
+        # New v1 fields
+        readiness_map.extend([
+            (True, "first_discovered_ts", "first_discovered_seconds_remaining"),
+            (token_ready, "first_token_ready_ts", "first_token_ready_seconds_remaining"),
+            (orderbook_ready, "first_orderbook_seen_ts", "first_orderbook_seen_seconds_remaining"),
+            (nonzero_bidask, "first_nonzero_bidask_ts", "first_nonzero_bidask_seconds_remaining"),
+            (spread_ready, "first_spread_normalized_ts", "first_spread_normalized_seconds_remaining"),
+            (first_tradable_ready, "first_tradable_ts", "first_tradable_seconds_remaining"),
+        ])
+
+        for ready, key, seconds_key in readiness_map:
             if ready and not bucket.get(key):
                 bucket[key] = now
             if ready and seconds_value is not None and not bucket.get(seconds_key):
                 bucket[seconds_key] = seconds_value
-        for key in fields:
-            value = bucket.get(key)
-            if key.endswith("_seconds_remaining"):
-                fields[key] = self._diagnostic_int(value) or 0
+                
+        # Timing Metrics Calculation
+        first_seen_rem = self._diagnostic_int(bucket.get("first_discovered_seconds_remaining")) or 0
+        first_ob_rem = self._diagnostic_int(bucket.get("first_orderbook_seen_seconds_remaining")) or 0
+        first_trad_rem = self._diagnostic_int(bucket.get("first_tradable_seconds_remaining")) or 0
+        
+        bucket["discovery_to_book_seconds"] = max(0, first_seen_rem - first_ob_rem) if first_ob_rem > 0 else 0
+        bucket["book_to_tradable_seconds"] = max(0, first_ob_rem - first_trad_rem) if (first_ob_rem > 0 and first_trad_rem > 0) else 0
+        bucket["total_discovery_to_tradable_seconds"] = max(0, first_seen_rem - first_trad_rem) if (first_seen_rem > 0 and first_trad_rem > 0) else 0
+
+        # State transitions
+        current_state = "DISCOVERED"
+        if token_ready:
+            current_state = "TOKEN_READY"
+        if orderbook_ready:
+            current_state = "BOOK_SEEN"
+        if nonzero_bidask:
+            current_state = "NONZERO_BOOK"
+        if spread_ready:
+            current_state = "SPREAD_NORMALIZED"
+        if first_tradable_ready:
+            current_state = "TRADABLE"
+            
+        bucket["executable_book_state"] = current_state
+        bucket["executable_spread_state"] = "NORMALIZED" if spread_ready else "WIDE" if orderbook_ready else "UNKNOWN"
+        
+        # Spread oscillation tracking
+        prev_spread_normalized = bucket.get("_prev_spread_normalized")
+        if prev_spread_normalized is not None and prev_spread_normalized != spread_ready:
+            bucket["spread_oscillation_count"] = int(bucket.get("spread_oscillation_count", 0)) + 1
+        bucket["_prev_spread_normalized"] = spread_ready
+
+        # Liquidity Depth Observability v1
+        def _get_depth(ob: OrderbookSnapshot | None) -> tuple[float, float, float, float]:
+            if ob is None or ob.raw_response is None:
+                return 0.0, 0.0, 0.0, 0.0
+            top_bids = ob.raw_response.get("top_bids", [])
+            top_asks = ob.raw_response.get("top_asks", [])
+            b_size = top_bids[0].get("size", 0.0) if top_bids else 0.0
+            a_size = top_asks[0].get("size", 0.0) if top_asks else 0.0
+            t_bid = sum(float(level.get("size", 0.0)) for level in top_bids)
+            t_ask = sum(float(level.get("size", 0.0)) for level in top_asks)
+            return b_size, a_size, t_bid, t_ask
+
+        # Only update depth fields when a real orderbook is provided.
+        # Without this guard, calls from _decision_diagnostics_payload (no yes_ob/no_ob)
+        # would overwrite depth to 0.0, erasing the real values written by the main cycle.
+        if yes_ob is not None or no_ob is not None:
+            b_size, a_size, t_bid, t_ask = _get_depth(yes_ob)
+            if no_ob:
+                nb_size, na_size, nt_bid, nt_ask = _get_depth(no_ob)
+                b_size, a_size = min(b_size, nb_size), min(a_size, na_size)
+                t_bid, t_ask = min(t_bid, nt_bid), min(t_ask, nt_ask)
+
+            bucket["best_bid_size"] = float(b_size)
+            bucket["best_ask_size"] = float(a_size)
+            bucket["top_bid_depth"] = float(b_size)
+            bucket["top_ask_depth"] = float(a_size)
+            bucket["total_bid_depth_l1_l3"] = float(t_bid)
+            bucket["total_ask_depth_l1_l3"] = float(t_ask)
+
+            min_depth_shares = min(t_bid, t_ask)
+            min_fillable_usd = min_depth_shares * 0.5  # conservative estimate
+            bucket["min_fillable_size_usd"] = float(min_fillable_usd)
+
+            depth_state = "UNKNOWN"
+            depth_conf = 0.0
+            if min_fillable_usd <= 0:
+                depth_state = "EMPTY"
+            elif min_fillable_usd < 100.0:
+                depth_state = "THIN"
+                depth_conf = 0.2
+            elif min_fillable_usd < 500.0:
+                depth_state = "ACCEPTABLE"
+                depth_conf = 0.6
             else:
-                fields[key] = str(value or "")
-        return fields
+                depth_state = "STRONG"
+                depth_conf = 1.0
+
+            prev_depth_state = bucket.get("liquidity_depth_state", "UNKNOWN")
+            if prev_depth_state != "UNKNOWN" and prev_depth_state != depth_state:
+                bucket["depth_oscillation_count"] = int(bucket.get("depth_oscillation_count", 0)) + 1
+                if depth_state == "THIN" and prev_depth_state in {"ACCEPTABLE", "STRONG"}:
+                    depth_state = "UNSTABLE"
+
+            bucket["liquidity_depth_state"] = depth_state
+            bucket["liquidity_depth_confidence"] = depth_conf
+
+            if current_state == "TRADABLE" and depth_state in {"THIN", "EMPTY"}:
+                bucket["tradable_but_thin_count"] = int(bucket.get("tradable_but_thin_count", 0)) + 1
+
+            min_depth_threshold = float(self._phase2_safe_setting("liquidity_min_depth_usd_threshold", 250.0))
+            if min_fillable_usd >= min_depth_threshold and not bucket.get("first_min_depth_ts"):
+                bucket["first_min_depth_ts"] = now
+                bucket["first_min_depth_seconds_remaining"] = seconds_value or 0
+                bucket["time_to_min_depth_seconds"] = max(0, first_seen_rem - bucket["first_min_depth_seconds_remaining"])
+        else:
+            # No orderbook provided — preserve existing depth state from bucket.
+            depth_state = str(bucket.get("liquidity_depth_state", "UNKNOWN"))
+            depth_conf = float(bucket.get("liquidity_depth_confidence", 0.0))
+
+        # Confidence heuristic (extended)
+        confidence = 0.0
+        if token_ready: confidence += 0.2
+        if orderbook_ready: confidence += 0.2
+        if nonzero_bidask: confidence += 0.2
+        if spread_ready: confidence += 0.2
+        if liquidity_ready and depth_state not in {"EMPTY", "THIN", "UNKNOWN"}: confidence += 0.2
+        bucket["readiness_confidence"] = round(confidence, 2)
+
+        return self._phase2_readiness_timestamps(ticker, epoch_start)
 
     def _phase2_exposure_timeline(
         self,
@@ -2160,6 +2436,25 @@ class PolymarketTrader:
             duration = int(max(0, first_seen_remaining - current_remaining))
             detail.setdefault("candidate_lifecycle_duration_seconds", duration)
             detail.setdefault("candidate_lifecycle_duration", duration)
+        
+        # Preload Next Market v1
+        detail["preload_attempted"] = self._preload_attempted
+        detail["preload_success"] = self._preload_success
+        detail["preload_failure_reason"] = self._preload_failed_reason
+        detail["preload_ticker"] = self._preload_ticker
+        detail["preload_market_slug"] = self._preload_market_slug
+        detail["preload_condition_id"] = self._preload_condition_id
+        detail["preload_yes_token_id_present"] = self._preload_yes_token_id_present
+        detail["preload_no_token_id_present"] = self._preload_no_token_id_present
+        detail["preload_orderbook_warmed"] = self._preload_orderbook_warmed
+        detail["preload_orderbook_state"] = self._preload_orderbook_state
+        detail["preload_seconds_before_epoch"] = self._preload_seconds_before_epoch
+        detail["preload_latency_ms"] = self._preload_latency_ms
+        detail["preload_cache_hit"] = self._preload_cache_hit
+        detail["preload_cache_age_seconds"] = self._preload_cache_age_seconds
+        detail["preload_next_epoch_start"] = self._preload_next_epoch_start
+        detail["preload_next_epoch_remaining_seconds"] = self._preload_next_epoch_remaining_seconds
+        
         return detail
 
     def _phase2_observability_payload(
@@ -2299,9 +2594,12 @@ class PolymarketTrader:
         seconds_remaining: int | None,
         token_ids: tuple[str, str] | None = None,
         orderbook_ready: bool | None = None,
+        nonzero_bidask: bool = False,
         liquidity_state: str | None = None,
         spread: float | None = None,
         spread_limit: float | None = None,
+        yes_ob: OrderbookSnapshot | None = None,
+        no_ob: OrderbookSnapshot | None = None,
     ) -> dict[str, object]:
         ticker = ticker.upper()
         now_ts = int(time.time())
@@ -2352,17 +2650,30 @@ class PolymarketTrader:
         readiness_timestamps = self._phase2_mark_readiness(
             ticker=ticker,
             epoch_start=epoch_start,
+            epoch_end=epoch_end,
             token_ready=has_tokens,
             orderbook_ready=orderbook_ready is True,
+            nonzero_bidask=nonzero_bidask,
             liquidity_ready=liquidity_ready,
             spread_ready=spread_ready,
             first_evaluable_ready=first_evaluable is not None,
             first_tradable_ready=tradable_ready,
             seconds_remaining=seconds_until_close,
+            yes_ob=yes_ob,
+            no_ob=no_ob,
         )
         first_tradable = self._diagnostic_int(readiness_timestamps.get("first_tradable_seconds_remaining")) or 0
         first_orderbook_ready = self._diagnostic_int(readiness_timestamps.get("orderbook_ready_seconds_remaining")) or 0
         candidate_lifecycle_duration_seconds = max(0, int(first_seen) - int(seconds_until_close))
+        
+        # Timing Metrics Calculation
+        first_seen_rem = self._diagnostic_int(readiness_timestamps.get("first_discovered_seconds_remaining")) or 0
+        first_ob_rem = self._diagnostic_int(readiness_timestamps.get("first_orderbook_seen_seconds_remaining")) or 0
+        first_trad_rem = self._diagnostic_int(readiness_timestamps.get("first_tradable_seconds_remaining")) or 0
+        
+        discovery_to_book = max(0, first_seen_rem - first_ob_rem) if first_ob_rem > 0 else 0
+        book_to_tradable = max(0, first_ob_rem - first_trad_rem) if (first_ob_rem > 0 and first_trad_rem > 0) else 0
+        total_discovery_to_tradable = max(0, first_seen_rem - first_trad_rem) if (first_seen_rem > 0 and first_trad_rem > 0) else 0
 
         return {
             "market_epoch_start": epoch_start,
@@ -2381,6 +2692,9 @@ class PolymarketTrader:
             "candidate_lifecycle_duration_seconds": candidate_lifecycle_duration_seconds,
             "candidate_lifecycle_duration": candidate_lifecycle_duration_seconds,
             "first_tradable_at_utc": readiness_timestamps.get("first_tradable_at", ""),
+            "discovery_to_book_seconds": discovery_to_book,
+            "book_to_tradable_seconds": book_to_tradable,
+            "total_discovery_to_tradable_seconds": total_discovery_to_tradable,
             **readiness_timestamps,
             "liquidity_ready": bool(liquidity_ready) if liquidity_observed else None,
             "depth_ready": bool(liquidity_ready) if liquidity_observed else None,
@@ -2510,6 +2824,9 @@ class PolymarketTrader:
                 seconds_remaining=self._meta_int(meta, "seconds_remaining"),
                 token_ids=token_ids,
                 orderbook_ready=ok,
+                nonzero_bidask=bool(ok),
+                yes_ob=yes_ob,
+                no_ob=no_ob,
             )
             self._emit_quant_event(
                 "log_system_health",
@@ -3270,6 +3587,79 @@ class PolymarketTrader:
         if risk_boundary_payload is not None:
             self._emit_quant_event("log_risk_event", risk_boundary_payload)
         self._emit_quant_event("log_decision", decision_payload)
+        # Hybrid v1: emit research snapshot after decision (observability-only, fail-soft)
+        if getattr(self.settings, "hybrid_phase_v1_enabled", False):
+            try:
+                self._emit_hybrid_v1_snapshot(
+                    ticker=ticker or self._ticker_from_market_id(outcome.market_id),
+                    outcome=outcome,
+                    timing_payload=decision_diagnostics,
+                )
+            except Exception:
+                pass
+
+    def _emit_hybrid_v1_snapshot(self, ticker: str, outcome: TradeOutcome, timing_payload: dict[str, object]) -> None:
+        """
+        Emits a hybrid observability snapshot combining research and live metrics.
+        Includes Preload Next Market v1 observability fields.
+        Offline-only research evidence — does not affect strategy, risk, or execution.
+        """
+        _next_market = self._preloaded_next_markets.get(ticker)
+        # Base on timing_payload (decision_diagnostics) so readiness/timing fields are present,
+        # then override with hybrid-specific snapshot keys.
+        snapshot_payload = {
+            **timing_payload,
+            "ticker": ticker,
+            "market_id": outcome.market_id,
+            "actual_decision": outcome.decision,
+            "actual_skip_reason": outcome.skip_reason or "",
+            "preload_started_ts": self._preload_started_ts,
+            "preload_success_ts": self._preload_success_ts,
+            "preload_failed_reason": self._preload_failed_reason,
+            "preload_lead_seconds": self._preload_lead_seconds,
+            "preload_book_ready_ts": self._preload_book_ready_ts,
+            "preloaded_market_id": _next_market.market_id if _next_market else None,
+            "preloaded_condition_id": _next_market.condition_id if _next_market else None,
+            "preloaded_epoch_start_ts": _next_market.epoch_start_ts if _next_market else None,
+            "shadow_inventory": {
+                "theoretical_decision": "HOLD" if outcome.skipped else "WOULD_OPEN",
+                "scope": "shadow_research_v1",
+                "offline_only": True,
+            },
+        }
+        # Orderbook Snapshot Truth Probe v1: raw display-path values at snapshot time.
+        # These let us compare research_log depth against the live display/orderbook path
+        # to determine whether EMPTY depth is a real market condition or a data-path lag.
+        _display = outcome.display or {}
+        snapshot_payload["snapshot_bid"] = float(_display.get("yes_bid", 0.0) or 0.0)
+        snapshot_payload["snapshot_ask"] = float(_display.get("yes_ask", 0.0) or 0.0)
+        snapshot_payload["snapshot_spread"] = float(_display.get("spread", 0.0) or 0.0)
+        snapshot_payload["snapshot_best_bid_size"] = float(_display.get("yes_bid_size", 0.0) or 0.0)
+        snapshot_payload["snapshot_best_ask_size"] = float(_display.get("yes_ask_size", 0.0) or 0.0)
+        snapshot_payload["snapshot_orderbook_source"] = str(_display.get("orderbook_refresh_source", "") or "")
+        snapshot_payload["snapshot_orderbook_age_ms"] = int(_display.get("orderbook_age_ms", 0) or 0)
+        snapshot_payload["snapshot_orderbook_empty_reason"] = str(_display.get("orderbook_readiness_reason", "") or "")
+        # Lifecycle Latency Observatory v1: record decision_complete_ts in bucket then compute ms durations.
+        # Fail-soft — any error silently skips latency fields.
+        try:
+            _resolved_ticker = ticker or self._ticker_from_market_id(outcome.market_id)
+            _epoch = int(
+                (outcome.display or {}).get(
+                    "market_epoch_start",
+                    (outcome.display or {}).get("epoch_start", (outcome.display or {}).get("epoch_start_ts", 0)),
+                ) or 0
+            )
+            if _epoch > 0:
+                _bucket = self._phase2_readiness_store().setdefault(
+                    (_resolved_ticker.upper(), _epoch), {}
+                )
+                if not _bucket.get("decision_complete_ts"):
+                    _bucket["decision_complete_ts"] = self._utc_timestamp()
+                _latency = self._compute_lifecycle_latency_ms(_bucket)
+                snapshot_payload.update(_latency)
+        except Exception:
+            pass
+        self._emit_quant_event("log_research_snapshot", snapshot_payload)
 
     def _emit_trade_opened_event(
         self,
@@ -5195,6 +5585,118 @@ class PolymarketTrader:
         )
         return markets[:top_n]
 
+    def _preload_observability_payload(self) -> dict[str, object]:
+        return {
+            "event": "preload_next_market_v1",
+            "preload_attempted": self._preload_attempted,
+            "preload_success": self._preload_success,
+            "preload_failure_reason": self._preload_failed_reason,
+            "preload_ticker": self._preload_ticker,
+            "preload_market_slug": self._preload_market_slug,
+            "preload_condition_id": self._preload_condition_id,
+            "preload_yes_token_id_present": self._preload_yes_token_id_present,
+            "preload_no_token_id_present": self._preload_no_token_id_present,
+            "preload_orderbook_warmed": self._preload_orderbook_warmed,
+            "preload_orderbook_state": self._preload_orderbook_state,
+            "preload_seconds_before_epoch": self._preload_seconds_before_epoch,
+            "preload_latency_ms": self._preload_latency_ms,
+            "preload_cache_hit": self._preload_cache_hit,
+            "preload_cache_age_seconds": self._preload_cache_age_seconds,
+            "preload_next_epoch_start": self._preload_next_epoch_start,
+            "preload_next_epoch_remaining_seconds": self._preload_next_epoch_remaining_seconds,
+            "mode": self._runtime_mode(),
+        }
+
+    def _preload_next_market(self, asset: str):
+        """
+        Attempts to preload the next 5-minute market for a given asset.
+        Records observability metrics for preload success/failure.
+        """
+        self._preload_attempted = True
+        self._preload_success = False
+        self._preload_started_ts = int(time.time())
+        self._preload_failed_reason = None
+        self._preload_ticker = asset.split('/')[0].upper() # e.g. BTC from BTC/ETH
+        ticker = self._preload_ticker
+        
+        start_mono = time.monotonic()
+        
+        try:
+            # check if we already have a successful preload for the *upcoming* epoch
+            now_ts = int(time.time())
+            # For 5-min markets, the next epoch starts at the next multiple of 300
+            next_expected_epoch = ((now_ts // 300) + 1) * 300
+            
+            self._preload_next_epoch_start = next_expected_epoch
+            self._preload_next_epoch_remaining_seconds = next_expected_epoch - now_ts
+
+            if ticker in self._preloaded_next_markets and self._preloaded_next_markets[ticker].epoch_start_ts == next_expected_epoch:
+                self._preload_cache_hit = True
+                self._preload_cache_age_seconds = now_ts - self._preload_success_ts
+                self._preload_success = True
+                # we already have it
+                return
+
+            self._preload_cache_hit = False
+            self._preload_cache_age_seconds = 0
+            
+            # Actually fetch
+            next_market = self.gamma.get_next_5min_market(ticker)
+            
+            latency_ms = int((time.monotonic() - start_mono) * 1000)
+            self._preload_latency_ms = latency_ms
+
+            if next_market:
+                self._preloaded_next_markets[ticker] = next_market
+                self._preload_success_ts = int(time.time())
+                self._preload_success = True
+                self._preload_market_slug = next_market.slug
+                self._preload_condition_id = next_market.condition_id
+                self._preload_yes_token_id_present = bool(next_market.yes_token_id)
+                self._preload_no_token_id_present = bool(next_market.no_token_id)
+                self._preload_seconds_before_epoch = next_market.epoch_start_ts - self._preload_success_ts
+                self._preload_lead_seconds = self._preload_seconds_before_epoch # alias
+                
+                # Optionally warm orderbook
+                if next_market.yes_token_id and next_market.no_token_id:
+                    try:
+                        # Compact orderbook fetch (v1 just warms it)
+                        self.client.get_orderbook(next_market.yes_token_id)
+                        self.client.get_orderbook(next_market.no_token_id)
+                        self._preload_orderbook_warmed = True
+                        self._preload_orderbook_state = "WARMED"
+                        self._preload_book_ready_ts = int(time.time())
+                    except Exception as ob_exc:
+                        self._preload_orderbook_warmed = False
+                        self._preload_orderbook_state = f"ERROR: {ob_exc}"
+                
+                self._emit_quant_event(
+                    "log_system_health",
+                    self._preload_observability_payload()
+                )
+                LOGGER.info(
+                    "[PRELOAD] Successfully preloaded next market %s for asset %s with %d seconds lead.",
+                    next_market.market_id,
+                    asset,
+                    self._preload_seconds_before_epoch,
+                )
+            else:
+                self._preload_failed_reason = "no_next_market_found"
+                self._emit_quant_event(
+                    "log_system_health",
+                    self._preload_observability_payload()
+                )
+                LOGGER.warning("[PRELOAD] No next market found for asset %s.", asset)
+                
+        except Exception as e:
+            self._preload_failed_reason = f"exception: {e}"
+            self._preload_latency_ms = int((time.monotonic() - start_mono) * 1000)
+            self._emit_quant_event(
+                "log_system_health",
+                self._preload_observability_payload()
+            )
+            LOGGER.error("[PRELOAD] Error preloading next market for asset %s: %s", asset, e)
+
     def _refresh_token_ids(self, tickers: object) -> None:
         refresh_started = time.monotonic()
         now_ts = int(time.time())
@@ -6780,9 +7282,12 @@ class PolymarketTrader:
                 seconds_remaining=seconds_to_close,
                 token_ids=token_ids,
                 orderbook_ready=not bool(orderbook_readiness_reason),
+                nonzero_bidask=current_executable_yes_no_book,
                 liquidity_state=str(empty_book_recovery_detail.get("liquidity_state", "HEALTHY") or "HEALTHY"),
                 spread=ob_spread,
                 spread_limit=float(self._phase2_safe_setting("adaptive_entry_max_spread", 0.06)),
+                yes_ob=yes_ob,
+                no_ob=no_ob,
             )
         )
         snapshot_regime_detail = classify_market_regime(
@@ -7051,8 +7556,12 @@ class PolymarketTrader:
         clob_detail = {
             "yes_bid": float(yes_bid),
             "yes_ask": float(yes_ask),
+            "yes_bid_size": float(yes_bid_size),
+            "yes_ask_size": float(yes_ask_size),
             "no_bid": float(no_bid),
             "no_ask": float(no_ask),
+            "no_bid_size": float(no_bid_size),
+            "no_ask_size": float(no_ask_size),
             "yes_mid": (float(yes_bid) + float(yes_ask)) / 2.0 if yes_bid > 0 and yes_ask > 0 else 0.0,
             "no_mid": (float(no_bid) + float(no_ask)) / 2.0 if no_bid > 0 and no_ask > 0 else 0.0,
             "spread": float(ob_spread),
@@ -9451,6 +9960,13 @@ class PolymarketTrader:
         self._check_stalled_positions()
         self._manage_open_positions_for_cycle()
         self._update_bankroll_state(fetch_live_cash=not self.settings.paper_trading)
+
+        # Preload Next Market v1: Minimal observability-only preload
+        for preload_asset in ["BTC", "ETH"]:
+            try:
+                self._preload_next_market(preload_asset)
+            except Exception as e:
+                LOGGER.debug("[PRELOAD] Unexpected error for %s in cycle: %s", preload_asset, e)
 
         # v3.1/3.2: Balance guard â€” auto pause and resume
         if self._paused_insufficient_funds:

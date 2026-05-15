@@ -2504,6 +2504,148 @@ def _recommended_patch(root_cause: str, ev_report: dict[str, Any]) -> str:
     return "no patch target until more fresh evidence exists"
 
 
+def _identity_continuity_diagnostics(events: list[dict[str, Any]]) -> dict[str, Any]:
+    """Offline-only identity continuity diagnostics.
+
+    Groups events by candidate_trace_id, then measures whether identity
+    propagates deterministically across the decision -> risk -> execution chain.
+    Counts orphan risk and execution events that cannot be linked upstream.
+    Does not change any runtime, strategy, risk, or execution behavior.
+    """
+    # --- Per-candidate producer coverage ---
+    # candidate_trace_id -> set of producers that carried it
+    trace_producer_sets: dict[str, set[str]] = {}
+    # candidate_trace_id -> lineage_confidence values seen
+    trace_confidence: dict[str, list[str]] = {}
+    # Events by producer that have NO candidate_trace_id
+    orphan_counts_by_producer: Counter[str] = Counter()
+    # Trace IDs seen per producer (for gap calculation)
+    trace_ids_by_producer: dict[str, set[str]] = {
+        "decision_log": set(),
+        "risk_log": set(),
+        "execution_log": set(),
+        "trade_journal": set(),
+        "market_snapshots": set(),
+    }
+    total_events = len(events)
+
+    for event in events:
+        payload = _payload(event)
+        producer = _producer(event)
+        trace_id = str(payload.get("candidate_trace_id") or "").strip()
+        confidence = str(payload.get("lineage_confidence") or _lineage_confidence_from_payload(payload)).strip().upper()
+        if trace_id:
+            trace_producer_sets.setdefault(trace_id, set()).add(producer)
+            if confidence:
+                trace_confidence.setdefault(trace_id, []).append(confidence)
+            if producer in trace_ids_by_producer:
+                trace_ids_by_producer[producer].add(trace_id)
+        else:
+            orphan_counts_by_producer[producer] += 1
+
+    # --- Gap counters ---
+    # decision -> risk: trace visible in decision but not risk
+    decision_traces = trace_ids_by_producer["decision_log"]
+    risk_traces = trace_ids_by_producer["risk_log"]
+    execution_traces = trace_ids_by_producer["execution_log"]
+
+    decision_to_risk_gap_count = len(decision_traces - risk_traces)
+    risk_to_execution_gap_count = len(risk_traces - execution_traces)
+    orphan_risk_count = orphan_counts_by_producer.get("risk_log", 0)
+    orphan_execution_count = orphan_counts_by_producer.get("execution_log", 0)
+
+    # --- Per-candidate chain quality ---
+    direct_chain_count = 0
+    strong_chain_count = 0
+    weak_chain_count = 0
+    proxy_or_unknown_chain_count = 0
+    deterministic_chain_count = 0  # has both decision_log and risk_log trace
+
+    for trace_id, producers in trace_producer_sets.items():
+        confidences = trace_confidence.get(trace_id, [])
+        # Best lineage confidence seen for this candidate
+        best = "UNKNOWN"
+        for level in ("DIRECT", "STRONG", "WEAK", "PROXY"):
+            if level in confidences:
+                best = level
+                break
+        if best == "DIRECT":
+            direct_chain_count += 1
+        elif best == "STRONG":
+            strong_chain_count += 1
+        elif best == "WEAK":
+            weak_chain_count += 1
+        else:
+            proxy_or_unknown_chain_count += 1
+        # Deterministic chain: appeared in both decision and risk producer
+        if "decision_log" in producers and "risk_log" in producers:
+            deterministic_chain_count += 1
+
+    total_traced_candidates = len(trace_producer_sets)
+    deterministic_chain_rate = round(
+        deterministic_chain_count / total_traced_candidates, 4
+    ) if total_traced_candidates else 0.0
+    identity_continuity_score = round(
+        (direct_chain_count + strong_chain_count) / total_traced_candidates, 4
+    ) if total_traced_candidates else 0.0
+    replay_lineage_gap_rate = round(
+        (decision_to_risk_gap_count + risk_to_execution_gap_count) /
+        max(total_traced_candidates, 1),
+        4,
+    )
+
+    return {
+        "scope": "offline_identity_continuity_diagnostics_v1",
+        "total_events_scanned": total_events,
+        "total_traced_candidates": total_traced_candidates,
+        "identity_continuity_score": identity_continuity_score,
+        "deterministic_chain_rate": deterministic_chain_rate,
+        "deterministic_chain_count": deterministic_chain_count,
+        "direct_chain_count": direct_chain_count,
+        "strong_chain_count": strong_chain_count,
+        "weak_chain_count": weak_chain_count,
+        "proxy_or_unknown_chain_count": proxy_or_unknown_chain_count,
+        "orphan_risk_count": orphan_risk_count,
+        "orphan_execution_count": orphan_execution_count,
+        "orphan_counts_by_producer": dict(orphan_counts_by_producer.most_common()),
+        "decision_to_risk_identity_gap_count": decision_to_risk_gap_count,
+        "risk_to_execution_identity_gap_count": risk_to_execution_gap_count,
+        "replay_lineage_gap_rate": replay_lineage_gap_rate,
+        "producer_trace_coverage": {
+            producer: len(trace_ids)
+            for producer, trace_ids in sorted(trace_ids_by_producer.items())
+        },
+        "guardrail": (
+            "Offline observability only. Does not change runtime behavior, strategy, "
+            "risk sizing, execution, OrderIntent semantics, or paper/live separation."
+        ),
+        "interpretation": (
+            "identity_continuity_score is the fraction of traced candidates with DIRECT or STRONG "
+            "lineage_confidence. deterministic_chain_rate is the fraction that appear in both "
+            "decision_log and risk_log producers. orphan_risk_count and orphan_execution_count "
+            "are events with no candidate_trace_id at that producer stage."
+        ),
+    }
+
+
+def _lineage_confidence_from_payload(payload: dict[str, Any]) -> str:
+    has_trace, _ = _first_present(payload, "candidate_trace_id")
+    has_parent, _ = _first_present(payload, "parent_candidate_trace_id")
+    has_market, _ = _first_present(payload, "market_key")
+    has_token, _ = _first_present(payload, "token_id")
+    has_side, _ = _first_present(payload, "side")
+    has_phase, _ = _first_present(payload, "lifecycle_phase")
+    if has_trace and has_parent and has_market and has_token and has_side and has_phase:
+        return "DIRECT"
+    if has_trace and has_market and has_token and has_side and has_phase:
+        return "STRONG"
+    if has_trace and has_market:
+        return "WEAK"
+    if has_trace:
+        return "PROXY"
+    return "UNKNOWN"
+
+
 def build_compact_run_summary(
     *,
     date: str,
@@ -2564,6 +2706,7 @@ def build_compact_run_summary(
     orderbook_freshness_reuse = _orderbook_freshness_reuse_diagnostics(events)
     scheduler_cadence = _scheduler_cadence_diagnostics(events)
     candidate_timing = _candidate_timing_diagnostics(events, ev_report)
+    identity_continuity = _identity_continuity_diagnostics(events)
     root_cause = _root_cause_candidate(ev_status, ev_report, orderbook)
     summary = {
         "schema_version": "compact_run_summary_v1",
@@ -2590,6 +2733,17 @@ def build_compact_run_summary(
         "orderbook_freshness_reuse_diagnostics": orderbook_freshness_reuse,
         "scheduler_cadence_diagnostics": scheduler_cadence,
         "candidate_timing_diagnostics": candidate_timing,
+        "identity_continuity_diagnostics": identity_continuity,
+        "identity_continuity_score": identity_continuity["identity_continuity_score"],
+        "deterministic_chain_rate": identity_continuity["deterministic_chain_rate"],
+        "direct_chain_count": identity_continuity["direct_chain_count"],
+        "strong_chain_count": identity_continuity["strong_chain_count"],
+        "weak_chain_count": identity_continuity["weak_chain_count"],
+        "orphan_risk_count": identity_continuity["orphan_risk_count"],
+        "orphan_execution_count": identity_continuity["orphan_execution_count"],
+        "replay_lineage_gap_rate": identity_continuity["replay_lineage_gap_rate"],
+        "decision_to_risk_identity_gap_count": identity_continuity["decision_to_risk_identity_gap_count"],
+        "risk_to_execution_identity_gap_count": identity_continuity["risk_to_execution_identity_gap_count"],
         "model_output_propagation": _model_output_propagation(events),
         "missing_fields_by_producer": _missing_fields_by_producer(events),
         "root_cause_candidate": root_cause,

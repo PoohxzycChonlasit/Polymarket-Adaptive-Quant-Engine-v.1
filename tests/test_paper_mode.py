@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -15,6 +17,7 @@ from polymarket.order_intent import OrderIntentType
 from polymarket.trader import BankrollState, PolymarketTrader, TradeOutcome
 from utils.display import PolymarketRealtimeDisplay
 from utils.position_tracker import PositionTracker
+from utils.quant_event_logger import QuantEventLogger
 from utils.risk_manager import RiskManager, RiskPlan
 from utils.telegram_reporter import build_startup_alert
 
@@ -262,6 +265,89 @@ def test_phase2_lifecycle_observability_handles_absent_condition_meta_safely() -
     enriched = trader._phase2_complete_lifecycle_observability(payload)
 
     assert "condition_id" not in enriched
+
+
+def test_event_driven_admission_packet_price_detail_uses_ptb_info_only() -> None:
+    trader = _trader()
+    ptb_info = SimpleNamespace(
+        asset="BTC",
+        current_price=100_025.5,
+        price_to_beat=100_100.0,
+    )
+
+    detail = trader._event_driven_admission_packet_price_detail(ptb_info, "BTC")
+
+    assert detail == {
+        "packet_schema_version": "event_driven_admission_packet_v1",
+        "price_enrichment_stage": "analyze_market_quant_pre_orderbook",
+        "price_enrichment_source": "ptb_info",
+        "underlying_symbol": "BTC",
+        "ptb_context_available": True,
+        "oracle_price_available": True,
+        "underlying_price": 100_025.5,
+        "current_price": 100_025.5,
+        "underlying_price_source": "polymarket_oracle_feed",
+        "target_price_available": True,
+        "target_price": 100_100.0,
+        "price_to_beat": 100_100.0,
+        "target_source": "ptb_tracker_price_to_beat",
+        "event_boundary_source": "ptb_tracker_price_to_beat",
+        "packet_schema_price_fields_present": True,
+        "packet_created_before_price_context": False,
+        "enrichment_drop_reason": "",
+    }
+
+
+def test_event_driven_admission_packet_price_detail_classifies_missing_ptb_values() -> None:
+    trader = _trader()
+    ptb_info = SimpleNamespace(asset="BTC", current_price=0.0, price_to_beat=None)
+
+    detail = trader._event_driven_admission_packet_price_detail(ptb_info, "BTC")
+
+    assert detail["ptb_context_available"] is True
+    assert detail["oracle_price_available"] is False
+    assert detail["target_price_available"] is False
+    assert detail["packet_schema_price_fields_present"] is False
+    assert detail["packet_created_before_price_context"] is True
+    assert detail["enrichment_drop_reason"] == "oracle_and_target_missing"
+    assert "underlying_price" not in detail
+    assert "target_price" not in detail
+
+
+def test_market_snapshot_emits_event_driven_packet_price_fields_without_mutating_payload() -> None:
+    trader = _trader()
+    trader.quant_events = _CollectingQuantLogger()
+    ptb_info = SimpleNamespace(asset="ETH", current_price=3_250.25, price_to_beat=3_260.0)
+    price_detail = trader._event_driven_admission_packet_price_detail(ptb_info, "ETH")
+    payload = {
+        "ticker": "ETH",
+        "market_id": "pm-5m-eth",
+        "seconds_remaining": 180,
+        **price_detail,
+    }
+
+    assert trader._emit_quant_event("log_market_snapshot", payload) is True
+
+    category, emitted = trader.quant_events.events[-1]
+    assert category == "market_snapshot"
+    assert emitted["packet_schema_version"] == "event_driven_admission_packet_v1"
+    assert emitted["price_enrichment_stage"] == "analyze_market_quant_pre_orderbook"
+    assert emitted["price_enrichment_source"] == "ptb_info"
+    assert emitted["ptb_context_available"] is True
+    assert emitted["oracle_price_available"] is True
+    assert emitted["underlying_price"] == 3_250.25
+    assert emitted["current_price"] == 3_250.25
+    assert emitted["underlying_symbol"] == "ETH"
+    assert emitted["underlying_price_source"] == "polymarket_oracle_feed"
+    assert emitted["target_price"] == 3_260.0
+    assert emitted["price_to_beat"] == 3_260.0
+    assert emitted["target_price_available"] is True
+    assert emitted["target_source"] == "ptb_tracker_price_to_beat"
+    assert emitted["event_boundary_source"] == "ptb_tracker_price_to_beat"
+    assert emitted["packet_schema_price_fields_present"] is True
+    assert emitted["packet_created_before_price_context"] is False
+    assert emitted["enrichment_drop_reason"] == ""
+    assert "candidate_id" not in payload
     assert "condition_id" not in payload
 
 
@@ -814,6 +900,60 @@ def test_decision_and_risk_boundary_logs_preserve_candidate_ev_trace_fields() ->
     assert risk_payload["model_activation_block_group"] == "MODEL_READY"
     assert risk_payload["does_not_change_risk_decision"] is True
     assert outcome.receipt is None
+    assert outcome.skipped is True
+
+
+def test_risk_boundary_jsonl_receives_canonical_identity_lineage_fields(tmp_path) -> None:
+    trader = _trader(_settings(account_balance=25.0))
+    trader.quant_events = QuantEventLogger(
+        base_dir=tmp_path,
+        enabled=True,
+        mode="paper",
+        run_id="run-lineage",
+        schema_version="1.0",
+        now=lambda: datetime(2026, 5, 8, 12, 30, 0, tzinfo=timezone.utc),
+    )
+    outcome = TradeOutcome(
+        market_id="pm-5m-btc",
+        question="Will BTC close above PTB?",
+        decision="skip",
+        confidence=0.62,
+        risk_plan=None,
+        receipt=None,
+        skipped=True,
+        skip_reason="ev_below_threshold",
+        display={
+            "condition_id": "condition-btc",
+            "token_id": "btc-yes-token",
+            "side": "YES",
+            "market_epoch_start": 1_700_000_000,
+            "seconds_remaining": 210,
+            "fair_value": 0.57,
+            "market_price": 0.55,
+            "true_probability": 0.57,
+            "ev_after_spread": 0.02,
+        },
+    )
+
+    trader._emit_decision_event(outcome, ticker="BTC")
+
+    decision_event = json.loads((tmp_path / "decision_log" / "2026-05-08.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    risk_event = json.loads((tmp_path / "risk_log" / "2026-05-08.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    decision_payload = decision_event["payload"]
+    risk_payload = risk_event["payload"]
+    assert risk_payload["candidate_trace_id"] == decision_payload["candidate_trace_id"]
+    assert risk_payload["replay_chain_id"] == decision_payload["replay_chain_id"]
+    assert risk_payload["risk_trace_id"].startswith("rt_")
+    assert risk_payload["market_key"] == "pm-5m-btc"
+    assert risk_payload["condition_id"] == "condition-btc"
+    assert risk_payload["token_id"] == "btc-yes-token"
+    assert risk_payload["side"] == "YES"
+    assert risk_payload["identity_propagation_stage"] == "risk"
+    assert risk_payload["lineage_confidence"] == "DIRECT"
+    assert risk_payload["lineage_drop_reason"] == "none"
+    assert risk_payload["lifecycle_instance_id"].startswith("li_")
+    assert risk_payload["inventory_context_id"].startswith("inv_")
+    assert "candidate_trace_id_missing_reason" not in risk_payload
     assert outcome.skipped is True
 
 

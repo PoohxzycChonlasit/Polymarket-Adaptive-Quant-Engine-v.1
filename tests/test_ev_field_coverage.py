@@ -792,6 +792,46 @@ def test_ev_field_coverage_accepts_canonical_trace_aliases_for_risk_readiness(tm
     assert "candidate_trace_id" in report["ev_risk_chain_gap_diagnostics"]["risk_layer_trace_readiness_requirements"]["candidate_identity"]
 
 
+def test_ev_field_coverage_reports_deterministic_identity_continuity(tmp_path):
+    base_dir = tmp_path / "quant_data"
+    common = {
+        "candidate_trace_id": "trace-direct",
+        "parent_candidate_trace_id": "candidate-direct",
+        "market_key": "condition-direct",
+        "condition_id": "condition-direct",
+        "token_id": "token-direct",
+        "side": "YES",
+        "lifecycle_phase": "ACTIVE_INVENTORY_TRADING",
+        "lineage_confidence": "DIRECT",
+    }
+    _write_jsonl(
+        base_dir,
+        "decision_log",
+        [_event("2026-05-08T12:00:00Z", {**common, "decision_id": "decision-direct"}, event_type="decision")],
+    )
+    _write_jsonl(
+        base_dir,
+        "risk_log",
+        [_event("2026-05-08T12:00:01Z", {**common, "risk_trace_id": "risk-direct", "risk_state": "approved"}, event_type="risk_event")],
+    )
+    _write_jsonl(
+        base_dir,
+        "execution_log",
+        [_event("2026-05-08T12:00:02Z", {**common, "execution_trace_id": "execution-direct", "execution_state": "paper_order_submitted"}, event_type="execution")],
+    )
+
+    report = build_ev_field_coverage_report(base_dir=base_dir, date=DATE, run_id="run-target")
+
+    diagnostics = report["identity_continuity_diagnostics"]
+    assert diagnostics["direct_chain_count"] == 1
+    assert diagnostics["deterministic_chain_count"] == 1
+    assert diagnostics["deterministic_chain_rate"] == 1.0
+    assert diagnostics["decision_to_risk_identity_gap_count"] == 0
+    assert diagnostics["risk_to_execution_identity_gap_count"] == 0
+    assert report["identity_continuity_score"] == 1.0
+    assert report["orphan_risk_count"] == 0
+
+
 def test_write_ev_field_coverage_report_includes_sanitized_run_id(tmp_path):
     report = {
         "date_from": DATE,

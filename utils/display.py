@@ -432,6 +432,52 @@ class _LegacyPolymarketRealtimeDisplay:
                 "empty_book_recovery_success": False,
                 "empty_book_recovery_failed": False,
                 "empty_book_recovery_retry_count": 0,
+                # Market Readiness Timing Layer v1
+                "first_discovered_ts": "",
+                "first_token_ready_ts": "",
+                "first_orderbook_seen_ts": "",
+                "first_nonzero_bidask_ts": "",
+                "first_spread_normalized_ts": "",
+                "first_tradable_ts": "",
+                "readiness_confidence": 0.0,
+                "executable_book_state": "UNKNOWN",
+                "executable_spread_state": "UNKNOWN",
+                "discovery_to_book_seconds": 0,
+                "book_to_tradable_seconds": 0,
+                "total_discovery_to_tradable_seconds": 0,
+                # Liquidity Depth Observability v1
+                "best_bid_size": 0.0,
+                "best_ask_size": 0.0,
+                "top_bid_depth": 0.0,
+                "top_ask_depth": 0.0,
+                "total_bid_depth_l1_l3": 0.0,
+                "total_ask_depth_l1_l3": 0.0,
+                "min_fillable_size_usd": 0.0,
+                "liquidity_depth_state": "UNKNOWN",
+                "liquidity_depth_confidence": 0.0,
+                "time_to_min_depth_seconds": 0,
+                "first_min_depth_ts": "",
+                "first_min_depth_seconds_remaining": 0,
+                "depth_oscillation_count": 0,
+                "spread_oscillation_count": 0,
+                "tradable_but_thin_count": 0,
+                # Preload Next Market v1
+                "preload_attempted": False,
+                "preload_success": False,
+                "preload_failure_reason": None,
+                "preload_ticker": "",
+                "preload_market_slug": "",
+                "preload_condition_id": "",
+                "preload_yes_token_id_present": False,
+                "preload_no_token_id_present": False,
+                "preload_orderbook_warmed": False,
+                "preload_orderbook_state": "UNKNOWN",
+                "preload_seconds_before_epoch": 0,
+                "preload_latency_ms": 0,
+                "preload_cache_hit": False,
+                "preload_cache_age_seconds": 0,
+                "preload_next_epoch_start": 0,
+                "preload_next_epoch_remaining_seconds": 0,
             }
             for t in self._TICKERS
         }
@@ -1582,9 +1628,48 @@ class PolymarketRealtimeDisplay:
                 "lifecycle_phase": "",
                 "latest_producer": "",
                 "latest_schema_version": "",
+                # Lifecycle timing milestones
+                "first_discovered_seconds_remaining": 0,
+                "token_ready_seconds_remaining": 0,
+                "first_nonzero_bidask_seconds_remaining": 0,
+                "first_tradable_seconds_remaining": 0,
+                "active_window_alignment_reason": "",
+                # Preload state
+                "preload_success": None,
+                "preload_orderbook_warmed": False,
+                "preload_orderbook_state": "",
+                "preload_seconds_before_epoch": 0,
+                "preload_failure_reason": "",
+                # Orderbook / microstructure (probe fields from research snapshot)
+                "snapshot_best_bid_size": 0.0,
+                "snapshot_best_ask_size": 0.0,
+                "best_bid_size": 0.0,
+                "best_ask_size": 0.0,
+                "liquidity_depth_state": "",
+                "min_fillable_size_usd": 0.0,
+                "executable_book_state": "",
+                "executable_spread_state": "",
+                "readiness_confidence": 0.0,
+                # Research / replay identifiers
+                "replay_chain_id": "",
+                "lifecycle_instance_id": "",
+                "lineage_confidence": 0.0,
+                "shadow_inventory_decision": "",
+                "run_id": "",
+                # Lifecycle Latency Observatory v1
+                "discovery_to_token_ready_ms": 0,
+                "token_ready_to_book_ms": 0,
+                "book_to_nonzero_ms": 0,
+                "nonzero_to_normalized_ms": 0,
+                "normalized_to_executable_ms": 0,
+                "executable_to_decision_ms": 0,
+                "total_discovery_to_decision_ms": 0,
+                "dominant_latency_stage": "",
+                "lifecycle_latency_classification": "",
             }
             for t in self._TICKERS
         }
+        self._run_id: str = ""
         self._portfolio: object | None = None
         self._cycle_results: list[dict] = []
         self._cycle_num = 0
@@ -1674,6 +1759,10 @@ class PolymarketRealtimeDisplay:
 
     def update_ws_status(self, status: str) -> None:
         self._ws_status = status or "--"
+        self._safe_live_update()
+
+    def update_run_id(self, run_id: str) -> None:
+        self._run_id = str(run_id or "")
         self._safe_live_update()
 
     def add_trade(
@@ -1918,6 +2007,8 @@ class PolymarketRealtimeDisplay:
         self._append_kv(content, "MODE", "PAPER" if self.paper_trading else "LIVE", "bright_yellow" if self.paper_trading else "bright_red")
         self._append_kv(content, "LATENCY", f"{latency}ms" if latency is not None else "--", "bright_green" if latency is not None and latency <= 1500 else "bright_yellow")
         self._append_kv(content, "LOGGING", self._logging_status, "bright_green" if self._logging_status == "SAFE" else "bright_yellow")
+        if self._run_id:
+            self._append_kv(content, "RUN_ID", self._clip(self._run_id, 26), "grey62")
         content.append("\n" + self._clip(self._RECOMMENDED, spec.panel_width), style="grey50")
         return Panel(content, title="[bold bright_white]System Status[/bold bright_white]", border_style="grey42")
 
@@ -2122,6 +2213,114 @@ class PolymarketRealtimeDisplay:
         ]
         if mapping_warning:
             lines.append(self._line([("Token mapping ", "bold bright_yellow"), (self._clip(mapping_warning, max(12, spec.panel_width - 16)), "bold bright_yellow")], spec.panel_width))
+
+        # ── V2: Lifecycle phase + alignment ───────────────────────────
+        lifecycle_phase = str(m.get("lifecycle_phase", "") or "")
+        alignment_reason = str(m.get("active_window_alignment_reason", "") or "")
+        lines.append(self._line([
+            ("Phase ", "grey70"),
+            (lifecycle_phase or "--", self._lifecycle_phase_style(lifecycle_phase)),
+            (" | Align ", "grey70"),
+            (alignment_reason or "--", "grey62"),
+        ], spec.panel_width))
+
+        # ── V2: Timing milestones ──────────────────────────────────────
+        tok_rdy = int(self._as_float(m.get("token_ready_seconds_remaining", 0)))
+        nonzero_rdy = int(self._as_float(m.get("first_nonzero_bidask_seconds_remaining", 0)))
+        tradable_rdy = int(self._as_float(m.get("first_tradable_seconds_remaining", 0)))
+        lines.append(self._line([
+            ("TokRdy ", "grey70"), (f"{tok_rdy}s" if tok_rdy else "--", "bright_cyan"),
+            (" | NoZero ", "grey70"), (f"{nonzero_rdy}s" if nonzero_rdy else "--", "bright_cyan"),
+            (" | Tradable ", "grey70"), (f"{tradable_rdy}s" if tradable_rdy else "--", "bright_green" if tradable_rdy else "grey62"),
+        ], spec.panel_width))
+
+        # ── V2: Executable state ───────────────────────────────────────
+        exec_book = str(m.get("executable_book_state", "") or "")
+        exec_spread = str(m.get("executable_spread_state", "") or "")
+        lines.append(self._line([
+            ("ExecBook ", "grey70"), (self._clip(exec_book or "--", 18), self._executable_state_style(exec_book)),
+            (" | ExecSpread ", "grey70"), (self._clip(exec_spread or "--", 12), self._executable_spread_style(exec_spread)),
+        ], spec.panel_width))
+
+        # ── V2: Depth / liquidity sizes ────────────────────────────────
+        depth_state = str(m.get("liquidity_depth_state", "") or "")
+        best_bid_sz = self._as_float(m.get("best_bid_size", 0.0)) or self._as_float(m.get("snapshot_best_bid_size", 0.0))
+        best_ask_sz = self._as_float(m.get("best_ask_size", 0.0)) or self._as_float(m.get("snapshot_best_ask_size", 0.0))
+        min_fill = self._as_float(m.get("min_fillable_size_usd", 0.0))
+        fill_style = "bright_green" if min_fill >= 250 else "bright_yellow" if min_fill > 0 else "grey62"
+        lines.append(self._line([
+            ("DepthState ", "grey70"), (self._clip(depth_state or "--", 10), self._depth_state_style(depth_state)),
+            (" | BidSz ", "grey70"), (f"{best_bid_sz:.1f}" if best_bid_sz > 0 else "--", "bright_green" if best_bid_sz > 0 else "grey62"),
+            (" | AskSz ", "grey70"), (f"{best_ask_sz:.1f}" if best_ask_sz > 0 else "--", "bright_red" if best_ask_sz > 0 else "grey62"),
+        ], spec.panel_width))
+        lines.append(self._line([
+            ("Fill$ ", "grey70"), (f"${min_fill:.0f}" if min_fill > 0 else "--", fill_style),
+        ], spec.panel_width))
+
+        # ── V2: Readiness confidence + dominant blocker ────────────────
+        readiness_conf = self._as_float(m.get("readiness_confidence", 0.0))
+        blocker = self._dominant_blocker_label(m)
+        blocker_style = "bold bright_green" if blocker == "READY" else "bright_red" if blocker not in {"--", ""} else "grey62"
+        lines.append(self._line([
+            ("Readiness ", "grey70"), (f"{readiness_conf:.2f}" if readiness_conf > 0 else "--", self._confidence_style(readiness_conf)),
+            (" | Blocker ", "grey70"), (self._clip(blocker, 20), blocker_style),
+        ], spec.panel_width))
+
+        # ── V2: Preload state (wide/fullscreen only) ───────────────────
+        if spec.active_mode in {"wide", "fullscreen"}:
+            preload_success = m.get("preload_success")
+            preload_warmed = bool(m.get("preload_orderbook_warmed", False))
+            preload_secs = int(self._as_float(m.get("preload_seconds_before_epoch", 0)))
+            preload_fail_reason = str(m.get("preload_failure_reason", "") or "")
+            if preload_success is not None or preload_warmed or preload_secs:
+                status_str = "OK" if bool(preload_success) else ("FAIL" if preload_success is not None else "--")
+                lines.append(self._line([
+                    ("Preload ", "grey70"), (status_str, "bright_green" if status_str == "OK" else "bright_red" if status_str == "FAIL" else "grey62"),
+                    (" | Warmed ", "grey70"), (self._on_off(preload_warmed), "bright_green" if preload_warmed else "grey62"),
+                    (" | Before ", "grey70"), (f"{preload_secs}s" if preload_secs else "--", "bright_cyan"),
+                    (" | ", "grey70"), (self._clip(preload_fail_reason, 14) if preload_fail_reason else "ok", "bright_red" if preload_fail_reason else "grey50"),
+                ], spec.panel_width))
+
+            # ── V2: Research / replay identifiers ─────────────────────
+            chain_id = str(m.get("replay_chain_id", "") or "")
+            inst_id = str(m.get("lifecycle_instance_id", "") or "")
+            lineage = self._as_float(m.get("lineage_confidence", 0.0))
+            shadow = str(m.get("shadow_inventory_decision", "") or "")
+            if chain_id or inst_id or lineage or shadow:
+                chain_short = chain_id[-14:] if len(chain_id) > 14 else chain_id
+                inst_short = inst_id[-10:] if len(inst_id) > 10 else inst_id
+                lines.append(self._line([
+                    ("Chain ", "grey70"), (self._clip(chain_short or "--", 16), "bright_magenta" if chain_id else "grey62"),
+                    (" | Inst ", "grey70"), (self._clip(inst_short or "--", 14), "bright_cyan" if inst_id else "grey62"),
+                ], spec.panel_width))
+                lines.append(self._line([
+                    ("Lineage ", "grey70"), (f"{lineage:.2f}" if lineage > 0 else "--", "bright_green" if lineage >= 0.8 else "bright_yellow" if lineage > 0 else "grey62"),
+                    (" | Shadow ", "grey70"), (self._clip(shadow or "--", 12), "bright_yellow" if shadow else "grey62"),
+                ], spec.panel_width))
+
+        # ── V2: Lifecycle Latency Observatory v1 ──────────────────────
+        disc_tok = int(self._as_float(m.get("discovery_to_token_ready_ms", 0)))
+        tok_book = int(self._as_float(m.get("token_ready_to_book_ms", 0)))
+        book_exec = int(self._as_float(m.get("normalized_to_executable_ms", 0)))
+        exec_dec = int(self._as_float(m.get("executable_to_decision_ms", 0)))
+        latency_class = str(m.get("lifecycle_latency_classification", "") or "")
+        dominant = str(m.get("dominant_latency_stage", "") or "")
+        if disc_tok or tok_book or book_exec or exec_dec:
+            _lc_style = {
+                "FAST": "bright_green", "NORMAL": "bright_cyan",
+                "SLOW": "bright_yellow", "CRITICAL": "bold bright_red",
+            }.get(latency_class, "grey62")
+            lines.append(self._line([
+                ("DISC→TOK ", "grey70"), (f"{disc_tok}ms" if disc_tok else "--", "bright_cyan"),
+                (" TOK→BOOK ", "grey70"), (f"{tok_book}ms" if tok_book else "--", "bright_cyan"),
+                (" BOOK→EXEC ", "grey70"), (f"{book_exec}ms" if book_exec else "--", "bright_cyan"),
+                (" EXEC→DEC ", "grey70"), (f"{exec_dec}ms" if exec_dec else "--", "bright_cyan"),
+            ], spec.panel_width))
+            lines.append(self._line([
+                ("Latency ", "grey70"), (latency_class or "--", _lc_style),
+                (" | Slow@ ", "grey70"), (self._clip(dominant or "--", 20), "bright_yellow" if dominant else "grey62"),
+            ], spec.panel_width))
+
         return Panel(Text.assemble(*self._with_breaks(lines)), title=f"[bold bright_white]{ticker} Market[/bold bright_white]", border_style="bright_blue")
 
     def _cycle_panel(self, spec: DashboardLayout | None = None) -> Panel:
@@ -2420,13 +2619,84 @@ class PolymarketRealtimeDisplay:
 
     def _liquidity_style(self, state: str) -> str:
         state = str(state).upper()
-        if state == "HEALTHY":
+        if state in {"HEALTHY", "STRONG", "ACCEPTABLE"}:
             return "bright_green"
-        if state == "RECOVERING":
+        if state in {"RECOVERING", "THIN"}:
             return "bright_yellow"
-        if state in {"EMPTY", "THIN"}:
+        if state in {"EMPTY", "UNSTABLE"}:
             return "bright_red"
         return "grey62"
+
+    def _lifecycle_phase_style(self, phase: str) -> str:
+        phase = str(phase).upper()
+        if phase == "ACTIVE_INVENTORY_TRADING":
+            return "bold bright_green"
+        if phase in {"PROFIT_MANAGEMENT", "FINAL_DERISK"}:
+            return "bright_yellow"
+        if phase == "OPENING_SCAN":
+            return "bright_cyan"
+        if phase == "CLOSED_OR_UNSAFE":
+            return "bright_red"
+        return "grey62"
+
+    def _executable_state_style(self, state: str) -> str:
+        state = str(state).upper()
+        if state == "TRADABLE":
+            return "bold bright_green"
+        if state in {"SPREAD_NORMALIZED", "NONZERO_BOOK"}:
+            return "bright_cyan"
+        if state in {"BOOK_SEEN", "TOKEN_READY"}:
+            return "bright_yellow"
+        return "grey62"
+
+    def _executable_spread_style(self, state: str) -> str:
+        state = str(state).upper()
+        if state == "NORMALIZED":
+            return "bright_green"
+        if state == "WIDE":
+            return "bright_red"
+        return "grey62"
+
+    def _depth_state_style(self, state: str) -> str:
+        state = str(state).upper()
+        if state == "STRONG":
+            return "bold bright_green"
+        if state == "ACCEPTABLE":
+            return "bright_green"
+        if state == "THIN":
+            return "bright_yellow"
+        if state in {"EMPTY", "UNSTABLE"}:
+            return "bright_red"
+        return "grey62"
+
+    def _dominant_blocker_label(self, m: Mapping[str, object]) -> str:
+        exec_book = str(m.get("executable_book_state", "") or "").upper()
+        exec_spread = str(m.get("executable_spread_state", "") or "").upper()
+        depth_state = str(m.get("liquidity_depth_state", "") or "").upper()
+        skip_reason = str(m.get("skip_reason", "") or "").lower()
+        seconds = int(self._as_float(m.get("seconds_remaining", 0)))
+        cutoff = int(self._as_float(m.get("effective_cutoff_seconds", 0)))
+        # Cutoff and explicit blockers take priority over microstructure state
+        if "hard_close_zone" in skip_reason or "time_unsafe" in skip_reason:
+            return "CUTOFF"
+        if cutoff and seconds and seconds <= cutoff:
+            return "CUTOFF"
+        if "risk" in skip_reason and "no_risk" not in skip_reason:
+            return "RISK_BLOCK"
+        # Only return READY if all microstructure conditions are met
+        if exec_book == "TRADABLE" and exec_spread == "NORMALIZED" and depth_state in {"ACCEPTABLE", "STRONG"}:
+            return "READY"
+        if exec_book in {"DISCOVERED", "TOKEN_READY", ""}:
+            return "TOKEN_READY"
+        if depth_state in {"EMPTY"}:
+            return "EMPTY_BOOK"
+        if depth_state in {"THIN", "UNSTABLE"}:
+            return "LIQUIDITY_THIN"
+        if exec_spread == "WIDE":
+            return "SPREAD_WIDE"
+        if exec_spread in {"UNKNOWN", ""}:
+            return "SPREAD_UNKNOWN"
+        return "--"
 
     def _footer_tier_tag(self) -> str:
         portfolio = self._portfolio or {}

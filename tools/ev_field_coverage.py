@@ -3331,6 +3331,101 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _lineage_confidence_from_payload(payload: dict[str, Any]) -> str:
+    has_trace = bool(_raw_context_value(payload, "candidate_trace_id", "candidate_id", "signal_id"))
+    has_parent = bool(_raw_context_value(payload, "parent_candidate_trace_id", "candidate_id", "signal_id", "decision_id"))
+    has_market = bool(_raw_context_value(payload, "market_key", "market_id", "condition_id", "source_market_id", "market_slug", "slug"))
+    has_token = bool(_raw_context_value(payload, "token_id", "clob_token_id", "yes_token_id", "no_token_id"))
+    has_side = bool(_raw_context_value(payload, "side", "outcome", "token_side", "direction"))
+    has_phase = bool(_raw_context_value(payload, "lifecycle_phase"))
+    if has_trace and has_parent and has_market and has_token and has_side and has_phase:
+        return "DIRECT"
+    if has_trace and has_market and has_token and has_side and has_phase:
+        return "STRONG"
+    if has_trace and has_market:
+        return "WEAK"
+    if has_trace:
+        return "PROXY"
+    return "UNKNOWN"
+
+
+def _identity_continuity_diagnostics_from_events(events: list[dict[str, Any]]) -> dict[str, Any]:
+    trace_producer_sets: dict[str, set[str]] = {}
+    trace_confidence: dict[str, list[str]] = {}
+    orphan_counts_by_producer: Counter[str] = Counter()
+    trace_ids_by_producer: dict[str, set[str]] = {
+        "decision_log": set(),
+        "risk_log": set(),
+        "execution_log": set(),
+        "trade_journal": set(),
+        "market_snapshots": set(),
+    }
+    for event in events:
+        payload = _payload(event)
+        producer = _text(event.get("_category") or event.get("event_category") or payload.get("producer_event_type") or payload.get("producer") or "unknown")
+        trace_id = _raw_context_value(payload, "candidate_trace_id")
+        confidence = _text(payload.get("lineage_confidence")).upper() or _lineage_confidence_from_payload(payload)
+        if trace_id:
+            trace_producer_sets.setdefault(trace_id, set()).add(producer)
+            trace_confidence.setdefault(trace_id, []).append(confidence)
+            if producer in trace_ids_by_producer:
+                trace_ids_by_producer[producer].add(trace_id)
+        else:
+            orphan_counts_by_producer[producer] += 1
+
+    decision_traces = trace_ids_by_producer["decision_log"]
+    risk_traces = trace_ids_by_producer["risk_log"]
+    execution_traces = trace_ids_by_producer["execution_log"]
+    decision_to_risk_gap_count = len(decision_traces - risk_traces)
+    risk_to_execution_gap_count = len(risk_traces - execution_traces)
+    direct_chain_count = 0
+    strong_chain_count = 0
+    weak_chain_count = 0
+    proxy_or_unknown_chain_count = 0
+    deterministic_chain_count = 0
+    for trace_id, producers in trace_producer_sets.items():
+        confidences = trace_confidence.get(trace_id, [])
+        best = "UNKNOWN"
+        for level in ("DIRECT", "STRONG", "WEAK", "PROXY"):
+            if level in confidences:
+                best = level
+                break
+        if best == "DIRECT":
+            direct_chain_count += 1
+        elif best == "STRONG":
+            strong_chain_count += 1
+        elif best == "WEAK":
+            weak_chain_count += 1
+        else:
+            proxy_or_unknown_chain_count += 1
+        if "decision_log" in producers and "risk_log" in producers:
+            deterministic_chain_count += 1
+
+    total_traced_candidates = len(trace_producer_sets)
+    return {
+        "scope": "offline_identity_continuity_diagnostics_v1",
+        "total_events_scanned": len(events),
+        "total_traced_candidates": total_traced_candidates,
+        "identity_continuity_score": round((direct_chain_count + strong_chain_count) / total_traced_candidates, 4) if total_traced_candidates else 0.0,
+        "deterministic_chain_rate": round(deterministic_chain_count / total_traced_candidates, 4) if total_traced_candidates else 0.0,
+        "deterministic_chain_count": deterministic_chain_count,
+        "direct_chain_count": direct_chain_count,
+        "strong_chain_count": strong_chain_count,
+        "weak_chain_count": weak_chain_count,
+        "proxy_or_unknown_chain_count": proxy_or_unknown_chain_count,
+        "orphan_risk_count": int(orphan_counts_by_producer.get("risk_log", 0)),
+        "orphan_execution_count": int(orphan_counts_by_producer.get("execution_log", 0)),
+        "orphan_counts_by_producer": dict(orphan_counts_by_producer.most_common()),
+        "decision_to_risk_identity_gap_count": decision_to_risk_gap_count,
+        "risk_to_execution_identity_gap_count": risk_to_execution_gap_count,
+        "replay_lineage_gap_rate": round((decision_to_risk_gap_count + risk_to_execution_gap_count) / max(total_traced_candidates, 1), 4),
+        "producer_trace_coverage": {
+            producer: len(trace_ids)
+            for producer, trace_ids in sorted(trace_ids_by_producer.items())
+        },
+    }
+
+
 def build_ev_field_coverage_report(
     *,
     base_dir: str | Path = DEFAULT_QUANT_DATA_DIR,
@@ -3368,6 +3463,7 @@ def build_ev_field_coverage_report(
     chains = list(continuity_report.get("chains", []))
     rows = [_coverage_row(chain, events) for chain in chains]
     summary = _summary(rows)
+    identity_continuity = _identity_continuity_diagnostics_from_events(events)
     post_emission_verification = _candidate_trace_id_post_emission_verification(events)
     alias_normalization_verification = _candidate_trace_alias_normalization_verification(events)
     condition_alias_discovery = _condition_identity_alias_discovery(events)
@@ -3435,6 +3531,21 @@ def build_ev_field_coverage_report(
             "producer_transitions": list(IDENTITY_TRANSITIONS),
             "classes": list(IDENTITY_CONFIDENCE_LEVELS),
             "rule": "PROXY and WEAK are reported as uncertainty and do not count as confirmed continuity; DIRECT/STRONG remain separate from WEAK/PROXY",
+        },
+        "deterministic_identity_continuity_schema": {
+            "version": "deterministic_replay_identity_continuity_v1",
+            "canonical_fields": [
+                "candidate_trace_id",
+                "parent_candidate_trace_id",
+                "replay_chain_id",
+                "risk_trace_id",
+                "execution_trace_id",
+                "market_key",
+                "lifecycle_instance_id",
+                "inventory_context_id",
+                "packet_schema_version",
+            ],
+            "rule": "offline-only decision->risk->execution lineage diagnostics; PROXY remains non-confirming and no EV/probability values are fabricated",
         },
         "candidate_trace_envelope_spec": summary["candidate_trace_envelope_spec"],
         "risk_layer_envelope_gap_schema": {
@@ -3541,6 +3652,17 @@ def build_ev_field_coverage_report(
         "producer_handoff_quality_counts": summary["producer_handoff_quality_counts"],
         "lifecycle_observability_quality_counts": summary["lifecycle_observability_quality_counts"],
         "candidate_trace_confidence_counts": summary["candidate_trace_confidence_counts"],
+        "identity_continuity_diagnostics": identity_continuity,
+        "identity_continuity_score": identity_continuity["identity_continuity_score"],
+        "deterministic_chain_rate": identity_continuity["deterministic_chain_rate"],
+        "direct_chain_count": identity_continuity["direct_chain_count"],
+        "strong_chain_count": identity_continuity["strong_chain_count"],
+        "weak_chain_count": identity_continuity["weak_chain_count"],
+        "orphan_risk_count": identity_continuity["orphan_risk_count"],
+        "orphan_execution_count": identity_continuity["orphan_execution_count"],
+        "replay_lineage_gap_rate": identity_continuity["replay_lineage_gap_rate"],
+        "decision_to_risk_identity_gap_count": identity_continuity["decision_to_risk_identity_gap_count"],
+        "risk_to_execution_identity_gap_count": identity_continuity["risk_to_execution_identity_gap_count"],
         "candidate_trace_confidence_diagnostics": {
             "identity_fragmentation_detected_count": summary["identity_fragmentation_detected_count"],
             "propagation_gap_detected_count": summary["propagation_gap_detected_count"],
