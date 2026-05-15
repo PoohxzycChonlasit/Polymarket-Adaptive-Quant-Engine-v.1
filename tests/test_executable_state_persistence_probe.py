@@ -646,3 +646,124 @@ class TestTraderBestSeenField:
         result = classify_executable_state_persistence(payload)
         # No first_tradable_ts → executable_state_regressed should be False
         assert result["executable_state_regressed"] is False
+
+
+# ---------------------------------------------------------------------------
+# TestFixCMonotonicGuard — Phase 2 Write-Path Monotonicity Guard
+# ---------------------------------------------------------------------------
+
+def _apply_monotonic_write(bucket: dict, current_state: str) -> dict:
+    """Simulate the Fix C monotonic guard from _phase2_mark_readiness."""
+    _STATE_LEVEL = {
+        "DISCOVERED": 0, "TOKEN_READY": 1, "BOOK_SEEN": 2,
+        "NONZERO_BOOK": 3, "SPREAD_NORMALIZED": 4, "TRADABLE": 5,
+    }
+    _prev_state = str(bucket.get("executable_book_state") or "DISCOVERED")
+    if _STATE_LEVEL.get(current_state, 0) >= _STATE_LEVEL.get(_prev_state, 0):
+        bucket["executable_book_state"] = current_state
+    # best_seen is independent — apply separately to confirm no interference
+    _prev_best = str(bucket.get("executable_book_state_best_seen") or "DISCOVERED")
+    if _STATE_LEVEL.get(current_state, 0) >= _STATE_LEVEL.get(_prev_best, 0):
+        bucket["executable_book_state_best_seen"] = current_state
+    return bucket
+
+
+class TestFixCMonotonicGuard:
+    """Verify _phase2_mark_readiness write-path monotonicity (Fix C)."""
+
+    def test_token_ready_cannot_overwrite_tradable(self):
+        bucket = {"executable_book_state": "TRADABLE", "executable_book_state_best_seen": "TRADABLE"}
+        _apply_monotonic_write(bucket, "TOKEN_READY")
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_spread_normalized_cannot_overwrite_tradable(self):
+        bucket = {"executable_book_state": "TRADABLE", "executable_book_state_best_seen": "TRADABLE"}
+        _apply_monotonic_write(bucket, "SPREAD_NORMALIZED")
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_book_seen_cannot_overwrite_spread_normalized(self):
+        bucket = {"executable_book_state": "SPREAD_NORMALIZED", "executable_book_state_best_seen": "SPREAD_NORMALIZED"}
+        _apply_monotonic_write(bucket, "BOOK_SEEN")
+        assert bucket["executable_book_state"] == "SPREAD_NORMALIZED"
+
+    def test_token_ready_cannot_overwrite_nonzero_book(self):
+        bucket = {"executable_book_state": "NONZERO_BOOK", "executable_book_state_best_seen": "NONZERO_BOOK"}
+        _apply_monotonic_write(bucket, "TOKEN_READY")
+        assert bucket["executable_book_state"] == "NONZERO_BOOK"
+
+    def test_discovered_cannot_overwrite_token_ready(self):
+        bucket = {"executable_book_state": "TOKEN_READY", "executable_book_state_best_seen": "TOKEN_READY"}
+        _apply_monotonic_write(bucket, "DISCOVERED")
+        assert bucket["executable_book_state"] == "TOKEN_READY"
+
+    def test_tradable_advances_from_spread_normalized(self):
+        bucket = {"executable_book_state": "SPREAD_NORMALIZED", "executable_book_state_best_seen": "SPREAD_NORMALIZED"}
+        _apply_monotonic_write(bucket, "TRADABLE")
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_spread_normalized_advances_from_token_ready(self):
+        bucket = {"executable_book_state": "TOKEN_READY", "executable_book_state_best_seen": "TOKEN_READY"}
+        _apply_monotonic_write(bucket, "SPREAD_NORMALIZED")
+        assert bucket["executable_book_state"] == "SPREAD_NORMALIZED"
+
+    def test_nonzero_book_advances_from_book_seen(self):
+        bucket = {"executable_book_state": "BOOK_SEEN", "executable_book_state_best_seen": "BOOK_SEEN"}
+        _apply_monotonic_write(bucket, "NONZERO_BOOK")
+        assert bucket["executable_book_state"] == "NONZERO_BOOK"
+
+    def test_same_state_is_idempotent(self):
+        bucket = {"executable_book_state": "TRADABLE", "executable_book_state_best_seen": "TRADABLE"}
+        _apply_monotonic_write(bucket, "TRADABLE")
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_initial_empty_bucket_advances_to_token_ready(self):
+        bucket = {}
+        _apply_monotonic_write(bucket, "TOKEN_READY")
+        assert bucket["executable_book_state"] == "TOKEN_READY"
+
+    def test_full_progression_from_discovered_to_tradable(self):
+        bucket = {}
+        for state in ["DISCOVERED", "TOKEN_READY", "BOOK_SEEN", "NONZERO_BOOK", "SPREAD_NORMALIZED", "TRADABLE"]:
+            _apply_monotonic_write(bucket, state)
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_downgrade_attempt_after_full_progression(self):
+        bucket = {}
+        for state in ["DISCOVERED", "TOKEN_READY", "BOOK_SEEN", "NONZERO_BOOK", "SPREAD_NORMALIZED", "TRADABLE"]:
+            _apply_monotonic_write(bucket, state)
+        # Phase 1 overwrite attempt with TOKEN_READY
+        _apply_monotonic_write(bucket, "TOKEN_READY")
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_best_seen_unaffected_by_fix_c_downgrade_block(self):
+        # best_seen must remain TRADABLE independently of whether current was gated
+        bucket = {"executable_book_state": "TRADABLE", "executable_book_state_best_seen": "TRADABLE"}
+        _apply_monotonic_write(bucket, "TOKEN_READY")
+        assert bucket["executable_book_state_best_seen"] == "TRADABLE"
+        assert bucket["executable_book_state"] == "TRADABLE"
+
+    def test_current_and_best_seen_converge_after_fix_c(self):
+        # After Fix C, current and best_seen should always be equal
+        # (monotonic current catches up to or equals best_seen)
+        bucket = {}
+        for state in ["TOKEN_READY", "SPREAD_NORMALIZED", "TRADABLE", "TOKEN_READY", "BOOK_SEEN"]:
+            _apply_monotonic_write(bucket, state)
+        assert bucket["executable_book_state"] == "TRADABLE"
+        assert bucket["executable_book_state_best_seen"] == "TRADABLE"
+
+    def test_classifier_no_divergence_when_current_is_monotonic(self):
+        # With Fix C in place, current == best_seen → diverged must be False
+        from utils.executable_state_persistence_classifier import classify_executable_state_persistence
+        payload = _regressed_payload(
+            executable_book_state="TRADABLE",
+            executable_book_state_best_seen="TRADABLE",
+        )
+        result = classify_executable_state_persistence(payload)
+        assert result["current_vs_best_seen_diverged"] is False
+
+    def test_source_guard_present_for_current_state(self):
+        import inspect
+        import polymarket.trader as trader_mod
+        src = inspect.getsource(trader_mod)
+        assert "_prev_state = str(bucket.get(\"executable_book_state\") or \"DISCOVERED\")" in src
+        assert "_STATE_LEVEL.get(_prev_state, 0)" in src

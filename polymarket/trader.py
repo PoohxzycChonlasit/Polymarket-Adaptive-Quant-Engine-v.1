@@ -1646,14 +1646,17 @@ class PolymarketTrader:
         if first_tradable_ready:
             current_state = "TRADABLE"
             
-        bucket["executable_book_state"] = current_state
-        # Dual-State Executable Readiness v1 — monotonic best-seen, observability only.
-        # executable_book_state tracks latest observed state (unchanged).
-        # executable_book_state_best_seen tracks highest state ever reached this epoch.
+        # Fix C — Phase 2 Write-Path Monotonicity Guard.
+        # Prevents Phase 1 TOKEN_READY downgrade of a previously SPREAD_NORMALIZED/TRADABLE
+        # state when an early exit path (hard_block, FINAL_DERISK) skips Phase 2 correction.
         _STATE_LEVEL: dict[str, int] = {
             "DISCOVERED": 0, "TOKEN_READY": 1, "BOOK_SEEN": 2,
             "NONZERO_BOOK": 3, "SPREAD_NORMALIZED": 4, "TRADABLE": 5,
         }
+        _prev_state = str(bucket.get("executable_book_state") or "DISCOVERED")
+        if _STATE_LEVEL.get(current_state, 0) >= _STATE_LEVEL.get(_prev_state, 0):
+            bucket["executable_book_state"] = current_state
+        # Dual-State: best-seen advances monotonically (Fix B, observability only).
         _prev_best = str(bucket.get("executable_book_state_best_seen") or "DISCOVERED")
         if _STATE_LEVEL.get(current_state, 0) >= _STATE_LEVEL.get(_prev_best, 0):
             bucket["executable_book_state_best_seen"] = current_state
