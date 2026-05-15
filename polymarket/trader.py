@@ -10041,6 +10041,104 @@ class PolymarketTrader:
                 reason="settlement",
             )
 
+    # ------------------------------------------------------------------
+    # Silent-Zone Selection Probe v1 — observability only, fail-soft
+    # ------------------------------------------------------------------
+
+    def _emit_cycle_selection_probe_event(
+        self,
+        *,
+        early_return_reason: str | None,
+        selected_markets: list | None = None,
+    ) -> None:
+        """Emit one system_health event per cycle for silent-zone selection analysis.
+
+        Additive-only. Fail-soft. No strategy/risk/execution side effects.
+        Reads only existing trader state; never writes or mutates state.
+        """
+        try:
+            now_ts = int(time.time())
+            epoch_ts = self._current_five_min_epoch(now_ts)
+            seconds_since_epoch_open = float(now_ts - epoch_ts)
+
+            def _mf(meta: dict, key: str, default: float = 0.0) -> float:
+                try:
+                    return float(meta.get(key) or default)
+                except (TypeError, ValueError):
+                    return default
+
+            def _ms(meta: dict, key: str, default: str = "") -> str:
+                return str(meta.get(key) or default)
+
+            btc_meta = self._market_token_meta.get("BTC", {})
+            eth_meta = self._market_token_meta.get("ETH", {})
+
+            btc_epoch_start = _mf(btc_meta, "epoch_start_ts")
+            eth_epoch_start = _mf(eth_meta, "epoch_start_ts")
+            btc_epoch_end   = _mf(btc_meta, "epoch_end_ts")
+            eth_epoch_end   = _mf(eth_meta, "epoch_end_ts")
+
+            btc_token_ids = self._real_token_ids.get("BTC")
+            eth_token_ids = self._real_token_ids.get("ETH")
+
+            selected_tickers: list[str] = []
+            if selected_markets:
+                for m in selected_markets:
+                    try:
+                        selected_tickers.append(
+                            self._ticker_from_market_id(m.market_id).upper()
+                        )
+                    except Exception:
+                        pass
+
+            selection_empty_reason: str | None = None
+            if not early_return_reason and not selected_markets:
+                selection_empty_reason = "no_markets_returned"
+
+            payload: dict[str, object] = {
+                "event": "cycle_selection_probe_v1",
+                "cycle_count": int(getattr(self, "_cycle_count", 0)),
+                "timestamp_utc": self._utc_timestamp(),
+                "epoch_ts": epoch_ts,
+                "seconds_since_epoch_open": round(seconds_since_epoch_open, 1),
+                "early_return_reason": early_return_reason,
+                "candidate_pool_size": 2,
+                "selected_market_count": len(selected_markets) if selected_markets else 0,
+                "selection_order": selected_tickers,
+                "selection_empty_reason": selection_empty_reason,
+                # BTC state
+                "btc_token_ids_present": bool(btc_token_ids),
+                "btc_epoch_age_seconds": (
+                    round(float(now_ts - btc_epoch_start), 1)
+                    if btc_epoch_start > 0 else None
+                ),
+                "btc_seconds_remaining": (
+                    max(0, int(btc_epoch_end - now_ts))
+                    if btc_epoch_end > 0 else None
+                ),
+                "btc_lifecycle_phase": _ms(btc_meta, "lifecycle_phase", "UNKNOWN"),
+                "btc_executable_state": _ms(btc_meta, "executable_book_state", "UNKNOWN"),
+                # ETH state
+                "eth_token_ids_present": bool(eth_token_ids),
+                "eth_epoch_age_seconds": (
+                    round(float(now_ts - eth_epoch_start), 1)
+                    if eth_epoch_start > 0 else None
+                ),
+                "eth_seconds_remaining": (
+                    max(0, int(eth_epoch_end - now_ts))
+                    if eth_epoch_end > 0 else None
+                ),
+                "eth_lifecycle_phase": _ms(eth_meta, "lifecycle_phase", "UNKNOWN"),
+                "eth_executable_state": _ms(eth_meta, "executable_book_state", "UNKNOWN"),
+                # Preload state (per-ticker via _preloaded_next_markets dict)
+                "preload_btc_present": bool(self._preloaded_next_markets.get("BTC")),
+                "preload_eth_present": bool(self._preloaded_next_markets.get("ETH")),
+                "mode": self._runtime_mode(),
+            }
+            self._emit_quant_event("log_system_health", payload)
+        except Exception:
+            pass
+
     def run_single_cycle(self, top_n: int = 3) -> list[TradeOutcome]:
         """Run one complete analysis-and-execution cycle.
 
@@ -10061,6 +10159,7 @@ class PolymarketTrader:
         if self._block_on_reconciliation_if_needed(report):
             self._maybe_emit_system_health(force=True, reason="reconciliation_block")
             self._maybe_log_cycle_summary()
+            self._emit_cycle_selection_probe_event(early_return_reason="reconciliation_block")
             self._finish_cycle_timing(reason="cycle_end_reconciliation_block", force=True)
             return []
         self._cancel_stale_entry_orders_if_needed()
@@ -10090,11 +10189,13 @@ class PolymarketTrader:
                     else:
                         LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds ($%.2f) -- waiting for deposit/claim", live_balance)
                         self._maybe_log_cycle_summary()
+                        self._emit_cycle_selection_probe_event(early_return_reason="balance_guard")
                         self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                         return []
                 except Exception:
                     LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds -- waiting for deposit/claim")
                     self._maybe_log_cycle_summary()
+                    self._emit_cycle_selection_probe_event(early_return_reason="balance_guard")
                     self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                     return []
         if self._paused_insufficient_funds and not self.settings.paper_trading:
@@ -10105,13 +10206,15 @@ class PolymarketTrader:
                     self._paused_insufficient_funds = False
                     LOGGER.info("[AUTO_RESUME] Balance recovered to $%.2f. Resuming trading.", live_balance)
                 else:
-                    LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds ($%.2f) â€” waiting for deposit/claim", live_balance)
+                    LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds ($%.2f) -- waiting for deposit/claim", live_balance)
                     self._maybe_log_cycle_summary()
+                    self._emit_cycle_selection_probe_event(early_return_reason="balance_guard")
                     self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                     return []
             except Exception:
-                LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds â€” waiting for deposit/claim")
+                LOGGER.warning("[CYCLE SKIP] BALANCE_GUARD: insufficient funds -- waiting for deposit/claim")
                 self._maybe_log_cycle_summary()
+                self._emit_cycle_selection_probe_event(early_return_reason="balance_guard")
                 self._finish_cycle_timing(reason="cycle_end_balance_guard", force=True)
                 return []
 
@@ -10158,6 +10261,7 @@ class PolymarketTrader:
             )
             self._maybe_emit_system_health(force=True, reason="cycle_risk_pause")
             self._maybe_log_cycle_summary()
+            self._emit_cycle_selection_probe_event(early_return_reason="risk_pause")
             self._finish_cycle_timing(reason="cycle_end_risk_pause", force=True)
             return []
 
@@ -10165,12 +10269,14 @@ class PolymarketTrader:
 
         if not markets:
             self._maybe_log_cycle_summary()
-            LOGGER.warning("No markets available â€” cycle skipped.")
+            LOGGER.warning("No markets available -- cycle skipped.")
             self._maybe_emit_system_health(force=True, reason="no_markets")
+            self._emit_cycle_selection_probe_event(early_return_reason="no_markets")
             self._finish_cycle_timing(reason="cycle_end_no_markets", force=True)
             return []
 
         self._current_cycle_market_count = len(markets)
+        self._emit_cycle_selection_probe_event(early_return_reason=None, selected_markets=markets)
         outcomes: list[TradeOutcome] = []
         for sequence_index, market in enumerate(markets, start=1):
             try:
