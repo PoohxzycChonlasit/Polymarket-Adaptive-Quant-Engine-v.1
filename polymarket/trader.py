@@ -10252,6 +10252,15 @@ class PolymarketTrader:
             lifecycle_phase = str(timing_detail.get("lifecycle_phase") or "")
             ev_f = float(ev or 0.0)
 
+            # --- Semantic C shadow (observability only -- not used in sizing) ---
+            _SC_GOOD_EV    = 0.08
+            _SC_CONF_FLOOR = 0.54
+            _SC_CONF_SPAN  = 0.21
+            _sc_ev_q  = max(0.5, min(1.0, ev_f / max(_SC_GOOD_EV, 1e-9)))
+            _sc_input = float(confidence or 0.0) * _sc_ev_q
+            _sc_mult  = max(0.0, min(1.0, 0.25 + 0.75 * (_sc_input - _SC_CONF_FLOOR) / _SC_CONF_SPAN))
+            _sc_size  = available_risk * _sc_mult
+
             payload: dict[str, object] = {
                 "event": "zero_size_probe_v1",
                 "ticker": str(ticker),
@@ -10293,6 +10302,15 @@ class PolymarketTrader:
                 "zero_size_reason": zero_reason,
                 "zero_size_primary_constraint": constraint,
                 "mode": self._runtime_mode(),
+                # Semantic C shadow -- observability only, never feeds active sizing
+                "semantic_c_ev_quality_shadow":          round(_sc_ev_q, 6),
+                "semantic_c_input_shadow":               round(_sc_input, 6),
+                "semantic_c_multiplier_shadow":          round(_sc_mult, 6),
+                "semantic_c_size_usd_shadow":            round(_sc_size, 6),
+                "semantic_c_would_pass_confidence_gate": _sc_input >= _SC_CONF_FLOOR,
+                "semantic_c_would_produce_nonzero_size": _sc_size > 0.0,
+                "semantic_c_size_pct_bankroll":          round(_sc_size / max(bankroll, 1e-9) * 100, 4),
+                "semantic_c_shadow_reason":              "confidence_score_x_ev_quality_not_in_active_sizing",
             }
             self._emit_quant_event("log_system_health", payload)
         except Exception:
