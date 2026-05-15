@@ -1,6 +1,6 @@
 # PolyTrade Bot / Polymarket 5M BTC-ETH Quant System - Current Project Status
 
-> Updated: 2026-05-11
+> Updated: 2026-05-15
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -175,6 +175,9 @@ Stability classification:
   - Offline replay analyzer and report writer.
   - Offline no-entry analyzer and session runtime evaluator for paper-session bottleneck classification.
   - Offline paper evaluation report that combines data quality and replay outputs into `PASS`, `CAUTION`, or `FAIL`.
+  - Run-scoped continuity checks can isolate a real paper `run_id` from same-day tiny/probe runs and malformed day-level lines.
+  - Offline no-entry reporting now distinguishes execution-log diagnostic volume from true execution-stage submit/fill/cancel attempts.
+  - Offline Telegram summary formatter exists for report-derived paper evidence summaries; it is not wired into runtime and sending is explicit.
   - Tests covering valid, malformed, empty, and date-range datasets.
 
 ---
@@ -270,6 +273,18 @@ Observed terminal evidence:
   - Added `python tools/paper_evaluation_report.py --from YYYY-MM-DD --to YYYY-MM-DD`.
   - The report reads offline analyzer outputs only and writes `runtime/reports/paper_evaluation_*.json`.
   - `PASS` means paper evidence is clean enough for further review, not that live profitability or live readiness is guaranteed.
+- Run-scoped offline evidence finding on 2026-05-15:
+  - Selected real paper run: `20260515T143223Z_22760_1b6c0b35`.
+  - `tools/quant_data_quality.py --date 2026-05-15 --run-id 20260515T143223Z_22760_1b6c0b35 --write-report` reported scoped continuity `PASS`.
+  - Whole-day May 15 quality still has malformed JSONL warnings, but scoped continuity found no direct malformed-line match to the selected run ID.
+  - Offline no-entry/root-cause reports classify the selected run as `cutoff` / `time_unsafe` primary with `risk_plan_zero` secondary.
+  - Execution is not the root cause for this run: execution-log rows were diagnostic/non-attempt `market_analysis_exception` evidence, with zero true execution-stage attempts/failures after cutoff/risk blocks.
+  - Admission/selection probes showed analysis was present: cycles reached analysis, executable/model/EV evaluation was visible, and the stop occurred at risk/cutoff gates.
+  - Orderbook/liquidity was not the primary blocker: orderbook unavailable/stale counts were zero and liquidity was reported healthy in the scoped offline evidence.
+  - Added `tools/offline_telegram_summary.py` to format a Telegram-safe offline paper evidence summary from generated reports; default behavior prints only, and `--send` is explicit.
+  - Added a local read-only Offline Quant Report Dashboard for completed `runtime/reports/*.json` files: `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`.
+  - The dashboard is offline/report-only and must not be wired into runtime decisions, live APIs, websockets, strategy, risk sizing, cutoff rules, execution, wallet, or paper/live behavior.
+  - No runtime behavior, strategy, risk sizing, cutoff rules, execution path, wallet/live config, or `polymarket/trader.py` behavior changed from this evidence.
 
 Interpretation:
 
@@ -320,6 +335,7 @@ Important project areas:
 - `utils/quant_event_logger.py` - fail-soft structured JSONL quant event utility.
 - `utils/scan_log_loader.py` - shared reader for old and per-run realtime scan CSV files.
 - `daily_report.py` - daily summary/report sender; now reads combined `scan_log*.csv`.
+- `tools/offline_telegram_summary.py` - offline-only Telegram summary formatter/sender for generated paper evidence reports; not wired into runtime.
 - `docs/OBSERVABILITY_PLAN.md` - logging/Telegram/JSONL observability status and roadmap.
 - `docs/KNOWN_ISSUES.md` - current bugs, technical debt, and unfinished systems.
 
@@ -422,6 +438,14 @@ Latest paper validation:
 - Fresh BTC/ETH YES/NO orderbooks were visible in logs with bid/ask/spread and age under 3 seconds.
 - The run found opportunities, including one EV-level `ENTER`, but all entries were blocked before execution by entry cutoff, low confidence, low EV, or zero-size risk planning.
 - Result: no paper orders/fills/exits occurred in that short session; simulated cash/equity stayed at `$8.70`, exposure stayed `$0.00`, PnL stayed `0.0`.
+- Latest scoped no-entry evidence for run `20260515T143223Z_22760_1b6c0b35`:
+  - Continuity: `PASS`.
+  - Primary blocker: `cutoff` / `time_unsafe`.
+  - Secondary blocker: `risk_plan_zero`.
+  - Execution is not root cause because no entry passed cutoff/risk into a true submit/fill/cancel attempt.
+  - EV/probability fields were visible in offline admission/no-entry evidence.
+  - Liquidity/orderbook readiness was healthy enough for analysis and was not the main blocker.
+  - The local Offline Quant Report Dashboard can visualize this evidence from generated report JSON only; it is read-only and did not change runtime behavior.
 
 ### 5. Observability / Telegram Drift - partially fixed
 
@@ -434,6 +458,7 @@ Current status:
 - Daily report readers now combine old and per-run scan CSV files.
 - JSONL quant event logger utility exists with fail-soft Windows lock handling.
 - Telegram alert cooldown/dedup utility exists.
+- Offline Telegram paper-evidence summary formatting exists through `tools/offline_telegram_summary.py`; it consumes generated offline reports and has no runtime integration.
 
 Fixed in Phase 1/2 observability pass:
 
@@ -446,6 +471,7 @@ Remaining gap:
 - Quant event logger and Telegram alert layer are now wired into the main trader loop for market snapshots, decisions, execution, trade, risk, and health events.
 - Current paper diagnostics include cutoff behavior, MICRO timing branch state, liquidity/recovery state, bankroll tier metadata, and session evaluator UTC time filters.
 - Some existing Telegram daily message content still contains stale wording and needs a dedicated copy/content cleanup.
+- Offline Telegram summary is report-derived only; it should remain separate from runtime decision-making and automatic trading behavior.
 - Full retention/compaction and incident-report files remain planned.
 
 ---
@@ -528,7 +554,10 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
 
 11. Use offline analyzers after paper sessions.
    - Run `python tools/quant_data_quality.py --date YYYY-MM-DD --write-report` before trusting a replay.
+   - For run-level evidence, prefer `python tools/quant_data_quality.py --date YYYY-MM-DD --run-id RUN_ID --write-report` before drawing root-cause conclusions.
    - Run `python tools/replay_analyzer.py --date YYYY-MM-DD --csv` to summarize JSONL events.
+   - Run `python tools/no_entry_analyzer.py --date YYYY-MM-DD --run-id RUN_ID --write-report` for scoped no-entry classification.
+   - Use `python tools/offline_telegram_summary.py --date YYYY-MM-DD --run-id RUN_ID` to preview a Telegram-safe offline evidence summary; add `--send` only when explicitly intending to send.
    - Treat analyzer output as review evidence only; do not wire it into trading decisions without a separate approved phase.
 
 ---

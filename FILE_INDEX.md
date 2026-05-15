@@ -1,6 +1,6 @@
 # FILE_INDEX.md
 
-> Last updated: 2026-05-10.
+> Last updated: 2026-05-15.
 > Purpose: quick file map for Codex and human operators. This is an index, not a source of truth for live readiness.
 
 ## Start Here
@@ -118,6 +118,9 @@ python main.py --mode live --interval 60
 | `tools/no_entry_analyzer.py` | Offline no-entry paper session diagnostics. |
 | `tools/session_runtime_evaluator.py` | Offline/session paper runtime health and bottleneck evaluator; supports UTC `--since/--until` filters. |
 | `tools/paper_evaluation_report.py` | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
+| `tools/offline_telegram_summary.py` | Offline Telegram-safe paper evidence summary formatter/sender from generated reports; default is print-only. |
+| `dashboard/offline_quant_report_dashboard.py` | Local read-only dashboard server for completed `runtime/reports/*.json` evidence; run with `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`. |
+| `dashboard/offline_quant_report_dashboard.html` | Static browser UI for the offline quant report dashboard; reads only the local dashboard summary endpoint. |
 
 Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
 
@@ -149,7 +152,7 @@ Use targeted tests for scoped work:
 | Logging and observability | `tests/test_logging_resilience.py`, `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py` |
 | Terminal UI | `tests/test_terminal_dashboard_display.py` |
 | Shutdown | `tests/test_runtime_shutdown.py` |
-| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py` |
+| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py` |
 
 Full suite:
 
@@ -184,6 +187,7 @@ These markdown files guide work. They are not autonomous runtime modules and do 
 | `crypto_scalper/` | Separate crypto scalper path, not canonical Polymarket runtime. |
 | `dashboard/` | Streamlit dashboards; overlapping dashboard surface. |
 | `web-dashboard/` | Next.js dashboard; separate frontend surface. |
+| `dashboard/offline_quant_report_dashboard.py` | Read-only offline report dashboard entrypoint; not a runtime trading surface. |
 | `polymarket/five_min_monitor.py` | Standalone market monitor. |
 
 Do not promote secondary paths to canonical live execution without a dedicated review.

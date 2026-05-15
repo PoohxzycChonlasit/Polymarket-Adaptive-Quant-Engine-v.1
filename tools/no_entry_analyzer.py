@@ -106,6 +106,9 @@ class NoEntryReport:
     count_delta_extreme: int = 0
     order_submit_attempt_count: int = 0
     paper_fill_count: int = 0
+    execution_stage_attempt_count: int = 0
+    execution_diagnostic_event_count: int = 0
+    execution_analysis_exception_count: int = 0
     execution_failure_count: int = 0
     root_cause_category: str = "unknown"
     root_cause_counts: dict[str, int] = field(default_factory=dict)
@@ -487,12 +490,21 @@ def load_execution_summary(base_dir: str | Path, date: str, *, time_filter: dict
         "execution_events_loaded": len(events),
         "order_submit_attempt_count": 0,
         "paper_fill_count": 0,
+        "execution_stage_attempt_count": 0,
+        "execution_diagnostic_event_count": 0,
+        "execution_analysis_exception_count": 0,
         "execution_failure_count": 0,
     }
     for event in events:
         payload = _payload(event)
         event_name = str(payload.get("event", "") or "").lower()
         status = str(payload.get("status", "") or "").lower()
+        if _is_execution_stage_attempt(event_name, status):
+            summary["execution_stage_attempt_count"] += 1
+        else:
+            summary["execution_diagnostic_event_count"] += 1
+        if event_name == "market_analysis_exception":
+            summary["execution_analysis_exception_count"] += 1
         if event_name == "order_submit_attempt":
             summary["order_submit_attempt_count"] += 1
         if event_name == "paper_fill":
@@ -502,10 +514,27 @@ def load_execution_summary(base_dir: str | Path, date: str, *, time_filter: dict
     return summary
 
 
+def _is_execution_stage_attempt(event_name: str, status: str = "") -> bool:
+    if event_name in {
+        "order_submit_attempt",
+        "order_submit",
+        "order_submit_failed",
+        "live_order_submitted",
+        "paper_fill",
+        "cancel_order",
+        "cancel_order_failed",
+        "order_cancel_failed",
+    }:
+        return True
+    if event_name.endswith("_submitted") or event_name.endswith("_filled"):
+        return True
+    return _is_true_execution_failure(event_name, status) and "analysis" not in event_name
+
+
 def _is_true_execution_failure(event_name: str, status: str = "") -> bool:
     if event_name == "order_intent_reject":
         return False
-    if event_name in {"order_submit_failed", "market_analysis_exception"}:
+    if event_name in {"order_submit_failed", "cancel_order_failed", "order_cancel_failed"}:
         return True
     if event_name == "cancel_order" and status in {"failed", "error", "rejected"}:
         return True
@@ -612,6 +641,9 @@ def analyze_no_entries(
     _aggregate_records(report, primary_records)
     report.order_submit_attempt_count = execution_summary["order_submit_attempt_count"]
     report.paper_fill_count = execution_summary["paper_fill_count"]
+    report.execution_stage_attempt_count = execution_summary["execution_stage_attempt_count"]
+    report.execution_diagnostic_event_count = execution_summary["execution_diagnostic_event_count"]
+    report.execution_analysis_exception_count = execution_summary["execution_analysis_exception_count"]
     report.execution_failure_count = execution_summary["execution_failure_count"]
     report.market_data_quality = build_market_data_quality(report, market_snapshots)
     phase2_events = _phase2_no_entry_events(
@@ -826,6 +858,13 @@ def _root_cause_details(report: NoEntryReport) -> list[str]:
         details.append(f"cutoff: time_unsafe skips={report.count_time_unsafe}")
     if report.execution_failure_count:
         details.append(f"execution: failures={report.execution_failure_count}")
+    if report.execution_diagnostic_event_count:
+        details.append(
+            "execution_log: diagnostic/non-attempt events={count} analysis_exceptions={exceptions}".format(
+                count=report.execution_diagnostic_event_count,
+                exceptions=report.execution_analysis_exception_count,
+            )
+        )
     if report.total_entered > 0 and report.order_submit_attempt_count == 0:
         details.append("execution: approved/enter decisions had no matching order_submit_attempt events")
     if report.order_submit_attempt_count > 0 and report.paper_fill_count == 0:

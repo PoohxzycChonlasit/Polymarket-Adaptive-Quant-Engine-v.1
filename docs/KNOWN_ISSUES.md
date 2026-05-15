@@ -1,6 +1,6 @@
 # Known Issues
 
-> Last synced: 2026-05-10.
+> Last synced: 2026-05-15.
 > Purpose: truthful list of bugs, technical debt, risky areas, TODO items, and unfinished systems.
 
 ## Critical / Live Blockers
@@ -65,7 +65,7 @@ Evidence:
 
 ### OBS-002 - JSONL quant event logging and offline analysis are wired, deeper analytics/retention pending
 
-Status: implemented for main trader runtime, offline analysis, and session runtime evaluation; retention follow-up planned.
+Status: implemented for main trader runtime, offline analysis, run-scoped evidence review, and session runtime evaluation; retention follow-up planned.
 
 Implemented:
 
@@ -83,25 +83,42 @@ Implemented:
 - `tools/quant_data_quality.py` validates emitted JSONL files offline.
 - `tools/replay_analyzer.py` produces offline replay metrics and report files.
 - `tools/no_entry_analyzer.py` classifies zero-entry paper sessions from existing evidence.
+- `tools/no_entry_analyzer.py` now distinguishes execution-log diagnostic volume from true execution-stage submit/fill/cancel attempts before allowing execution to become root cause.
 - `tools/session_runtime_evaluator.py` summarizes paper session health, PASS/CAUTION/FAIL state, bottlenecks, cutoff behavior, MICRO timing, liquidity/recovery, bankroll tier metadata, and execution failures.
 - `tools/session_runtime_evaluator.py --date YYYY-MM-DD --since HH:MM --until HH:MM` filters same-day events by `timestamp_utc` using UTC `HH:MM`.
+- `tools/quant_data_quality.py --date YYYY-MM-DD --run-id RUN_ID --write-report` can isolate a selected paper run from same-day tiny/probe runs.
+- `dashboard/offline_quant_report_dashboard.py` serves a local read-only dashboard for completed `runtime/reports/*.json` files only:
+  - `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`
 
 Impact:
 
 - Cycle reconstruction is improved through JSONL, CSV, and text logs.
 - Offline review is now possible without touching trading behavior.
+- Latest scoped run evidence can be used for root-cause review even when whole-day quality has unrelated malformed-line warnings, as long as the scoped continuity report passes.
+- The offline dashboard improves report visibility only; it does not call live APIs, connect to runtime websockets, write runtime evidence, or change paper/live behavior.
 - Retention, compression, and deeper analytics are still not implemented.
 
 Next:
 
 - Review real paper-session JSONL output with the data quality checker and replay analyzer.
 - Use `--since/--until` on days with multiple paper runs so old same-day events do not pollute the current-run diagnosis.
+- Prefer `--run-id` for paper-session root-cause work when a real paper run ID is available.
 - Add retention/compaction only in a scoped phase.
 - Keep analyzer output offline-only until a separate approved phase explicitly scopes feedback into strategy or risk research.
 
+Latest scoped evidence:
+
+- Run `20260515T143223Z_22760_1b6c0b35` had run-scoped continuity `PASS`.
+- Root cause for no entries was `cutoff` / `time_unsafe`.
+- Secondary blocker was `risk_plan_zero`.
+- Execution was not root cause because no entry passed cutoff/risk into a true submit/fill/cancel attempt.
+- Whole-day May 15 malformed JSONL warnings remain, but the scoped continuity check found no direct malformed-line match to this run ID.
+- The Offline Quant Report Dashboard can display this evidence from generated report JSON only and remains read-only.
+- No runtime behavior changed from this evidence.
+
 ### OBS-003 - Telegram alert cooldown/dedup wired for trader alerts, daily copy cleanup pending
 
-Status: implemented for clear trader alert call sites, follow-up planned.
+Status: implemented for clear trader alert call sites; offline report summary formatter added; daily copy cleanup still planned.
 
 Implemented reality:
 
@@ -112,11 +129,13 @@ Implemented reality:
 - `utils/telegram_alerts.py` exposes `notify_startup`, `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident`.
 - Risk, incident, summary, and duplicate critical alerts can be cooldown/dedup limited.
 - Clear trader alerts now route through the alert layer for entries, exits, risk blocks, critical close/reduce failures, summaries, and reconciliation incidents.
+- `tools/offline_telegram_summary.py` formats a Telegram-safe summary from generated offline paper evidence reports. Default behavior prints only; actual send requires explicit `--send`.
 
 Gap:
 
 - Suppression counters are not yet surfaced in terminal/session summaries.
 - Daily Telegram message wording still needs cleanup before relying on it operationally.
+- The offline Telegram summary tool is not runtime-integrated and must remain report-derived evidence only unless a future scoped task explicitly changes that.
 
 Impact:
 
@@ -126,6 +145,7 @@ Next:
 
 - Add suppression counters after the routing pass.
 - Clean stale daily Telegram message copy.
+- Keep offline Telegram evidence summaries separate from runtime decisions and live/paper execution behavior.
 
 ### OBS-004 - Telegram failures are intentionally mostly silent
 
@@ -247,17 +267,20 @@ Evidence:
 - Earlier short paper validation produced real orderbook EV candidates but no paper orders because risk/strategy gates blocked all entries.
 - MICRO_SURVIVAL_MODE mitigates zero-size risk planning for paper MICRO bankrolls.
 - Recent diagnostics shifted the main no-entry blockers toward cutoff/hard-close timing and transient liquidity/readiness states, not live execution failure.
+- Latest run-scoped offline evidence for `20260515T143223Z_22760_1b6c0b35` refined this further: continuity passed, primary root cause was `cutoff` / `time_unsafe`, secondary was `risk_plan_zero`, and execution was not root cause.
 
 Impact:
 
 - Paper sessions can validate safety/data flow without generating trades.
 - A no-entry paper session is not proof that live execution is broken.
+- Execution-log diagnostic volume must not be treated as true execution failure unless a candidate passed decision/risk into submit/fill/cancel behavior.
 
 Next:
 
 - Run longer paper sessions.
 - Analyze top skip reasons before changing strategy/risk thresholds.
 - Keep MICRO timing isolated to paper MICRO tiers; do not loosen STANDARD / GROWTH / CAPITAL behavior from MICRO evidence.
+- Use run-scoped continuity and no-entry reports before drawing conclusions on days with multiple probe/tiny run IDs.
 
 ### STRAT-002 - HFT path is experimental
 
@@ -314,10 +337,12 @@ Paths:
 - Terminal UI V2 in `utils/display.py`.
 - Streamlit dashboards in `dashboard/`.
 - Next.js dashboard in `web-dashboard/`.
+- Read-only offline report dashboard in `dashboard/offline_quant_report_dashboard.py`.
 
 Next:
 
 - Consolidate only in a dedicated dashboard phase.
+- Keep the offline report dashboard separate from live/runtime dashboard behavior unless a future scoped dashboard task explicitly changes that.
 
 ### TD-003 - Some older research/docs may still be stale
 

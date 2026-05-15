@@ -613,12 +613,81 @@ def test_order_intent_reject_is_not_execution_failure(tmp_path: Path) -> None:
     )
 
     assert report.execution_events_loaded == 3
+    assert report.execution_stage_attempt_count == 2
+    assert report.execution_diagnostic_event_count == 1
     assert report.order_submit_attempt_count == 1
     assert report.paper_fill_count == 1
     assert report.execution_failure_count == 0
 
 
-def test_real_execution_errors_still_count_as_execution_failures(tmp_path: Path) -> None:
+def test_execution_log_diagnostics_do_not_override_pre_execution_blocks(tmp_path: Path) -> None:
+    quant_dir = tmp_path / "quant_data"
+    decision_dir = quant_dir / "decision_log"
+    execution_dir = quant_dir / "execution_log"
+    decision_dir.mkdir(parents=True)
+    execution_dir.mkdir(parents=True)
+    (decision_dir / "2026-05-08.jsonl").write_text(
+        "\n".join([
+            _jsonl_event({
+                "asset": "BTC",
+                "decision": "skip",
+                "skipped": True,
+                "raw_skip_reason": "Entry cutoff: 80s <= 90s",
+                "seconds_remaining": 80,
+                "entry_cutoff_seconds": 90,
+            }),
+            _jsonl_event({
+                "asset": "ETH",
+                "decision": "skip",
+                "skipped": True,
+                "raw_skip_reason": "Entry cutoff: 70s <= 90s",
+                "seconds_remaining": 70,
+                "entry_cutoff_seconds": 90,
+            }),
+            _jsonl_event({
+                "asset": "BTC",
+                "decision": "skip",
+                "skipped": True,
+                "raw_skip_reason": "risk_plan_zero",
+                "seconds_remaining": 180,
+                "entry_cutoff_seconds": 90,
+            }),
+        ])
+        + "\n",
+        encoding="utf-8",
+    )
+    (execution_dir / "2026-05-08.jsonl").write_text(
+        "\n".join([
+            _jsonl_event({"event": "market_analysis_exception"}),
+            _jsonl_event({"event": "market_analysis_exception"}),
+            _jsonl_event({"event": "order_intent_reject", "reason": "risk_not_approved"}),
+        ])
+        + "\n",
+        encoding="utf-8",
+    )
+
+    report = analyze_no_entries(
+        date="2026-05-08",
+        quant_data_dir=quant_dir,
+        realtime_log_dir=tmp_path / "realtime_logs",
+    )
+
+    assert report.execution_events_loaded == 3
+    assert report.execution_stage_attempt_count == 0
+    assert report.execution_diagnostic_event_count == 3
+    assert report.execution_analysis_exception_count == 2
+    assert report.execution_failure_count == 0
+    assert report.root_cause_category == "cutoff"
+    assert report.root_cause_counts == {
+        "data": 0,
+        "strategy": 0,
+        "risk": 1,
+        "cutoff": 2,
+        "execution": 0,
+    }
+
+
+def test_real_execution_stage_errors_still_count_as_execution_failures(tmp_path: Path) -> None:
     quant_dir = tmp_path / "quant_data"
     execution_dir = quant_dir / "execution_log"
     execution_dir.mkdir(parents=True)
@@ -638,8 +707,11 @@ def test_real_execution_errors_still_count_as_execution_failures(tmp_path: Path)
         realtime_log_dir=tmp_path / "realtime_logs",
     )
 
-    assert report.execution_failure_count == 3
-    assert report.root_cause_counts["execution"] == 3
+    assert report.execution_stage_attempt_count == 2
+    assert report.execution_diagnostic_event_count == 1
+    assert report.execution_analysis_exception_count == 1
+    assert report.execution_failure_count == 2
+    assert report.root_cause_counts["execution"] == 2
 
 
 def test_cli_does_not_write_report_without_flag(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 
 from polymarket.bankroll_tiers import BankrollTier, BankrollTierConfig, get_tier_config
@@ -104,16 +105,7 @@ def calculate_frequency_multiplier(
 ) -> float:
     tier_config = get_tier_config(_tier(config.tier))
     max_trades = config.max_trades_per_hour if config.max_trades_per_hour is not None else tier_config.max_trades_per_hour
-    effective_config = BankrollTierConfig(
-        tier=tier_config.tier,
-        min_bankroll_usd=tier_config.min_bankroll_usd,
-        max_bankroll_usd=tier_config.max_bankroll_usd,
-        min_risk_pct=tier_config.min_risk_pct,
-        max_risk_pct=tier_config.max_risk_pct,
-        min_trades_per_hour=tier_config.min_trades_per_hour,
-        max_trades_per_hour=max_trades,
-        max_market_exposure_pct=tier_config.max_market_exposure_pct,
-    )
+    effective_config = dataclasses.replace(tier_config, max_trades_per_hour=max_trades)
     return frequency_multiplier_for_tier(
         effective_config,
         state.trades_last_hour,
@@ -179,16 +171,7 @@ def _evaluate_trade_frequency(
         if result == "win" and freq_input.seconds_since_last_entry < cooldown_after_win:
             blocked.append("cooldown_after_win")
 
-    effective_config = BankrollTierConfig(
-        tier=config.tier,
-        min_bankroll_usd=config.min_bankroll_usd,
-        max_bankroll_usd=config.max_bankroll_usd,
-        min_risk_pct=config.min_risk_pct,
-        max_risk_pct=config.max_risk_pct,
-        min_trades_per_hour=config.min_trades_per_hour,
-        max_trades_per_hour=max_trades,
-        max_market_exposure_pct=config.max_market_exposure_pct,
-    )
+    effective_config = dataclasses.replace(config, max_trades_per_hour=max_trades)
 
     return TradeFrequencyResult(
         approved=not blocked,

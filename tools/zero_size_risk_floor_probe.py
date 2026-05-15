@@ -302,7 +302,7 @@ def print_report(result: dict[str, Any], date_str: str) -> None:
 
     print(f"\n--- EV / Confidence ---")
     print(f"  EV positive              : {result['ev_positive_count']} ({result['ev_positive_pct']:.1f}%)")
-    print(f"  Confidence passed (≥0.54): {result['confidence_passed_count']} ({result['confidence_passed_pct']:.1f}%)")
+    print(f"  Confidence passed (>=0.54): {result['confidence_passed_count']} ({result['confidence_passed_pct']:.1f}%)")
     print(f"  Both EV+ AND conf passed : {result['ev_positive_and_confidence_passed_count']} ({result['ev_positive_and_confidence_passed_pct']:.1f}%)")
 
     print(f"\n--- Bankroll / Floor / Min-Order ---")
@@ -335,7 +335,7 @@ def print_report(result: dict[str, Any], date_str: str) -> None:
 
     print(f"\n--- BTC vs ETH ---")
     for asset in ("BTC", "ETH"):
-        s = result.get(asset, {})
+        s = result.get(asset.lower(), {})
         print(f"  {asset}: n={s.get('count',0)}  ev+={s.get('ev_positive',0)}  "
               f"conf_pass={s.get('confidence_passed',0)}  active={s.get('active_window',0)}  "
               f"micro={s.get('micro_active',0)}  top={s.get('top_constraint','?')}")
