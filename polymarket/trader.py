@@ -7866,6 +7866,16 @@ class PolymarketTrader:
             self._apply_risk_mode_to_plan(risk_plan, risk_mode_decision)
 
         if risk_plan.position_size <= 0:
+            self._emit_zero_size_probe_event(
+                ticker=ticker,
+                market_id=market.market_id,
+                risk_plan=risk_plan,
+                ptb_info=ptb_info,
+                timing_detail=timing_detail,
+                confidence=confidence,
+                ev=model_ev,
+                entry_price=entry_price,
+            )
             quant_detail = self._record_quant_detail(
                 ticker,
                 decision="SKIP",
@@ -10167,6 +10177,121 @@ class PolymarketTrader:
                 "entry_budget_consumed_after_model_eval": bool(model_gate_reached) and subtype == "slot_consumed",
                 "entry_budget_consumed_after_real_submit": bool(real_order_attempted) and subtype == "slot_consumed",
                 "entry_budget_consumed_after_fill": bool(paper_fill_occurred) and subtype == "slot_consumed",
+                "mode": self._runtime_mode(),
+            }
+            self._emit_quant_event("log_system_health", payload)
+        except Exception:
+            pass
+
+    # ------------------------------------------------------------------
+    # Zero-Size Risk Floor Probe v1 — observability only, fail-soft
+    # ------------------------------------------------------------------
+
+    def _zero_size_primary_constraint(self, diagnostics: dict, risk_plan) -> str:
+        """Classify the dominant zero-size constraint from diagnostics. Pure read."""
+        blocked = set(diagnostics.get("blocked_reasons") or [])
+        reason  = str(diagnostics.get("reason_from_order_manager") or "").lower()
+        balance = float(getattr(risk_plan, "account_balance", 0.0) or 0.0)
+        if balance < FLOOR_BALANCE or "balance_below_floor" in reason or "floor" in reason:
+            return "bankroll_too_small"
+        if "time_remaining_le_90s" in blocked:
+            return "time_remaining_too_short"
+        if "confidence_too_low" in blocked:
+            return "confidence_too_low"
+        if "ev_not_positive" in blocked:
+            return "ev_not_positive"
+        if "spread_too_wide" in blocked:
+            return "spread_too_wide"
+        if "liquidity_too_low" in blocked:
+            return "liquidity_too_low"
+        if "daily_loss_limit_reached" in blocked or "hard_drawdown_reached" in blocked:
+            return "drawdown_limit"
+        if "lockdown" in reason or "risk_mode" in reason:
+            return "risk_mode_blocked"
+        if "below_min_position_size" in blocked:
+            return "below_min_order"
+        if "max_trades_per_hour_reached" in blocked:
+            return "frequency_limit"
+        return "unknown"
+
+    def _emit_zero_size_probe_event(
+        self,
+        *,
+        ticker: str,
+        market_id: str,
+        risk_plan,
+        ptb_info,
+        timing_detail: dict,
+        confidence: float,
+        ev: float,
+        entry_price: float,
+    ) -> None:
+        """Emit one system_health event for every zero-size risk plan outcome.
+
+        Additive-only. Fail-soft. No strategy/risk/execution side effects.
+        Reads only existing state; never mutates anything.
+        """
+        try:
+            diagnostics = getattr(risk_plan, "diagnostics", {}) if risk_plan is not None else {}
+            diagnostics = diagnostics if isinstance(diagnostics, dict) else {}
+
+            bankroll = float(getattr(risk_plan, "account_balance",
+                                     self.bankroll_state.current_bankroll_for_sizing) or 0.0)
+            base_risk_pct = float(diagnostics.get("base_risk_pct") or 0.0)
+            available_risk = round(bankroll * base_risk_pct, 6)
+            blocked = list(diagnostics.get("blocked_reasons") or [])
+            tier_detail = self._bankroll_tier_detail()
+
+            def _mf(key: str) -> float:
+                try: return round(float(diagnostics.get(key) or 0.0), 6)
+                except (TypeError, ValueError): return 0.0
+
+            constraint = self._zero_size_primary_constraint(diagnostics, risk_plan)
+            zero_reason = self._risk_plan_zero_reason(risk_plan)
+            sr = float(getattr(ptb_info, "seconds_remaining", 0) or 0)
+            lifecycle_phase = str(timing_detail.get("lifecycle_phase") or "")
+            ev_f = float(ev or 0.0)
+
+            payload: dict[str, object] = {
+                "event": "zero_size_probe_v1",
+                "ticker": str(ticker),
+                "market_id": str(market_id),
+                "epoch_start_ts": int(getattr(ptb_info, "epoch_start_ts", 0) or 0),
+                "seconds_remaining": round(sr, 1),
+                "lifecycle_phase": lifecycle_phase,
+                # bankroll state
+                "bankroll": round(bankroll, 4),
+                "bankroll_floor_usd": float(FLOOR_BALANCE),
+                "base_risk_pct": round(base_risk_pct, 6),
+                "available_risk_budget_usd": available_risk,
+                "tier_id": str(tier_detail.get("bankroll_tier_id") or diagnostics.get("tier") or ""),
+                "tier_family": str(tier_detail.get("bankroll_family") or ""),
+                "risk_mode": self._risk_mode_state.current_mode.value,
+                "micro_survival_active": bool(self._micro_survival_active(bankroll)),
+                "micro_position_size": round(float(self._micro_position_size(bankroll)), 6),
+                # model output
+                "confidence": round(float(confidence or 0.0), 6),
+                "ev": round(ev_f, 6),
+                "ev_positive": ev_f > 0.0,
+                "confidence_passed": float(confidence or 0.0) >= 0.54,
+                "entry_price": round(float(entry_price or 0.0), 6),
+                # sizing pipeline
+                "raw_size_usd": available_risk,
+                "final_size_usd": _mf("final_notional_size"),
+                "min_order_usd": _mf("min_position_size_usd"),
+                "blocked_reasons": blocked,
+                # multipliers
+                "confidence_multiplier": _mf("confidence_multiplier"),
+                "ev_multiplier": _mf("ev_multiplier"),
+                "drawdown_multiplier": _mf("drawdown_multiplier"),
+                "liquidity_multiplier": _mf("liquidity_multiplier"),
+                "spread_multiplier": _mf("spread_multiplier"),
+                "time_to_settlement_multiplier": _mf("time_to_settlement_multiplier"),
+                "delta_multiplier": _mf("delta_multiplier"),
+                "frequency_multiplier": _mf("frequency_multiplier"),
+                # classification
+                "zero_size_reason": zero_reason,
+                "zero_size_primary_constraint": constraint,
                 "mode": self._runtime_mode(),
             }
             self._emit_quant_event("log_system_health", payload)

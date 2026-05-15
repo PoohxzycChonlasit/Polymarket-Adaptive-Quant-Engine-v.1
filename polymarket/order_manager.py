@@ -129,6 +129,16 @@ class PolymarketOrderManager:
                     "final_notional_size": float(sizing.final_size_usd),
                     "tier": sizing.tier.value,
                     "risk_pct_after_multipliers": float(sizing.risk_pct_after_multipliers),
+                    # additive multiplier capture for zero-size probe observability
+                    "base_risk_pct": float(sizing.tier_base_risk_pct),
+                    "confidence_multiplier": float(sizing.confidence_multiplier),
+                    "ev_multiplier": float(sizing.ev_multiplier),
+                    "drawdown_multiplier": float(sizing.drawdown_multiplier),
+                    "liquidity_multiplier": float(sizing.liquidity_multiplier),
+                    "spread_multiplier": float(sizing.spread_multiplier),
+                    "time_to_settlement_multiplier": float(sizing.time_to_settlement_multiplier),
+                    "delta_multiplier": float(sizing.delta_multiplier),
+                    "frequency_multiplier": float(sizing.frequency_multiplier),
                 },
             )
 
