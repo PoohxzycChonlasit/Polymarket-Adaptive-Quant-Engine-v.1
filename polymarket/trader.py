@@ -1430,6 +1430,7 @@ class PolymarketTrader:
             "first_tradable_seconds_remaining": 0,
             "readiness_confidence": 0.0,
             "executable_book_state": "UNKNOWN",
+            "executable_book_state_best_seen": "UNKNOWN",
             "executable_spread_state": "UNKNOWN",
             # Liquidity Depth Observability v1
             "best_bid_size": 0.0,
@@ -1646,6 +1647,16 @@ class PolymarketTrader:
             current_state = "TRADABLE"
             
         bucket["executable_book_state"] = current_state
+        # Dual-State Executable Readiness v1 — monotonic best-seen, observability only.
+        # executable_book_state tracks latest observed state (unchanged).
+        # executable_book_state_best_seen tracks highest state ever reached this epoch.
+        _STATE_LEVEL: dict[str, int] = {
+            "DISCOVERED": 0, "TOKEN_READY": 1, "BOOK_SEEN": 2,
+            "NONZERO_BOOK": 3, "SPREAD_NORMALIZED": 4, "TRADABLE": 5,
+        }
+        _prev_best = str(bucket.get("executable_book_state_best_seen") or "DISCOVERED")
+        if _STATE_LEVEL.get(current_state, 0) >= _STATE_LEVEL.get(_prev_best, 0):
+            bucket["executable_book_state_best_seen"] = current_state
         bucket["executable_spread_state"] = "NORMALIZED" if spread_ready else "WIDE" if orderbook_ready else "UNKNOWN"
         
         # Spread oscillation tracking
@@ -3458,6 +3469,26 @@ class PolymarketTrader:
             from utils.no_entry_root_cause_classifier import classify_no_entry_root_cause as _classify_root_cause
             _root_cause = _classify_root_cause(payload)
             for _k, _v in _root_cause.items():
+                if _k not in payload or payload[_k] in (None, ""):
+                    payload[_k] = _v
+        except Exception:
+            pass
+        # Market Readiness Admission Probe v1 — additive observability fields, fail-soft
+        try:
+            from utils.admission_probe_classifier import classify_admission_probe as _classify_probe
+            _probe = _classify_probe(payload)
+            for _k, _v in _probe.items():
+                if _k not in payload or payload[_k] in (None, ""):
+                    payload[_k] = _v
+        except Exception:
+            pass
+        # Executable State Persistence Probe v1 — additive observability fields, fail-soft
+        try:
+            from utils.executable_state_persistence_classifier import (
+                classify_executable_state_persistence as _classify_persistence,
+            )
+            _persistence = _classify_persistence(payload)
+            for _k, _v in _persistence.items():
                 if _k not in payload or payload[_k] in (None, ""):
                     payload[_k] = _v
         except Exception:
