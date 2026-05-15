@@ -1605,12 +1605,24 @@ class PolymarketTrader:
             (first_tradable_ready, "first_tradable_ts", "first_tradable_seconds_remaining"),
         ])
 
+        # Lifecycle Early Snapshot Emission v1 — snapshot which milestone ts-fields are already written
+        _EARLY_MILESTONE_MAP = [
+            ("market_discovered",        "first_discovered_ts"),
+            ("token_ready",              "first_token_ready_ts"),
+            ("first_orderbook_seen",     "first_orderbook_seen_ts"),
+            ("first_nonzero_book",       "first_nonzero_bidask_ts"),
+            ("first_normalized_book",    "first_spread_normalized_ts"),
+            ("first_executable_book",    "first_tradable_ts"),
+            ("first_decision_evaluable", "first_evaluable_at"),
+        ]
+        _pre_milestone_written = frozenset(k for _, k in _EARLY_MILESTONE_MAP if bucket.get(k))
+
         for ready, key, seconds_key in readiness_map:
             if ready and not bucket.get(key):
                 bucket[key] = now
             if ready and seconds_value is not None and not bucket.get(seconds_key):
                 bucket[seconds_key] = seconds_value
-                
+
         # Timing Metrics Calculation
         first_seen_rem = self._diagnostic_int(bucket.get("first_discovered_seconds_remaining")) or 0
         first_ob_rem = self._diagnostic_int(bucket.get("first_orderbook_seen_seconds_remaining")) or 0
@@ -1720,7 +1732,59 @@ class PolymarketTrader:
         if liquidity_ready and depth_state not in {"EMPTY", "THIN", "UNKNOWN"}: confidence += 0.2
         bucket["readiness_confidence"] = round(confidence, 2)
 
+        # Lifecycle Early Snapshot Emission v1 — emit once per newly-reached milestone (fail-soft)
+        try:
+            for _milestone_name, _ts_key in _EARLY_MILESTONE_MAP:
+                if bucket.get(_ts_key) and _ts_key not in _pre_milestone_written:
+                    self._emit_lifecycle_milestone_event(
+                        ticker=ticker,
+                        epoch_start=epoch_start,
+                        milestone=_milestone_name,
+                        bucket=bucket,
+                        seconds_remaining=seconds_value,
+                    )
+        except Exception:
+            pass
+
         return self._phase2_readiness_timestamps(ticker, epoch_start)
+
+    def _emit_lifecycle_milestone_event(
+        self,
+        ticker: str,
+        epoch_start: int,
+        milestone: str,
+        bucket: dict[str, object],
+        seconds_remaining: int | None,
+    ) -> None:
+        """
+        Emit a compact observability event when a lifecycle milestone is first reached.
+        Lifecycle Early Snapshot Emission v1 — observability-only, fail-soft.
+        Fires at most once per (ticker, epoch, milestone). Does not affect strategy, risk, or execution.
+        """
+        try:
+            if not getattr(self.settings, "hybrid_phase_v1_enabled", False):
+                return
+            _latency = self._compute_lifecycle_latency_ms(bucket)
+            _epoch_length = int(bucket.get("_epoch_length", 300))
+            _sec_rem = seconds_remaining if seconds_remaining is not None else 0
+            _seconds_since_open = max(0, _epoch_length - _sec_rem)
+            payload: dict[str, object] = {
+                "event_subtype": "lifecycle_milestone",
+                "ticker": ticker.upper(),
+                "market_epoch_start": epoch_start,
+                "lifecycle_phase": milestone,
+                "seconds_since_market_open": _seconds_since_open,
+                "seconds_remaining": _sec_rem,
+                "readiness_state": str(bucket.get("executable_book_state", "UNKNOWN")),
+                "dominant_latency_stage_so_far": _latency.get("dominant_latency_stage", ""),
+                "lifecycle_latency_classification_so_far": _latency.get("lifecycle_latency_classification", ""),
+                "readiness_confidence": float(bucket.get("readiness_confidence", 0.0)),
+                "first_discovered_ts": str(bucket.get("first_discovered_ts", "") or ""),
+                "milestone_ts": self._utc_timestamp(),
+            }
+            self._emit_quant_event("log_research_snapshot", payload)
+        except Exception:
+            pass
 
     def _phase2_exposure_timeline(
         self,
@@ -3389,6 +3453,15 @@ class PolymarketTrader:
             classified = self._risk_plan_zero_reason(outcome.risk_plan, fallback_reason=raw_reason)
             if classified != "unknown":
                 payload["risk_plan_zero_reason"] = classified
+        # No-Entry Root Cause Classifier v1 — additive observability fields, fail-soft
+        try:
+            from utils.no_entry_root_cause_classifier import classify_no_entry_root_cause as _classify_root_cause
+            _root_cause = _classify_root_cause(payload)
+            for _k, _v in _root_cause.items():
+                if _k not in payload or payload[_k] in (None, ""):
+                    payload[_k] = _v
+        except Exception:
+            pass
         return payload
 
     def _risk_boundary_payload_from_decision(
