@@ -7079,6 +7079,16 @@ class PolymarketTrader:
             skip_reason = "Max active positions per market reached"
         elif self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts) >= int(self._setting("max_entries_per_market", 1)):
             skip_reason = "Max entries per market reached"
+            self._emit_entry_budget_probe_event(
+                subtype="gate_fired", site="pre_model",
+                ticker=ticker, market_id=market.market_id,
+                epoch_start_ts=ptb_info.epoch_start_ts,
+                seconds_remaining=float(seconds_to_close),
+                lifecycle_phase=str(timing_detail.get("lifecycle_phase", "")),
+                trades_before=self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts),
+                max_limit=int(self._setting("max_entries_per_market", 1)),
+                model_gate_reached=False,
+            )
         elif self._placed_epochs.get(ticker) == ptb_info.epoch_start_ts:
             self._trigger_lockdown("duplicate_order")
             skip_reason = f"Max 1 trade per window (already placed for epoch {ptb_info.epoch_start_ts})"
@@ -7775,6 +7785,17 @@ class PolymarketTrader:
             skip_reason = "Max active positions per market reached"
         elif self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts) >= int(self._setting("max_entries_per_market", 1)):
             skip_reason = "Max entries per market reached"
+            self._emit_entry_budget_probe_event(
+                subtype="gate_fired", site="post_model",
+                ticker=ticker, market_id=market.market_id,
+                epoch_start_ts=ptb_info.epoch_start_ts,
+                seconds_remaining=float(seconds_to_close),
+                lifecycle_phase=str(timing_detail.get("lifecycle_phase", "")),
+                trades_before=self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts),
+                max_limit=int(self._setting("max_entries_per_market", 1)),
+                model_gate_reached=True,
+                ev_computed=True,
+            )
         elif self._placed_epochs.get(ticker) == ptb_info.epoch_start_ts:
             self._trigger_lockdown("duplicate_order")
             skip_reason = f"Max 1 trade per window (already placed for epoch {ptb_info.epoch_start_ts})"
@@ -8041,6 +8062,21 @@ class PolymarketTrader:
             opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value})
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
             self._record_market_entry(market.market_id, ptb_info.epoch_start_ts)
+            self._emit_entry_budget_probe_event(
+                subtype="slot_consumed", site="quant_fill",
+                ticker=ticker, market_id=market.market_id,
+                epoch_start_ts=ptb_info.epoch_start_ts,
+                seconds_remaining=float(ptb_info.seconds_remaining),
+                lifecycle_phase=str(timing_detail.get("lifecycle_phase", "")),
+                trades_before=self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts) - 1,
+                max_limit=int(self._setting("max_entries_per_market", 1)),
+                model_gate_reached=True,
+                ev_computed=True,
+                size_plan_value=float(getattr(risk_plan, "position_size", 0.0) or 0.0),
+                real_order_attempted=True,
+                paper_fill_occurred=bool(self.settings.paper_trading),
+                consumed_reason="paper_fill" if self.settings.paper_trading else "live_fill",
+            )
             self._paper_record_trade(risk_plan.notional_size)
             self._paper_record_position_state("FLAT", "PAPER_ENTRY_FILLED")
             quant_detail = self._record_quant_detail(
@@ -8190,6 +8226,18 @@ class PolymarketTrader:
         max_entries_per_market = int(self._setting("max_entries_per_market", 1))
         market_entry_count = self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts)
         if market_entry_count >= max_entries_per_market:
+            self._emit_entry_budget_probe_event(
+                subtype="gate_fired", site="pre_order",
+                ticker=ticker, market_id=market.market_id,
+                epoch_start_ts=ptb_info.epoch_start_ts,
+                seconds_remaining=float(ptb_info.seconds_remaining),
+                lifecycle_phase=str(timing_detail.get("lifecycle_phase", "")),
+                trades_before=market_entry_count,
+                max_limit=max_entries_per_market,
+                model_gate_reached=True,
+                ev_computed=True,
+                size_plan_value=float(getattr(risk_plan, "position_size", 0.0) or 0.0),
+            )
             return self._skip_outcome(
                 market,
                 "skip",
@@ -8418,6 +8466,21 @@ class PolymarketTrader:
             )
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
             self._record_market_entry(market.market_id, ptb_info.epoch_start_ts)
+            self._emit_entry_budget_probe_event(
+                subtype="slot_consumed", site="legacy_fill",
+                ticker=ticker, market_id=market.market_id,
+                epoch_start_ts=ptb_info.epoch_start_ts,
+                seconds_remaining=float(ptb_info.seconds_remaining),
+                lifecycle_phase=str(timing_detail.get("lifecycle_phase", "")),
+                trades_before=self._entry_count_for_market(market.market_id, ptb_info.epoch_start_ts) - 1,
+                max_limit=int(self._setting("max_entries_per_market", 1)),
+                model_gate_reached=False,
+                ev_computed=False,
+                size_plan_value=float(getattr(risk_plan, "position_size", 0.0) or 0.0),
+                real_order_attempted=True,
+                paper_fill_occurred=bool(self.settings.paper_trading),
+                consumed_reason="paper_fill" if self.settings.paper_trading else "live_fill",
+            )
             LOGGER.info(
                 "[ENTRY] market=%s token=%s outcome=%s action=BUY entry=%.4f size=%.6f cost=%.4f",
                 market.market_id, clob_token_id, signal.side, entry_price,
@@ -10040,6 +10103,75 @@ class PolymarketTrader:
                 market=symbol,
                 reason="settlement",
             )
+
+    # ------------------------------------------------------------------
+    # Entry Budget Consumption Probe v1 — observability only, fail-soft
+    # ------------------------------------------------------------------
+
+    def _emit_entry_budget_probe_event(
+        self,
+        *,
+        subtype: str,
+        site: str,
+        ticker: str,
+        market_id: str,
+        epoch_start_ts: int,
+        seconds_remaining: float,
+        lifecycle_phase: str,
+        trades_before: int,
+        max_limit: int,
+        model_gate_reached: bool = False,
+        ev_computed: bool = False,
+        size_plan_value: float = 0.0,
+        real_order_attempted: bool = False,
+        paper_fill_occurred: bool = False,
+        consumed_reason: str = "",
+    ) -> None:
+        """Emit one system_health event capturing entry-budget slot state.
+
+        Additive-only. Fail-soft. No strategy/risk/execution side effects.
+        subtype='gate_fired'   — max_entries guard returned skip (slot already consumed).
+        subtype='slot_consumed' — _record_market_entry just called after real fill.
+        """
+        try:
+            trades_after = trades_before + (1 if subtype == "slot_consumed" else 0)
+            no_order = subtype == "slot_consumed" and not real_order_attempted
+            no_fill  = subtype == "slot_consumed" and not paper_fill_occurred
+            payload: dict[str, object] = {
+                "event": "entry_budget_probe_v1",
+                "event_subtype": subtype,
+                "site": site,
+                "ticker": ticker,
+                "market_id": market_id,
+                "epoch_start_ts": int(epoch_start_ts),
+                "seconds_remaining": round(float(seconds_remaining), 1),
+                "lifecycle_phase": str(lifecycle_phase),
+                "trades_for_market_before": int(trades_before),
+                "trades_for_market_after": int(trades_after),
+                "max_entries_limit": int(max_limit),
+                # gate_fired
+                "slot_already_consumed": subtype == "gate_fired",
+                # slot_consumed
+                "model_gate_reached": bool(model_gate_reached),
+                "ev_computed": bool(ev_computed),
+                "size_plan_value": round(float(size_plan_value), 6),
+                "real_order_attempted": bool(real_order_attempted),
+                "paper_fill_occurred": bool(paper_fill_occurred),
+                "entry_budget_consumed": subtype == "slot_consumed",
+                "entry_budget_consumed_reason": str(consumed_reason or subtype),
+                "entry_budget_consumed_without_order": bool(no_order),
+                "entry_budget_consumed_without_fill": bool(no_fill),
+                "entry_budget_consumed_after_zero_size": size_plan_value == 0.0 and subtype == "slot_consumed",
+                "entry_budget_consumed_after_opening_scan": "OPENING_SCAN" in str(lifecycle_phase).upper() and subtype == "slot_consumed",
+                "entry_budget_consumed_after_cutoff": "cutoff" in str(consumed_reason).lower() and subtype == "slot_consumed",
+                "entry_budget_consumed_after_model_eval": bool(model_gate_reached) and subtype == "slot_consumed",
+                "entry_budget_consumed_after_real_submit": bool(real_order_attempted) and subtype == "slot_consumed",
+                "entry_budget_consumed_after_fill": bool(paper_fill_occurred) and subtype == "slot_consumed",
+                "mode": self._runtime_mode(),
+            }
+            self._emit_quant_event("log_system_health", payload)
+        except Exception:
+            pass
 
     # ------------------------------------------------------------------
     # Silent-Zone Selection Probe v1 — observability only, fail-soft
