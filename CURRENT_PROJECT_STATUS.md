@@ -76,7 +76,7 @@ The following parts are currently working or present in the project:
 - Phase 3 observability wiring was implemented on 2026-05-08:
   - `PolymarketTrader` initializes `QuantEventLogger` and `TelegramAlertLayer` safely.
   - Runtime now emits JSONL events for market snapshots, decisions, order intent/submit/fill/fail, trade open/close, risk events, reconciliation blocks, and low-frequency system health.
-  - Clear trader Telegram sends were routed through centralized `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident` helpers where safe.
+  - Clear trader Telegram sends were routed through centralized `notify_startup`, `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident` helpers where safe.
   - Observability and Telegram failures are caught and must not crash paper execution.
 - Phase 4 runtime stability / clean shutdown hardening was implemented on 2026-05-08:
   - `PolymarketOracleFeed` start/stop is now idempotent and owns clean shutdown for its price, epoch/PTB, and WebSocket threads.

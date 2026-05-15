@@ -85,9 +85,11 @@ python main.py --mode live --interval 60
 | `polymarket/signal.py` | Realtime signal logic. Do not change without matching backtest work. |
 | `polymarket/regime_diagnostics.py` | Passive regime/probability diagnostics; not trade approval. |
 | `polymarket/probability_model.py` | Probability model input/output path. |
+| `polymarket/expected_value.py` | Expected value calculation from probability, price, and cost inputs. |
 | `polymarket/backtester_5m.py` | Backtest path for 5-minute strategy validation. |
 | `polymarket/order_manager.py` | Converts signal/risk inputs into `RiskPlan`. |
 | `polymarket/order_intent.py` | ENTRY/EXIT validation guard. |
+| `polymarket/position_manager.py` | Live order/fill reconciliation; distinct from in-memory `utils/position_tracker.py`. (pending_code_verification: confirm boundary with position_tracker.py) |
 | `polymarket/bankroll_tiers.py` | Bankroll rank/tier rules and hysteresis inputs. |
 | `polymarket/position_sizing.py` | Rank-aware position sizing calculation. |
 | `polymarket/risk_modes.py` | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN state ladder. |

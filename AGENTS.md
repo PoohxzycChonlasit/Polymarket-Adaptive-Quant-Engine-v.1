@@ -22,7 +22,7 @@ These phases do not authorize execution changes unless a future task explicitly 
 
 ## Documentation Sync Rule
 
-Before implementing any new feature phase, perform a documentation synchronization pass when docs are stale or when the user requests it.
+Before implementing any new feature phase, perform a documentation synchronization pass when docs are stale or when the user requests it. The concrete procedure for this sync is defined in `docs/DOC_SYNC_PROCEDURE.md`.
 
 Before modifying code, read `CURRENT_PROJECT_STATUS.md` and do not assume the project is new or needs rebuilding.
 
@@ -185,10 +185,15 @@ Do not use multiple agent prompts as justification for scope creep. If a task st
 | `polymarket/oracle_price_feed.py`  | Oracle/PTB price path used by trader.                        |
 | `polymarket/virtual_ptb.py`        | Virtual price-to-beat tracker.                               |
 | `polymarket/signal.py`             | Realtime signal logic.                                       |
+| `polymarket/regime_diagnostics.py` | Passive regime/probability diagnostics; not trade approval.  |
+| `polymarket/probability_model.py`  | Probability model input/output path.                         |
+| `polymarket/expected_value.py`     | EV calculation from probability/price/cost.                  |
 | `polymarket/backtester_5m.py`      | Backtest signal/performance path.                            |
 | `polymarket/order_manager.py`      | Builds order risk plans.                                     |
 | `polymarket/order_intent.py`       | ENTRY/EXIT validation guard.                                 |
+| `polymarket/position_manager.py`   | Live order/fill reconciliation; distinct from in-memory tracker. (pending_code_verification) |
 | `polymarket/bankroll_tiers.py`     | Bankroll tiers and rank hysteresis.                          |
+| `polymarket/position_sizing.py`    | Rank-aware position sizing calculation.                      |
 | `polymarket/risk_modes.py`         | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN.                    |
 | `polymarket/realtime_logger.py`    | Runtime scan/trade CSV and summary logging.                  |
 | `utils/risk_manager.py`            | Canonical hard risk policy for Polymarket path.              |
@@ -198,8 +203,12 @@ Do not use multiple agent prompts as justification for scope creep. If a task st
 | `utils/telegram_reporter.py`       | Telegram message builders and daily report sender.           |
 | `utils/telegram_alerts.py`         | Central Telegram cooldown/dedup alert layer.                 |
 | `utils/quant_event_logger.py`      | Structured JSONL quant event writer.                         |
+| `utils/scan_log_loader.py`         | Shared reader for old and per-run realtime scan CSV files.   |
+| `utils/config_validator.py`        | Startup config validation and secret-safe config summary.    |
 | `tools/quant_data_quality.py`      | Offline JSONL data quality checker.                          |
 | `tools/replay_analyzer.py`         | Offline replay report generator.                             |
+| `tools/no_entry_analyzer.py`       | Offline no-entry paper session diagnostics.                  |
+| `tools/session_runtime_evaluator.py` | Offline paper session health/bottleneck evaluator.         |
 | `tools/paper_evaluation_report.py` | Offline paper PASS/CAUTION/FAIL evaluator.                   |
 
 ## Secondary Or Experimental Paths
