@@ -48,9 +48,10 @@ def test_market_table_shows_quant_scalper_fields() -> None:
     assert "NO_ASK" in text
     assert "EV" in text
     assert "+0.028" in text
-    assert "0.020" in text
-    assert "NORM x0.80" in text
-    assert "SKIP ev_below_threshold" in text
+    assert "DECISION" in text
+    assert "BLOCKER" in text
+    assert "SKIP" in text
+    assert "ev_below_threshold" in text
 
 
 def test_market_card_separates_clob_prices_from_model_probability() -> None:
@@ -123,7 +124,10 @@ def test_market_card_and_cycle_show_regime_probability_context() -> None:
 
     assert "Regime TREND_UP" in card
     assert "Bull 0.6200" in card
-    assert "regime=TREND_UP bull=0.62 bear=0.38 vol=0.0042" in cycle
+    assert "Recent Decisions / Timing" in cycle
+    assert "BTC" in cycle
+    assert "ev_below" in cycle
+    assert "EV=+0.008" in cycle
 
 
 def test_portfolio_panel_shows_realtime_bankroll_state() -> None:
@@ -147,13 +151,14 @@ def test_portfolio_panel_shows_realtime_bankroll_state() -> None:
 
     text = _render_text(display._portfolio_panel())
 
-    assert "Start $8.70" in text
     assert "Cash $7.90" in text
-    assert "Open $0.80" in text
     assert "Equity $8.84" in text
-    assert "Sizing $8.84" in text
+    assert "Source --" in text
     assert "SEED_TEST" in text
-    assert "RiskOff False" in text
+    assert "Risk Mode NORMAL" in text
+    assert "Guard OK" in text
+    assert "Exposure 9.0%" in text
+    assert "Positions 1/3" in text
 
 
 def test_portfolio_panel_shows_bankroll_tier_v2_and_micro_survival_state() -> None:
@@ -184,15 +189,12 @@ def test_portfolio_panel_shows_bankroll_tier_v2_and_micro_survival_state() -> No
     text = _render_text(display._portfolio_panel())
 
     assert "T0_MICRO_SEED" in text
-    assert "Micro Seed" in text
-    assert "Family MICRO" in text
-    assert "Profile seed_protection" in text
-    assert "Bankroll Mode MICRO_SURVIVAL" in text
-    assert "Micro ON" in text
-    assert "$0.0500" in text
+    assert "Risk Mode NORMAL" in text
+    assert "Guard OK" in text
+    assert "Exposure 0.0%" in text
 
 
-def test_cycle_and_footer_show_skip_reason_and_session_summary() -> None:
+def test_cycle_and_footer_show_skip_reason_and_blocker_status() -> None:
     display = PolymarketRealtimeDisplay()
     display.update_cycle([
         {
@@ -221,9 +223,11 @@ def test_cycle_and_footer_show_skip_reason_and_session_summary() -> None:
     footer_text = str(display._footer())
 
     assert "BTC" in cycle_text
-    assert "SKIP no_orderbook" in cycle_text
+    assert "SKIP" in cycle_text
+    assert "no_order" in cycle_text
     assert "EV=+0.008" in cycle_text
-    assert "Session: scanned=48 opps=5 entered=1 skipped=47 canceled=0" in footer_text
+    assert "BLOCKER no_orderbook" in footer_text
+    assert "Session:" not in footer_text
 
 
 def test_cycle_panel_shows_compact_cutoff_micro_liquidity_context() -> None:
@@ -247,15 +251,15 @@ def test_cycle_panel_shows_compact_cutoff_micro_liquidity_context() -> None:
 
     text = _render_text(display._cycle_panel(display._resolve_layout()))
 
-    assert "SKIP hard_close_zone" in text
-    assert "remaining=12s" in text
-    assert "cutoff=35s" in text
-    assert "micro=ON" in text
-    assert "liquidity=HEALTHY" in text
+    assert "Recent Decisions / Timing" in text
+    assert "SKIP" in text
+    assert "time_uns" in text
+    assert "EV=+0.000" in text
+    assert "t=12s" in text
 
 
-def test_candidate_observability_panel_shows_trace_model_prerisk_and_lifecycle_state() -> None:
-    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+def test_decision_diagnostics_panel_shows_operator_state_without_debug_noise() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (118, 30))
     display.update_cycle([
         {
             "ticker": "BTC",
@@ -283,28 +287,23 @@ def test_candidate_observability_panel_shows_trace_model_prerisk_and_lifecycle_s
 
     text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
 
-    assert "Candidate Observability" in text
-    assert "Trace OK" in text
-    assert "Cond OK" in text
-    assert "Token OK" in text
-    assert "Side OK" in text
-    assert "EventID STRONG" in text
-    assert "Chain UNKNOWN" in text
-    assert "Enrich TRACE+COND" in text
-    assert "Model YES" in text
-    assert "Prob YES" in text
-    assert "FV YES" in text
-    assert "EV YES" in text
-    assert "MODEL_ATTEMPTED_OUTPUT_MISSING" in text
-    assert "PreRisk blocked 1" in text
-    assert "EV_NOT_VISIBLE" in text
-    assert "Risk reach RISK_NOT_REACHED" in text
-    assert "Serialize NO" in text
+    assert "Decision Diagnostics" in text
+    assert "Candidate BLOCKED" in text
     assert "Phase OPENING_SCAN" in text
-    assert "T-44" in text
-    assert "Cutoff time_unsafe" in text
-    assert "Orderbook READY" in text
-    assert "Liquidity HEALTHY" in text
+    assert "Main blocker ev_not_visible" in text
+    assert "time_remaining=44s" in text
+    assert "cutoff_remaining=--" in text
+    assert "Readiness token OK" in text
+    assert "orderbook OK" in text
+    assert "liquidity OK" in text
+    assert "EV visible YES" in text
+    assert "prob visible YES" in text
+    assert "Trace OK" not in text
+    assert "Cond OK" not in text
+    assert "EventID" not in text
+    assert "Chain UNKNOWN" not in text
+    assert "Enrich" not in text
+    assert "Serialize" not in text
 
 
 def test_candidate_observability_panel_preserves_unknowns_when_fields_missing() -> None:
@@ -312,12 +311,15 @@ def test_candidate_observability_panel_preserves_unknowns_when_fields_missing() 
 
     text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
 
-    assert "Trace --" in text
-    assert "Cond --" in text
-    assert "EventID UNKNOWN" in text
-    assert "Chain UNKNOWN" in text
-    assert "Model UNKNOWN" in text
-    assert "Gap UNKNOWN" in text
+    assert "Decision Diagnostics" in text
+    assert "Candidate UNKNOWN" in text
+    assert "Phase UNKNOWN" in text
+    assert "Main blocker unknown" in text
+    assert "time_remaining=--" in text
+    assert "Readiness token --" in text
+    assert "orderbook UNKNOWN" in text
+    assert "EV visible UNKNOWN" in text
+    assert "prob visible UNKNOWN" in text
 
 
 def test_observability_footer_shows_jsonl_trace_condition_producer_and_schema() -> None:
@@ -334,10 +336,12 @@ def test_observability_footer_shows_jsonl_trace_condition_producer_and_schema() 
     footer = str(display._footer())
 
     assert "JSONL OK" in footer
-    assert "TRACE OK" in footer
-    assert "COND OK" in footer
-    assert "PROD decision_log" in footer
-    assert "SCHEMA 1.0" in footer
+    assert "DATA DEGRADED" in footer
+    assert "MODE PAPER" in footer
+    assert "TRACE OK" not in footer
+    assert "COND OK" not in footer
+    assert "PROD decision_log" not in footer
+    assert "SCHEMA 1.0" not in footer
 
 
 def test_candidate_observability_panel_consumes_dedicated_health_state() -> None:
@@ -368,18 +372,16 @@ def test_candidate_observability_panel_consumes_dedicated_health_state() -> None
     panel = _render_text(display._candidate_observability_panel(display._resolve_layout()))
     footer = str(display._footer())
 
-    assert "Trace OK" in panel
-    assert "EventID DIRECT" in panel
-    assert "Chain STRONG" in panel
-    assert "Model YES" in panel
-    assert "EV NO" in panel
-    assert "no_probability_model_output" in panel
-    assert "PreRisk blocked 3" in panel
-    assert "EV_NOT_VISIBLE" in panel
-    assert "Risk reach BLOCKED_BEFO" in panel
+    assert "Decision Diagnostics" in panel
+    assert "Candidate BLOCKED" in panel
+    assert "Main blocker ev_not_visible" in panel
+    assert "Readiness token OK" in panel
+    assert "EV visible NO" in panel
+    assert "prob visible YES" in panel
     assert "JSONL OK" in footer
-    assert "PROD execution_log" in footer
-    assert "SCHEMA 1.0" in footer
+    assert "BLOCKER ev_not_visible" in footer
+    assert "PROD execution_log" not in footer
+    assert "SCHEMA 1.0" not in footer
 
 
 def test_portfolio_update_can_carry_observability_health_to_footer() -> None:
@@ -405,10 +407,11 @@ def test_portfolio_update_can_carry_observability_health_to_footer() -> None:
     footer = str(display._footer())
 
     assert "JSONL OK" in footer
-    assert "TRACE OK" in footer
-    assert "COND OK" in footer
-    assert "PROD decision_log" in footer
-    assert "SCHEMA 1.0" in footer
+    assert "DATA DEGRADED" in footer
+    assert "TRACE OK" not in footer
+    assert "COND OK" not in footer
+    assert "PROD decision_log" not in footer
+    assert "SCHEMA 1.0" not in footer
 
 
 def test_dashboard_auto_layout_modes_by_terminal_size() -> None:
@@ -481,13 +484,13 @@ def test_dashboard_bottom_status_line_contains_required_health_fields() -> None:
 
     footer = str(display._footer())
 
-    assert "WS Synced" in footer
-    assert "ORACLE OK" in footer
-    assert "ORDERBOOK OK" in footer
+    assert "DATA OK" in footer
     assert "MODE PAPER" in footer
     assert "RISK NORMAL" in footer
+    assert "TIER --" in footer
+    assert "BLOCKER none" in footer
     assert "LATENCY" in footer
-    assert "LOGGING SAFE" in footer
+    assert "JSONL OK" in footer
 
 
 def test_market_card_and_footer_show_timing_liquidity_recovery_tags() -> None:
@@ -544,10 +547,12 @@ def test_market_card_and_footer_show_timing_liquidity_recovery_tags() -> None:
     assert "Liquidity RECOVERING" in card
     assert "Recovery a=ON s=ON f=OFF r=1" in card
     assert "TIER T0_SEED" in footer
-    assert "MICRO ON" in footer
-    assert "LIQ RECOVERING" in footer
-    assert "CUTOFF no_orderbook" not in footer
-    assert "RECOVERY OK" in footer
+    assert "MODE PAPER" in footer
+    assert "RISK NORMAL" in footer
+    assert "BLOCKER none" in footer
+    assert "MICRO ON" not in footer
+    assert "LIQ RECOVERING" not in footer
+    assert "RECOVERY OK" not in footer
 
 
 def test_portfolio_panel_wallet_reference_paper_shows_expected_labels() -> None:

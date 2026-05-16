@@ -3158,6 +3158,14 @@ def _resolved_execution_failure_count(
     return failure_count
 
 
+def _derived_counter_source(runtime_value: int, derived_value: int, derived_source: str) -> str:
+    if runtime_value:
+        return "runtime_session_summary"
+    if derived_value:
+        return derived_source
+    return "none"
+
+
 def _status_for(
     *,
     primary: str,
@@ -3707,6 +3715,15 @@ def evaluate_session_runtime(
         "order_submit_attempt_count": _as_int(no_entry_payload.get("order_submit_attempt_count")),
         "paper_fill_count": _as_int(no_entry_payload.get("paper_fill_count")),
     }
+    runtime_paper_orders = _as_int((session_summary or {}).get("paper_orders_created"))
+    runtime_paper_fills = _as_int((session_summary or {}).get("paper_fills"))
+    runtime_paper_exits = _as_int((session_summary or {}).get("paper_exits"))
+    derived_paper_orders = _as_int(execution_summary.get("order_submit_attempt_count"))
+    derived_paper_fills = _as_int(execution_summary.get("paper_fill_count"))
+    trade_journal_closes = _as_int(replay_payload.get("total_trades"))
+    paper_orders_created = runtime_paper_orders or derived_paper_orders
+    paper_fills = runtime_paper_fills or derived_paper_fills
+    paper_exits = runtime_paper_exits or trade_journal_closes
     market_readiness = _build_market_readiness_summary(
         markets_seen=scanned,
         orderbook_reason_counts=orderbook_reason_counts,
@@ -3746,9 +3763,28 @@ def evaluate_session_runtime(
             "scanned": scanned,
             "entered": entered,
             "skipped": skipped,
-            "paper_orders_created": _as_int((session_summary or {}).get("paper_orders_created")),
-            "paper_fills": _as_int((session_summary or {}).get("paper_fills")),
-            "paper_exits": _as_int((session_summary or {}).get("paper_exits")),
+            "paper_orders_created": paper_orders_created,
+            "paper_fills": paper_fills,
+            "paper_exits": paper_exits,
+            "paper_orders_created_source": _derived_counter_source(
+                runtime_paper_orders,
+                derived_paper_orders,
+                "execution_summary.order_submit_attempt_count",
+            ),
+            "paper_fills_source": _derived_counter_source(
+                runtime_paper_fills,
+                derived_paper_fills,
+                "execution_summary.paper_fill_count",
+            ),
+            "paper_exits_source": _derived_counter_source(
+                runtime_paper_exits,
+                trade_journal_closes,
+                "replay_report.trade_journal_trade_close",
+            ),
+            "runtime_summary_paper_orders_created": runtime_paper_orders,
+            "runtime_summary_paper_fills": runtime_paper_fills,
+            "runtime_summary_paper_exits": runtime_paper_exits,
+            "trade_journal_trade_closes": trade_journal_closes,
             "gross_pnl": _as_float(replay_payload.get("gross_pnl", (session_summary or {}).get("simulated_pnl", 0.0))),
             "max_drawdown": _as_float((session_summary or {}).get("max_drawdown", 0.0)),
         },

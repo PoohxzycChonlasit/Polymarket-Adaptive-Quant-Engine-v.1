@@ -1511,13 +1511,21 @@ def _is_execution_failure(payload: dict[str, Any]) -> bool:
     status = str(payload.get("status", "") or "").lower()
     if event == "order_intent_reject":
         return False
-    if event in {"order_submit_failed", "market_analysis_exception"}:
+    if event == "order_submit_failed":
         return True
+    if event == "market_analysis_exception":
+        return status in {"failed", "error", "rejected"} or any(
+            bool(payload.get(key)) for key in ("error", "exception", "message", "traceback")
+        )
     if event == "cancel_order" and status in {"failed", "error", "rejected"}:
         return True
     if event in {"live_order_submitted", "order_submit"} and status in {"failed", "error", "rejected"}:
         return True
-    return event.endswith("_failed") or event.endswith("_failure")
+    if event.endswith("_failed") or event.endswith("_failure"):
+        return status in {"failed", "error", "rejected"} or any(
+            bool(payload.get(key)) for key in ("error", "exception", "message", "traceback")
+        )
+    return False
 
 
 def write_replay_report(report: ReplayReport, *, report_dir: str | Path | None = None) -> Path:

@@ -83,6 +83,8 @@ For every task, before implementation:
 
 Hard rule: never use role docs as permission to expand scope. Role docs guide reasoning only. Runtime changes still require explicit task scope.
 
+Optional AI workflow harness docs live under `.codex/`. These files provide reusable guidance, security checklists, and startup/review prompts for Codex / Claude / Gemini / ChatGPT. They are docs/config-only, do not enable hooks or MCP servers, and do not authorize runtime, strategy, risk, execution, wallet, live-config, or paper/live behavior changes.
+
 ## Canonical Runtime Path
 
 Safe default paper runtime:

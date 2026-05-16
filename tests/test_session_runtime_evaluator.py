@@ -2101,6 +2101,55 @@ def test_session_evaluator_prefers_corrected_replay_failure_count_over_no_entry_
     assert evaluation.execution_summary["execution_failure_count"] == 0
 
 
+def test_session_health_uses_offline_paper_evidence_when_runtime_summary_counters_are_stale() -> None:
+    evaluation = evaluate_session_runtime(
+        session_summary=_session_summary(
+            total_markets_scanned=990,
+            total_trades_simulated=15,
+            paper_orders_created=0,
+            paper_fills=0,
+            paper_exits=0,
+            simulated_pnl=0.0,
+        ),
+        replay_report=_replay_report(
+            total_trades=15,
+            gross_pnl=0.00450312,
+            skipped_decisions=975,
+            top_skip_reasons=[["time_unsafe", 492], ["risk_plan_zero", 178]],
+            execution_failure_count=0,
+            cutoff_block_count=507,
+            adaptive_cutoff_denied_count=0,
+        ),
+        no_entry_report=_no_entry_report(
+            total_scanned=990,
+            total_entered=15,
+            total_skipped=975,
+            skip_reason_counts={"time_unsafe": 492, "risk_plan_zero": 178},
+            execution_events_loaded=3260,
+            execution_failure_count=0,
+            order_submit_attempt_count=30,
+            paper_fill_count=30,
+        ),
+        date=DATE,
+        load_offline_reports=False,
+    )
+
+    health = evaluation.health_summary
+    assert health["entered"] == 15
+    assert health["paper_orders_created"] == 30
+    assert health["paper_fills"] == 30
+    assert health["paper_exits"] == 15
+    assert health["gross_pnl"] == pytest.approx(0.00450312)
+    assert health["runtime_summary_paper_orders_created"] == 0
+    assert health["runtime_summary_paper_fills"] == 0
+    assert health["runtime_summary_paper_exits"] == 0
+    assert health["paper_orders_created_source"] == "execution_summary.order_submit_attempt_count"
+    assert health["paper_fills_source"] == "execution_summary.paper_fill_count"
+    assert health["paper_exits_source"] == "replay_report.trade_journal_trade_close"
+    assert evaluation.execution_summary["order_submit_attempt_count"] == 30
+    assert evaluation.execution_summary["paper_fill_count"] == 30
+
+
 def test_session_evaluator_regression_high_execution_events_zero_failures() -> None:
     evaluation = evaluate_session_runtime(
         no_entry_report=_no_entry_report(

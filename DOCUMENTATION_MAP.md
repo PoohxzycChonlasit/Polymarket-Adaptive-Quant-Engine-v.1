@@ -49,6 +49,22 @@ Then read only the role docs or research docs relevant to the task.
 | `docs/quant_agent_setup_md/roles/22_INVENTORY_ANALYTICS_AGENT.md` | Offline inventory replay and MFE/MAE research. |
 | `docs/quant_agent_setup_md/roles/23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Future Quant Lifecycle Inventory System coordination. |
 
+## AI Agent Workflow Harness
+
+These files provide a safe AI-agent productivity layer for Codex, Claude, Gemini, and ChatGPT. They are docs/config-only and do not enable hooks, MCP servers, auto-running commands, runtime trading decisions, or live behavior.
+
+| File | Purpose |
+|------|---------|
+| `.codex/README.md` | Harness overview, read-first order, safety boundaries, and safe skill selection. |
+| `.codex/skills/README.md` | Rules for guidance-only skills. |
+| `.codex/skills/` | Reusable task checklists for no-entry, replay, regime, risk, live safety, lifecycle inventory, and semantic shadow research. |
+| `.codex/security/AI_AGENT_SECURITY_CHECKLIST.md` | Hard warnings for secrets, live-risk, hooks/MCP, OrderIntent, reconciliation, and analyzer/runtime separation. |
+| `.codex/prompts/` | Reusable human-invoked prompts for Codex startup and ChatGPT review. |
+| `research/session_memory_template.md` | Structured session memory template with evidence, tests, bottlenecks, caveats, and next prompts. |
+| `research/daily/README.md` | Daily note workflow for compact cross-tool research memory. |
+
+Harness files guide future AI sessions only. They do not authorize code changes, risk changes, execution changes, live trading, or phase promotion by themselves.
+
 ## Runtime / Paper Runbook
 
 | File | Purpose |

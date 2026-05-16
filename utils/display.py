@@ -1982,15 +1982,20 @@ class PolymarketRealtimeDisplay:
 
     def _header(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
-        mode = "PAPER MODE" if self.paper_trading else "LIVE MODE"
+        mode = "PAPER" if self.paper_trading else "LIVE"
         mode_style = "bold white on dark_orange" if self.paper_trading else "bold white on red"
+        data_status = self._data_status_tag()
+        data_style = "bold bright_green" if data_status == "OK" else "bold bright_yellow"
         line1 = Text()
         line1.append(" PolyTrade Bot ", style="bold bright_cyan")
-        line1.append(" | Polymarket BTC/ETH 5M Quant Scalper ", style="bold white")
+        line1.append(" | ", style="grey42")
         line1.append(f" {mode} ", style=mode_style)
-        line1.append(f" UI={spec.active_mode.upper()} FPS={self.fps_mode.upper()} ", style="grey70")
-        line2 = Text()
-        line2.append(" Counter-Momentum | Markov Bounds | Kelly Sizing | ExitAgent | Risk Floor", style="grey70")
+        line1.append(" | ", style="grey42")
+        line1.append(f"UI {spec.active_mode.upper()}  FPS {self.fps_mode.upper()} ", style="grey70")
+        line1.append(" | DATA ", style="grey70")
+        line1.append(data_status, style=data_style)
+        line1.append(f" ({self._oracle_status()}/{self._orderbook_status()}/{self._clip(self._ws_status, 10)})", style="grey62")
+        line2 = Text(" Operator view: data health | edge | blocker | risk | timing/cutoff", style="grey62")
         if spec.warning:
             line2.append("\n " + self._clip(spec.warning, max(40, spec.width - 8)), style="bold bright_yellow")
         return Panel(Text.assemble(line1, "\n", line2), border_style="bright_cyan", padding=(0, 1))
@@ -2024,8 +2029,6 @@ class PolymarketRealtimeDisplay:
         open_value = self._as_float(_get_field(s, "open_value", 0.0))
         equity = self._as_float(_get_field(s, "equity", cash + open_value))
         sizing = self._as_float(_get_field(s, "sizing_bankroll", equity))
-        realized = self._as_float(_get_field(s, "realized_pnl", _get_field(s, "daily_realized_pnl", 0.0)))
-        upnl = self._as_float(_get_field(s, "unrealized_pnl", 0.0))
         source = str(_get_field(s, "balance_source", "--"))
         execution_mode = str(_get_field(s, "execution_mode", "PAPER ONLY" if self.paper_trading else "LIVE"))
         wallet_reference_balance = _get_field(s, "wallet_reference_balance", None)
@@ -2034,53 +2037,37 @@ class PolymarketRealtimeDisplay:
         paper_cash = self._as_float(_get_field(s, "paper_cash", cash))
         paper_sizing = self._as_float(_get_field(s, "paper_sizing_balance", sizing))
         tier_id = str(_get_field(s, "bankroll_tier_id", _get_field(s, "bankroll_tier", "--")))
-        tier_name = str(_get_field(s, "bankroll_tier_name", ""))
-        family = str(_get_field(s, "bankroll_family", "--"))
-        profile = str(_get_field(s, "bankroll_risk_profile", "--"))
-        bankroll_mode = str(_get_field(s, "bankroll_mode", "STANDARD"))
-        micro_active = bool(_get_field(s, "micro_survival_active", False))
-        micro_position_size = self._as_float(_get_field(s, "micro_position_size", 0.0))
-
+        risk_mode = str(_get_field(s, "risk_mode", "NORMAL"))
+        risk_off = bool(_get_field(s, "risk_off", False))
+        dd = self._as_float(_get_field(s, "daily_drawdown", _get_field(s, "daily_drawdown_pct", 0.0)))
+        exp = self._as_float(_get_field(s, "total_exposure_pct", 0.0))
+        cnt = int(self._as_float(_get_field(s, "open_count", 0)))
+        maxp = int(self._as_float(_get_field(s, "max_open_positions", 0)))
         eq_style = "bright_green" if equity >= start else "bright_red"
-        pnl_style = "bright_green" if realized >= 0 else "bright_red"
-        upnl_style = "bright_green" if upnl >= 0 else "bright_red"
+        risk_style = "bright_green" if risk_mode == "NORMAL" and not risk_off else "bright_yellow" if risk_mode != "LOCKDOWN" else "bold bright_red"
+        dd_style = "bright_green" if dd < 0.02 else "bright_yellow" if dd < 0.04 else "bright_red"
+        exp_style = "bright_green" if exp < 0.10 else "bright_yellow" if exp < 0.20 else "bright_red"
         lines = [
             self._line([
-                ("Start ", "grey70"), (f"${start:.2f}", "bold white"),
-                (" | Cash ", "grey70"), (f"${cash:.2f}", "bold bright_white"),
-            ], spec.panel_width),
-            self._line([
-                ("Open ", "grey70"), (f"${open_value:.2f}", "bold bright_cyan"),
+                ("Cash ", "grey70"), (f"${cash:.2f}", "bold bright_white"),
                 (" | Equity ", "grey70"), (f"${equity:.2f}", f"bold {eq_style}"),
             ], spec.panel_width),
             self._line([
-                ("Sizing ", "grey70"), (f"${sizing:.2f}", "bold white"),
-                (" | Source ", "grey70"), (self._clip(source, 18), "bright_white"),
+                ("Source ", "grey70"), (self._clip(source, 18), "bright_white"),
+                (" | Tier ", "grey70"), (self._clip(tier_id, 18), "bold bright_cyan"),
+            ], spec.panel_width),
+            self._line([
+                ("Risk Mode ", "grey70"), (self._clip(risk_mode, 16), risk_style),
+                (" | Guard ", "grey70"), ("BLOCK" if risk_off else "OK", "bright_red" if risk_off else "bright_green"),
+            ], spec.panel_width),
+            self._line([
+                ("Exposure ", "grey70"), (f"{exp:.1%}", f"bold {exp_style}"),
+                (" | DD ", "grey70"), (f"{dd:.1%}", f"bold {dd_style}"),
+                (" | Positions ", "grey70"), (f"{cnt}/{maxp}", "bold bright_white"),
             ], spec.panel_width),
             self._line([
                 ("Execution ", "grey70"), (self._clip(execution_mode, 16), "bold bright_yellow" if self.paper_trading else "bold bright_red"),
                 (" | ", "grey70"), ("NO LIVE ORDERS" if self.paper_trading else "LIVE ORDERS ENABLED", "bold bright_green" if self.paper_trading else "bold bright_red"),
-            ], spec.panel_width),
-            self._line([
-                ("Realized ", "grey70"), (f"{realized:+.4f}", f"bold {pnl_style}"),
-                (" | Unrealized ", "grey70"), (f"{upnl:+.4f}", f"bold {upnl_style}"),
-            ], spec.panel_width),
-            self._line([
-                ("Tier ", "grey70"), (self._clip(tier_id, 18), "bold bright_cyan"),
-                (" | ", "grey70"), (self._clip(tier_name, 20), "bright_cyan"),
-            ], spec.panel_width),
-            self._line([
-                ("Family ", "grey70"), (self._clip(family, 12), "bold bright_cyan"),
-                (" | Profile ", "grey70"), (self._clip(profile, 22), "bright_yellow"),
-            ], spec.panel_width),
-            self._line([
-                ("Bankroll Mode ", "grey70"), (self._clip(bankroll_mode, 18), "bold bright_yellow" if micro_active else "bright_white"),
-                (" | Micro ", "grey70"), ("ON" if micro_active else "OFF", "bold bright_green" if micro_active else "grey62"),
-                (" | Size ", "grey70"), (f"${micro_position_size:.4f}" if micro_position_size else "--", "bright_white"),
-            ], spec.panel_width),
-            self._line([
-                ("Legacy Tier ", "grey70"), (str(_get_field(s, "bankroll_tier", "--")), "grey70"),
-                (" | RiskOff ", "grey70"), (str(bool(_get_field(s, "risk_off", False))), "bright_red" if bool(_get_field(s, "risk_off", False)) else "bright_green"),
             ], spec.panel_width),
         ]
         if wallet_reference_balance is not None:
@@ -2133,7 +2120,7 @@ class PolymarketRealtimeDisplay:
     def _market_table(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
         rows: list[object] = []
-        header = Text(" MKT      PTB        ORACLE  YES_BID YES_ASK  NO_BID  NO_ASK SPRD Model_Y Model_N   EV  MIN_EV  DELTA       CONF  DECISION", style="bold grey70")
+        header = Text(" MKT      PTB        ORACLE  YES_BID YES_ASK  NO_BID  NO_ASK SPREAD Model_Y Model_N   EV  DECISION  BLOCKER", style="bold grey70")
         rows += [header, "\n"]
         for ticker in self._TICKERS:
             rows += [self._market_line(ticker, spec.panel_width * max(1, spec.columns)), "\n"]
@@ -2327,9 +2314,9 @@ class PolymarketRealtimeDisplay:
         spec = spec or self._standalone_layout()
         if not self._cycle_results:
             wait = Text()
-            wait.append(" Waiting for first Quant cycle...", style="grey50")
+            wait.append(" Waiting for first decision...", style="grey50")
             wait.append(f" Next in {self._next_in}s", style="bright_cyan")
-            return Panel(wait, title="[bold bright_white]AI Decision[/bold bright_white]", border_style="grey42")
+            return Panel(wait, title="[bold bright_white]Recent Decisions / Timing[/bold bright_white]", border_style="grey42")
 
         rows: list[object] = []
         hdr = Text()
@@ -2338,132 +2325,91 @@ class PolymarketRealtimeDisplay:
         hdr.append(f" | Next {self._next_in}s", style="bright_cyan")
         rows += [hdr, "\n"]
 
-        max_rows = 5 if spec.active_mode in {"wide", "fullscreen"} else 4
+        max_rows = 5
         for r in self._cycle_results[:max_rows]:
             ticker = str(r.get("ticker", "--"))
             decision = str(r.get("decision", "SKIP")).upper()
-            reason = str(r.get("skip_reason", "") or "")
-            compact_reason = self._compact_deny_reason(r) or reason
+            phase = self._phase_label(self._first_text_value(r, "lifecycle_phase"))
+            compact_reason = self._main_blocker_label(r)
             ev = self._as_float(r.get("ev", 0.0))
-            min_ev = self._as_float(r.get("min_ev", 0.0))
             conf = self._as_float(r.get("confidence", 0.0))
-            label = decision
-            if compact_reason and decision in {"SKIP", "REJECTED"}:
-                label += f" {compact_reason}"
-            line = f" {ticker:<4} {label} EV={ev:+.3f}"
-            if min_ev:
-                line += f" < {min_ev:.3f}" if ev < min_ev else f" min={min_ev:.3f}"
             remaining = int(self._as_float(r.get("seconds_remaining", r.get("seconds_until_close", 0))))
-            cutoff = int(self._as_float(r.get("effective_cutoff_seconds", r.get("entry_cutoff_seconds", 0))))
-            liquidity = str(r.get("liquidity_state", "") or "")
-            regime = str(r.get("market_regime", r.get("trend_regime", "")) or "").upper()
-            bull_prob = self._as_float(r.get("bullish_probability", r.get("p_yes", 0.0)))
-            bear_prob = self._as_float(r.get("bearish_probability", r.get("p_no", 0.0)))
-            vol_score = self._as_float(r.get("signal_volatility_score", r.get("volatility_score", 0.0)))
-            micro_on = bool(r.get("micro_timing_branch_entered", False) or r.get("micro_timing_allowed", False))
-            context_lines: list[str] = []
-            if remaining or cutoff or liquidity or micro_on:
-                timing_context = ""
-                timing_context += f"remaining={remaining}s" if remaining else ""
-                timing_context += f" cutoff={cutoff}s" if cutoff else ""
-                timing_context += f" micro={'ON' if micro_on else 'OFF'}"
-                context_lines.append(timing_context.strip())
-                if liquidity:
-                    context_lines.append(f"liquidity={liquidity.upper()}")
-            if regime or bull_prob or bear_prob or vol_score:
-                context_lines.append(
-                    f"regime={regime or '--'} bull={bull_prob:.2f} bear={bear_prob:.2f} vol={vol_score:.4f}"
-                )
-            line += f" CONF={conf:.2f}"
-            rows += [Text(self._clip(line, spec.panel_width), style=self._decision_style(label)), "\n"]
-            for context_line in context_lines:
-                rows += [Text(self._clip("      " + context_line, spec.panel_width), style="grey70"), "\n"]
-        return Panel(Text.assemble(*rows), title="[bold bright_white]AI Decision[/bold bright_white]", border_style="bright_cyan")
+            remaining_label = f"{remaining}s" if remaining else "--"
+            conf_label = f"{conf:.2f}".lstrip("0")
+            line = (
+                f" {ticker[:3]:<3} {phase[:4]:<4} {decision[:4]:<4} "
+                f"{compact_reason[:8]:<8} EV={ev:+.3f} c={conf_label} t={remaining_label}"
+            )
+            rows += [Text(self._clip(line, spec.panel_width), style=self._decision_style(decision)), "\n"]
+        return Panel(Text.assemble(*rows), title="[bold bright_white]Recent Decisions / Timing[/bold bright_white]", border_style="bright_cyan")
 
     def _candidate_observability_panel(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
         source = self._candidate_observability_source()
-        trace_id = self._present_status(source, "candidate_trace_id")
-        condition_id = self._present_status(source, "condition_id")
         token_id = self._present_status(source, "token_id")
-        side = self._present_status(source, "side", "outcome", "best_side")
-        readiness = self._identity_readiness(source)
-        chain_confidence = self._candidate_chain_trace_confidence(source)
-        trace_status = self._trace_enrichment_status(source)
-        model_attempted = self._visibility_status(source, "model_attempted", "ev_visibility_attempted")
         probability_visible = self._visibility_status(source, "probability_visible", "true_probability", "p_yes", "model_p_yes")
-        fair_value_visible = self._visibility_status(source, "fair_value_visible", "fair_value")
         ev_visible = self._visibility_status(source, "ev_visible", "ev_after_spread", "ev")
-        model_gap = self._first_text_value(
-            source,
-            "dominant_model_gap",
-            "dominant_model_gap_reason",
-            "dominant_model_state_gap",
-            "model_state_gap",
-            "sparse_ev_path_reason",
-            "skip_reason",
-        ) or "UNKNOWN"
-        blocked_before_risk = self._blocked_before_risk_count()
-        pre_risk_reason = self._first_text_value(
-            source,
-            "dominant_pre_risk_cause",
-            "dominant_pre_risk_block_reason",
-            "dominant_pre_risk_block_cause",
-            "pre_risk_block_reason",
-            "model_attempt_gate",
-        ) or self._compact_deny_reason(source) or "UNKNOWN"
-        risk_reachability = self._first_text_value(source, "risk_reachability_status", "decision_to_risk_boundary") or "UNKNOWN"
-        risk_serialization = self._first_text_value(source, "risk_serialization_visibility", "risk_serialization_visibility_rate") or "UNKNOWN"
-        lifecycle_phase = self._first_text_value(source, "lifecycle_phase") or "UNKNOWN"
+        lifecycle_phase = self._first_text_value(source, "lifecycle_phase") or ""
+        candidate_state = self._candidate_state_label(source)
+        phase = self._phase_label(lifecycle_phase)
+        main_blocker = self._main_blocker_label(source)
         remaining = self._first_text_value(source, "seconds_remaining", "seconds_until_close", "time_remaining_seconds") or "--"
-        cutoff_reason = self._compact_deny_reason(source) or self._first_text_value(source, "cutoff_reason") or "--"
+        executable_age = self._first_text_value(source, "executable_age_seconds", "executable_book_age_seconds", "orderbook_age_seconds") or "--"
+        revisit_delay = self._first_text_value(source, "revisit_delay_seconds", "decision_cycle_gap_seconds", "candidate_to_decision_delay_seconds") or "--"
+        cutoff_remaining = self._cutoff_remaining_label(source)
         orderbook_ready = self._orderbook_readiness_label(source)
         liquidity = self._first_text_value(source, "liquidity_state") or "--"
+        token_status = token_id
+        orderbook_status = "OK" if orderbook_ready in {"READY", "TRADABLE", "NORMALIZED"} else orderbook_ready
+        liquidity_status = "OK" if liquidity.upper() in {"HEALTHY", "STRONG", "ACCEPTABLE"} else liquidity.upper()
 
         lines = [
             self._line([
-                ("Trace ", "grey70"), (trace_id, self._status_word_style(trace_id)),
-                (" | Cond ", "grey70"), (condition_id, self._status_word_style(condition_id)),
-                (" | Token ", "grey70"), (token_id, self._status_word_style(token_id)),
-                (" | Side ", "grey70"), (side, self._status_word_style(side)),
+                ("Candidate ", "grey70"), (candidate_state, self._candidate_state_style(candidate_state)),
+                (" | Phase ", "grey70"), (self._clip(phase, 14), self._lifecycle_phase_style(lifecycle_phase)),
             ], spec.panel_width),
             self._line([
-                ("EventID ", "grey70"), (readiness, self._identity_style(readiness)),
-                (" | Chain ", "grey70"), (chain_confidence, self._identity_style(chain_confidence)),
+                ("Main blocker ", "grey70"), (self._clip(main_blocker, 24), "bright_yellow" if main_blocker != "none" else "bright_green"),
             ], spec.panel_width),
             self._line([
-                ("Enrich ", "grey70"), (trace_status, self._status_word_style(trace_status)),
+                ("Timing ", "grey70"), (f"time_remaining={remaining}s" if str(remaining) != "--" else "time_remaining=--", "bright_white"),
+                (" | executable_age=", "grey70"), (self._seconds_label(executable_age), "bright_cyan" if str(executable_age) != "--" else "grey62"),
             ], spec.panel_width),
             self._line([
-                ("Model ", "grey70"), (model_attempted, self._status_word_style(model_attempted)),
-                (" | Prob ", "grey70"), (probability_visible, self._status_word_style(probability_visible)),
-                (" | FV ", "grey70"), (fair_value_visible, self._status_word_style(fair_value_visible)),
-                (" | EV ", "grey70"), (ev_visible, self._status_word_style(ev_visible)),
+                ("Timing ", "grey70"), (f"revisit_delay={self._seconds_label(revisit_delay)}", "bright_cyan" if str(revisit_delay) != "--" else "grey62"),
+                (" | cutoff_remaining=", "grey70"), (self._seconds_label(cutoff_remaining), "bright_yellow" if str(cutoff_remaining) != "--" else "grey62"),
             ], spec.panel_width),
             self._line([
-                ("Gap ", "grey70"), (self._clip(model_gap, max(8, spec.panel_width - 5)), "bright_yellow" if model_gap != "UNKNOWN" else "grey62"),
+                ("Readiness token ", "grey70"), (token_status, self._status_word_style(token_status)),
+                (" | orderbook ", "grey70"), (self._clip(orderbook_status, 12), self._status_word_style(orderbook_status)),
+                (" | liquidity ", "grey70"), (self._clip(liquidity_status, 12), self._liquidity_style(liquidity_status)),
             ], spec.panel_width),
             self._line([
-                ("PreRisk blocked ", "grey70"), (str(blocked_before_risk), "bright_yellow" if blocked_before_risk else "grey62"),
-                (" | Cause ", "grey70"), (self._clip(pre_risk_reason, 22), "bright_yellow" if pre_risk_reason != "UNKNOWN" else "grey62"),
-            ], spec.panel_width),
-            self._line([
-                ("Risk reach ", "grey70"), (self._clip(risk_reachability, 16), self._status_word_style(risk_reachability)),
-                (" | Serialize ", "grey70"), (self._clip(risk_serialization, 16), self._status_word_style(risk_serialization)),
-            ], spec.panel_width),
-            self._line([
-                ("Phase ", "grey70"), (self._clip(lifecycle_phase, 18), "bright_cyan" if lifecycle_phase != "UNKNOWN" else "grey62"),
-                (" | T-", "grey70"), (str(remaining), "bright_white" if remaining != "--" else "grey62"),
-                (" | Cutoff ", "grey70"), (self._clip(cutoff_reason, 18), "bright_yellow" if cutoff_reason != "--" else "grey62"),
-            ], spec.panel_width),
-            self._line([
-                ("Orderbook ", "grey70"), (self._clip(orderbook_ready, 14), self._status_word_style(orderbook_ready)),
-                (" | Liquidity ", "grey70"), (self._clip(liquidity.upper(), 14), self._liquidity_style(liquidity)),
+                ("Readiness EV visible ", "grey70"), (ev_visible, self._status_word_style(ev_visible)),
+                (" | prob visible ", "grey70"), (probability_visible, self._status_word_style(probability_visible)),
             ], spec.panel_width),
         ]
+        if spec.active_mode == "fullscreen":
+            trace_id = self._present_status(source, "candidate_trace_id")
+            condition_id = self._present_status(source, "condition_id")
+            readiness = self._identity_readiness(source)
+            chain_confidence = self._candidate_chain_trace_confidence(source)
+            trace_status = self._trace_enrichment_status(source)
+            lines.extend([
+                self._line([
+                    ("Debug trace ", "grey70"), (trace_id, self._status_word_style(trace_id)),
+                    (" | cond ", "grey70"), (condition_id, self._status_word_style(condition_id)),
+                    (" | event ", "grey70"), (readiness, self._identity_style(readiness)),
+                ], spec.panel_width),
+                self._line([
+                    ("Debug enrich ", "grey70"), (trace_status, self._status_word_style(trace_status)),
+                    (" | chain ", "grey70"), (chain_confidence, self._identity_style(chain_confidence)),
+                    (" | risk ", "grey70"), (self._clip(self._first_text_value(source, "risk_reachability_status", "decision_to_risk_boundary") or "UNKNOWN", 16), "grey62"),
+                ], spec.panel_width),
+            ])
         return Panel(
             Text.assemble(*self._with_breaks(lines)),
-            title="[bold bright_white]Candidate Observability[/bold bright_white]",
+            title="[bold bright_white]Decision Diagnostics[/bold bright_white]",
             border_style="bright_magenta",
         )
 
@@ -2526,41 +2472,22 @@ class PolymarketRealtimeDisplay:
         if bool(_get_field(self._portfolio or {}, "risk_off", False)):
             risk = "RISK_OFF"
         parts = [
-            f"WS {self._clip(self._ws_status, 16)}",
-            f"ORACLE {self._oracle_status()}",
-            f"ORDERBOOK {self._orderbook_status()}",
+            f"DATA {self._data_status_tag()}",
             f"MODE {'PAPER' if self.paper_trading else 'LIVE'}",
             f"RISK {risk}",
-            f"LATENCY {latency}ms" if latency is not None else "LATENCY --",
-            f"LOGGING {self._logging_status}",
             f"TIER {self._footer_tier_tag()}",
-            f"MICRO {self._footer_micro_tag()}",
-            f"LIQ {self._footer_liquidity_tag()}",
-            f"CUTOFF {self._footer_cutoff_tag()}",
-            f"RECOVERY {self._footer_recovery_tag()}",
-            f"JSONL {self._footer_jsonl_tag()}",
-            f"TRACE {self._footer_trace_tag()}",
-            f"COND {self._footer_condition_tag()}",
-            f"PROD {self._footer_producer_tag()}",
-            f"SCHEMA {self._footer_schema_tag()}",
+            f"BLOCKER {self._footer_blocker_tag()}",
+            f"LATENCY {latency}ms" if latency is not None else "LATENCY --",
+            f"JSONL {self._footer_jsonl_compact_tag()}",
         ]
-        session = ""
-        s = self._session_summary
-        if s:
-            win_rate = self._as_float(s.get("win_rate", 0.0))
-            win_txt = "--" if win_rate <= 0 else f"{win_rate * 100:.1f}%"
-            session = (
-                f" | Session: scanned={s.get('scanned', 0)} opps={s.get('opportunities', 0)} "
-                f"entered={s.get('entered', 0)} skipped={s.get('skipped', 0)} canceled={s.get('canceled', 0)} "
-                f"win={win_txt} realized={self._as_float(s.get('realized_pnl', 0.0)):+.2f} "
-                f"unrealized={self._as_float(s.get('unrealized_pnl', 0.0)):+.2f} "
-                f"maxDD={self._as_float(s.get('max_drawdown', 0.0)):.1%} critical={s.get('critical_count', 0)}"
-            )
-        return Text("  " + " | ".join(parts) + f" | Uptime {mins:02d}:{secs:02d} | Ctrl+C Stop" + session, style="grey50")
+        return Text("  " + " | ".join(parts) + f" | Uptime {mins:02d}:{secs:02d}", style="grey50")
 
     def _market_line(self, ticker: str, width: int) -> Text:
         m = self._markets[ticker]
-        decision = self._decision_label(m)
+        decision = str(m.get("decision", "--") or "--").upper()
+        if decision in {"", "--"}:
+            decision = "SKIP" if self._main_blocker_label(m) != "none" else "--"
+        blocker = self._main_blocker_label(m)
         line = (
             f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} "
             f"{self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
@@ -2572,10 +2499,8 @@ class PolymarketRealtimeDisplay:
             f"{self._fmt_prob(self._as_float(m.get('model_p_yes', m.get('p_yes', 0.0)))):>7} "
             f"{self._fmt_prob(self._as_float(m.get('model_p_no', m.get('p_no', 0.0)))):>7} "
             f"{self._as_float(m.get('ev', 0.0)):+.3f} "
-            f"{self._as_float(m.get('min_ev', 0.0)):.3f} "
-            f"{self._delta_label(m):<11} "
-            f"{self._fmt_pct(self._as_float(m.get('confidence', 0.0))):>5} "
-            f"{decision}"
+            f"{decision:<8} "
+            f"{blocker}"
         )
         return Text(self._clip(line, width), style=self._decision_style(decision))
 
@@ -2676,6 +2601,8 @@ class PolymarketRealtimeDisplay:
         skip_reason = str(m.get("skip_reason", "") or "").lower()
         seconds = int(self._as_float(m.get("seconds_remaining", 0)))
         cutoff = int(self._as_float(m.get("effective_cutoff_seconds", 0)))
+        bid = self._as_float(m.get("bid", m.get("yes_bid", 0.0)))
+        ask = self._as_float(m.get("ask", m.get("yes_ask", 0.0)))
         # Cutoff and explicit blockers take priority over microstructure state
         if "hard_close_zone" in skip_reason or "time_unsafe" in skip_reason:
             return "CUTOFF"
@@ -2683,6 +2610,8 @@ class PolymarketRealtimeDisplay:
             return "CUTOFF"
         if "risk" in skip_reason and "no_risk" not in skip_reason:
             return "RISK_BLOCK"
+        if bid > 0 and ask > 0 and not any((exec_book, exec_spread, depth_state, skip_reason)):
+            return "READY"
         # Only return READY if all microstructure conditions are met
         if exec_book == "TRADABLE" and exec_spread == "NORMALIZED" and depth_state in {"ACCEPTABLE", "STRONG"}:
             return "READY"
@@ -2697,6 +2626,170 @@ class PolymarketRealtimeDisplay:
         if exec_spread in {"UNKNOWN", ""}:
             return "SPREAD_UNKNOWN"
         return "--"
+
+    def _data_status_tag(self) -> str:
+        ws_text = str(self._ws_status or "").lower()
+        ws_ok = any(token in ws_text for token in ("sync", "ok", "ready", "connected"))
+        return "OK" if self._oracle_status() == "OK" and self._orderbook_status() == "OK" and ws_ok else "DEGRADED"
+
+    def _footer_blocker_tag(self) -> str:
+        source = self._candidate_observability_source()
+        blocker = self._main_blocker_label(source)
+        if blocker not in {"", "--", "none", "unknown"}:
+            return self._clip(blocker, 18)
+        for item in self._cycle_results:
+            blocker = self._main_blocker_label(item)
+            if blocker not in {"", "--", "none", "unknown"}:
+                return self._clip(blocker, 18)
+        for market in self._markets.values():
+            blocker = self._main_blocker_label(market)
+            if blocker not in {"", "--", "none", "unknown"}:
+                return self._clip(blocker, 18)
+        return "none"
+
+    def _footer_jsonl_compact_tag(self) -> str:
+        return "OK" if self._footer_jsonl_tag() == "OK" else "DEGRADED"
+
+    def _phase_label(self, phase: object) -> str:
+        value = str(phase or "").strip().upper()
+        if not value or value in {"--", "NONE", "UNKNOWN"}:
+            return "UNKNOWN"
+        mapping = {
+            "OPENING_SCAN": "OPENING_SCAN",
+            "ACTIVE_INVENTORY_TRADING": "ACTIVE",
+            "PROFIT_MANAGEMENT": "PROFIT",
+            "FINAL_DERISK": "FINAL_DERISK",
+            "CLOSED_OR_UNSAFE": "UNSAFE",
+        }
+        return mapping.get(value, value)
+
+    def _main_blocker_label(self, source: Mapping[str, object]) -> str:
+        if not source:
+            return "unknown"
+        decision = str(source.get("decision", "") or "").upper()
+        has_text_activity = any(
+            self._value_present(source.get(key))
+            for key in (
+                "skip_reason",
+                "normalized_skip_reason",
+                "dominant_pre_risk_block_reason",
+                "dominant_pre_risk_cause",
+                "cutoff_reason",
+                "risk_block_reason",
+                "token_id",
+                "token_id_present",
+                "lifecycle_phase",
+                "probability_visible",
+                "ev_visible",
+            )
+        )
+        has_price_activity = any(
+            self._as_float(source.get(key, 0.0)) > 0.0
+            for key in ("bid", "ask", "yes_bid", "yes_ask", "current_price")
+        )
+        has_activity = has_text_activity or has_price_activity
+        if decision in {"", "--"} and not has_activity:
+            return "none"
+        candidates = [
+            self._compact_deny_reason(source),
+            self._first_text_value(
+                source,
+                "dominant_pre_risk_block_reason",
+                "dominant_pre_risk_cause",
+                "pre_risk_block_reason",
+                "model_attempt_gate",
+                "cutoff_reason",
+                "risk_block_reason",
+                "entry_block_reason",
+            ),
+            self._dominant_blocker_label(source),
+        ]
+        for candidate in candidates:
+            normalized = self._normalize_blocker(candidate, source)
+            if normalized not in {"", "--", "none"}:
+                return normalized
+        if any(word in decision for word in ("ENTER", "BUY", "APPROVED", "BEST_TRADE")):
+            return "none"
+        return "none"
+
+    def _normalize_blocker(self, value: object, source: Mapping[str, object] | None = None) -> str:
+        text = str(value or "").strip()
+        if not text or text in {"--", "READY"}:
+            return "none"
+        lowered = text.lower()
+        compact = lowered.replace(" ", "_").replace("-", "_")
+        if any(token in compact for token in ("time_unsafe", "hard_close", "cutoff", "late_entry")):
+            return "time_unsafe"
+        if any(token in compact for token in ("risk_plan_zero", "zero_size", "zero_position", "zero_size_plan")):
+            return "risk_plan_zero"
+        if "risk_block" in compact or (compact == "risk" and source and source.get("risk_plan_zero")):
+            return "risk_plan_zero"
+        if "confidence" in compact:
+            return "confidence_too_low"
+        if any(token in compact for token in ("spread_wide", "wide_spread", "spread_too_wide")):
+            return "spread_too_wide"
+        if any(token in compact for token in ("no_orderbook", "empty_book", "orderbook_unavailable", "book_missing")):
+            return "no_orderbook"
+        if any(token in compact for token in ("token_ready", "spread_unknown", "book_unknown")):
+            return "no_orderbook"
+        if "liquidity" in compact and any(token in compact for token in ("thin", "empty", "unstable")):
+            return "spread_too_wide"
+        if "ev_not_visible" in compact:
+            return "ev_not_visible"
+        if "probability" in compact and "visible" in compact:
+            return "probability_not_visible"
+        if compact in {"unknown", "none"}:
+            return compact
+        return self._clip(compact, 24)
+
+    def _candidate_state_label(self, source: Mapping[str, object]) -> str:
+        if not source:
+            return "UNKNOWN"
+        blocker = self._main_blocker_label(source)
+        decision = str(source.get("decision", "") or "").upper()
+        if blocker not in {"none", "unknown"}:
+            return "BLOCKED"
+        if any(word in decision for word in ("ENTER", "BUY", "APPROVED", "BEST_TRADE")):
+            return "READY"
+        orderbook = self._orderbook_readiness_label(source)
+        token = self._present_status(source, "token_id")
+        if orderbook in {"READY", "TRADABLE", "NORMALIZED"} and token == "OK":
+            return "READY"
+        if token == "OK" or orderbook != "UNKNOWN":
+            return "WAITING"
+        return "UNKNOWN"
+
+    def _candidate_state_style(self, state: str) -> str:
+        upper = str(state).upper()
+        if upper == "READY":
+            return "bold bright_green"
+        if upper == "BLOCKED":
+            return "bold bright_yellow"
+        if upper == "WAITING":
+            return "bright_cyan"
+        return "grey62"
+
+    def _cutoff_remaining_label(self, source: Mapping[str, object]) -> str:
+        explicit = self._first_text_value(source, "cutoff_remaining_seconds", "seconds_to_cutoff")
+        if explicit:
+            return explicit
+        remaining = self._as_float(source.get("seconds_remaining", source.get("seconds_until_close", 0)))
+        cutoff = self._as_float(source.get("effective_cutoff_seconds", source.get("entry_cutoff_seconds", source.get("effective_micro_cutoff_seconds", 0))))
+        if remaining > 0 and cutoff > 0:
+            return str(int(remaining - cutoff))
+        return "--"
+
+    def _seconds_label(self, value: object) -> str:
+        text = str(value or "").strip()
+        if not text or text == "--":
+            return "--"
+        lowered = text.lower()
+        if lowered.endswith(("ms", "s")):
+            return text
+        number = self._as_float(text)
+        if number == int(number):
+            return f"{int(number)}s"
+        return f"{number:.1f}s"
 
     def _footer_tier_tag(self) -> str:
         portfolio = self._portfolio or {}

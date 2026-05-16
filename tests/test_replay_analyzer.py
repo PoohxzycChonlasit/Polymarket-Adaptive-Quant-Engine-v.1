@@ -340,6 +340,7 @@ def test_replay_still_counts_real_execution_errors(tmp_path: Path) -> None:
         _event("execution", f"{DATE}T00:00:00Z", {"event": "order_submit_failed"}),
         _event("execution", f"{DATE}T00:00:01Z", {"event": "cancel_order", "status": "failed"}),
         _event("execution", f"{DATE}T00:00:02Z", {"event": "market_analysis_exception"}),
+        _event("execution", f"{DATE}T00:00:03Z", {"event": "market_analysis_exception", "message": "boom"}),
     ])
 
     report = analyze_replay(base_dir=base_dir, date=DATE)
