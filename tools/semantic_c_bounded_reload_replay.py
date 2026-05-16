@@ -833,9 +833,9 @@ SEP2 = "-" * 72
 
 
 def _print_policy_section(r: dict[str, Any], bankroll_ref: float) -> None:
-    print(f"\n{'─'*72}")
+    print(f"\n{SEP2}")
     print(f"  {r['policy_label']}")
-    print(f"{'─'*72}")
+    print(f"{SEP2}")
     print(f"  Entries             : {r['entries']}  (settled: {r['settled_fill_count']})")
     print(f"  Skipped candidates  : {r['skipped_candidates']}")
     print(f"  Reload entries      : {r['reload_entries']}")
@@ -904,9 +904,9 @@ def print_report(result: dict[str, Any], date_str: str) -> None:
     print(f"  Unsafe drawdown USD : ${result['unsafe_drawdown_usd']:.2f} "
           f"(={_UNSAFE_DRAWDOWN_PCT}% bankroll)")
 
-    print(f"\n{'═'*72}")
+    print(f"\n{'#'*72}")
     print(f"  CRITICAL CAVEATS")
-    print(f"{'═'*72}")
+    print(f"{'#'*72}")
     for c in result.get("reload_caveats", []):
         print(f"  ! {c}")
 
@@ -920,7 +920,7 @@ def print_report(result: dict[str, Any], date_str: str) -> None:
     print(f"{SEP}")
     print(f"  {'Policy':<34} {'Entries':>7} {'PnL':>9} {'Uplift':>9} "
           f"{'MaxExp%':>8} {'MaxDD':>7} {'WR%':>5}  Verdict")
-    print(f"  {'-'*34} {'-'*7} {'-'*9} {'-'*9} {'-'*8} {'-'*7} {'-'*5}  {'─'*16}")
+    print(f"  {'-'*34} {'-'*7} {'-'*9} {'-'*9} {'-'*8} {'-'*7} {'-'*5}  {'-'*16}")
     for row in result.get("policy_comparison", {}).get("rows", []):
         print(f"  {row['policy']:<34} {row['entries']:>7} "
               f"${row['realized_pnl']:>8.2f} ${row['uplift_usd']:>+8.2f} "
