@@ -128,6 +128,7 @@ python main.py --mode live --interval 60
 | `dashboard/offline_quant_report_dashboard.py` | Local read-only dashboard server for completed `runtime/reports/*.json` evidence; run with `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`. |
 | `dashboard/offline_quant_report_dashboard.html` | Static browser UI for the offline quant report dashboard; reads only the local dashboard summary endpoint. |
 | `tools/semantic_c_shadow_fill_replay.py` | Offline fill replay simulator: replays `zero_size_probe_v1` + Semantic C shadow fields; reports hypothetical fill count, size distribution, BTC/ETH split, lifecycle split, exposure curve, cutoff collision rate, PnL (if settlement available), and paper-trial verdict. Offline-only; no runtime changes. |
+| `tools/semantic_c_shadow_pnl_truth.py` | Offline PnL truth layer: attaches settlement truth (inferred from near-close `yes_bid` in `market_snapshots`) to Semantic C shadow fill opportunities; reports settlement coverage, hypothetical PnL, BTC/ETH split, lifecycle split, win rate, avg win/loss, max drawdown, unresolved markets, data quality verdict, and economic evidence verdict. Offline-only; no runtime changes. |
 
 Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
 
@@ -159,7 +160,7 @@ Use targeted tests for scoped work:
 | Logging and observability | `tests/test_logging_resilience.py`, `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py` |
 | Terminal UI | `tests/test_terminal_dashboard_display.py` |
 | Shutdown | `tests/test_runtime_shutdown.py` |
-| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py` |
+| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py`, `tests/test_semantic_c_shadow_pnl_truth.py` |
 
 Full suite:
 
