@@ -22,6 +22,7 @@ from typing import Any, Callable, Sequence
 DEFAULT_OUTPUT_DIR = Path("runtime/reports/multi_session_validation")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 PARTIAL_COVERAGE_STATUS = "PARTIAL_VALIDATION_ONLY"
+FULL_COVERAGE_STATUS   = "FULL_PHASE2_COVERAGE"
 CAUTION_STATUS = "caution"
 
 # Semantic C steps: data quality hygiene failures do not invalidate these.
@@ -33,15 +34,11 @@ SEMANTIC_C_STEP_NAMES: frozenset[str] = frozenset({
     "commitment_regime_replay",
 })
 
-REQUIRED_BUT_NOT_RUN: tuple[str, ...] = (
-    "stabilization_survival_replay",
-    "convergence_regime_classification_replay",
-    "exit_convergence_intelligence_replay",
-)
+REQUIRED_BUT_NOT_RUN: tuple[str, ...] = ()  # all Phase 2 tools now in REPLAY_STEPS
 WARNING_BANNER = (
-    "WARNING:\n"
-    "This runner does NOT perform full validation coverage.\n"
-    "Supplementary replay tools must be executed separately."
+    "Phase 2 Full Replay Validation.\n"
+    "All required Phase 2 tools are executed in fixed order.\n"
+    "This is research/evidence only — not runtime approval."
 )
 SCORE_C_ACCURACY_NOTE = (
     "score_c_accuracy values are per-session in-sample best-F1 metrics, "
@@ -65,12 +62,15 @@ class ReplayStep:
 
 
 REPLAY_STEPS: tuple[ReplayStep, ...] = (
-    ReplayStep(0, "data_quality_gate", "tools.quant_data_quality", None, "quant_data_quality"),
-    ReplayStep(1, "semantic_c_shadow_fill_replay", "tools.semantic_c_shadow_fill_replay", None, "sem_c_fill_replay"),
-    ReplayStep(2, "semantic_c_shadow_pnl_truth", "tools.semantic_c_shadow_pnl_truth", None, "sem_c_pnl_truth"),
-    ReplayStep(3, "semantic_c_inventory_continuity_replay", "tools.semantic_c_inventory_continuity_replay", None, "sem_c_inv_continuity"),
-    ReplayStep(4, "lifecycle_profit_management_replay", "tools.lifecycle_profit_management_replay", None, "lifecycle_pm"),
-    ReplayStep(5, "commitment_regime_replay", "tools.commitment_regime_replay", None, "commitment_regime"),
+    ReplayStep(0, "data_quality_gate",                        "tools.quant_data_quality",                        None, "quant_data_quality"),
+    ReplayStep(1, "semantic_c_shadow_fill_replay",            "tools.semantic_c_shadow_fill_replay",             None, "sem_c_fill_replay"),
+    ReplayStep(2, "semantic_c_shadow_pnl_truth",              "tools.semantic_c_shadow_pnl_truth",               None, "sem_c_pnl_truth"),
+    ReplayStep(3, "semantic_c_inventory_continuity_replay",   "tools.semantic_c_inventory_continuity_replay",    None, "sem_c_inv_continuity"),
+    ReplayStep(4, "lifecycle_profit_management_replay",       "tools.lifecycle_profit_management_replay",        None, "lifecycle_pm"),
+    ReplayStep(5, "commitment_regime_replay",                 "tools.commitment_regime_replay",                  None, "commitment_regime"),
+    ReplayStep(6, "exit_convergence_intelligence_replay",     "tools.exit_convergence_intelligence_replay",      None, "exit_convergence"),
+    ReplayStep(7, "convergence_regime_classification_replay", "tools.convergence_regime_classification_replay",  None, "conv_regime"),
+    ReplayStep(8, "stabilization_survival_replay",            "tools.stabilization_survival_replay",             None, "stab_survival"),
 )
 
 
@@ -137,11 +137,13 @@ def _safe_token(value: str) -> str:
 
 
 def build_validation_coverage(*, execute: bool) -> dict[str, Any]:
+    missing = list(REQUIRED_BUT_NOT_RUN)
+    coverage_status = FULL_COVERAGE_STATUS if not missing else PARTIAL_COVERAGE_STATUS
     return {
         "executed_tools": [step.name for step in REPLAY_STEPS] if execute else [],
         "runner_tool_chain": [step.name for step in REPLAY_STEPS],
-        "missing_validation_tools": list(REQUIRED_BUT_NOT_RUN),
-        "coverage_status": PARTIAL_COVERAGE_STATUS,
+        "missing_validation_tools": missing,
+        "coverage_status": coverage_status,
         "dry_run_command_recording": not execute,
     }
 
@@ -352,6 +354,33 @@ def extract_step_metrics(step_name: str, report: dict[str, Any], registry: dict[
             "score_c_recall": _first_number(score_c, ("recall", "oos_recall")),
             "score_c_f1": _first_number(score_c, ("f1", "oos_f1")),
             "score_c_verdict": score_c.get("verdict"),
+        }
+    if step_name == "exit_convergence_intelligence_replay":
+        pc = report.get("policy_comparison") or {}
+        pb = report.get("policy_B") or {}
+        return {
+            "policy_b_pnl": _first_number(pb, ("realized_proxy_pnl",)),
+            "policy_b_verdict": pb.get("verdict"),
+            "best_pnl_policy": pc.get("best_pnl_policy"),
+            "recommended": pc.get("recommended"),
+        }
+    if step_name == "convergence_regime_classification_replay":
+        diag = report.get("diagnostic_regimes") or {}
+        rec = report.get("recommendation") or {}
+        vr = diag.get("VOLATILITY_RESURGENCE") or {}
+        return {
+            "realtime_accuracy": _first_number(report, ("realtime_accuracy",)),
+            "pseudo_after_high_confidence_count": _first_number(report, ("pseudo_after_high_confidence_count",)),
+            "vol_resurgence_count": _first_number(vr, ("count",)),
+            "recommended_policy": rec.get("recommended_policy"),
+        }
+    if step_name == "stabilization_survival_replay":
+        verdict = report.get("verdict") or {}
+        return {
+            "stabilization_count": _first_number(report, ("stabilization_count",)),
+            "survival_count": _first_number(report, ("survival_count",)),
+            "survival_rate": _first_number(report, ("survival_rate",)),
+            "verdict_label": verdict.get("verdict") if isinstance(verdict, dict) else None,
         }
     return {}
 

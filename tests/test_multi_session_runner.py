@@ -16,6 +16,7 @@ if str(_REPO) not in sys.path:
 from tools.multi_session_runner import (
     CANONICAL_SR60_POLICY_ID,
     CAUTION_STATUS,
+    FULL_COVERAGE_STATUS,
     PARTIAL_COVERAGE_STATUS,
     REPLAY_STEPS,
     REQUIRED_BUT_NOT_RUN,
@@ -80,6 +81,25 @@ REPORT_FIXTURES = {
             }
         },
     },
+    "exit_convergence": {
+        "policy_B": {"realized_proxy_pnl": 67.67, "verdict": "safe_candidate"},
+        "policy_comparison": {
+            "best_pnl_policy": "B  fixed-derisk-SR<60",
+            "recommended": "B  fixed-derisk-SR<60",
+        },
+    },
+    "conv_regime": {
+        "realtime_accuracy": 0.8906,
+        "pseudo_after_high_confidence_count": 0,
+        "diagnostic_regimes": {"VOLATILITY_RESURGENCE": {"count": 28}},
+        "recommendation": {"recommended_policy": "VOLATILITY_RESURGENCE_GUARD"},
+    },
+    "stab_survival": {
+        "stabilization_count": 59,
+        "survival_count": 13,
+        "survival_rate": 0.2203,
+        "verdict": {"verdict": "fixed_SR60_remains_best"},
+    },
 }
 
 
@@ -90,6 +110,9 @@ TOOL_TO_PREFIX = {
     "tools.semantic_c_inventory_continuity_replay": "sem_c_inv_continuity",
     "tools.lifecycle_profit_management_replay": "lifecycle_pm",
     "tools.commitment_regime_replay": "commitment_regime",
+    "tools.exit_convergence_intelligence_replay": "exit_convergence",
+    "tools.convergence_regime_classification_replay": "conv_regime",
+    "tools.stabilization_survival_replay": "stab_survival",
 }
 
 
@@ -169,6 +192,9 @@ def test_deterministic_order_in_manifest_and_commands(tmp_path: Path) -> None:
         "tools.semantic_c_inventory_continuity_replay",
         "tools.lifecycle_profit_management_replay",
         "tools.commitment_regime_replay",
+        "tools.exit_convergence_intelligence_replay",
+        "tools.convergence_regime_classification_replay",
+        "tools.stabilization_survival_replay",
     ]
 
 
@@ -207,7 +233,7 @@ def test_missing_report_handling_marks_date_incomplete_and_continues(tmp_path: P
     assert manifest["aggregate"]["incomplete_dates"] == [DATE_1, DATE_2]
     for session in manifest["sessions"]:
         assert "semantic_c_shadow_pnl_truth" in session["missing_reports"]
-        assert session["steps"][-1]["step_name"] == "commitment_regime_replay"
+        assert session["steps"][-1]["step_name"] == "stabilization_survival_replay"
         assert session["steps"][-1]["missing_report"] is False
 
 
@@ -320,7 +346,7 @@ def test_partial_coverage_flag_correctness(tmp_path: Path) -> None:
     )
 
     coverage = manifest["validation_coverage"]
-    assert coverage["coverage_status"] == PARTIAL_COVERAGE_STATUS
+    assert coverage["coverage_status"] == FULL_COVERAGE_STATUS
     assert coverage["executed_tools"] == [step.name for step in REPLAY_STEPS]
     assert coverage["runner_tool_chain"] == [step.name for step in REPLAY_STEPS]
     assert coverage["dry_run_command_recording"] is False
@@ -332,7 +358,7 @@ def test_partial_coverage_flag_correctness(tmp_path: Path) -> None:
         python_executable="python",
         runner=_runner(),
     )
-    assert dry_manifest["validation_coverage"]["coverage_status"] == PARTIAL_COVERAGE_STATUS
+    assert dry_manifest["validation_coverage"]["coverage_status"] == FULL_COVERAGE_STATUS
     assert dry_manifest["validation_coverage"]["executed_tools"] == []
     assert dry_manifest["validation_coverage"]["dry_run_command_recording"] is True
 
@@ -399,7 +425,7 @@ def test_fail_soft_behavior_records_command_failure_and_keeps_later_steps(tmp_pa
     assert failed["command_failed"] is True
     assert failed["status"] == "command_failed"
     assert failed["missing_report"] is True
-    assert steps[-1]["step_name"] == "commitment_regime_replay"
+    assert steps[-1]["step_name"] == "stabilization_survival_replay"
     assert steps[-1]["missing_report"] is False
     assert manifest["sessions"][0]["status"] == "incomplete"
 
