@@ -38,6 +38,12 @@ Use these only for specific task types:
 | `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md` | Spread/liquidity/timing research plan. |
 | `CODEX_START_PROMPT.md` | Reusable Codex startup prompt. |
 | `CHATGPT_PROJECT_START_PROMPT.md` | Reusable ChatGPT planning/review prompt. |
+| `.codex/README.md` | Safe AI workflow harness overview for Codex / Claude / Gemini / ChatGPT. |
+| `.codex/skills/` | Reusable guidance skills; docs-only, not autonomous runtime modules. |
+| `.codex/security/AI_AGENT_SECURITY_CHECKLIST.md` | AI-agent and live-risk safety checklist. |
+| `.codex/prompts/` | Reusable AI startup/review prompts; human-invoked only, no hooks. |
+| `research/session_memory_template.md` | Compact session handoff template for run/day memory. |
+| `research/daily/README.md` | Daily research note workflow to reduce cross-tool context loss. |
 | `VULTR_PAPER_RUN.md` | Experimental HFT paper utility deployment notes, not canonical live readiness. |
 
 ## Canonical Runtime Files
@@ -121,6 +127,7 @@ python main.py --mode live --interval 60
 | `tools/offline_telegram_summary.py` | Offline Telegram-safe paper evidence summary formatter/sender from generated reports; default is print-only. |
 | `dashboard/offline_quant_report_dashboard.py` | Local read-only dashboard server for completed `runtime/reports/*.json` evidence; run with `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`. |
 | `dashboard/offline_quant_report_dashboard.html` | Static browser UI for the offline quant report dashboard; reads only the local dashboard summary endpoint. |
+| `tools/semantic_c_shadow_fill_replay.py` | Offline fill replay simulator: replays `zero_size_probe_v1` + Semantic C shadow fields; reports hypothetical fill count, size distribution, BTC/ETH split, lifecycle split, exposure curve, cutoff collision rate, PnL (if settlement available), and paper-trial verdict. Offline-only; no runtime changes. |
 
 Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
 
@@ -152,7 +159,7 @@ Use targeted tests for scoped work:
 | Logging and observability | `tests/test_logging_resilience.py`, `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py` |
 | Terminal UI | `tests/test_terminal_dashboard_display.py` |
 | Shutdown | `tests/test_runtime_shutdown.py` |
-| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py` |
+| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py` |
 
 Full suite:
 
@@ -177,6 +184,27 @@ Use `MASTER_AGENT_ROUTER.md` first, then read only the relevant role doc:
 | `docs/quant_agent_setup_md/roles/23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Future lifecycle inventory coordination across opening scan, active inventory, profit management, final derisk, and risk budget. |
 
 These markdown files guide work. They are not autonomous runtime modules and do not prove code is implemented.
+
+## AI Agent Workflow Harness
+
+| Path | Role |
+|------|------|
+| `.codex/README.md` | Overview of the safe AI-agent workflow harness and boundaries. |
+| `.codex/skills/README.md` | Rules for reusable guidance skills. |
+| `.codex/skills/no-entry-root-cause.md` | No-entry and no-fill root-cause checklist. |
+| `.codex/skills/session-regime-analysis.md` | Time-of-day/session market personality research guide. |
+| `.codex/skills/replay-diagnostics.md` | Replay, JSONL, report consistency, and semantic mismatch guide. |
+| `.codex/skills/risk-budget-review.md` | Dynamic Quant Risk Budget review guide. |
+| `.codex/skills/live-risk-security-check.md` | Live-risk and secret-safety preflight checklist. |
+| `.codex/skills/lifecycle-inventory-planning.md` | Future lifecycle inventory planning guide. |
+| `.codex/skills/semantic-shadow-sizing.md` | Semantic confidence, EV quality, and shadow sizing research guide. |
+| `.codex/security/AI_AGENT_SECURITY_CHECKLIST.md` | Hard AI-agent safety warnings. |
+| `.codex/prompts/CODEX_AI_HARNESS_START_PROMPT.md` | Reusable Codex harness startup prompt. |
+| `.codex/prompts/CHATGPT_PROJECT_REVIEW_PROMPT.md` | Reusable ChatGPT planning/review prompt. |
+| `research/session_memory_template.md` | Session memory template for handoffs. |
+| `research/daily/README.md` | Daily research note workflow. |
+
+The harness is docs/config-only. It does not enable hooks, MCP servers, auto-running commands, runtime decisions, or trading behavior.
 
 ## Secondary Or Experimental Areas
 
