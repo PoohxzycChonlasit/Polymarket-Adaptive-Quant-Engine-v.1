@@ -130,6 +130,7 @@ python main.py --mode live --interval 60
 | `tools/semantic_c_shadow_fill_replay.py` | Offline fill replay simulator: replays `zero_size_probe_v1` + Semantic C shadow fields; reports hypothetical fill count, size distribution, BTC/ETH split, lifecycle split, exposure curve, cutoff collision rate, PnL (if settlement available), and paper-trial verdict. Offline-only; no runtime changes. |
 | `tools/semantic_c_shadow_pnl_truth.py` | Offline PnL truth layer: attaches settlement truth (inferred from near-close `yes_bid` in `market_snapshots`) to Semantic C shadow fill opportunities; reports settlement coverage, hypothetical PnL, BTC/ETH split, lifecycle split, win rate, avg win/loss, max drawdown, unresolved markets, data quality verdict, and economic evidence verdict. Offline-only; no runtime changes. |
 | `tools/semantic_c_inventory_continuity_replay.py` | Offline inventory continuity state machine: replays shadow fill candidates with per-asset open/close states (FLAT→OPEN→HOLD→REDUCE→FINAL_DERISK→CLOSED), max-one-position-per-asset gate, settlement-based closing, and opportunity-cost tracking for skipped candidates. Reports 14 outputs including entries, skips, concurrent exposure, proxy PnL, BTC/ETH split, win rate, drawdown, clustered losses, forced/unresolved closes, and scoped-paper-trial verdict. Offline-only; no runtime changes. |
+| `tools/semantic_c_bounded_reload_replay.py` | Offline bounded reload opportunity replay: simulates four reload policies (A=1/asset, B=2/asset, C=3/asset, D=exposure-capped at 7.5%) to measure how much of the $323.33 skipped opportunity cost can be recovered without unsafe exposure or drawdown. Reports 13 outputs per policy plus correlated-exposure metrics (same_epoch_reload_count, max_reload_count_per_epoch, worst_losing_epoch_pnl, exposure_concentration, reload_loss_cluster_count). Explicitly states reloads are correlated exposure, NOT diversification. Offline-only; no runtime changes. |
 
 Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
 
@@ -161,7 +162,7 @@ Use targeted tests for scoped work:
 | Logging and observability | `tests/test_logging_resilience.py`, `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py` |
 | Terminal UI | `tests/test_terminal_dashboard_display.py` |
 | Shutdown | `tests/test_runtime_shutdown.py` |
-| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py`, `tests/test_semantic_c_shadow_pnl_truth.py`, `tests/test_semantic_c_inventory_continuity_replay.py` |
+| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py`, `tests/test_semantic_c_shadow_pnl_truth.py`, `tests/test_semantic_c_inventory_continuity_replay.py`, `tests/test_semantic_c_bounded_reload_replay.py` |
 
 Full suite:
 
