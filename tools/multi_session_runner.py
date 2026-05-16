@@ -22,6 +22,17 @@ from typing import Any, Callable, Sequence
 DEFAULT_OUTPUT_DIR = Path("runtime/reports/multi_session_validation")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 PARTIAL_COVERAGE_STATUS = "PARTIAL_VALIDATION_ONLY"
+CAUTION_STATUS = "caution"
+
+# Semantic C steps: data quality hygiene failures do not invalidate these.
+SEMANTIC_C_STEP_NAMES: frozenset[str] = frozenset({
+    "semantic_c_shadow_fill_replay",
+    "semantic_c_shadow_pnl_truth",
+    "semantic_c_inventory_continuity_replay",
+    "lifecycle_profit_management_replay",
+    "commitment_regime_replay",
+})
+
 REQUIRED_BUT_NOT_RUN: tuple[str, ...] = (
     "stabilization_survival_replay",
     "convergence_regime_classification_replay",
@@ -48,7 +59,7 @@ class ReplayStep:
 
 
 REPLAY_STEPS: tuple[ReplayStep, ...] = (
-    ReplayStep(0, "data_quality_gate", None, "tools/quant_data_quality.py", "quant_data_quality"),
+    ReplayStep(0, "data_quality_gate", "tools.quant_data_quality", None, "quant_data_quality"),
     ReplayStep(1, "semantic_c_shadow_fill_replay", "tools.semantic_c_shadow_fill_replay", None, "sem_c_fill_replay"),
     ReplayStep(2, "semantic_c_shadow_pnl_truth", "tools.semantic_c_shadow_pnl_truth", None, "sem_c_pnl_truth"),
     ReplayStep(3, "semantic_c_inventory_continuity_replay", "tools.semantic_c_inventory_continuity_replay", None, "sem_c_inv_continuity"),
@@ -336,9 +347,36 @@ def _run_step(
     }
 
 
+def _classify_session_status(steps: list[dict[str, Any]]) -> str:
+    """
+    Classify session status after all steps have run.
+
+    Returns:
+      "complete"  - all steps finished without error.
+      "caution"   - data_quality_gate failed (hygiene issues) but every Semantic C
+                    step has a report; evidence is usable with a warning.
+      "incomplete" - any Semantic C step is missing or failed.
+    """
+    by_name = {step["step_name"]: step for step in steps}
+
+    # Semantic C evidence failure → hard incomplete regardless of quality gate.
+    for name in SEMANTIC_C_STEP_NAMES:
+        step = by_name.get(name)
+        if step is not None and step.get("status") != "complete":
+            return "incomplete"
+
+    # Data quality gate not clean, but Semantic C is fully intact → caution.
+    dqg = by_name.get("data_quality_gate")
+    if dqg is not None and dqg.get("status") != "complete":
+        return CAUTION_STATUS
+
+    return "complete"
+
+
 def aggregate_sessions(sessions: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    complete_sessions = [s for s in sessions if s.get("status") == "complete"]
-    incomplete_sessions = [s for s in sessions if s.get("status") != "complete"]
+    complete_sessions = [s for s in sessions if s.get("status") in ("complete", CAUTION_STATUS)]
+    caution_sessions  = [s for s in sessions if s.get("status") == CAUTION_STATUS]
+    incomplete_sessions = [s for s in sessions if s.get("status") not in ("complete", CAUTION_STATUS)]
     policy_b_ranks: list[int] = []
     policy_b_pnls: list[float] = []
     total_positions = 0
@@ -374,7 +412,9 @@ def aggregate_sessions(sessions: Sequence[dict[str, Any]]) -> dict[str, Any]:
     return {
         "session_count": len(sessions),
         "complete_session_count": len(complete_sessions),
+        "caution_session_count": len(caution_sessions),
         "incomplete_session_count": len(incomplete_sessions),
+        "caution_dates": [s.get("date") for s in caution_sessions],
         "incomplete_dates": [s.get("date") for s in incomplete_sessions],
         "policy_b_rank_1_count": sum(1 for rank in policy_b_ranks if rank == 1),
         "policy_b_rank_values": policy_b_ranks,
@@ -527,13 +567,15 @@ def run_multi_session_validation(
             )
         missing_reports = [step["step_name"] for step in steps if step["missing_report"]]
         incomplete_steps = [step["step_name"] for step in steps if step["status"] != "complete"]
+        status = _classify_session_status(steps)
         sessions.append(
             {
                 "date": date_str,
                 "run_id": run_id_map.get(date_str),
                 "session_dir": str(session_dir),
                 "report_dir": str(report_dir),
-                "status": "incomplete" if incomplete_steps else "complete",
+                "status": status,
+                "data_quality_caution": status == CAUTION_STATUS,
                 "missing_reports": missing_reports,
                 "incomplete_steps": incomplete_steps,
                 "steps": steps,

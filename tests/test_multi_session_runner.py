@@ -14,10 +14,12 @@ if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from tools.multi_session_runner import (
+    CAUTION_STATUS,
     PARTIAL_COVERAGE_STATUS,
     REPLAY_STEPS,
     REQUIRED_BUT_NOT_RUN,
     SCORE_C_ACCURACY_NOTE,
+    SEMANTIC_C_STEP_NAMES,
     WARNING_BANNER,
     aggregate_sessions,
     render_markdown_summary,
@@ -79,7 +81,7 @@ REPORT_FIXTURES = {
 
 
 TOOL_TO_PREFIX = {
-    "tools/quant_data_quality.py": "quant_data_quality",
+    "tools.quant_data_quality": "quant_data_quality",
     "tools.semantic_c_shadow_fill_replay": "sem_c_fill_replay",
     "tools.semantic_c_shadow_pnl_truth": "sem_c_pnl_truth",
     "tools.semantic_c_inventory_continuity_replay": "sem_c_inv_continuity",
@@ -102,10 +104,19 @@ def _runner(
     *,
     missing_prefixes: set[str] | None = None,
     failing_prefixes: set[str] | None = None,
+    failing_with_report_prefixes: set[str] | None = None,
     calls: list[list[str]] | None = None,
 ):
+    """
+    missing_prefixes: step returns success exit code but writes no report file.
+    failing_prefixes: step returns non-zero exit code AND writes no report.
+    failing_with_report_prefixes: step returns non-zero exit code BUT writes report
+        (models the real data_quality_gate behaviour: finds hygiene issues,
+        returns non-zero, but still produces its JSON report).
+    """
     missing = missing_prefixes or set()
     failing = failing_prefixes or set()
+    failing_with_report = failing_with_report_prefixes or set()
 
     def fake_runner(command: Sequence[str], cwd: Path) -> subprocess.CompletedProcess[str]:
         command_list = list(command)
@@ -115,17 +126,19 @@ def _runner(
         date_str = _arg_after(command, "--date")
         report_dir = Path(_arg_after(command, "--report-dir"))
         report_dir.mkdir(parents=True, exist_ok=True)
+        # Write report unless explicitly suppressed by missing or failing (no-report) sets.
         if prefix not in missing and prefix not in failing:
             payload = dict(REPORT_FIXTURES[prefix])
             (report_dir / f"{prefix}_{date_str}_fake.json").write_text(
                 json.dumps(payload),
                 encoding="utf-8",
             )
+        failed = prefix in failing or prefix in failing_with_report
         return subprocess.CompletedProcess(
             args=command_list,
-            returncode=2 if prefix in failing else 0,
+            returncode=2 if failed else 0,
             stdout=f"{prefix} stdout",
-            stderr=f"{prefix} stderr" if prefix in failing else "",
+            stderr=f"{prefix} stderr" if failed else "",
         )
 
     return fake_runner
@@ -147,7 +160,7 @@ def test_deterministic_order_in_manifest_and_commands(tmp_path: Path) -> None:
     assert manifest["fixed_replay_order"] == [step.name for step in REPLAY_STEPS]
     command_names = [_tool_key(call) for call in calls]
     assert command_names == [
-        "tools/quant_data_quality.py",
+        "tools.quant_data_quality",
         "tools.semantic_c_shadow_fill_replay",
         "tools.semantic_c_shadow_pnl_truth",
         "tools.semantic_c_inventory_continuity_replay",
@@ -401,14 +414,15 @@ def test_replay_command_recording_includes_run_id_and_report_dir(tmp_path: Path)
     )
 
     command = manifest["sessions"][0]["steps"][0]["command_record"]["command"]
-    assert command[:2] == ["python", "tools/quant_data_quality.py"]
+    assert command[:3] == ["python", "-m", "tools.quant_data_quality"]
     assert "--date" in command
     assert _arg_after(command, "--date") == DATE_1
     assert "--write-report" in command
     assert "--report-dir" in command
     assert "--run-id" in command
     assert _arg_after(command, "--run-id") == "run-selected"
-    assert "tools/quant_data_quality.py" in manifest["sessions"][0]["steps"][0]["command_record"]["command_text"]
+    assert "tools.quant_data_quality" in manifest["sessions"][0]["steps"][0]["command_record"]["command_text"]
+    assert "tools/quant_data_quality.py" not in manifest["sessions"][0]["steps"][0]["command_record"]["command_text"]
 
 
 def test_invalid_date_handling() -> None:
@@ -427,3 +441,72 @@ def test_aggregate_sessions_handles_empty_or_missing_metrics() -> None:
     assert aggregate["complete_session_count"] == 0
     assert aggregate["incomplete_dates"] == [DATE_1]
     assert aggregate["policy_b_pnl_sum"] is None
+
+
+def test_data_quality_caution_with_complete_semantic_c(tmp_path: Path) -> None:
+    """
+    data_quality_gate fails (non-zero, e.g. bad_json found) but writes its report
+    and all Semantic C steps complete normally.
+    Session must be classified as CAUTION, not incomplete.
+    Semantic C evidence is usable; aggregate counts it as complete.
+    """
+    manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        execute=True,
+        run_label="dq_caution",
+        python_executable="python",
+        runner=_runner(failing_with_report_prefixes={"quant_data_quality"}),
+        cwd=_REPO,
+    )
+
+    session = manifest["sessions"][0]
+    assert session["status"] == CAUTION_STATUS
+    assert session["data_quality_caution"] is True
+
+    # Raw step data preserved: quality gate is still recorded as command_failed.
+    dqg_step = next(s for s in session["steps"] if s["step_name"] == "data_quality_gate")
+    assert dqg_step["command_failed"] is True
+    assert dqg_step["missing_report"] is False   # report WAS written
+
+    # Semantic C steps are all complete.
+    for step in session["steps"]:
+        if step["step_name"] in SEMANTIC_C_STEP_NAMES:
+            assert step["status"] == "complete", step["step_name"]
+
+    aggregate = manifest["aggregate"]
+    assert aggregate["complete_session_count"] == 1   # caution counts as usable
+    assert aggregate["caution_session_count"] == 1
+    assert aggregate["incomplete_session_count"] == 0
+    assert aggregate["caution_dates"] == [DATE_1]
+    assert aggregate["incomplete_dates"] == []
+
+
+def test_data_quality_caution_missing_semantic_c_is_incomplete(tmp_path: Path) -> None:
+    """
+    data_quality_gate fails with report AND a Semantic C step is missing.
+    Session must be classified as incomplete (not caution) because the
+    Semantic C evidence itself is incomplete.
+    """
+    manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        execute=True,
+        run_label="dq_caution_sem_miss",
+        python_executable="python",
+        runner=_runner(
+            failing_with_report_prefixes={"quant_data_quality"},
+            missing_prefixes={"sem_c_fill_replay"},
+        ),
+        cwd=_REPO,
+    )
+
+    session = manifest["sessions"][0]
+    assert session["status"] == "incomplete"
+    assert session["data_quality_caution"] is False
+
+    aggregate = manifest["aggregate"]
+    assert aggregate["incomplete_session_count"] == 1
+    assert aggregate["caution_session_count"] == 0
+    assert aggregate["incomplete_dates"] == [DATE_1]
+    assert aggregate["caution_dates"] == []
