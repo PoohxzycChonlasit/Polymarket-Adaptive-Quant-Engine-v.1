@@ -125,6 +125,7 @@ python main.py --mode live --interval 60
 | `tools/session_runtime_evaluator.py` | Offline/session paper runtime health and bottleneck evaluator; supports UTC `--since/--until` filters. |
 | `tools/paper_evaluation_report.py` | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
 | `tools/offline_telegram_summary.py` | Offline Telegram-safe paper evidence summary formatter/sender from generated reports; default is print-only. |
+| `tools/multi_session_runner.py` | Offline multi-session validation orchestrator. Defaults to dry-run command recording, optionally executes the fixed Phase 2 replay chain into isolated `runtime/reports/multi_session_validation/` output folders, and never promotes verdicts or mutates existing replay reports. |
 | `dashboard/offline_quant_report_dashboard.py` | Local read-only dashboard server for completed `runtime/reports/*.json` evidence; run with `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`. |
 | `dashboard/offline_quant_report_dashboard.html` | Static browser UI for the offline quant report dashboard; reads only the local dashboard summary endpoint. |
 | `tools/semantic_c_shadow_fill_replay.py` | Offline fill replay simulator: replays `zero_size_probe_v1` + Semantic C shadow fields; reports hypothetical fill count, size distribution, BTC/ETH split, lifecycle split, exposure curve, cutoff collision rate, PnL (if settlement available), and paper-trial verdict. Offline-only; no runtime changes. |
@@ -164,6 +165,7 @@ Use targeted tests for scoped work:
 | Terminal UI | `tests/test_terminal_dashboard_display.py` |
 | Shutdown | `tests/test_runtime_shutdown.py` |
 | Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py`, `tests/test_semantic_c_shadow_pnl_truth.py`, `tests/test_semantic_c_inventory_continuity_replay.py`, `tests/test_semantic_c_bounded_reload_replay.py`, `tests/test_lifecycle_profit_management_replay.py` |
+| Multi-session validation tooling | `tests/test_multi_session_runner.py` |
 
 Full suite:
 
