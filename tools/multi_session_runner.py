@@ -21,6 +21,21 @@ from typing import Any, Callable, Sequence
 
 DEFAULT_OUTPUT_DIR = Path("runtime/reports/multi_session_validation")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+PARTIAL_COVERAGE_STATUS = "PARTIAL_VALIDATION_ONLY"
+REQUIRED_BUT_NOT_RUN: tuple[str, ...] = (
+    "stabilization_survival_replay",
+    "convergence_regime_classification_replay",
+    "exit_convergence_intelligence_replay",
+)
+WARNING_BANNER = (
+    "WARNING:\n"
+    "This runner does NOT perform full validation coverage.\n"
+    "Supplementary replay tools must be executed separately."
+)
+SCORE_C_ACCURACY_NOTE = (
+    "score_c_accuracy values are per-session in-sample best-F1 metrics, "
+    "NOT OOS validation at the seed threshold."
+)
 
 
 @dataclass(frozen=True)
@@ -102,6 +117,16 @@ def _utc_now() -> str:
 
 def _safe_token(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]+", "_", value).strip("_") or "run"
+
+
+def build_validation_coverage(*, execute: bool) -> dict[str, Any]:
+    return {
+        "executed_tools": [step.name for step in REPLAY_STEPS] if execute else [],
+        "runner_tool_chain": [step.name for step in REPLAY_STEPS],
+        "missing_validation_tools": list(REQUIRED_BUT_NOT_RUN),
+        "coverage_status": PARTIAL_COVERAGE_STATUS,
+        "dry_run_command_recording": not execute,
+    }
 
 
 def make_run_label(now: datetime | None = None, *, dry_run: bool = True) -> str:
@@ -365,8 +390,12 @@ def aggregate_sessions(sessions: Sequence[dict[str, Any]]) -> dict[str, Any]:
 
 def render_markdown_summary(manifest: dict[str, Any]) -> str:
     aggregate = manifest.get("aggregate", {})
+    coverage = manifest.get("validation_coverage", {})
+    oos_score_c_not_validated = bool(manifest.get("oos_score_c_not_validated"))
     lines = [
         "# Multi-Session Validation Summary",
+        "",
+        WARNING_BANNER,
         "",
         "**validation output, not runtime approval.**",
         "",
@@ -380,6 +409,24 @@ def render_markdown_summary(manifest: dict[str, Any]) -> str:
         f"- Incomplete sessions: `{aggregate.get('incomplete_session_count')}`",
         f"- Threshold optimization performed: `{aggregate.get('threshold_optimization_performed')}`",
         f"- Automatic verdict promotion: `{aggregate.get('automatic_verdict_promotion')}`",
+        f"- OOS Score C not validated: `{json.dumps(oos_score_c_not_validated)}`",
+        "",
+        "## validation_coverage",
+        "",
+        "```yaml",
+        "validation_coverage:",
+        f"  executed_tools: {json.dumps(coverage.get('executed_tools', []))}",
+        f"  missing_validation_tools: {json.dumps(coverage.get('missing_validation_tools', []))}",
+        f"  coverage_status: {json.dumps(coverage.get('coverage_status'))}",
+        "```",
+        "",
+        "## OOS Score C Warning",
+        "",
+        "```yaml",
+        f"oos_score_c_not_validated: {json.dumps(oos_score_c_not_validated)}",
+        f"score_c_accuracy_note: {json.dumps(manifest.get('score_c_accuracy_note', SCORE_C_ACCURACY_NOTE))}",
+        "```",
+        f"- {manifest.get('score_c_accuracy_note', SCORE_C_ACCURACY_NOTE)}",
         "",
         "## Session Status",
         "",
@@ -407,6 +454,7 @@ def render_markdown_summary(manifest: dict[str, Any]) -> str:
         "- Existing replay report files are not modified; tools write only into per-session validation output folders when execution is explicit.",
         "- Missing tools or reports mark a date incomplete and do not stop later dates from being recorded.",
         "- Per-session and pooled thresholds are not optimized by this runner.",
+        "- Required-but-not-run supplementary validation tools are recorded explicitly as missing validation coverage.",
     ])
     return "\n".join(lines) + "\n"
 
@@ -500,12 +548,18 @@ def run_multi_session_validation(
         "output_dir": str(root),
         "run_dir": str(run_dir),
         "fixed_replay_order": [step.name for step in REPLAY_STEPS],
+        "required_but_not_run": list(REQUIRED_BUT_NOT_RUN),
+        "validation_coverage": build_validation_coverage(execute=execute),
+        "oos_score_c_not_validated": True,
+        "score_c_accuracy_note": SCORE_C_ACCURACY_NOTE,
         "oos_integrity": {
             "fixed_order_from_user_task": True,
             "no_threshold_retuning": True,
             "no_pooled_threshold_optimization": True,
             "no_automatic_verdict_promotion": True,
             "existing_replay_reports_modified": False,
+            "oos_score_c_not_validated": True,
+            "score_c_accuracy_note": SCORE_C_ACCURACY_NOTE,
         },
         "sessions": sessions,
     }

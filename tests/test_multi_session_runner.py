@@ -14,7 +14,11 @@ if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from tools.multi_session_runner import (
+    PARTIAL_COVERAGE_STATUS,
     REPLAY_STEPS,
+    REQUIRED_BUT_NOT_RUN,
+    SCORE_C_ACCURACY_NOTE,
+    WARNING_BANNER,
     aggregate_sessions,
     render_markdown_summary,
     run_multi_session_validation,
@@ -259,9 +263,87 @@ def test_markdown_summary_generation_contains_required_safety_phrase(tmp_path: P
 
     markdown = Path(manifest["output_paths"]["markdown"]).read_text(encoding="utf-8")
     assert "validation output, not runtime approval." in markdown
+    assert WARNING_BANNER in markdown
     assert "Automatic verdict promotion: `False`" in markdown
     assert "Threshold optimization performed: `False`" in markdown
     assert render_markdown_summary(manifest).startswith("# Multi-Session Validation Summary")
+
+
+def test_missing_validation_tools_present_in_manifest_and_markdown(tmp_path: Path) -> None:
+    manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        execute=True,
+        run_label="coverage_missing",
+        python_executable="python",
+        runner=_runner(),
+        cwd=_REPO,
+    )
+
+    assert manifest["required_but_not_run"] == list(REQUIRED_BUT_NOT_RUN)
+    assert manifest["validation_coverage"]["missing_validation_tools"] == list(REQUIRED_BUT_NOT_RUN)
+
+    persisted = json.loads(Path(manifest["output_paths"]["manifest"]).read_text(encoding="utf-8"))
+    assert persisted["required_but_not_run"] == list(REQUIRED_BUT_NOT_RUN)
+    assert persisted["validation_coverage"]["missing_validation_tools"] == list(REQUIRED_BUT_NOT_RUN)
+
+    markdown = Path(manifest["output_paths"]["markdown"]).read_text(encoding="utf-8")
+    for missing_tool in REQUIRED_BUT_NOT_RUN:
+        assert missing_tool in markdown
+
+
+def test_partial_coverage_flag_correctness(tmp_path: Path) -> None:
+    manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        execute=True,
+        run_label="coverage_partial",
+        python_executable="python",
+        runner=_runner(),
+        cwd=_REPO,
+    )
+
+    coverage = manifest["validation_coverage"]
+    assert coverage["coverage_status"] == PARTIAL_COVERAGE_STATUS
+    assert coverage["executed_tools"] == [step.name for step in REPLAY_STEPS]
+    assert coverage["runner_tool_chain"] == [step.name for step in REPLAY_STEPS]
+    assert coverage["dry_run_command_recording"] is False
+
+    dry_manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        run_label="coverage_dry",
+        python_executable="python",
+        runner=_runner(),
+    )
+    assert dry_manifest["validation_coverage"]["coverage_status"] == PARTIAL_COVERAGE_STATUS
+    assert dry_manifest["validation_coverage"]["executed_tools"] == []
+    assert dry_manifest["validation_coverage"]["dry_run_command_recording"] is True
+
+
+def test_oos_warning_persistence(tmp_path: Path) -> None:
+    manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        execute=True,
+        run_label="oos_warning",
+        python_executable="python",
+        runner=_runner(),
+        cwd=_REPO,
+    )
+
+    assert manifest["oos_score_c_not_validated"] is True
+    assert manifest["score_c_accuracy_note"] == SCORE_C_ACCURACY_NOTE
+    assert manifest["oos_integrity"]["oos_score_c_not_validated"] is True
+    assert manifest["oos_integrity"]["score_c_accuracy_note"] == SCORE_C_ACCURACY_NOTE
+
+    persisted = json.loads(Path(manifest["output_paths"]["manifest"]).read_text(encoding="utf-8"))
+    assert persisted["oos_score_c_not_validated"] is True
+    assert persisted["score_c_accuracy_note"] == SCORE_C_ACCURACY_NOTE
+
+    markdown = Path(manifest["output_paths"]["markdown"]).read_text(encoding="utf-8")
+    assert "oos_score_c_not_validated: true" in markdown
+    assert SCORE_C_ACCURACY_NOTE in markdown
 
 
 def test_output_path_correctness_and_optional_obsidian_copy(tmp_path: Path) -> None:
