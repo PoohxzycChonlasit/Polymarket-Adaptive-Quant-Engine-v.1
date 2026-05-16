@@ -14,6 +14,7 @@ if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from tools.multi_session_runner import (
+    CANONICAL_SR60_POLICY_ID,
     CAUTION_STATUS,
     PARTIAL_COVERAGE_STATUS,
     REPLAY_STEPS,
@@ -21,7 +22,9 @@ from tools.multi_session_runner import (
     SCORE_C_ACCURACY_NOTE,
     SEMANTIC_C_STEP_NAMES,
     WARNING_BANNER,
+    _resolve_canonical_lifecycle_metrics,
     aggregate_sessions,
+    load_policy_registry,
     render_markdown_summary,
     run_multi_session_validation,
     validate_date,
@@ -480,6 +483,90 @@ def test_data_quality_caution_with_complete_semantic_c(tmp_path: Path) -> None:
     assert aggregate["incomplete_session_count"] == 0
     assert aggregate["caution_dates"] == [DATE_1]
     assert aggregate["incomplete_dates"] == []
+
+
+def test_canonical_registry_loads_and_contains_sr60_derisk() -> None:
+    """Registry file exists, parses cleanly, and contains the canonical SR<60 policy."""
+    registry = load_policy_registry()
+    assert registry is not None, "research/replay_policy_registry.json must exist"
+    assert registry.get("schema_version") == "replay_policy_registry_v1"
+    ids = [p["canonical_policy_id"] for p in registry.get("policies", [])]
+    assert CANONICAL_SR60_POLICY_ID in ids
+
+
+def test_policy_d_maps_to_canonical_sr60_with_naming_drift_flag() -> None:
+    """lifecycle_profit_management_replay's policy_D is the SR<60 derisk, with drift flagged."""
+    registry = load_policy_registry()
+    assert registry is not None
+    entry = next(
+        (p for p in registry["policies"] if p["canonical_policy_id"] == CANONICAL_SR60_POLICY_ID),
+        None,
+    )
+    assert entry is not None, f"{CANONICAL_SR60_POLICY_ID} must be in registry"
+    lpm = next(
+        (m for m in entry["tool_mappings"] if m["replay_tool"] == "lifecycle_profit_management_replay"),
+        None,
+    )
+    assert lpm is not None, "lifecycle_profit_management_replay must have a mapping"
+    assert lpm["tool_key"] == "policy_D"
+    assert lpm["naming_drift"] is True
+
+
+def test_canonical_rank_is_1_when_policy_d_is_best() -> None:
+    """Canonical resolution returns rank=1 when policy_D has the highest PnL (real 2026-05-15 profile)."""
+    registry = load_policy_registry()
+    assert registry is not None
+    # Matches real 2026-05-15 lifecycle_pm output where policy_D ($67.67) is best.
+    synthetic_report = {
+        "policy_A": {"realized_proxy_pnl": 62.45},
+        "policy_B": {"realized_proxy_pnl": 62.25},
+        "policy_C": {"realized_proxy_pnl": 66.09},
+        "policy_D": {"realized_proxy_pnl": 67.67},
+        "policy_E": {"realized_proxy_pnl": 63.04},
+    }
+    metrics = _resolve_canonical_lifecycle_metrics(synthetic_report, registry)
+    assert metrics["canonical_sr60_derisk_rank"] == 1
+    assert metrics["canonical_sr60_derisk_pnl"] == pytest.approx(67.67)
+    assert metrics["canonical_policy_id"] == CANONICAL_SR60_POLICY_ID
+    assert metrics["canonical_naming_drift_resolved"] is True
+
+
+def test_backward_compat_policy_b_fields_alongside_canonical(tmp_path: Path) -> None:
+    """Old policy_b_* fields survive unchanged; new canonical_sr60_* fields co-exist."""
+    manifest = run_multi_session_validation(
+        dates=[DATE_1],
+        output_dir=tmp_path,
+        execute=True,
+        run_label="compat_canonical",
+        python_executable="python",
+        runner=_runner(),
+        cwd=_REPO,
+    )
+    lifecycle_metrics = next(
+        step["metrics"]
+        for step in manifest["sessions"][0]["steps"]
+        if step["step_name"] == "lifecycle_profit_management_replay"
+    )
+    # Backward-compat fields still present.
+    assert "policy_b_rank" in lifecycle_metrics
+    assert "policy_b_pnl" in lifecycle_metrics
+    assert "policy_a_pnl" in lifecycle_metrics
+    # New canonical fields present (registry loaded from research/replay_policy_registry.json).
+    assert "canonical_sr60_derisk_rank" in lifecycle_metrics
+    assert "canonical_sr60_derisk_pnl" in lifecycle_metrics
+    assert "canonical_policy_id" in lifecycle_metrics
+    assert lifecycle_metrics["canonical_policy_id"] == CANONICAL_SR60_POLICY_ID
+    # Aggregate has canonical fields.
+    aggregate = manifest["aggregate"]
+    assert "canonical_sr60_rank_1_count" in aggregate
+    assert "canonical_sr60_rank_values" in aggregate
+    assert "canonical_sr60_pnl_sum" in aggregate
+    # In fixture: policy_D.realized_proxy_pnl = 9.0 (3rd after B=14, C=10).
+    assert lifecycle_metrics["canonical_sr60_derisk_rank"] == 3
+    assert lifecycle_metrics["canonical_sr60_derisk_pnl"] == pytest.approx(9.0)
+    # Manifest top-level registry fields.
+    assert manifest["canonical_policy_registry_loaded"] is True
+    assert manifest["canonical_sr60_policy_id"] == CANONICAL_SR60_POLICY_ID
 
 
 def test_data_quality_caution_missing_semantic_c_is_incomplete(tmp_path: Path) -> None:

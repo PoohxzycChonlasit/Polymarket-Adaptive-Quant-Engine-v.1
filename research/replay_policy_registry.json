@@ -1,0 +1,112 @@
+{
+  "schema_version": "replay_policy_registry_v1",
+  "created": "2026-05-16",
+  "description": "Canonical semantic mapping between research vocabulary, replay tool report keys, and validation runner fields for Phase 2 replay evidence. Read REPLAY_POLICY_NAMING_DRIFT.md for background.",
+  "naming_drift_warning": "lifecycle_profit_management_replay uses independent policy letter assignments. Its policy_D is the fixed SR<60 derisk (research 'Policy B'). The literal policy_B key in that tool refers to 'reduce-50% at 2x entry price', a different strategy. All other Phase 2 tools use policy_B for fixed SR<60 derisk. The canonical registry resolves this drift so aggregate metrics track the correct policy across sessions.",
+  "guardrail": "This registry is offline/research metadata only. It does not change runtime trading behavior, strategy, risk sizing, execution, or paper/live separation.",
+  "policies": [
+    {
+      "canonical_policy_id": "fixed_sr60_derisk",
+      "research_alias": "Policy B",
+      "display_name": "SR<60 derisk-before-close",
+      "semantic_meaning": "Exit at the first market snapshot where seconds_remaining < 60. No probability, volatility, or convergence condition. Conservative fixed-window exit applied uniformly.",
+      "current_best_deployable": true,
+      "seed_session_date": "2026-05-15",
+      "seed_session_pnl_usd": 67.67,
+      "seed_session_win_rate": 0.574,
+      "seed_session_max_dd_usd": 1.11,
+      "validation_notes": "Current best deployable replay policy on single-session evidence. Must replicate in >= 4 of 5 validation sessions before Phase 3 consideration. See MULTI_SESSION_VALIDATION_PLAN.md.",
+      "tool_mappings": [
+        {
+          "replay_tool": "lifecycle_profit_management_replay",
+          "tool_key": "policy_D",
+          "pnl_field": "realized_proxy_pnl",
+          "local_label": "D  derisk-before-close (SR<60s)",
+          "naming_drift": true,
+          "naming_drift_impact": "Runner extracted policy_B key, producing rank=5 ($62.25) instead of correct policy_D rank=1 ($67.67). Canonical resolution corrects this.",
+          "notes": "Named policy_D in this tool. The literal policy_B key maps to 'reduce-50% at 2x entry price' — a different strategy that has no equivalent in the research vocabulary."
+        },
+        {
+          "replay_tool": "exit_convergence_intelligence_replay",
+          "tool_key": "policy_B",
+          "pnl_field": "realized_proxy_pnl",
+          "local_label": "B  fixed-derisk-SR60",
+          "naming_drift": false,
+          "notes": "Consistent with research alias. No resolution required."
+        },
+        {
+          "replay_tool": "commitment_regime_replay",
+          "tool_key": "baseline_pnl_policy_b",
+          "pnl_field": "direct_value",
+          "local_label": "Policy B (derisk baseline)",
+          "naming_drift": false,
+          "notes": "Used as the fixed-derisk baseline for commitment score comparison. Accessed directly as report.baseline_pnl_policy_b (scalar, not nested)."
+        },
+        {
+          "replay_tool": "stabilization_survival_replay",
+          "tool_key": "pnl_policy_b",
+          "pnl_field": "direct_value",
+          "local_label": "Policy B (SR<60 fallback)",
+          "naming_drift": false,
+          "notes": "Applied as exit policy for non-stabilized or low-commitment positions in the survival guard simulation."
+        }
+      ]
+    },
+    {
+      "canonical_policy_id": "hold_to_settlement",
+      "research_alias": "Policy A",
+      "display_name": "Hold to settlement (baseline)",
+      "semantic_meaning": "Hold position until market settlement. No exit before close. Full exposure to binary resolution. Serves as the baseline for uplift calculations.",
+      "current_best_deployable": false,
+      "seed_session_date": "2026-05-15",
+      "seed_session_pnl_usd": 62.45,
+      "seed_session_win_rate": 0.531,
+      "seed_session_max_dd_usd": 1.93,
+      "validation_notes": "Riskier than fixed_sr60_derisk in seed session. $5.22 lower PnL and $0.82 higher max drawdown. Hold logic is rejected for the current Phase 2 evidence. See RESEARCH_VERDICTS.md V-R03.",
+      "tool_mappings": [
+        {
+          "replay_tool": "lifecycle_profit_management_replay",
+          "tool_key": "policy_A",
+          "pnl_field": "realized_proxy_pnl",
+          "local_label": "A  baseline (hold-to-settlement)",
+          "naming_drift": false,
+          "notes": "Consistent with research alias across all Phase 2 tools."
+        },
+        {
+          "replay_tool": "exit_convergence_intelligence_replay",
+          "tool_key": "policy_A",
+          "pnl_field": "realized_proxy_pnl",
+          "local_label": "A  hold-to-settlement",
+          "naming_drift": false,
+          "notes": "Consistent with research alias."
+        },
+        {
+          "replay_tool": "commitment_regime_replay",
+          "tool_key": "baseline_pnl_policy_a",
+          "pnl_field": "direct_value",
+          "local_label": "Policy A (hold baseline)",
+          "naming_drift": false,
+          "notes": "Referenced in commitment regime as the hold-to-settlement comparison baseline."
+        }
+      ]
+    },
+    {
+      "canonical_policy_id": "reduce_half_at_2x_entry",
+      "research_alias": "No research alias (lifecycle_pm local only)",
+      "display_name": "Reduce 50% at 2x entry price",
+      "semantic_meaning": "Take 50% profit when position value reaches 2x entry price. Not referenced in the main research vocabulary. Local to lifecycle_profit_management_replay.",
+      "current_best_deployable": false,
+      "validation_notes": "This is lifecycle_profit_management_replay's policy_B. It has no equivalent in the research vocabulary. Its $62.25 PnL on 2026-05-15 ranks it last (5th) among that tool's policies. Not studied further in Phase 2.",
+      "tool_mappings": [
+        {
+          "replay_tool": "lifecycle_profit_management_replay",
+          "tool_key": "policy_B",
+          "pnl_field": "realized_proxy_pnl",
+          "local_label": "B  reduce-50% at 2x entry price",
+          "naming_drift": false,
+          "notes": "Consistent within its own tool. The drift is that this is called policy_B while the research 'Policy B' concept maps to policy_D in the same tool."
+        }
+      ]
+    }
+  ]
+}

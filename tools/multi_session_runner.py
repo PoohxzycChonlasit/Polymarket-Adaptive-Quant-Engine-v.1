@@ -48,6 +48,12 @@ SCORE_C_ACCURACY_NOTE = (
     "NOT OOS validation at the seed threshold."
 )
 
+# Canonical policy registry — resolves naming drift between research vocabulary
+# and lifecycle_profit_management_replay's independent letter assignments.
+CANONICAL_SR60_POLICY_ID = "fixed_sr60_derisk"
+REGISTRY_PATH = Path(__file__).resolve().parents[1] / "research" / "replay_policy_registry.json"
+_LIFECYCLE_PM_STEP = "lifecycle_profit_management_replay"
+
 
 @dataclass(frozen=True)
 class ReplayStep:
@@ -194,7 +200,91 @@ def _policy_b_rank(report: dict[str, Any]) -> int | None:
     return None
 
 
-def extract_step_metrics(step_name: str, report: dict[str, Any]) -> dict[str, Any]:
+def _policy_rank_by_key(report: dict[str, Any], target_key: str) -> int | None:
+    """Rank any policy_X key by realized_proxy_pnl among all five policy_X entries."""
+    policies: list[tuple[str, float]] = []
+    for key in ("policy_A", "policy_B", "policy_C", "policy_D", "policy_E"):
+        payload = report.get(key)
+        if not isinstance(payload, dict):
+            continue
+        pnl = payload.get("realized_proxy_pnl")
+        if isinstance(pnl, (int, float)) and not isinstance(pnl, bool):
+            policies.append((key, float(pnl)))
+    if not policies:
+        return None
+    ranked = sorted(policies, key=lambda item: item[1], reverse=True)
+    for idx, (key, _) in enumerate(ranked, start=1):
+        if key == target_key:
+            return idx
+    return None
+
+
+def load_policy_registry(path: Path | None = None) -> dict[str, Any] | None:
+    """Load replay_policy_registry.json. Returns None gracefully if file is missing."""
+    target = path if path is not None else REGISTRY_PATH
+    if not isinstance(target, Path):
+        target = Path(target)
+    if not target.exists():
+        return None
+    try:
+        with target.open(encoding="utf-8") as fh:
+            payload = json.load(fh)
+        return payload if isinstance(payload, dict) else None
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _resolve_canonical_lifecycle_metrics(
+    lifecycle_report: dict[str, Any],
+    registry: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """
+    Resolve canonical policy metrics from a lifecycle_profit_management_replay
+    report using the policy registry.
+
+    lifecycle_profit_management_replay labels the SR<60 derisk policy 'policy_D'
+    (not 'policy_B' as the research vocabulary expects).  This function reads the
+    correct tool_key from the registry and returns canonical rank / pnl fields
+    alongside a naming-drift flag so manifests are self-documenting.
+
+    Returns empty dict when the registry is absent or the policy is not found —
+    callers fall back to legacy fields only.
+    """
+    if not registry or not isinstance(lifecycle_report, dict):
+        return {}
+    canonical_entry: dict[str, Any] | None = None
+    for policy in registry.get("policies", []):
+        if policy.get("canonical_policy_id") == CANONICAL_SR60_POLICY_ID:
+            canonical_entry = policy
+            break
+    if canonical_entry is None:
+        return {}
+    tool_mapping: dict[str, Any] | None = None
+    for mapping in canonical_entry.get("tool_mappings", []):
+        if mapping.get("replay_tool") == _LIFECYCLE_PM_STEP:
+            tool_mapping = mapping
+            break
+    if tool_mapping is None:
+        return {}
+    tool_key: str = tool_mapping.get("tool_key", "")
+    pnl_field: str = tool_mapping.get("pnl_field", "realized_proxy_pnl")
+    naming_drift: bool = bool(tool_mapping.get("naming_drift", False))
+    entry_data = lifecycle_report.get(tool_key, {})
+    if not isinstance(entry_data, dict):
+        return {}
+    canonical_pnl = entry_data.get(pnl_field)
+    if not isinstance(canonical_pnl, (int, float)) or isinstance(canonical_pnl, bool):
+        return {}
+    canonical_rank = _policy_rank_by_key(lifecycle_report, tool_key)
+    return {
+        "canonical_policy_id": CANONICAL_SR60_POLICY_ID,
+        "canonical_sr60_derisk_pnl": canonical_pnl,
+        "canonical_sr60_derisk_rank": canonical_rank,
+        "canonical_naming_drift_resolved": naming_drift,
+    }
+
+
+def extract_step_metrics(step_name: str, report: dict[str, Any], registry: dict[str, Any] | None = None) -> dict[str, Any]:
     if not report:
         return {}
     if step_name == "data_quality_gate":
@@ -232,7 +322,11 @@ def extract_step_metrics(step_name: str, report: dict[str, Any]) -> dict[str, An
             "scoped_paper_trial_verdict": report.get("scoped_paper_trial_verdict") or report.get("verdict"),
         }
     if step_name == "lifecycle_profit_management_replay":
-        return {
+        base = {
+            # Backward-compatible literal policy_B fields (preserved unchanged).
+            # NOTE: In lifecycle_profit_management_replay, policy_B is
+            # "reduce-50% at 2x entry price", NOT the research "Policy B"
+            # (SR<60 derisk).  Use canonical_sr60_* fields for the correct metric.
             "n_positions": _first_number(report, ("n_positions", "position_count", "policy_B.n_positions")),
             "policy_b_pnl": _first_number(report, ("policy_B.realized_proxy_pnl",)),
             "policy_a_pnl": _first_number(report, ("policy_A.realized_proxy_pnl",)),
@@ -240,6 +334,9 @@ def extract_step_metrics(step_name: str, report: dict[str, Any]) -> dict[str, An
             "policy_b_max_drawdown": _first_number(report, ("policy_B.max_drawdown", "policy_B.max_drawdown_usd")),
             "policy_b_win_rate": _first_number(report, ("policy_B.win_rate",)),
         }
+        # Canonical fields: resolve naming drift via registry (empty dict if registry absent).
+        base.update(_resolve_canonical_lifecycle_metrics(report, registry))
+        return base
     if step_name == "commitment_regime_replay":
         score_c = {}
         score_reports = report.get("score_reports")
@@ -298,6 +395,7 @@ def _run_step(
     execute: bool,
     cwd: Path,
     runner: CommandRunner,
+    registry: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     command = build_command(
         step,
@@ -334,7 +432,7 @@ def _run_step(
         "command_failed": command_failed,
         "missing_report": missing_report,
         "report_path": str(report_path) if report_path else None,
-        "metrics": extract_step_metrics(step.name, report),
+        "metrics": extract_step_metrics(step.name, report, registry=registry),
         "command_record": _command_record(
             step=step,
             command=command,
@@ -374,11 +472,13 @@ def _classify_session_status(steps: list[dict[str, Any]]) -> str:
 
 
 def aggregate_sessions(sessions: Sequence[dict[str, Any]]) -> dict[str, Any]:
-    complete_sessions = [s for s in sessions if s.get("status") in ("complete", CAUTION_STATUS)]
-    caution_sessions  = [s for s in sessions if s.get("status") == CAUTION_STATUS]
+    complete_sessions   = [s for s in sessions if s.get("status") in ("complete", CAUTION_STATUS)]
+    caution_sessions    = [s for s in sessions if s.get("status") == CAUTION_STATUS]
     incomplete_sessions = [s for s in sessions if s.get("status") not in ("complete", CAUTION_STATUS)]
     policy_b_ranks: list[int] = []
     policy_b_pnls: list[float] = []
+    canonical_sr60_ranks: list[int] = []
+    canonical_sr60_pnls: list[float] = []
     total_positions = 0
     total_stabilized = 0
     total_survived = 0
@@ -388,17 +488,29 @@ def aggregate_sessions(sessions: Sequence[dict[str, Any]]) -> dict[str, Any]:
             step.get("step_name"): step.get("metrics") or {}
             for step in session.get("steps", [])
         }
-        lifecycle = by_name.get("lifecycle_profit_management_replay", {})
-        commitment = by_name.get("commitment_regime_replay", {})
-        rank = lifecycle.get("policy_b_rank")
-        pnl = lifecycle.get("policy_b_pnl")
+        lifecycle   = by_name.get("lifecycle_profit_management_replay", {})
+        commitment  = by_name.get("commitment_regime_replay", {})
+
+        # Backward-compatible literal policy_B fields.
+        rank       = lifecycle.get("policy_b_rank")
+        pnl        = lifecycle.get("policy_b_pnl")
         n_positions = lifecycle.get("n_positions")
+
+        # Canonical SR<60 derisk fields (resolved via registry).
+        c_rank = lifecycle.get("canonical_sr60_derisk_rank")
+        c_pnl  = lifecycle.get("canonical_sr60_derisk_pnl")
+
         stabilized = commitment.get("stabilized_count")
-        survived = commitment.get("survived_count")
+        survived   = commitment.get("survived_count")
+
         if isinstance(rank, int):
             policy_b_ranks.append(rank)
         if isinstance(pnl, (int, float)) and not isinstance(pnl, bool):
             policy_b_pnls.append(float(pnl))
+        if isinstance(c_rank, int):
+            canonical_sr60_ranks.append(c_rank)
+        if isinstance(c_pnl, (int, float)) and not isinstance(c_pnl, bool):
+            canonical_sr60_pnls.append(float(c_pnl))
         if isinstance(n_positions, (int, float)) and not isinstance(n_positions, bool):
             total_positions += int(n_positions)
         if isinstance(stabilized, (int, float)) and not isinstance(stabilized, bool):
@@ -416,9 +528,14 @@ def aggregate_sessions(sessions: Sequence[dict[str, Any]]) -> dict[str, Any]:
         "incomplete_session_count": len(incomplete_sessions),
         "caution_dates": [s.get("date") for s in caution_sessions],
         "incomplete_dates": [s.get("date") for s in incomplete_sessions],
-        "policy_b_rank_1_count": sum(1 for rank in policy_b_ranks if rank == 1),
+        # Backward-compatible literal policy_B tracking (naming drift NOT resolved).
+        "policy_b_rank_1_count": sum(1 for r in policy_b_ranks if r == 1),
         "policy_b_rank_values": policy_b_ranks,
         "policy_b_pnl_sum": round(sum(policy_b_pnls), 8) if policy_b_pnls else None,
+        # Canonical SR<60 derisk tracking (naming drift resolved via registry).
+        "canonical_sr60_rank_1_count": sum(1 for r in canonical_sr60_ranks if r == 1),
+        "canonical_sr60_rank_values": canonical_sr60_ranks,
+        "canonical_sr60_pnl_sum": round(sum(canonical_sr60_pnls), 8) if canonical_sr60_pnls else None,
         "total_positions": total_positions,
         "total_stabilized": total_stabilized,
         "total_survived": total_survived,
@@ -481,8 +598,11 @@ def render_markdown_summary(manifest: dict[str, Any]) -> str:
         "",
         "## Aggregate Metrics",
         "",
-        f"- Policy B rank #1 count: `{aggregate.get('policy_b_rank_1_count')}`",
-        f"- Policy B rank values: `{aggregate.get('policy_b_rank_values')}`",
+        f"- Policy B rank #1 count: `{aggregate.get('policy_b_rank_1_count')}` *(literal policy_B key — naming drift NOT resolved)*",
+        f"- Policy B rank values: `{aggregate.get('policy_b_rank_values')}` *(literal policy_B key)*",
+        f"- Canonical SR<60 derisk rank #1 count: `{aggregate.get('canonical_sr60_rank_1_count')}` *(naming drift resolved)*",
+        f"- Canonical SR<60 derisk rank values: `{aggregate.get('canonical_sr60_rank_values')}` *(naming drift resolved)*",
+        f"- Canonical SR<60 derisk PnL sum: `{aggregate.get('canonical_sr60_pnl_sum')}`",
         f"- Total positions: `{aggregate.get('total_positions')}`",
         f"- Total stabilized: `{aggregate.get('total_stabilized')}`",
         f"- Total survived: `{aggregate.get('total_survived')}`",
@@ -533,6 +653,7 @@ def run_multi_session_validation(
     cwd: Path | None = None,
     runner: CommandRunner | None = None,
     obsidian_dir: Path | None = None,
+    policy_registry_path: Path | None = None,
 ) -> dict[str, Any]:
     valid_dates = [validate_date(date_str) for date_str in dates]
     if not valid_dates:
@@ -545,6 +666,7 @@ def run_multi_session_validation(
     workdir = cwd or Path.cwd()
     command_runner = runner or _default_runner
     run_id_map = run_ids or {}
+    registry = load_policy_registry(policy_registry_path)
 
     sessions: list[dict[str, Any]] = []
     for date_str in valid_dates:
@@ -563,6 +685,7 @@ def run_multi_session_validation(
                     execute=execute,
                     cwd=workdir,
                     runner=command_runner,
+                    registry=registry,
                 )
             )
         missing_reports = [step["step_name"] for step in steps if step["missing_report"]]
@@ -594,6 +717,9 @@ def run_multi_session_validation(
         "validation_coverage": build_validation_coverage(execute=execute),
         "oos_score_c_not_validated": True,
         "score_c_accuracy_note": SCORE_C_ACCURACY_NOTE,
+        "canonical_policy_registry_loaded": registry is not None,
+        "canonical_policy_registry_path": str(REGISTRY_PATH),
+        "canonical_sr60_policy_id": CANONICAL_SR60_POLICY_ID,
         "oos_integrity": {
             "fixed_order_from_user_task": True,
             "no_threshold_retuning": True,
@@ -621,6 +747,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--python", default=sys.executable, help="Python executable used for replay commands.")
     parser.add_argument("--dry-run", action="store_true", help="Record commands only. This is the default.")
     parser.add_argument("--execute", action="store_true", help="Actually run replay commands. Default records commands only.")
+    parser.add_argument("--policy-registry", default=None, help="Optional path to replay_policy_registry.json. Defaults to research/replay_policy_registry.json in the repo root.")
     return parser
 
 
@@ -639,6 +766,7 @@ def main() -> int:
             run_label=args.run_label,
             python_executable=args.python,
             obsidian_dir=Path(args.obsidian_dir) if args.obsidian_dir else None,
+            policy_registry_path=Path(args.policy_registry) if args.policy_registry else None,
         )
     except ValueError as exc:
         parser.error(str(exc))
