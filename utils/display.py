@@ -1682,6 +1682,7 @@ class PolymarketRealtimeDisplay:
         self._arbitrage: dict[str, dict] = {}
         self._session_summary: dict[str, object] = {}
         self._observability_health: dict[str, object] = {}
+        self._research_obs: dict[str, object] = {}
         self._ws_status = "connecting"
         self._logging_status = "SAFE"
         self._started_at = datetime.now(tz=UTC)
@@ -1817,6 +1818,20 @@ class PolymarketRealtimeDisplay:
         self._observability_health.update(kwargs)
         self._safe_live_update()
 
+    def update_research_obs(self, **kwargs: object) -> None:
+        """Update quant research observability state.
+
+        Accepted keys (all optional, all fail-soft when absent):
+          zero_size_probe_count, entry_budget_probe_count, cycle_selection_probe_count
+          score_c_threshold (frozen), score_c_current, score_c_above_threshold
+          s1_status, s2_status, s3_status, s3_probe_ready, n_stabilized, n_survived
+          canonical_sr60_rank, canonical_sr60_pnl, score_c_oos_acc, score_c_guard_delta
+          data_quality_verdict, bad_json_count, replay_continuity, policy_registry_loaded
+          unresolved_anomaly_count, slope_direction_watch, anomaly_notes
+        """
+        self._research_obs.update(kwargs)
+        self._safe_live_update()
+
     def add_log(self, message: str, *, level: str = "INFO", redraw: bool = True) -> None:
         ts = datetime.now(tz=UTC).strftime("%H:%M:%S")
         self._rolling_logs.appendleft((ts, level.upper(), str(message)))
@@ -1949,6 +1964,7 @@ class PolymarketRealtimeDisplay:
             layout["bottom"].split_row(
                 Layout(self._cycle_panel(spec), name="ai"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
+                Layout(self._quant_research_panel(spec), name="research"),
             )
             return layout
 
@@ -1962,10 +1978,12 @@ class PolymarketRealtimeDisplay:
                 Layout(self._market_card("BTC", spec), name="btc"),
                 Layout(self._market_card("ETH", spec), name="eth"),
             )
+            # Research Cockpit replaces rolling logs in standard mode (3-column bottom).
+            # Logs remain accessible via rolling_logs_panel in wide/fullscreen.
             layout["bottom"].split_row(
                 Layout(self._cycle_panel(spec), name="ai"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
-                Layout(self._rolling_logs_panel(spec), name="logs"),
+                Layout(self._quant_research_panel(spec), name="research"),
             )
         else:
             layout["center"].split_row(
@@ -1976,6 +1994,7 @@ class PolymarketRealtimeDisplay:
             layout["bottom"].split_row(
                 Layout(self._execution_panel(spec), name="execution"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
+                Layout(self._quant_research_panel(spec), name="research"),
                 Layout(self._rolling_logs_panel(spec), name="logs"),
             )
         return layout
@@ -2411,6 +2430,217 @@ class PolymarketRealtimeDisplay:
             Text.assemble(*self._with_breaks(lines)),
             title="[bold bright_white]Decision Diagnostics[/bold bright_white]",
             border_style="bright_magenta",
+        )
+
+    def _quant_research_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        """Research Cockpit v1 — 7-section OOS observability panel.
+
+        All sections degrade gracefully: missing fields show 'n/a' or '--'.
+        No JSONL reads, no disk I/O, no expensive scans inside this method.
+        Caller populates via update_research_obs(**kwargs).
+        """
+        spec = spec or self._standalone_layout()
+        obs = self._research_obs
+        health = self._observability_health
+        pw = spec.panel_width
+        lines: list[Text] = []
+
+        # ── 1. SESSION / REGIME ──────────────────────────────────
+        lines.append(Text(" REGIME", style="bold grey62"))
+        for ticker in self._TICKERS:
+            m = self._markets.get(ticker, {})
+            regime = str(m.get("market_regime", m.get("trend_regime", "")) or "n/a").upper()
+            liq = str(m.get("liquidity_state", "") or "--").upper()
+            spread = self._as_float(m.get("spread", 0.0))
+            vol = self._as_float(m.get("signal_volatility_score", m.get("volatility_score", 0.0)))
+            lc = self._liquidity_style(liq)
+            lines.append(self._line([
+                (f" {ticker}", "bold bright_white"),
+                (" reg=", "grey70"), (self._clip(regime, 12), "bright_cyan"),
+                (" liq=", "grey70"), (self._clip(liq, 8), lc),
+                (" spd=", "grey70"), (f"{spread:.3f}" if spread > 0 else "--", "grey62"),
+                (" vol=", "grey70"), (f"{vol:.4f}" if vol > 0 else "--", "grey62"),
+            ], pw))
+
+        # ── 2. LIFECYCLE PIPELINE ────────────────────────────────
+        lines.append(Text(" LIFECYCLE", style="bold grey62"))
+        bottleneck = self._footer_blocker_tag()
+        n_stab = int(self._as_float(obs.get("n_stabilized", obs.get("stabilized_count", 0))))
+        n_surv = int(self._as_float(obs.get("n_survived", obs.get("survived_count", 0))))
+        latest_skip = ""
+        for r in self._cycle_results:
+            sk = str(r.get("skip_reason", "") or "")
+            if sk:
+                latest_skip = sk
+                break
+        lines.append(self._line([
+            (" bottleneck=", "grey70"),
+            (self._clip(bottleneck or "none", 18),
+             "bright_yellow" if bottleneck not in {"none", "--", ""} else "bright_green"),
+        ], pw))
+        lines.append(self._line([
+            (" stab=", "grey70"), (str(n_stab) if n_stab else "--", "bright_cyan"),
+            (" surv=", "grey70"), (str(n_surv) if n_surv else "--", "bright_green" if n_surv > 0 else "grey62"),
+            (" skip=", "grey70"), (self._clip(latest_skip or "--", 20), "bright_yellow" if latest_skip else "grey62"),
+        ], pw))
+
+        # ── 3. SEMANTIC C / OOS PROBES ───────────────────────────
+        lines.append(Text(" SEM-C / S3", style="bold grey62"))
+        probe0_raw = obs.get("zero_size_probe_count", None)
+        probe1_raw = obs.get("entry_budget_probe_count", None)
+        probe2_raw = obs.get("cycle_selection_probe_count", None)
+        frozen_thr = self._as_float(obs.get("score_c_threshold", 0.302213)) or 0.302213
+        score_c_now = obs.get("score_c_current", None)
+        probe0_ok = probe0_raw is not None and int(probe0_raw) >= 15
+        s3_probe_ready = bool(obs.get("s3_probe_ready", probe0_ok))
+        probe0_str = str(int(probe0_raw)) if probe0_raw is not None else "n/a"
+        p1_str = str(int(probe1_raw)) if probe1_raw is not None else "n/a"
+        p2_str = str(int(probe2_raw)) if probe2_raw is not None else "n/a"
+        lines.append(self._line([
+            (" zero_probe=", "grey70"),
+            (probe0_str, "bright_green" if probe0_ok else "bright_yellow" if probe0_raw is not None else "grey50"),
+            (" >=15:", "grey70"),
+            ("✓" if probe0_ok else ("✗" if probe0_raw is not None else "?"),
+             "bright_green" if probe0_ok else "bright_yellow"),
+        ], pw))
+        lines.append(self._line([
+            (" budget=", "grey70"), (p1_str, "grey62"),
+            (" cycle=", "grey70"), (p2_str, "grey62"),
+        ], pw))
+        lines.append(self._line([
+            (" thr=", "grey70"), (f"{frozen_thr:.6f}", "bold bright_yellow"),
+            (" [FROZEN]", "grey50"),
+        ], pw))
+        if score_c_now is not None:
+            sc_val = self._as_float(score_c_now)
+            above_thr = sc_val >= frozen_thr
+            lines.append(self._line([
+                (" score_c=", "grey70"), (f"{sc_val:.4f}", "bright_cyan"),
+                (" ", "grey70"),
+                ("ABOVE" if above_thr else "BELOW", "bright_green" if above_thr else "bright_red"),
+            ], pw))
+        s1 = str(obs.get("s1_status", "complete") or "complete")
+        s2 = str(obs.get("s2_status", "valid") or "valid")
+        s3_hint = "READY" if s3_probe_ready else "collecting"
+        lines.append(self._line([
+            (" S1:", "grey70"), (self._clip(s1, 8), "bright_green"),
+            (" S2:", "grey70"), (self._clip(s2, 8), "bright_green"),
+            (" S3:", "grey70"), (s3_hint, "bright_green" if s3_probe_ready else "bright_yellow"),
+        ], pw))
+
+        # ── 4. ECONOMIC vs CLASSIFICATION ────────────────────────
+        lines.append(Text(" ECON vs CLASS", style="bold grey62"))
+        sr60_rank = obs.get("canonical_sr60_rank", None)
+        sr60_pnl = obs.get("canonical_sr60_pnl", None)
+        oos_acc = obs.get("score_c_oos_acc", None)
+        guard_delta = obs.get("score_c_guard_delta", None)
+        rank_str = str(int(sr60_rank)) if sr60_rank is not None else "n/a"
+        pnl_str = f"${self._as_float(sr60_pnl):.2f}" if sr60_pnl is not None else "n/a"
+        rank_style = "bright_green" if sr60_rank == 1 else "bright_yellow" if sr60_rank is not None else "grey50"
+        lines.append(self._line([
+            (" SR<60 rank=", "grey70"), (rank_str, rank_style),
+            (" pnl=", "grey70"), (pnl_str, "bright_cyan"),
+        ], pw))
+        if oos_acc is not None or guard_delta is not None:
+            acc_val = self._as_float(oos_acc) if oos_acc is not None else 0.0
+            gd_val = self._as_float(guard_delta) if guard_delta is not None else 0.0
+            classifier_ok = oos_acc is not None and acc_val >= 0.60
+            guard_bad = guard_delta is not None and gd_val < 0
+            warn = classifier_ok and guard_bad
+            lines.append(self._line([
+                (" OOS=", "grey70"),
+                (f"{acc_val:.1%}" if oos_acc is not None else "n/a",
+                 "bright_green" if classifier_ok else "bright_yellow"),
+                (" δ=", "grey70"),
+                (f"{gd_val:+.3f}" if guard_delta is not None else "n/a",
+                 "bright_red" if warn else "grey62"),
+            ], pw))
+            if warn:
+                lines.append(self._line([
+                    (" ⚠ class ok, guard PnL < SR60", "bold bright_yellow"),
+                ], pw))
+
+        # ── 5. RESEARCH HEALTH ───────────────────────────────────
+        lines.append(Text(" HEALTH", style="bold grey62"))
+        dq_verdict = str(obs.get("data_quality_verdict", health.get("data_quality_verdict", "")) or "")
+        bad_json_raw = obs.get("bad_json_count", health.get("bad_json_count", None))
+        # jsonl_status from _observability_health (via update_portfolio) is the live continuity signal
+        _jsonl_status = str(health.get("jsonl_status", "") or "")
+        _jsonl_ok = bool(health.get("jsonl_ok", False))
+        continuity = str(
+            obs.get("replay_continuity")
+            or (_jsonl_status if _jsonl_status else None)
+            or health.get("replay_continuity_status", "")
+            or ""
+        )
+        registry_ok = bool(obs.get("policy_registry_loaded", True))
+        anomaly_count = int(self._as_float(obs.get("unresolved_anomaly_count", 0)))
+        dq_style = (
+            "bright_green" if dq_verdict == "PASS"
+            else "bright_yellow" if dq_verdict == "CAUTION"
+            else "bright_red" if dq_verdict == "FAIL"
+            else "grey50"
+        )
+        bj_str = str(int(bad_json_raw)) if bad_json_raw is not None else "n/a"
+        bj_int = int(bad_json_raw) if bad_json_raw is not None else 0
+        bj_style = "bright_red" if bj_int > 3 else "bright_green" if bad_json_raw is not None else "grey50"
+        lines.append(self._line([
+            (" quality=", "grey70"), (dq_verdict or "n/a", dq_style),
+            (" bad_json=", "grey70"), (bj_str, bj_style),
+            (" anm=", "grey70"),
+            (str(anomaly_count), "bright_red" if anomaly_count > 0 else "bright_green"),
+        ], pw))
+        _cont_upper = continuity.upper()
+        _cont_good = any(tok in _cont_upper for tok in ("OK", "ACTIVE", "GOOD", "HEALTHY"))
+        lines.append(self._line([
+            (" continuity=", "grey70"),
+            (self._clip(continuity or "n/a", 12),
+             "bright_green" if _cont_good else "bright_yellow" if continuity else "grey50"),
+            (" registry=", "grey70"),
+            ("OK" if registry_ok else "MISSING", "bright_green" if registry_ok else "bright_red"),
+        ], pw))
+
+        # ── 6. ANOMALY WATCH ─────────────────────────────────────
+        lines.append(Text(" ANOMALIES", style="bold grey62"))
+        slope_watch = bool(obs.get("slope_direction_watch", True))
+        anomaly_notes: list[object] = list(obs.get("anomaly_notes", []) or [])
+        if slope_watch:
+            lines.append(self._line([
+                (" ⚠ slope_dir watch (S1→S2 reversal)", "bold bright_yellow"),
+            ], pw))
+        for note in anomaly_notes[:2]:
+            lines.append(self._line([
+                (" ⚠ ", "bold bright_yellow"),
+                (self._clip(str(note), max(4, pw - 4)), "bright_yellow"),
+            ], pw))
+        if not slope_watch and not anomaly_notes:
+            lines.append(self._line([(" no active anomalies", "bright_green")], pw))
+
+        # ── 7. RUNTIME HEALTH ────────────────────────────────────
+        lines.append(Text(" RUNTIME", style="bold grey62"))
+        oracle = self._oracle_status()
+        latency = self._latency_ms()
+        lo_label = "OFF" if self.paper_trading else "ON ⚠"
+        lo_style = "bright_green" if self.paper_trading else "bold bright_red"
+        lines.append(self._line([
+            (" WS=", "grey70"), (self._clip(self._ws_status, 10), self._status_style(self._ws_status)),
+            (" oracle=", "grey70"), (oracle, self._ok_warn_style(oracle == "OK")),
+            (" lat=", "grey70"),
+            (f"{latency}ms" if latency is not None else "--",
+             "bright_green" if latency is not None and latency <= 1500 else "grey50"),
+        ], pw))
+        lines.append(self._line([
+            (" mode=PAPER", "bold bright_yellow"),
+            (" live_orders=", "grey70"), (lo_label, lo_style),
+            (" log=", "grey70"),
+            (self._logging_status,
+             "bright_green" if self._logging_status == "SAFE" else "bright_yellow"),
+        ], pw))
+
+        return Panel(
+            Text.assemble(*self._with_breaks(lines)),
+            title="[bold bright_white]Research Cockpit[/bold bright_white]",
+            border_style="bold bright_magenta",
         )
 
     def _execution_panel(self, spec: DashboardLayout | None = None) -> Panel:

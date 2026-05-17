@@ -972,3 +972,325 @@ def test_market_card_v2_latency_classification_critical_renders() -> None:
         c.print(display._market_card("ETH", display._standalone_layout()))
         out = buf.getvalue()
         assert "CRITICAL" in out, f"CRITICAL must render at width={width}"
+
+
+# ── Research Cockpit v1 tests ──────────────────────────────────────────────
+
+
+def test_quant_research_panel_renders_with_empty_research_obs() -> None:
+    """Panel must not crash when no research_obs fields have been set."""
+    display = PolymarketRealtimeDisplay()
+    text = _render_text(display._quant_research_panel())
+    assert "Research Cockpit" in text
+    assert "REGIME" in text
+    assert "SEM-C" in text
+    assert "HEALTH" in text
+    assert "ANOMALIES" in text
+    assert "RUNTIME" in text
+
+
+def test_quant_research_panel_shows_frozen_threshold() -> None:
+    """Frozen Score C threshold must always appear, never editable."""
+    display = PolymarketRealtimeDisplay()
+    text = _render_text(display._quant_research_panel())
+    assert "0.302213" in text
+    assert "FROZEN" in text
+
+
+def test_quant_research_panel_probe_counts_and_s3_hint() -> None:
+    """Probe counts and S3 readiness hint render when supplied."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        zero_size_probe_count=59,
+        entry_budget_probe_count=235,
+        cycle_selection_probe_count=4677,
+        s3_probe_ready=True,
+        s1_status="complete",
+        s2_status="valid",
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "59" in text
+    assert "235" in text
+    assert "4677" in text
+    assert "READY" in text
+    assert "S1:" in text
+    assert "S2:" in text
+    assert "S3:" in text
+
+
+def test_quant_research_panel_probe_below_threshold_shows_not_ready() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(zero_size_probe_count=7, s3_probe_ready=False)
+    text = _render_text(display._quant_research_panel())
+    assert "7" in text
+    assert "collecting" in text
+
+
+def test_quant_research_panel_slope_direction_watch_shown_by_default() -> None:
+    """slope_direction_watch defaults to True — warning should appear."""
+    display = PolymarketRealtimeDisplay()
+    text = _render_text(display._quant_research_panel())
+    assert "slope_dir watch" in text
+
+
+def test_quant_research_panel_slope_watch_cleared() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(slope_direction_watch=False, anomaly_notes=[])
+    text = _render_text(display._quant_research_panel())
+    assert "no active anomalies" in text
+
+
+def test_quant_research_panel_anomaly_notes_render() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        slope_direction_watch=False,
+        anomaly_notes=["probe_count_dropped", "high_malformed_json"],
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "probe_count_dropped" in text
+    assert "high_malformed_json" in text
+
+
+def test_quant_research_panel_sr60_rank_and_oos_metrics() -> None:
+    """SR<60 rank and Score C OOS metrics render when supplied."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        canonical_sr60_rank=1,
+        canonical_sr60_pnl=13.52,
+        score_c_oos_acc=0.7222,
+        score_c_guard_delta=-1.279,
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "SR<60" in text
+    assert "rank=1" in text
+    assert "72.2%" in text
+    assert "-1.279" in text
+    # Classifier-ok but guard-bad warning
+    assert "class ok" in text
+
+
+def test_quant_research_panel_no_guard_warning_when_guard_positive() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        canonical_sr60_rank=1,
+        canonical_sr60_pnl=67.67,
+        score_c_oos_acc=0.7222,
+        score_c_guard_delta=0.50,
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "class ok" not in text
+
+
+def test_quant_research_panel_data_quality_fields() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        data_quality_verdict="CAUTION",
+        bad_json_count=1,
+        replay_continuity="OK",
+        policy_registry_loaded=True,
+        unresolved_anomaly_count=2,
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "CAUTION" in text
+    assert "bad_json=1" in text
+    assert "continuity=" in text
+    assert "registry=OK" in text
+    assert "anm=2" in text
+
+
+def test_quant_research_panel_missing_registry_shows_missing() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(policy_registry_loaded=False)
+    text = _render_text(display._quant_research_panel())
+    assert "MISSING" in text
+
+
+def test_quant_research_panel_runtime_always_shows_paper_and_live_off() -> None:
+    """PAPER mode and live_orders=OFF must always be visible regardless of obs state."""
+    display = PolymarketRealtimeDisplay(paper_trading=True)
+    text = _render_text(display._quant_research_panel())
+    assert "mode=PAPER" in text
+    assert "live_orders=OFF" in text
+
+
+def test_quant_research_panel_regime_from_market_state() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_market("BTC", market_regime="TREND_UP", liquidity_state="HEALTHY", spread=0.03)
+    display.update_market("ETH", market_regime="COMPRESSION", liquidity_state="THIN", spread=0.12)
+    text = _render_text(display._quant_research_panel())
+    assert "BTC" in text
+    assert "TREND_UP" in text
+    assert "ETH" in text
+    assert "COMPRESSION" in text
+
+
+def test_quant_research_panel_score_c_above_below_threshold() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(score_c_current=0.35, score_c_threshold=0.302213)
+    text = _render_text(display._quant_research_panel())
+    assert "score_c=0.3500" in text
+    assert "ABOVE" in text
+
+    display2 = PolymarketRealtimeDisplay()
+    display2.update_research_obs(score_c_current=0.10, score_c_threshold=0.302213)
+    text2 = _render_text(display2._quant_research_panel())
+    assert "score_c=0.1000" in text2
+    assert "BELOW" in text2
+
+
+def test_quant_research_panel_no_crash_on_none_fields() -> None:
+    """All None/missing values must degrade to n/a without raising."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        zero_size_probe_count=None,
+        canonical_sr60_rank=None,
+        score_c_oos_acc=None,
+        guard_delta=None,
+        data_quality_verdict=None,
+        bad_json_count=None,
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "Research Cockpit" in text
+    # Must not raise; n/a labels expected
+    assert "n/a" in text
+
+
+def test_update_research_obs_is_additive() -> None:
+    """Multiple calls must accumulate, not overwrite the whole dict."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(zero_size_probe_count=10)
+    display.update_research_obs(canonical_sr60_rank=1)
+    assert display._research_obs["zero_size_probe_count"] == 10
+    assert display._research_obs["canonical_sr60_rank"] == 1
+
+
+def test_compact_layout_includes_research_panel() -> None:
+    """In compact mode the bottom row must contain the Research Cockpit."""
+    display = PolymarketRealtimeDisplay(
+        terminal_size_provider=lambda: (100, 30),
+        ui_mode="compact",
+    )
+    display.update_research_obs(zero_size_probe_count=20, slope_direction_watch=True)
+    layout = display._render()
+    rendered = _render_text(layout)
+    assert "Research Cockpit" in rendered
+
+
+def test_wide_layout_includes_research_and_logs() -> None:
+    """In wide/fullscreen mode Research Cockpit AND rolling logs must both appear."""
+    display = PolymarketRealtimeDisplay(
+        terminal_size_provider=lambda: (180, 50),
+        ui_mode="wide",
+    )
+    display.add_log("test log entry", level="INFO")
+    display.update_research_obs(zero_size_probe_count=50, s3_probe_ready=True)
+    layout = display._render()
+    rendered = _render_text(layout)
+    assert "Research Cockpit" in rendered
+    assert "Rolling Logs" in rendered
+
+
+# ── Wiring Upgrade v1 tests ────────────────────────────────────────────────
+
+
+def test_regime_panel_shows_liquidity_state_when_wired() -> None:
+    """liquidity_state passed via update_market must appear in REGIME section."""
+    display = PolymarketRealtimeDisplay()
+    display.update_market("BTC", liquidity_state="HEALTHY", spread=0.03)
+    display.update_market("ETH", liquidity_state="THIN", spread=0.06)
+    text = _render_text(display._quant_research_panel())
+    assert "liq=HEALTHY" in text
+    assert "liq=THIN" in text
+
+
+def test_regime_panel_shows_market_regime_when_wired() -> None:
+    """market_regime passed via update_market must appear in REGIME section."""
+    display = PolymarketRealtimeDisplay()
+    display.update_market("BTC", market_regime="TREND_UP", spread=0.03)
+    display.update_market("ETH", market_regime="COMPRESSION", spread=0.04)
+    text = _render_text(display._quant_research_panel())
+    assert "TREND_UP" in text
+    assert "COMPRESSION" in text
+
+
+def test_regime_panel_shows_volatility_score_when_wired() -> None:
+    """signal_volatility_score passed via update_market must appear in REGIME section."""
+    display = PolymarketRealtimeDisplay()
+    display.update_market("BTC", signal_volatility_score=0.0042, spread=0.03)
+    text = _render_text(display._quant_research_panel())
+    assert "0.0042" in text
+
+
+def test_regime_panel_shows_na_when_regime_fields_absent() -> None:
+    """REGIME section must show n/a labels when market fields are not populated."""
+    display = PolymarketRealtimeDisplay()
+    # Only pass spread — no regime, no liquidity
+    display.update_market("BTC", spread=0.03)
+    text = _render_text(display._quant_research_panel())
+    assert "reg=N/A" in text or "N/A" in text
+    assert "liq=--" in text or "--" in text
+
+
+def test_health_panel_shows_jsonl_status_as_continuity() -> None:
+    """jsonl_status from observability_health must appear in HEALTH continuity row."""
+    display = PolymarketRealtimeDisplay()
+    display.update_portfolio({
+        "cash": 20.0, "equity": 20.0, "sizing_bankroll": 20.0,
+        "bankroll_tier": "T0", "risk_mode": "NORMAL", "risk_off": False,
+        "total_exposure_pct": 0.0, "open_count": 0, "max_open_positions": 3,
+        "daily_drawdown": 0.0,
+        "observability_health": {"jsonl_status": "ACTIVE", "jsonl_ok": True},
+    })
+    text = _render_text(display._quant_research_panel())
+    assert "continuity=ACTIVE" in text
+
+
+def test_health_panel_continuity_bright_green_when_active() -> None:
+    """ACTIVE/OK/HEALTHY in continuity should resolve to a non-grey50 display."""
+    display = PolymarketRealtimeDisplay()
+    display.update_portfolio({
+        "cash": 20.0, "equity": 20.0, "sizing_bankroll": 20.0,
+        "bankroll_tier": "T0", "risk_mode": "NORMAL", "risk_off": False,
+        "total_exposure_pct": 0.0, "open_count": 0, "max_open_positions": 3,
+        "daily_drawdown": 0.0,
+        "observability_health": {"jsonl_status": "ACTIVE", "jsonl_ok": True},
+    })
+    # Must render without crash and show the status label
+    text = _render_text(display._quant_research_panel())
+    assert "ACTIVE" in text
+
+
+def test_health_panel_continuity_unknown_when_no_jsonl_status() -> None:
+    """When observability_health is empty, continuity shows n/a."""
+    display = PolymarketRealtimeDisplay()
+    text = _render_text(display._quant_research_panel())
+    assert "continuity=n/a" in text
+
+
+def test_probe_counts_shown_when_update_research_obs_called() -> None:
+    """zero_size_probe_count and cycle_selection_probe_count render correctly."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        zero_size_probe_count=42,
+        cycle_selection_probe_count=105,
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "zero_probe=42" in text
+    assert "cycle=105" in text
+
+
+def test_probe_counts_s3_ready_when_above_15() -> None:
+    """S3 readiness hint shows READY when zero_size_probe_count >= 15."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(zero_size_probe_count=20)
+    text = _render_text(display._quant_research_panel())
+    assert "READY" in text
+    assert ">=15:" in text
+
+
+def test_probe_counts_collecting_when_below_15() -> None:
+    """S3 shows collecting when zero_size_probe_count < 15."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(zero_size_probe_count=7)
+    text = _render_text(display._quant_research_panel())
+    assert "collecting" in text

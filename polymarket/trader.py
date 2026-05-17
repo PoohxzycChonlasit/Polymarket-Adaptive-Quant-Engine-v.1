@@ -432,6 +432,7 @@ class PolymarketTrader:
         }
         self._recent_display_trades: deque[dict[str, object]] = deque(maxlen=12)
         self._cycle_count = 0
+        self._cockpit_probe_counts: dict[str, int] = {"zero_size": 0, "cycle_selection": 0}
         self._cycle_started_monotonic = 0.0
         self._cycle_started_at_utc = ""
         self._current_cycle_market_count = 0
@@ -5185,6 +5186,19 @@ class PolymarketTrader:
                 else ""
             ),
             "observability_health": observability_health,
+        }
+
+    def dashboard_probe_counts(self) -> dict[str, int]:
+        """Return in-memory session probe counters for Research Cockpit display.
+
+        Keys match update_research_obs() parameter names so callers can
+        unpack directly: display.update_research_obs(**trader.dashboard_probe_counts())
+        Read-only copy. Fail-soft: returns zeros if dict is absent.
+        """
+        counts = getattr(self, "_cockpit_probe_counts", {})
+        return {
+            "zero_size_probe_count": int(counts.get("zero_size", 0)),
+            "cycle_selection_probe_count": int(counts.get("cycle_selection", 0)),
         }
 
     def dashboard_session_summary(self) -> dict[str, object]:
@@ -10313,6 +10327,7 @@ class PolymarketTrader:
                 "semantic_c_shadow_reason":              "confidence_score_x_ev_quality_not_in_active_sizing",
             }
             self._emit_quant_event("log_system_health", payload)
+            self._cockpit_probe_counts["zero_size"] = self._cockpit_probe_counts.get("zero_size", 0) + 1
         except Exception:
             pass
 
@@ -10411,6 +10426,7 @@ class PolymarketTrader:
                 "mode": self._runtime_mode(),
             }
             self._emit_quant_event("log_system_health", payload)
+            self._cockpit_probe_counts["cycle_selection"] = self._cockpit_probe_counts.get("cycle_selection", 0) + 1
         except Exception:
             pass
 

@@ -535,6 +535,10 @@ def run_polymarket_realtime(
                             "ask_price":   metrics.ask_price,
                             "final_size":  metrics.final_size,
                             "frequency_multiplier": metrics.frequency_multiplier,
+                            # Research Cockpit wiring v1 — display-only, no trading effect
+                            "liquidity_state":        metrics.liquidity_state,
+                            "market_regime":          sig.market_regime if sig else "UNKNOWN",
+                            "signal_volatility_score": sig.volatility_score if sig else 0.0,
                         })
                         LOGGER.debug(
                             "[DASHBOARD_PAYLOAD] ticker=%s yes_bid=%.4f yes_ask=%.4f no_bid=%.4f no_ask=%.4f spread=%.4f model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s age_ms=%s reason=%s",
@@ -602,6 +606,8 @@ def run_polymarket_realtime(
                 # ── Refresh portfolio after cycle ──────────────────────────
                 display.update_portfolio(trader.dashboard_portfolio_state())
                 display.update_session_summary(trader.dashboard_session_summary())
+                # Research Cockpit v1: probe counts (in-memory only, no disk read)
+                display.update_research_obs(**trader.dashboard_probe_counts())
 
                 # ── Update per-market state and build cycle result list ────
                 cycle_results: list[dict] = []
@@ -677,6 +683,10 @@ def run_polymarket_realtime(
                         confidence    = outcome.confidence,
                         decision      = outcome.display.get("decision", "SKIP" if outcome.skipped else "ENTER"),
                         size          = notional,
+                        # Research Cockpit wiring v1 — display-only, no trading effect
+                        liquidity_state        = metrics.liquidity_state,
+                        market_regime          = sig.market_regime if sig else "UNKNOWN",
+                        signal_volatility_score = sig.volatility_score if sig else 0.0,
                     )
 
                     # Record trade in display if order was placed
