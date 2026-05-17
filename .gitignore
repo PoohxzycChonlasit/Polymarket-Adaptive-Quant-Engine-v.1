@@ -58,3 +58,4 @@ runtime/
 
 # Local AI tool settings
 .claude/
+recovery_backups/
