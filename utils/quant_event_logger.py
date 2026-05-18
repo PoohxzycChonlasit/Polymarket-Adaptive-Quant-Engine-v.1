@@ -203,6 +203,11 @@ class QuantEventLogger:
             enriched.setdefault("lineage_drop_reason", missing_reason)
             enriched.setdefault("lineage_confidence", "UNKNOWN")
             enriched.setdefault("identity_source", "not_derivable")
+        # paper_trade_replay_key: stable cross-producer join key independent of trace ID generation
+        if not enriched.get("paper_trade_replay_key"):
+            replay_key = self._compute_paper_trade_replay_key(enriched)
+            if replay_key:
+                enriched["paper_trade_replay_key"] = replay_key
         return enriched
 
     @classmethod
@@ -333,6 +338,21 @@ class QuantEventLogger:
         if has_trace:
             return "PROXY"
         return "UNKNOWN"
+
+    @classmethod
+    def _compute_paper_trade_replay_key(cls, payload: dict[str, Any]) -> str:
+        """Deterministic cross-producer join key: condition_id|epoch_start_ts|asset|side|token_id."""
+        condition_id = cls._first_text(payload, ("condition_id", "conditionId"))
+        epoch_start_ts = cls._first_text(
+            payload,
+            ("epoch_start_ts", "epoch_start", "market_epoch_start_ts", "market_epoch_start", "event_start_ts"),
+        )
+        asset = cls._first_text(payload, ("asset", "ticker"))
+        side = cls._first_text(payload, TRACE_FIELD_ALIASES["side"])
+        token_id = cls._first_text(payload, TRACE_FIELD_ALIASES["token_id"])
+        if condition_id and epoch_start_ts and side and token_id:
+            return f"{condition_id}|{epoch_start_ts}|{asset or ''}|{side}|{token_id}"
+        return ""
 
     def _timestamp(self) -> str:
         now = self._now()

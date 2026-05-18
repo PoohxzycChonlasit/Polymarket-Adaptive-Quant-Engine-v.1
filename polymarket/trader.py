@@ -3906,6 +3906,10 @@ class PolymarketTrader:
         strategy: str,
         seconds_remaining: int | None = None,
         epoch_start: int | None = None,
+        condition_id: str = "",
+        true_probability: float | None = None,
+        ev_after_spread: float | None = None,
+        confidence: float | None = None,
     ) -> None:
         phase2_detail = self._phase2_observability_payload(
             ticker=ticker,
@@ -3923,6 +3927,12 @@ class PolymarketTrader:
             "exposure_before": exposure_before,
             "risk_budget_used": exposure_before,
         })
+        epoch_start_ts = int(epoch_start or 0)
+        paper_trade_replay_key = (
+            f"{condition_id}|{epoch_start_ts}|{ticker}|{outcome}|{token_id}"
+            if condition_id and epoch_start_ts and outcome and token_id
+            else ""
+        )
         self._emit_quant_event(
             "log_trade_open",
             {
@@ -3937,6 +3947,15 @@ class PolymarketTrader:
                 "receipt": asdict(receipt),
                 "strategy": strategy,
                 "mode": self._runtime_mode(),
+                "condition_id": condition_id or "",
+                "epoch_start_ts": epoch_start_ts,
+                "asset": ticker,
+                "paper_trade_replay_key": paper_trade_replay_key,
+                "true_probability": true_probability,
+                "ev_after_spread": ev_after_spread,
+                "confidence": confidence,
+                "candidate_peak_favorable": None,
+                "candidate_peak_adverse": None,
                 **phase2_detail,
             },
         )
@@ -3952,21 +3971,50 @@ class PolymarketTrader:
         receipt: OrderReceipt | None,
         partial: bool = False,
     ) -> None:
+        exit_ts = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+        ticker = self._ticker_from_market_id(getattr(position, "symbol", ""))
+        token_id = self._position_token_id(position)
+        outcome = self._position_outcome(position)
+        metadata = getattr(position, "metadata", None) or {}
+        condition_id = str(metadata.get("condition_id", "") or "")
+        epoch_start_ts = int(metadata.get("epoch_start_ts", 0) or 0)
+        hold_seconds: int | None = None
+        entry_time_raw = getattr(position, "entry_time", None)
+        if entry_time_raw:
+            try:
+                entry_dt = datetime.fromisoformat(str(entry_time_raw).replace("Z", "+00:00"))
+                exit_dt = datetime.fromisoformat(exit_ts.replace("Z", "+00:00"))
+                hold_seconds = int((exit_dt - entry_dt).total_seconds())
+            except Exception:
+                pass
+        paper_trade_replay_key = (
+            f"{condition_id}|{epoch_start_ts}|{ticker}|{outcome}|{token_id}"
+            if condition_id and epoch_start_ts and outcome and token_id
+            else ""
+        )
         self._emit_quant_event(
             "log_trade_close",
             {
                 "position_id": getattr(position, "position_id", ""),
                 "market_id": getattr(position, "symbol", ""),
-                "ticker": self._ticker_from_market_id(getattr(position, "symbol", "")),
-                "token_id": self._position_token_id(position),
-                "outcome": self._position_outcome(position),
+                "ticker": ticker,
+                "token_id": token_id,
+                "outcome": outcome,
                 "reason": reason,
                 "exit_price": float(exit_price),
+                "exit_timestamp": exit_ts,
+                "hold_seconds": hold_seconds,
                 "size": float(size),
                 "pnl": float(pnl),
                 "partial": bool(partial),
                 "receipt": asdict(receipt) if receipt else {},
                 "mode": self._runtime_mode(),
+                "condition_id": condition_id,
+                "epoch_start_ts": epoch_start_ts,
+                "asset": ticker,
+                "paper_trade_replay_key": paper_trade_replay_key,
+                "candidate_peak_favorable": None,
+                "candidate_peak_adverse": None,
             },
         )
 
@@ -8207,7 +8255,7 @@ class PolymarketTrader:
         )
 
         if receipt is not None:
-            opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value})
+            opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value, "condition_id": meta.get("condition_id", ""), "epoch_start_ts": int(ptb_info.epoch_start_ts or 0)})
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
             self._record_market_entry(market.market_id, ptb_info.epoch_start_ts)
             self._emit_entry_budget_probe_event(
@@ -8246,6 +8294,7 @@ class PolymarketTrader:
                 mode=quant_decision,
                 status=receipt.status,
             )
+            _true_prob = probability.p_yes if model_side == "YES" else probability.p_no if model_side == "NO" else None
             self._emit_trade_opened_event(
                 market_id=market.market_id,
                 ticker=ticker,
@@ -8257,6 +8306,10 @@ class PolymarketTrader:
                 strategy=quant_decision,
                 seconds_remaining=int(ptb_info.seconds_remaining),
                 epoch_start=int(getattr(ptb_info, "epoch_start_ts", 0) or 0),
+                condition_id=meta.get("condition_id", ""),
+                true_probability=_true_prob,
+                ev_after_spread=float(model_ev) if model_ev is not None else None,
+                confidence=float(confidence) if confidence is not None else None,
             )
             self._notify_telegram(
                 "notify_entry",
