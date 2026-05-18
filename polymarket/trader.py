@@ -1104,9 +1104,9 @@ class PolymarketTrader:
         ticker_key = ticker.upper()
         now_mono = time.monotonic()
         cycle_started = float(getattr(self, "_cycle_started_monotonic", 0.0) or 0.0)
-        market_started = self._market_evaluation_started_monotonic.get(ticker_key)
-        last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
-        recovery_detail = self._last_empty_book_recovery_detail.get(ticker_key, {})
+        market_started = getattr(self, "_market_evaluation_started_monotonic", {}).get(ticker_key)
+        last_success_mono = getattr(self, "_last_successful_yes_no_book_monotonic", {}).get(ticker_key)
+        recovery_detail = getattr(self, "_last_empty_book_recovery_detail", {}).get(ticker_key, {})
         try:
             recovery_seconds = float(recovery_detail.get("recovery_wait_seconds", 0.0) or 0.0)
         except (TypeError, ValueError):
@@ -1114,16 +1114,16 @@ class PolymarketTrader:
         detail: dict[str, object] = {
             "scheduler_cadence_source": "run_single_cycle_market_loop",
             "hot_path_timing_source": "runtime_market_evaluation",
-            "configured_decision_loop_interval_seconds": self._configured_decision_loop_interval_seconds,
-            "intended_decision_loop_target_seconds": self._intended_decision_loop_target_seconds,
-            "effective_outer_loop_interval_seconds": self._effective_outer_loop_interval_seconds,
-            "snapshot_sampling_interval_seconds": self._snapshot_sampling_interval_seconds,
-            "market_discovery_interval_seconds": self._market_discovery_interval_seconds,
-            "outer_loop_poll_interval_seconds": self._outer_loop_poll_interval_seconds,
+            "configured_decision_loop_interval_seconds": getattr(self, "_configured_decision_loop_interval_seconds", None),
+            "intended_decision_loop_target_seconds": getattr(self, "_intended_decision_loop_target_seconds", 1.0),
+            "effective_outer_loop_interval_seconds": getattr(self, "_effective_outer_loop_interval_seconds", None),
+            "snapshot_sampling_interval_seconds": getattr(self, "_snapshot_sampling_interval_seconds", 5.0),
+            "market_discovery_interval_seconds": getattr(self, "_market_discovery_interval_seconds", 15.0),
+            "outer_loop_poll_interval_seconds": getattr(self, "_outer_loop_poll_interval_seconds", 0.25),
             "market_evaluation_asset": ticker_key,
-            "market_evaluation_started_at": self._market_evaluation_started_at_utc.get(ticker_key, ""),
-            "market_sequence_index": self._current_cycle_market_sequence_index.get(ticker_key, 0),
-            "market_sequence_count": self._current_cycle_market_sequence_count.get(
+            "market_evaluation_started_at": getattr(self, "_market_evaluation_started_at_utc", {}).get(ticker_key, ""),
+            "market_sequence_index": getattr(self, "_current_cycle_market_sequence_index", {}).get(ticker_key, 0),
+            "market_sequence_count": getattr(self, "_current_cycle_market_sequence_count", {}).get(
                 ticker_key,
                 int(getattr(self, "_current_cycle_market_count", 0) or 0),
             ),
@@ -1139,8 +1139,8 @@ class PolymarketTrader:
         if last_success_mono is not None:
             candidate_queue_age_ms = int(max(0.0, now_mono - last_success_mono) * 1000)
             detail.update({
-                "candidate_created_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
-                "candidate_enqueue_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+                "candidate_created_at": getattr(self, "_last_successful_yes_no_book_at_utc", {}).get(ticker_key, ""),
+                "candidate_enqueue_at": getattr(self, "_last_successful_yes_no_book_at_utc", {}).get(ticker_key, ""),
                 "candidate_dequeue_at": self._utc_timestamp(),
                 "candidate_queue_age_ms": candidate_queue_age_ms,
                 "hot_path_admission_wait_ms": candidate_queue_age_ms,
@@ -1155,7 +1155,7 @@ class PolymarketTrader:
             "executable_liquidity_triggered_hot_path": False,
             "market_snapshot_decision_pipeline_linkage": "disconnected_passive_snapshot_to_scheduled_decision",
             "candidate_handoff_boundary": (
-                f"{self._last_orderbook_refresh_source.get(ticker_key, 'unknown')}->scheduled_run_single_cycle"
+                f"{getattr(self, '_last_orderbook_refresh_source', {}).get(ticker_key, 'unknown')}->scheduled_run_single_cycle"
             ),
         })
         return detail
@@ -1221,13 +1221,15 @@ class PolymarketTrader:
     ) -> dict[str, object]:
         ticker_key = ticker.upper()
         now_mono = time.monotonic()
-        last_refresh_mono = self._last_orderbook_refresh_monotonic.get(ticker_key)
-        last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
-        previous_decision_mono = self._last_decision_cycle_monotonic.get(ticker_key)
+        last_refresh_mono = getattr(self, "_last_orderbook_refresh_monotonic", {}).get(ticker_key)
+        last_success_mono = getattr(self, "_last_successful_yes_no_book_monotonic", {}).get(ticker_key)
+        previous_decision_mono = getattr(self, "_last_decision_cycle_monotonic", {}).get(ticker_key)
         decision_interval = None
         if record_decision_cycle:
             if previous_decision_mono is not None:
                 decision_interval = round(max(0.0, now_mono - previous_decision_mono), 3)
+            if not hasattr(self, "_last_decision_cycle_monotonic"):
+                self._last_decision_cycle_monotonic = {}
             self._last_decision_cycle_monotonic[ticker_key] = now_mono
         refresh_age_ms = (
             int(max(0.0, now_mono - last_refresh_mono) * 1000)
@@ -1245,8 +1247,8 @@ class PolymarketTrader:
             no_token_id=no_token_id,
             market_slug=market_slug,
         )
-        last_refresh_pair = self._last_orderbook_refresh_token_pair_key.get(ticker_key, "")
-        last_success_pair = self._last_successful_yes_no_book_token_pair_key.get(ticker_key, "")
+        last_refresh_pair = getattr(self, "_last_orderbook_refresh_token_pair_key", {}).get(ticker_key, "")
+        last_success_pair = getattr(self, "_last_successful_yes_no_book_token_pair_key", {}).get(ticker_key, "")
         lineage_match = bool(decision_token_pair_key and last_success_pair and decision_token_pair_key == last_success_pair)
         if current_fetch_succeeded is True and current_executable_yes_no_book:
             fetch_status = "fresh_fetch_executable"
@@ -1280,11 +1282,11 @@ class PolymarketTrader:
             )
         return {
             "decision_cycle_started_at": str(getattr(self, "_cycle_started_at_utc", "") or ""),
-            "last_orderbook_refresh_at": self._last_orderbook_refresh_at_utc.get(ticker_key, ""),
+            "last_orderbook_refresh_at": getattr(self, "_last_orderbook_refresh_at_utc", {}).get(ticker_key, ""),
             "orderbook_snapshot_age_ms_at_decision": refresh_age_ms,
-            "last_successful_yes_no_book_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
-            "orderbook_refresh_source": self._last_orderbook_refresh_source.get(ticker_key, ""),
-            "orderbook_refresh_trigger": self._last_orderbook_refresh_trigger.get(ticker_key, ""),
+            "last_successful_yes_no_book_at": getattr(self, "_last_successful_yes_no_book_at_utc", {}).get(ticker_key, ""),
+            "orderbook_refresh_source": getattr(self, "_last_orderbook_refresh_source", {}).get(ticker_key, ""),
+            "orderbook_refresh_trigger": getattr(self, "_last_orderbook_refresh_trigger", {}).get(ticker_key, ""),
             "decision_token_pair_key": decision_token_pair_key,
             "last_orderbook_refresh_token_pair_key": last_refresh_pair,
             "last_successful_yes_no_book_token_pair_key": last_success_pair,
@@ -2118,6 +2120,7 @@ class PolymarketTrader:
         return 0, None
 
     def _phase2_orderbook_state_classification(self, payload: dict[str, object]) -> str:
+        authoritative_available, _source = self._phase2_authoritative_orderbook_availability(payload)
         reason = str(
             payload.get("orderbook_readiness_reason")
             or payload.get("orderbook_unavailable_reason")
@@ -2133,6 +2136,11 @@ class PolymarketTrader:
             return "warmup_pending"
         if "stale" in reason:
             return "stale_orderbook"
+        if reason and authoritative_available and any(
+            token in reason
+            for token in ("orderbook", "unavailable", "bid/ask", "no_orderbook")
+        ):
+            return "ready"
         if reason:
             return "orderbook_unavailable"
 
@@ -2146,7 +2154,71 @@ class PolymarketTrader:
             return "ready"
         if any(value is not None for value in (payload.get("yes_bid"), payload.get("yes_ask"), payload.get("no_bid"), payload.get("no_ask"))):
             return "empty_book"
+        if authoritative_available:
+            return "ready"
         return "unavailable"
+
+    @staticmethod
+    def _phase2_book_state_level(state: object) -> int:
+        levels = {
+            "DISCOVERED": 0,
+            "UNKNOWN": 0,
+            "TOKEN_READY": 1,
+            "BOOK_SEEN": 2,
+            "NONZERO_BOOK": 3,
+            "SPREAD_NORMALIZED": 4,
+            "EXECUTABLE": 5,
+            "TRADABLE": 5,
+        }
+        return levels.get(str(state or "").upper().strip(), -1)
+
+    def _phase2_authoritative_orderbook_availability(
+        self,
+        payload: dict[str, object],
+    ) -> tuple[bool, str]:
+        """Return whether decision diagnostics have non-serialized book authority."""
+        yes_bid = self._diagnostic_float(payload.get("yes_bid"))
+        yes_ask = self._diagnostic_float(payload.get("yes_ask"))
+        no_bid = self._diagnostic_float(payload.get("no_bid"))
+        no_ask = self._diagnostic_float(payload.get("no_ask"))
+        bid = self._diagnostic_float(payload.get("best_bid") or payload.get("bid"))
+        ask = self._diagnostic_float(payload.get("best_ask") or payload.get("ask"))
+        if yes_bid > 0 and yes_ask > 0 and no_bid > 0 and no_ask > 0:
+            return True, "serialized_yes_no_bid_ask"
+        if bid > 0 and ask > 0:
+            return True, "serialized_best_bid_ask"
+
+        current_fetch_status = str(payload.get("orderbook_current_fetch_status") or "").strip()
+        if current_fetch_status == "fresh_fetch_executable":
+            return True, "current_fetch_status_fresh_fetch_executable"
+
+        for key, label in (
+            ("executable_book_state", "readiness_bucket_current"),
+            ("executable_book_state_best_seen", "readiness_bucket_best_seen"),
+        ):
+            level = self._phase2_book_state_level(payload.get(key))
+            if level >= 5:
+                return True, f"{label}_tradable"
+            if level >= 4:
+                return True, f"{label}_spread_normalized"
+            if level >= 3:
+                return True, f"{label}_nonzero_book"
+
+        for key, label in (
+            ("first_tradable_ts", "readiness_first_tradable_ts"),
+            ("first_spread_normalized_ts", "readiness_first_spread_normalized_ts"),
+            ("first_nonzero_bidask_ts", "readiness_first_nonzero_bidask_ts"),
+        ):
+            if str(payload.get(key) or "").strip():
+                return True, label
+
+        if (
+            bool(payload.get("orderbook_lineage_match"))
+            and str(payload.get("last_successful_yes_no_book_token_pair_key") or "").strip()
+            and str(payload.get("decision_token_pair_key") or "").strip()
+        ):
+            return True, "prior_successful_same_token_pair"
+        return False, ""
 
     def _phase2_market_readiness_state(self, payload: dict[str, object], orderbook_state: str) -> str:
         reason = str(payload.get("active_window_alignment_reason") or "").lower()
@@ -2194,6 +2266,24 @@ class PolymarketTrader:
             or readiness_state
             or ""
         )
+        orderbook_available_for_decision = bool(payload.get("orderbook_available_for_decision"))
+        orderbook_reason_text = str(
+            payload.get("orderbook_readiness_reason")
+            or payload.get("orderbook_unavailable_reason")
+            or ""
+        ).lower()
+        generic_orderbook_unavailable = (
+            orderbook_available_for_decision
+            and any(token in orderbook_reason_text for token in ("orderbook", "unavailable", "bid/ask", "no_orderbook"))
+            and not any(token in orderbook_reason_text for token in ("token", "empty", "warmup", "stale"))
+        )
+        effective_orderbook_reason = "" if generic_orderbook_unavailable else (
+            payload.get("orderbook_readiness_reason") or payload.get("orderbook_unavailable_reason") or ""
+        )
+        if generic_orderbook_unavailable and any(
+            token in gate_reason.lower() for token in ("orderbook", "unavailable", "bid/ask", "no_orderbook")
+        ):
+            gate_reason = str(payload.get("adaptive_cutoff_reason") or readiness_state or "model_output_not_visible")
         seconds_remaining = self._diagnostic_int(payload.get("seconds_remaining") or payload.get("seconds_until_close"))
         try:
             hard_block_seconds = self._entry_hard_block_seconds()
@@ -2202,7 +2292,7 @@ class PolymarketTrader:
         effective_cutoff = self._diagnostic_int(payload.get("effective_cutoff_seconds") or payload.get("entry_cutoff_seconds"))
         pre_model_gate = self._phase2_pre_model_gate_detail(
             skip_reason=gate_reason,
-            orderbook_readiness_reason=payload.get("orderbook_readiness_reason") or payload.get("orderbook_unavailable_reason") or "",
+            orderbook_readiness_reason=effective_orderbook_reason,
             liquidity_state=payload.get("liquidity_state") or "",
             spread_normalized=payload.get("spread_normalized"),
             readiness_state=readiness_state,
@@ -2517,22 +2607,22 @@ class PolymarketTrader:
             detail.setdefault("candidate_lifecycle_duration", duration)
         
         # Preload Next Market v1
-        detail["preload_attempted"] = self._preload_attempted
-        detail["preload_success"] = self._preload_success
-        detail["preload_failure_reason"] = self._preload_failed_reason
-        detail["preload_ticker"] = self._preload_ticker
-        detail["preload_market_slug"] = self._preload_market_slug
-        detail["preload_condition_id"] = self._preload_condition_id
-        detail["preload_yes_token_id_present"] = self._preload_yes_token_id_present
-        detail["preload_no_token_id_present"] = self._preload_no_token_id_present
-        detail["preload_orderbook_warmed"] = self._preload_orderbook_warmed
-        detail["preload_orderbook_state"] = self._preload_orderbook_state
-        detail["preload_seconds_before_epoch"] = self._preload_seconds_before_epoch
-        detail["preload_latency_ms"] = self._preload_latency_ms
-        detail["preload_cache_hit"] = self._preload_cache_hit
-        detail["preload_cache_age_seconds"] = self._preload_cache_age_seconds
-        detail["preload_next_epoch_start"] = self._preload_next_epoch_start
-        detail["preload_next_epoch_remaining_seconds"] = self._preload_next_epoch_remaining_seconds
+        detail["preload_attempted"] = getattr(self, "_preload_attempted", False)
+        detail["preload_success"] = getattr(self, "_preload_success", False)
+        detail["preload_failure_reason"] = getattr(self, "_preload_failed_reason", None)
+        detail["preload_ticker"] = getattr(self, "_preload_ticker", "")
+        detail["preload_market_slug"] = getattr(self, "_preload_market_slug", "")
+        detail["preload_condition_id"] = getattr(self, "_preload_condition_id", "")
+        detail["preload_yes_token_id_present"] = getattr(self, "_preload_yes_token_id_present", False)
+        detail["preload_no_token_id_present"] = getattr(self, "_preload_no_token_id_present", False)
+        detail["preload_orderbook_warmed"] = getattr(self, "_preload_orderbook_warmed", False)
+        detail["preload_orderbook_state"] = getattr(self, "_preload_orderbook_state", "UNKNOWN")
+        detail["preload_seconds_before_epoch"] = getattr(self, "_preload_seconds_before_epoch", 0)
+        detail["preload_latency_ms"] = getattr(self, "_preload_latency_ms", 0)
+        detail["preload_cache_hit"] = getattr(self, "_preload_cache_hit", False)
+        detail["preload_cache_age_seconds"] = getattr(self, "_preload_cache_age_seconds", 0)
+        detail["preload_next_epoch_start"] = getattr(self, "_preload_next_epoch_start", 0)
+        detail["preload_next_epoch_remaining_seconds"] = getattr(self, "_preload_next_epoch_remaining_seconds", 0)
         
         return detail
 
@@ -2558,8 +2648,8 @@ class PolymarketTrader:
         market_id = market_id or f"pm-5m-{ticker.lower()}"
         side = str(side or "UNKNOWN").upper()
         ticker_key = str(ticker or "").upper()
-        cached_token_ids = self._real_token_ids.get(ticker_key) or ()
-        cached_meta = self._market_token_meta.get(ticker_key, {})
+        cached_token_ids = getattr(self, "_real_token_ids", {}).get(ticker_key) or ()
+        cached_meta = getattr(self, "_market_token_meta", {}).get(ticker_key, {})
         cached_yes_token_id = str(
             (cached_token_ids[0] if len(cached_token_ids) > 0 else "")
             or cached_meta.get("yes_token_id", "")
@@ -2582,7 +2672,7 @@ class PolymarketTrader:
         candidate_id = self._phase2_candidate_hash("candidate", market_id, ticker_key, side, epoch_start_int)
         signal_id = self._phase2_candidate_hash("signal", market_id, ticker_key, side, epoch_start_int)
         market_key = (ticker_key, epoch_start_int)
-        first_seen_remaining = self._market_first_seen_seconds_remaining.get(market_key)
+        first_seen_remaining = getattr(self, "_market_first_seen_seconds_remaining", {}).get(market_key)
         if first_seen_remaining is None:
             first_seen_remaining = self._diagnostic_int(seconds_remaining)
         readiness_timestamps = self._phase2_readiness_timestamps(ticker, epoch_start_int)
@@ -3378,9 +3468,12 @@ class PolymarketTrader:
         yes_ask_present = self._phase2_value_available(payload.get("yes_ask"))
         no_bid_present = self._phase2_value_available(payload.get("no_bid"))
         no_ask_present = self._phase2_value_available(payload.get("no_ask"))
+        serialized_executable_book = bool(
+            yes_bid_present and yes_ask_present and no_bid_present and no_ask_present
+        )
         payload["decision_orderbook_bid_fields_present"] = bool(yes_bid_present and no_bid_present)
         payload["decision_orderbook_ask_fields_present"] = bool(yes_ask_present and no_ask_present)
-        if yes_bid_present and yes_ask_present and no_bid_present and no_ask_present:
+        if serialized_executable_book:
             payload["decision_orderbook_completeness_source"] = "serialized_yes_no_bid_ask"
         elif yes_ask_present or no_ask_present or yes_bid_present or no_bid_present:
             payload["decision_orderbook_completeness_source"] = "partial_serialized_yes_no_book"
@@ -3397,12 +3490,13 @@ class PolymarketTrader:
             current_fetch_succeeded = False
         else:
             current_fetch_succeeded = None
+        current_fetch_executable = bool(
+            serialized_executable_book or current_fetch_status == "fresh_fetch_executable"
+        )
         payload.update(
             self._orderbook_refresh_observability_detail(
                 str(ticker or self._ticker_from_market_id(outcome.market_id) or ""),
-                current_executable_yes_no_book=bool(
-                    yes_bid_present and yes_ask_present and no_bid_present and no_ask_present
-                ),
+                current_executable_yes_no_book=current_fetch_executable,
                 current_fetch_succeeded=current_fetch_succeeded,
                 condition_id=display.get("condition_id") or phase2_detail.get("condition_id", ""),
                 yes_token_id=display.get("yes_token_id") or phase2_detail.get("yes_token_id", ""),
@@ -3411,10 +3505,40 @@ class PolymarketTrader:
                 record_decision_cycle=True,
             )
         )
+        authoritative_book_available, authoritative_book_source = self._phase2_authoritative_orderbook_availability(payload)
+        payload["orderbook_available_for_decision"] = bool(authoritative_book_available)
+        payload["orderbook_availability_source"] = authoritative_book_source or "none"
+        if (
+            authoritative_book_available
+            and payload["decision_orderbook_completeness_source"] == "not_serialized_or_unavailable"
+        ):
+            payload["decision_orderbook_completeness_source"] = "authoritative_readiness_without_serialized_book"
         orderbook_state = self._phase2_orderbook_state_classification(payload)
         readiness_state = self._phase2_market_readiness_state(payload, orderbook_state)
         payload["orderbook_state_classification"] = orderbook_state
         payload["market_readiness_state"] = readiness_state
+        skip_text = " ".join(
+            str(part or "").lower()
+            for part in (
+                normalized_reason,
+                raw_reason,
+                payload.get("adaptive_cutoff_reason"),
+                payload.get("active_window_alignment_reason"),
+            )
+            if part
+        )
+        if authoritative_book_available and any(
+            token in skip_text for token in ("time_unsafe", "cutoff", "hard_close", "too_late")
+        ):
+            payload["orderbook_availability_classification"] = "orderbook_available_but_skipped_by_cutoff"
+        elif authoritative_book_available and outcome.skipped:
+            payload["orderbook_availability_classification"] = "orderbook_available_but_skipped"
+        elif authoritative_book_available:
+            payload["orderbook_availability_classification"] = "orderbook_available"
+        elif orderbook_state in {"unavailable", "orderbook_unavailable"}:
+            payload["orderbook_availability_classification"] = "true_orderbook_unavailable"
+        else:
+            payload["orderbook_availability_classification"] = "orderbook_not_authoritatively_available"
         model_output_ready = (
             bool(payload.get("model_attempted"))
             or bool(payload.get("fair_value_available"))

@@ -79,6 +79,7 @@ def _classify(payload: dict[str, Any]) -> dict[str, Any]:
 
     book_state = str(payload.get("executable_book_state") or "").upper().strip()
     late_hard_block = bool(payload.get("late_entry_hard_block"))
+    pre_model_gate_group = str(payload.get("pre_model_gate_group") or "").upper().strip()
 
     model_attempted = bool(payload.get("model_attempted"))
     model_output_visible = bool(payload.get("probability_model_output_visible"))
@@ -151,9 +152,15 @@ def _classify(payload: dict[str, Any]) -> dict[str, Any]:
         cutoff_policy_state = "SOFT_BLOCK"
     else:
         cutoff_policy_state = "OPEN"
+    cutoff_block_observed = (
+        cutoff_policy_state in {"HARD_BLOCK", "SOFT_BLOCK"}
+        or pre_model_gate_group == "TIME_CUTOFF_GATE"
+    )
 
     # --- admission_block_stage: earliest stage that blocked progression ---
     if cutoff_policy_state == "HARD_BLOCK" and not first_executable_before_cutoff:
+        admission_block_stage = "CUTOFF"
+    elif cutoff_block_observed and current_executable and not model_gate_reached:
         admission_block_stage = "CUTOFF"
     elif book_state in _BOOK_PRE_TOKEN:
         admission_block_stage = "TOKEN"

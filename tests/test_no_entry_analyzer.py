@@ -43,11 +43,23 @@ def _jsonl_event(payload: dict) -> str:
 def _runtime_snapshot() -> dict[str, tuple[int, int]]:
     snapshot: dict[str, tuple[int, int]] = {}
     for root in (Path("runtime/quant_data"), Path("runtime/reports"), Path("runtime/realtime_logs")):
-        if not root.exists():
+        try:
+            root_exists = root.exists()
+        except OSError:
             continue
-        for path in root.rglob("*"):
-            if path.is_file():
-                stat = path.stat()
+        if not root_exists:
+            continue
+        try:
+            paths = list(root.rglob("*"))
+        except OSError:
+            continue
+        for path in paths:
+            try:
+                is_file = path.is_file()
+                stat = path.stat() if is_file else None
+            except OSError:
+                continue
+            if is_file and stat is not None:
                 snapshot[str(path)] = (stat.st_size, stat.st_mtime_ns)
     return snapshot
 
