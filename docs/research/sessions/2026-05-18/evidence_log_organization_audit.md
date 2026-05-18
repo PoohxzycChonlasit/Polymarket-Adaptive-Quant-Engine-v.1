@@ -390,7 +390,7 @@ No Python paths are affected by these moves. No tool defaults change. No runtime
 | **Phase 3 (pending)** | Move startup prompts (CHATGPT, CODEX_START_PROMPT, VULTR) to docs/project/ | 3 root MDs | Operator approval required |
 | **Phase 4 (pending)** | Move quant_core docs (BOUNDED, INVENTORY, LIFECYCLE, MICROSTRUCTURE, REGIME) to docs/quant_core/ | 5 root MDs | Operator approval + 20+ ref updates |
 | **Phase 5 (pending)** | Archive DOC_TRUTH_RECONCILIATION + KNOWN_ISSUES_NEW_TICKETS | 2 root MDs | Operator approval + content merge |
-| **Phase 6 (pending)** | Copy runtime/reports/*.md to docs/research/sessions/ for git tracking | 3 MDs | Operator approval |
+| **Phase 6 (done)** | Copy runtime/reports/*.md to docs/research/sessions/2026-05-18/runtime_reports/ | 3 MDs | Completed 2026-05-18 |
 | **Phase 7 (future)** | Centralize runtime path config for tools | 30+ tool files | Major refactor |
 
 ---
@@ -401,9 +401,10 @@ No Python paths are affected by these moves. No tool defaults change. No runtime
 |---|---|---|
 | Files inspected | 300+ across 15 directories | Read-only audit |
 | Safe moves executed | 3 root MDs | orderbook_degradation_diagnosis, orderbook_handoff_forensic_trace, docs_reorg_dependency_audit |
+| Phase 6 copies | 3 MDs | runtime/reports/*.md → docs/research/sessions/2026-05-18/runtime_reports/ |
 | Blocked moves | 22 root MDs | Various reasons (see Section 5) |
 | Must-not-move files | 12 root MDs + all runtime/** | Platform/bootstrap/runtime constraints |
-| Files modified | 0 (audit only + moves) | |
+| Files modified | 1 (this audit doc — Phase 6 status update) | |
 | Runtime behavior changed | **No** | |
 | Live behavior changed | **No** | |
 | Trading logic changed | **No** | |
