@@ -4551,8 +4551,8 @@ class PolymarketTrader:
     def _ticker_from_market_id(self, market_id: str) -> str:
         return market_id.replace("pm-5m-", "").upper()
 
-    def _record_quant_detail(self, ticker: str, **values: object) -> dict[str, object]:
-        ticker = ticker.upper()
+    def _record_quant_detail(self, ticker_symbol: str = "", **values: object) -> dict[str, object]:
+        ticker = str(ticker_symbol or values.get("ticker") or values.get("asset") or "UNKNOWN").upper()
         detail = self.last_quant_details.get(ticker, {"ticker": ticker})
         scheduler_detail = self._scheduler_cadence_observability_detail(ticker)
         market_id = str(
