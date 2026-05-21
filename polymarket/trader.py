@@ -3908,9 +3908,62 @@ class PolymarketTrader:
         epoch_start: int | None = None,
         condition_id: str = "",
         true_probability: float | None = None,
+        fair_value: float | None = None,
         ev_after_spread: float | None = None,
         confidence: float | None = None,
     ) -> None:
+        model_context = {}
+        last_quant_details = getattr(self, "last_quant_details", {})
+        if isinstance(last_quant_details, dict):
+            candidate_context = last_quant_details.get(str(ticker or "").upper(), {})
+            if isinstance(candidate_context, dict):
+                model_context = candidate_context
+
+        def first_available(*values: object) -> object:
+            for value in values:
+                if self._phase2_value_available(value):
+                    return value
+            return None
+
+        outcome_upper = str(outcome or "").upper()
+        model_p_yes = first_available(
+            model_context.get("model_probability_yes"),
+            model_context.get("p_yes"),
+            model_context.get("model_p_yes"),
+            model_context.get("fair_value_yes"),
+        )
+        model_p_no = first_available(
+            model_context.get("model_probability_no"),
+            model_context.get("p_no"),
+            model_context.get("model_p_no"),
+            model_context.get("fair_value_no"),
+        )
+        selected_probability = first_available(true_probability, model_context.get("true_probability"))
+        if selected_probability is None:
+            if outcome_upper == "YES":
+                selected_probability = model_p_yes
+            elif outcome_upper == "NO":
+                selected_probability = model_p_no
+        selected_fair_value = first_available(fair_value, model_context.get("fair_value"))
+        if selected_fair_value is None:
+            if outcome_upper == "YES":
+                selected_fair_value = first_available(model_context.get("fair_value_yes"), model_p_yes)
+            elif outcome_upper == "NO":
+                selected_fair_value = first_available(model_context.get("fair_value_no"), model_p_no)
+        if selected_fair_value is None:
+            selected_fair_value = selected_probability
+        selected_ev = first_available(
+            ev_after_spread,
+            model_context.get("ev_after_spread"),
+            model_context.get("expected_value"),
+            model_context.get("ev"),
+            model_context.get("edge"),
+        )
+        selected_confidence = first_available(confidence, model_context.get("confidence"))
+        model_output_visible = any(
+            self._phase2_value_available(value)
+            for value in (selected_probability, selected_fair_value, model_p_yes, model_p_no)
+        )
         phase2_detail = self._phase2_observability_payload(
             ticker=ticker,
             market_id=market_id,
@@ -3918,9 +3971,38 @@ class PolymarketTrader:
             epoch_start=epoch_start,
             seconds_remaining=seconds_remaining,
             market_price=entry_price,
+            fair_value=selected_fair_value,
+            true_probability=selected_probability,
+            ev_after_spread=selected_ev,
             skip_reason="",
             risk_plan=None,
         )
+        if model_output_visible:
+            phase2_detail.update({
+                "model_output_ready": True,
+                "model_attempted": True,
+                "probability_model_called": True,
+                "probability_model_output_visible": True,
+                "probability_model_stage": "probability_model_output",
+                "probability_model_gate_reason": "model_output_visible",
+                "model_not_run_reason": "",
+                "model_output_missing_reason": "",
+                "model_handoff_stage": "MODEL_OUTPUT_SERIALIZED",
+            })
+        if self._phase2_value_available(model_p_yes):
+            phase2_detail.update({
+                "p_yes": model_p_yes,
+                "model_p_yes": model_p_yes,
+                "model_probability_yes": model_p_yes,
+                "fair_value_yes": first_available(model_context.get("fair_value_yes"), model_p_yes),
+            })
+        if self._phase2_value_available(model_p_no):
+            phase2_detail.update({
+                "p_no": model_p_no,
+                "model_p_no": model_p_no,
+                "model_probability_no": model_p_no,
+                "fair_value_no": first_available(model_context.get("fair_value_no"), model_p_no),
+            })
         exposure_after = float(phase2_detail.get("exposure_after", 0.0) or 0.0)
         exposure_before = max(exposure_after - float(risk_plan.notional_size), 0.0)
         phase2_detail.update({
@@ -3951,12 +4033,15 @@ class PolymarketTrader:
                 "epoch_start_ts": epoch_start_ts,
                 "asset": ticker,
                 "paper_trade_replay_key": paper_trade_replay_key,
-                "true_probability": true_probability,
-                "ev_after_spread": ev_after_spread,
-                "confidence": confidence,
                 "candidate_peak_favorable": None,
                 "candidate_peak_adverse": None,
                 **phase2_detail,
+                "true_probability": selected_probability,
+                "fair_value": selected_fair_value,
+                "ev_after_spread": selected_ev,
+                "expected_value": selected_ev,
+                "ev": selected_ev,
+                "confidence": selected_confidence,
             },
         )
 
@@ -7348,6 +7433,7 @@ class PolymarketTrader:
 
         yes_bid = yes_ask = no_bid = no_ask = 0.0
         yes_bid_size = yes_ask_size = no_bid_size = no_ask_size = 0.0
+        yes_ob = no_ob = None
         ob_spread = 0.0
         ob_liquidity_usd = float(market.liquidity or 0.0)
         orderbook_error = ""
@@ -10769,14 +10855,28 @@ class PolymarketTrader:
                         outcome.confidence,
                         outcome.receipt.order_id if outcome.receipt else "none",
                     )
-            except Exception:
+            except Exception as exc:
+                ticker = self._ticker_from_market_id(market.market_id)
+                context = {}
+                try:
+                    context = dict(getattr(self, "last_quant_details", {}).get(ticker, {}) or {})
+                except Exception:
+                    context = {}
                 LOGGER.exception("Unexpected error analyzing market_id=%s", market.market_id)
                 self._emit_quant_event(
                     "log_execution",
                     {
                         "event": "market_analysis_exception",
                         "market_id": market.market_id,
+                        "ticker": ticker,
+                        "asset": ticker,
                         "mode": self._runtime_mode(),
+                        "exception_type": type(exc).__name__,
+                        "exception_message": str(exc),
+                        "lifecycle_phase": context.get("lifecycle_phase", ""),
+                        "orderbook_state_classification": context.get("orderbook_state_classification", ""),
+                        "market_readiness_state": context.get("market_readiness_state", ""),
+                        "orderbook_unavailable_reason": context.get("orderbook_unavailable_reason", ""),
                     },
                 )
 
