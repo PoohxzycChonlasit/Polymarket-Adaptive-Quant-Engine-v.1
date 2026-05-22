@@ -1039,6 +1039,14 @@ class PolymarketTrader:
     def _phase1_execution_latency_truth_level(self) -> str:
         return "paper_simulated" if self.settings.paper_trading else "unknown"
 
+    def _phase3_paper_proxy_ms(self, ts_start: str, ts_end: str) -> "float | None":
+        try:
+            def _parse(s: str) -> datetime:
+                return datetime.fromisoformat(s.replace("Z", "+00:00"))
+            return round((_parse(ts_end) - _parse(ts_start)).total_seconds() * 1000, 3)
+        except Exception:
+            return None
+
     def _begin_cycle_timing(self) -> None:
         now_mono = time.monotonic()
         previous_started = float(getattr(self, "_previous_cycle_started_monotonic", 0.0) or 0.0)
@@ -10017,6 +10025,8 @@ class PolymarketTrader:
                 order_type="GTC",
             )
             fill_ts = self._utc_timestamp()
+            submit_to_ack_ms = self._phase3_paper_proxy_ms(order_submit_ts, order_ack_ts)
+            submit_to_fill_ms = self._phase3_paper_proxy_ms(order_submit_ts, fill_ts)
             LOGGER.info(
                 "[PAPER FILL] order_id=%s token=%s side=%s price=%.4f size=%.6f filled=%.6f remaining=%.6f",
                 receipt.order_id,
@@ -10046,6 +10056,9 @@ class PolymarketTrader:
                     "fill_source": "paper_simulated",
                     "timestamp_source": "paper_fill_emit",
                     "latency_truth_level": "paper_simulated",
+                    "submit_to_ack_ms": submit_to_ack_ms,
+                    "submit_to_fill_ms": submit_to_fill_ms,
+                    "derived_metric_source": "paper_proxy",
                 },
             )
             self._log_order_section(

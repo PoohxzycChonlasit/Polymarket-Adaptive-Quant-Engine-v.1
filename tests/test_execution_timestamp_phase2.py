@@ -293,8 +293,6 @@ def test_phase1_fields_still_present_alongside_phase2() -> None:
     assert fill_payload["timestamp_source"] == "paper_fill_emit"
     assert fill_payload["latency_truth_level"] == "paper_simulated"
 
-    # No derived metrics
+    # signal_to_submit_ms is not a paper_fill field (it requires a cross-log join)
     for p in execution_payloads:
-        assert "submit_to_ack_ms" not in p
-        assert "submit_to_fill_ms" not in p
         assert "signal_to_submit_ms" not in p
