@@ -4137,6 +4137,25 @@ class PolymarketTrader:
             if condition_id and epoch_start_ts and outcome and token_id
             else ""
         )
+        # Outcome truth fields (observability only, additive)
+        try:
+            _reason_lower = str(reason or "").lower()
+            if _reason_lower.startswith("take_profit"):
+                _trade_result: str | None = "TP"
+            elif _reason_lower.startswith("stop_loss"):
+                _trade_result = "SL"
+            elif float(pnl) > 0:
+                _trade_result = "WIN"
+            elif float(pnl) < 0:
+                _trade_result = "LOSS"
+            else:
+                _trade_result = "UNKNOWN"
+        except Exception:
+            _trade_result = None
+        try:
+            _entry_price: float | None = float(getattr(position, "entry_price", None) or 0.0) or None
+        except Exception:
+            _entry_price = None
         self._emit_quant_event(
             "log_trade_close",
             {
@@ -4151,6 +4170,9 @@ class PolymarketTrader:
                 "hold_seconds": hold_seconds,
                 "size": float(size),
                 "pnl": float(pnl),
+                "pnl_usdc": float(pnl),
+                "trade_result": _trade_result,
+                "entry_price": _entry_price,
                 "partial": bool(partial),
                 "receipt": asdict(receipt) if receipt else {},
                 "mode": self._runtime_mode(),
