@@ -384,6 +384,7 @@ class PolymarketTrader:
         self._last_successful_yes_no_book_at_utc: dict[str, str] = {}
         self._last_successful_yes_no_book_monotonic: dict[str, float] = {}
         self._last_successful_yes_no_book_token_pair_key: dict[str, str] = {}
+        self._last_quote_lineage_context: dict[str, dict] = {}
         self._last_decision_cycle_monotonic: dict[str, float] = {}
         self._market_evaluation_started_monotonic: dict[str, float] = {}
         self._market_evaluation_started_at_utc: dict[str, str] = {}
@@ -1046,6 +1047,41 @@ class PolymarketTrader:
             return round((_parse(ts_end) - _parse(ts_start)).total_seconds() * 1000, 3)
         except Exception:
             return None
+
+    def _phase4_build_quote_lineage(self, market_id: str, ticker_key: str) -> dict:
+        try:
+            import hashlib as _hashlib
+            tk = str(ticker_key or "").upper()
+            token_pair_key = str(getattr(self, "_last_successful_yes_no_book_token_pair_key", {}).get(tk) or "")
+            quote_capture_ts = str(getattr(self, "_last_successful_yes_no_book_at_utc", {}).get(tk) or "")
+            quote_source = str(getattr(self, "_last_orderbook_refresh_source", {}).get(tk) or "unknown")
+            if token_pair_key and quote_capture_ts and market_id:
+                ts_second = quote_capture_ts.split(".")[0].rstrip("Z") + "Z"
+                h = _hashlib.sha1(f"{market_id}|{token_pair_key}|{ts_second}".encode()).hexdigest()[:12]
+                quote_lineage_id: "str | None" = f"ql_{h}"
+                quote_snapshot_id: "str | None" = f"qs_{h}"
+            else:
+                quote_lineage_id = None
+                quote_snapshot_id = None
+            ctx: dict = {
+                "quote_lineage_id": quote_lineage_id,
+                "quote_capture_ts": quote_capture_ts or None,
+                "quote_snapshot_id": quote_snapshot_id,
+                "quote_source": quote_source,
+            }
+            if not hasattr(self, "_last_quote_lineage_context"):
+                self._last_quote_lineage_context = {}
+            self._last_quote_lineage_context[tk] = ctx
+            return ctx
+        except Exception:
+            return {}
+
+    def _phase4_quote_lineage_carry(self, ticker_key: str) -> dict:
+        try:
+            ctx = getattr(self, "_last_quote_lineage_context", {}).get(str(ticker_key or "").upper(), {})
+            return dict(ctx) if ctx else {}
+        except Exception:
+            return {}
 
     def _begin_cycle_timing(self) -> None:
         now_mono = time.monotonic()
@@ -3828,6 +3864,13 @@ class PolymarketTrader:
         decision_payload.setdefault("decision_complete_ts", phase1_decision_ts)
         decision_payload.setdefault("timestamp_source", "decision_emit")
         decision_payload.setdefault("latency_truth_level", "proxy")
+        # Phase 4: quote lineage
+        _p4_ticker = str(ticker or self._ticker_from_market_id(outcome.market_id) or "").upper()
+        _p4_ql = self._phase4_build_quote_lineage(str(outcome.market_id or ""), _p4_ticker)
+        decision_payload.setdefault("quote_lineage_id", _p4_ql.get("quote_lineage_id"))
+        decision_payload.setdefault("quote_capture_ts", _p4_ql.get("quote_capture_ts"))
+        decision_payload.setdefault("quote_snapshot_id", _p4_ql.get("quote_snapshot_id"))
+        decision_payload.setdefault("quote_source", _p4_ql.get("quote_source", "unknown"))
         risk_boundary_payload = self._risk_boundary_payload_from_decision(
             decision_payload,
             decision_type=decision_type,
@@ -9881,6 +9924,9 @@ class PolymarketTrader:
                     "order_intent_ts": order_intent_ts,
                     "timestamp_source": "order_intent_approved",
                     "latency_truth_level": self._phase1_execution_latency_truth_level(),
+                    **{k: v for k, v in self._phase4_quote_lineage_carry(
+                        self._ticker_from_market_id(source_market_id)
+                    ).items() if k in ("quote_lineage_id", "quote_capture_ts")},
                 },
             )
             return True
@@ -9983,6 +10029,10 @@ class PolymarketTrader:
                 LOGGER.warning("[LIMIT_PRICE] Orderbook unavailable (%s) â€” using signal price %.4f", e, price)
 
         order_submit_ts = self._utc_timestamp()
+        _p4_submit_ticker = self._ticker_from_market_id(source_market_id)
+        _p4_submit_ql = self._phase4_quote_lineage_carry(_p4_submit_ticker)
+        if not _p4_submit_ql.get("quote_lineage_id"):
+            _p4_submit_ql = self._phase4_build_quote_lineage(source_market_id, _p4_submit_ticker)
         self._emit_quant_event(
             "log_execution",
             {
@@ -10002,6 +10052,9 @@ class PolymarketTrader:
                 "order_submit_ts": order_submit_ts,
                 "timestamp_source": "order_submit_attempt",
                 "latency_truth_level": self._phase1_execution_latency_truth_level(),
+                "quote_lineage_id": _p4_submit_ql.get("quote_lineage_id"),
+                "quote_capture_ts": _p4_submit_ql.get("quote_capture_ts"),
+                "quote_source": _p4_submit_ql.get("quote_source", "unknown"),
             },
         )
 
@@ -10059,6 +10112,9 @@ class PolymarketTrader:
                     "submit_to_ack_ms": submit_to_ack_ms,
                     "submit_to_fill_ms": submit_to_fill_ms,
                     "derived_metric_source": "paper_proxy",
+                    "quote_lineage_id": _p4_submit_ql.get("quote_lineage_id"),
+                    "quote_capture_ts": _p4_submit_ql.get("quote_capture_ts"),
+                    "quote_source": _p4_submit_ql.get("quote_source", "unknown"),
                 },
             )
             self._log_order_section(
