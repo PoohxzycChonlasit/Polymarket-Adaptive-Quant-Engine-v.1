@@ -1706,6 +1706,16 @@ class PolymarketRealtimeDisplay:
             "blocking_gates": [],
             "updated_at": "",
         }
+        self._quote_age: dict[str, object] = {
+            "mean_submit_s": None,
+            "mean_fill_s": None,
+            "bucket_0_5": None,
+            "bucket_5_15": None,
+            "bucket_15_30": None,
+            "bucket_30_60": None,
+            "bucket_60_plus": None,
+            "total": None,
+        }
         self._ws_status = "connecting"
         self._logging_status = "SAFE"
         self._started_at = datetime.now(tz=UTC)
@@ -1810,6 +1820,17 @@ class PolymarketRealtimeDisplay:
         for key, value in kwargs.items():
             self._execution_reality[aliases.get(key, key)] = value
         self._execution_reality["updated_at"] = datetime.now(tz=UTC).strftime("%H:%M:%S")
+        self._safe_live_update()
+
+    def update_quote_age(self, **kwargs: object) -> None:
+        """Update display-only quote-age distribution state.
+
+        Accepted keys (all optional):
+          mean_submit_s, mean_fill_s,
+          bucket_0_5, bucket_5_15, bucket_15_30, bucket_30_60, bucket_60_plus,
+          total
+        """
+        self._quote_age.update(kwargs)
         self._safe_live_update()
 
     def add_trade(
@@ -2010,7 +2031,7 @@ class PolymarketRealtimeDisplay:
             layout["bottom"].split_row(
                 Layout(self._cycle_panel(spec), name="ai"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
-                Layout(self._quant_research_panel(spec), name="research"),
+                Layout(self._execution_reality_panel(spec), name="execution_reality"),
             )
             return layout
 
@@ -2024,12 +2045,10 @@ class PolymarketRealtimeDisplay:
                 Layout(self._market_card("BTC", spec), name="btc"),
                 Layout(self._market_card("ETH", spec), name="eth"),
             )
-            # Research Cockpit replaces rolling logs in standard mode (3-column bottom).
-            # Logs remain accessible via rolling_logs_panel in wide/fullscreen.
             layout["bottom"].split_row(
                 Layout(self._cycle_panel(spec), name="ai"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
-                Layout(self._quant_research_panel(spec), name="research"),
+                Layout(self._execution_reality_panel(spec), name="execution_reality"),
             )
         else:
             layout["center"].split_row(
@@ -2038,9 +2057,9 @@ class PolymarketRealtimeDisplay:
                 Layout(self._cycle_panel(spec), name="ai"),
             )
             layout["bottom"].split_row(
-                Layout(self._execution_reality_panel(spec), name="execution_reality"),
+                Layout(self._quote_age_panel(spec), name="quote_age"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
-                Layout(self._quant_research_panel(spec), name="research"),
+                Layout(self._execution_reality_panel(spec), name="execution_reality"),
                 Layout(self._rolling_logs_panel(spec), name="logs"),
             )
         return layout
@@ -2052,8 +2071,8 @@ class PolymarketRealtimeDisplay:
         data_status = self._data_status_tag()
         data_style = "bold bright_green" if data_status == "OK" else "bold bright_yellow"
         readiness_text, readiness_label, readiness_style = self._execution_readiness_label()
-        phase6 = self._safe_text(self._execution_reality.get("phase6_status"), "n/a")
-        s3 = self._safe_text(self._execution_reality.get("s3_status"), "n/a")
+        phase6 = self._phase6_label()
+        s3 = self._s3_label()
         git = self._git_status_label()
         run_id = self._run_id or "n/a"
         safety = "NO LIVE ORDERS" if self.paper_trading else "LIVE MODE"
@@ -2447,26 +2466,19 @@ class PolymarketRealtimeDisplay:
             self._line([
                 ("Candidate ", "grey70"), (candidate_state, self._candidate_state_style(candidate_state)),
                 (" | Phase ", "grey70"), (self._clip(phase, 14), self._lifecycle_phase_style(lifecycle_phase)),
+                (" | Blocker ", "grey70"), (self._clip(main_blocker, 20), "bright_yellow" if main_blocker != "none" else "bright_green"),
             ], spec.panel_width),
             self._line([
-                ("Main blocker ", "grey70"), (self._clip(main_blocker, 24), "bright_yellow" if main_blocker != "none" else "bright_green"),
+                ("Time ", "grey70"), (f"{remaining}s" if str(remaining) != "--" else "--", "bright_white"),
+                (" | cutoff=", "grey70"), (self._seconds_label(cutoff_remaining), "bright_yellow" if str(cutoff_remaining) != "--" else "grey62"),
+                (" | age=", "grey70"), (self._seconds_label(executable_age), "bright_cyan" if str(executable_age) != "--" else "grey62"),
             ], spec.panel_width),
             self._line([
-                ("Timing ", "grey70"), (f"time_remaining={remaining}s" if str(remaining) != "--" else "time_remaining=--", "bright_white"),
-                (" | executable_age=", "grey70"), (self._seconds_label(executable_age), "bright_cyan" if str(executable_age) != "--" else "grey62"),
-            ], spec.panel_width),
-            self._line([
-                ("Timing ", "grey70"), (f"revisit_delay={self._seconds_label(revisit_delay)}", "bright_cyan" if str(revisit_delay) != "--" else "grey62"),
-                (" | cutoff_remaining=", "grey70"), (self._seconds_label(cutoff_remaining), "bright_yellow" if str(cutoff_remaining) != "--" else "grey62"),
-            ], spec.panel_width),
-            self._line([
-                ("Readiness token ", "grey70"), (token_status, self._status_word_style(token_status)),
-                (" | orderbook ", "grey70"), (self._clip(orderbook_status, 12), self._status_word_style(orderbook_status)),
-                (" | liquidity ", "grey70"), (self._clip(liquidity_status, 12), self._liquidity_style(liquidity_status)),
-            ], spec.panel_width),
-            self._line([
-                ("Readiness EV visible ", "grey70"), (ev_visible, self._status_word_style(ev_visible)),
-                (" | prob visible ", "grey70"), (probability_visible, self._status_word_style(probability_visible)),
+                ("Token ", "grey70"), (token_status, self._status_word_style(token_status)),
+                (" | OB ", "grey70"), (self._clip(orderbook_status, 10), self._status_word_style(orderbook_status)),
+                (" | Liq ", "grey70"), (self._clip(liquidity_status, 10), self._liquidity_style(liquidity_status)),
+                (" | EV ", "grey70"), (ev_visible, self._status_word_style(ev_visible)),
+                (" | Prob ", "grey70"), (probability_visible, self._status_word_style(probability_visible)),
             ], spec.panel_width),
         ]
         if spec.active_mode == "fullscreen":
@@ -2475,18 +2487,12 @@ class PolymarketRealtimeDisplay:
             readiness = self._identity_readiness(source)
             chain_confidence = self._candidate_chain_trace_confidence(source)
             trace_status = self._trace_enrichment_status(source)
-            lines.extend([
-                self._line([
-                    ("Debug trace ", "grey70"), (trace_id, self._status_word_style(trace_id)),
-                    (" | cond ", "grey70"), (condition_id, self._status_word_style(condition_id)),
-                    (" | event ", "grey70"), (readiness, self._identity_style(readiness)),
-                ], spec.panel_width),
-                self._line([
-                    ("Debug enrich ", "grey70"), (trace_status, self._status_word_style(trace_status)),
-                    (" | chain ", "grey70"), (chain_confidence, self._identity_style(chain_confidence)),
-                    (" | risk ", "grey70"), (self._clip(self._first_text_value(source, "risk_reachability_status", "decision_to_risk_boundary") or "UNKNOWN", 16), "grey62"),
-                ], spec.panel_width),
-            ])
+            lines.append(self._line([
+                ("Trace ", "grey70"), (trace_id, self._status_word_style(trace_id)),
+                (" | cond ", "grey70"), (condition_id, self._status_word_style(condition_id)),
+                (" | enrich ", "grey70"), (trace_status, self._status_word_style(trace_status)),
+                (" | chain ", "grey70"), (chain_confidence, self._identity_style(chain_confidence)),
+            ], spec.panel_width))
         return Panel(
             Text.assemble(*self._with_breaks(lines)),
             title="[bold bright_white]Decision Diagnostics[/bold bright_white]",
@@ -2749,6 +2755,74 @@ class PolymarketRealtimeDisplay:
         return Panel(
             Text.assemble(*self._with_breaks(lines)),
             title="[bold bright_white]Execution Reality[/bold bright_white]",
+            border_style="bright_blue",
+        )
+
+    def _quote_age_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        """Quote-age distribution panel — populated by update_quote_age()."""
+        spec = spec or self._standalone_layout()
+        qa = self._quote_age
+
+        def _val(key: str) -> float | None:
+            return self._optional_float(qa.get(key))
+
+        def _int_val(key: str) -> int | None:
+            v = self._optional_float(qa.get(key))
+            return int(v) if v is not None else None
+
+        mean_sub = _val("mean_submit_s")
+        mean_fill = _val("mean_fill_s")
+        total = _int_val("total")
+
+        if total is None and mean_sub is None:
+            return Panel(
+                Text(" No quote-age data yet this session.", style="grey50"),
+                title="[bold bright_white]Quote Age[/bold bright_white]",
+                border_style="bright_blue",
+            )
+
+        pw = spec.panel_width
+        lines: list[object] = []
+
+        # means row
+        sub_str = f"{mean_sub:.1f}s" if mean_sub is not None else "n/a"
+        fill_str = f"{mean_fill:.1f}s" if mean_fill is not None else "n/a"
+        lines.append(self._line([
+            ("Mean submit ", "grey70"), (sub_str, "bright_cyan"),
+            (" | fill ", "grey70"), (fill_str, "bright_cyan"),
+            (" | fills ", "grey70"), (str(total) if total is not None else "n/a", "bright_white"),
+        ], pw))
+
+        # bucket rows — two per line
+        buckets: list[tuple[str, str]] = [
+            ("bucket_0_5", "0-5s"),
+            ("bucket_5_15", "5-15s"),
+            ("bucket_15_30", "15-30s"),
+            ("bucket_30_60", "30-60s"),
+            ("bucket_60_plus", "60s+"),
+        ]
+        bucket_vals = [(label, _int_val(key)) for key, label in buckets]
+        total_known = total if total else sum(v for _, v in bucket_vals if v is not None) or None
+
+        def _pct(count: int | None) -> str:
+            if count is None or total_known is None or total_known == 0:
+                return "n/a"
+            return f"{count / total_known:.0%}"
+
+        sixty_count = _int_val("bucket_60_plus")
+        for label, count in bucket_vals:
+            pct = _pct(count)
+            is_stale = label == "60s+" and count is not None and count > 0
+            count_style = "bright_red" if is_stale else "bright_green" if count else "grey62"
+            lines.append(self._line([
+                (f" {label:<7}", "grey70"),
+                (str(count) if count is not None else "n/a", count_style),
+                (f" ({pct})", "grey50"),
+            ], pw))
+
+        return Panel(
+            Text.assemble(*self._with_breaks(lines)),
+            title="[bold bright_white]Quote Age[/bold bright_white]",
             border_style="bright_blue",
         )
 
@@ -3432,6 +3506,39 @@ class PolymarketRealtimeDisplay:
             return "n/a", "N/A", "grey50"
         label = "PASS" if value >= 100.0 else "ACCUMULATING" if value > 0 else "BLOCKED"
         return f"{value:.1f}%", label, self._traffic_label_style(label)
+
+    def _phase6_label(self) -> str:
+        explicit = self._safe_text(self._execution_reality.get("phase6_status"), "")
+        if explicit:
+            return explicit
+        if not self._has_execution_reality_counts():
+            return "n/a"
+        readiness = self._optional_float(self._execution_reality.get("readiness_pct"))
+        if readiness is not None:
+            return "PASS" if readiness >= 100.0 else "ACCUMULATING" if readiness > 0 else "BLOCKED"
+        # derive from key gate counts when readiness_pct absent
+        def _gate_met(key: str, tgt_key: str) -> bool | None:
+            cur = self._optional_int(self._execution_reality.get(key))
+            tgt = self._optional_int(self._execution_reality.get(tgt_key))
+            if cur is None or tgt is None:
+                return None
+            return cur >= tgt
+        p = _gate_met("paired", "paired_target")
+        b = _gate_met("btc", "btc_target")
+        t = _gate_met("tp", "tp_target")
+        if p is True and b is True and t is True:
+            return "ACCUMULATING"
+        if any(v is not None for v in (p, b, t)):
+            return "BLOCKED"
+        return "n/a"
+
+    def _s3_label(self) -> str:
+        explicit = self._safe_text(self._execution_reality.get("s3_status"), "")
+        if explicit:
+            return explicit
+        if self._has_execution_reality_counts():
+            return "CAUTION"
+        return "n/a"
 
     def _execution_gate_line(self, label: str, current: object, target: object, width: int) -> Text:
         cur = self._optional_int(current)

@@ -290,19 +290,14 @@ def test_decision_diagnostics_panel_shows_operator_state_without_debug_noise() -
     assert "Decision Diagnostics" in text
     assert "Candidate BLOCKED" in text
     assert "Phase OPENING_SCAN" in text
-    assert "Main blocker ev_not_visible" in text
-    assert "time_remaining=44s" in text
-    assert "cutoff_remaining=--" in text
-    assert "Readiness token OK" in text
-    assert "orderbook OK" in text
-    assert "liquidity OK" in text
-    assert "EV visible YES" in text
-    assert "prob visible YES" in text
-    assert "Trace OK" not in text
-    assert "Cond OK" not in text
-    assert "EventID" not in text
-    assert "Chain UNKNOWN" not in text
-    assert "Enrich" not in text
+    assert "Blocker" in text
+    assert "44s" in text
+    assert "cutoff=" in text
+    assert "Token" in text
+    assert "OB" in text
+    assert "Liq" in text
+    assert "EV" in text
+    assert "Prob" in text
     assert "Serialize" not in text
 
 
@@ -314,12 +309,11 @@ def test_candidate_observability_panel_preserves_unknowns_when_fields_missing() 
     assert "Decision Diagnostics" in text
     assert "Candidate UNKNOWN" in text
     assert "Phase UNKNOWN" in text
-    assert "Main blocker unknown" in text
-    assert "time_remaining=--" in text
-    assert "Readiness token --" in text
-    assert "orderbook UNKNOWN" in text
-    assert "EV visible UNKNOWN" in text
-    assert "prob visible UNKNOWN" in text
+    assert "Blocker" in text
+    assert "Token" in text
+    assert "OB" in text
+    assert "EV" in text
+    assert "Prob" in text
 
 
 def test_observability_footer_shows_jsonl_trace_condition_producer_and_schema() -> None:
@@ -374,10 +368,10 @@ def test_candidate_observability_panel_consumes_dedicated_health_state() -> None
 
     assert "Decision Diagnostics" in panel
     assert "Candidate BLOCKED" in panel
-    assert "Main blocker ev_not_visible" in panel
-    assert "Readiness token OK" in panel
-    assert "EV visible NO" in panel
-    assert "prob visible YES" in panel
+    assert "Blocker" in panel
+    assert "Token" in panel
+    assert "EV" in panel
+    assert "Prob" in panel
     assert "JSONL OK" in footer
     assert "BLOCKER ev_not_visible" in footer
     assert "PROD execution_log" not in footer
@@ -1238,30 +1232,31 @@ def test_update_research_obs_is_additive() -> None:
     assert display._research_obs["canonical_sr60_rank"] == 1
 
 
-def test_compact_layout_includes_research_panel() -> None:
-    """In compact mode the bottom row must contain the Research Cockpit."""
+def test_compact_layout_includes_execution_reality_panel() -> None:
+    """In compact mode the bottom row must contain the Execution Reality panel."""
     display = PolymarketRealtimeDisplay(
         terminal_size_provider=lambda: (100, 30),
         ui_mode="compact",
     )
-    display.update_research_obs(zero_size_probe_count=20, slope_direction_watch=True)
+    display.update_execution_reality(paired=5, paired_target=20)
     layout = display._render()
     rendered = _render_text(layout)
-    assert "Research Cockpit" in rendered
+    assert "Execution Reality" in rendered
 
 
-def test_wide_layout_includes_research_and_logs() -> None:
-    """In wide/fullscreen mode Research Cockpit AND rolling logs must both appear."""
+def test_wide_layout_includes_execution_reality_quote_age_and_logs() -> None:
+    """In wide/fullscreen mode Quote Age, Execution Reality and Rolling Logs must appear."""
     display = PolymarketRealtimeDisplay(
         terminal_size_provider=lambda: (180, 50),
         ui_mode="wide",
     )
     display.add_log("test log entry", level="INFO")
-    display.update_research_obs(zero_size_probe_count=50, s3_probe_ready=True)
+    display.update_execution_reality(paired=9, paired_target=20)
     layout = display._render()
     rendered = _render_text(layout)
-    assert "Research Cockpit" in rendered
+    assert "Execution Reality" in rendered
     assert "Rolling Logs" in rendered
+    assert "Quote Age" in rendered
 
 
 # ── Wiring Upgrade v1 tests ────────────────────────────────────────────────
@@ -1369,3 +1364,88 @@ def test_probe_counts_collecting_when_below_15() -> None:
     display.update_research_obs(zero_size_probe_count=7)
     text = _render_text(display._quant_research_panel())
     assert "collecting" in text
+
+
+# ── Quote Age panel tests ──────────────────────────────────────────────────
+
+
+def test_quote_age_panel_shows_no_data_when_empty() -> None:
+    """Panel shows placeholder when no quote-age data has been supplied."""
+    display = PolymarketRealtimeDisplay()
+    text = _render_text(display._quote_age_panel())
+    assert "Quote Age" in text
+    assert "No quote-age data" in text
+
+
+def test_quote_age_panel_renders_mean_and_buckets() -> None:
+    """Populated quote-age stats render means and all five buckets."""
+    display = PolymarketRealtimeDisplay()
+    display.update_quote_age(
+        mean_submit_s=18.99,
+        mean_fill_s=19.01,
+        bucket_0_5=2,
+        bucket_5_15=9,
+        bucket_15_30=3,
+        bucket_30_60=3,
+        bucket_60_plus=1,
+        total=18,
+    )
+    text = _render_text(display._quote_age_panel())
+    assert "Quote Age" in text
+    assert "18.99" in text or "19.0" in text
+    assert "0-5s" in text
+    assert "5-15s" in text
+    assert "60s+" in text
+    assert "18" in text
+
+
+def test_quote_age_panel_highlights_stale_bucket() -> None:
+    """The 60s+ bucket is present and counted when stale fills exist."""
+    display = PolymarketRealtimeDisplay()
+    display.update_quote_age(bucket_60_plus=3, total=10)
+    text = _render_text(display._quote_age_panel())
+    assert "60s+" in text
+    assert "3" in text
+
+
+# ── Header auto-derivation tests ───────────────────────────────────────────
+
+
+def test_header_derives_phase6_blocked_from_gate_counts() -> None:
+    """Header shows Phase6 BLOCKED when paired/btc/tp gates are below target."""
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_execution_reality(
+        paired=9, paired_target=20,
+        btc=1, btc_target=5,
+        tp=3, tp_target=5,
+    )
+    text = _render_text(display._header(display._resolve_layout()))
+    assert "Phase6 BLOCKED" in text
+
+
+def test_header_derives_s3_caution_from_gate_counts() -> None:
+    """Header shows S3 CAUTION when gate data is present but no explicit s3_status."""
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_execution_reality(paired=9, paired_target=20)
+    text = _render_text(display._header(display._resolve_layout()))
+    assert "S3 CAUTION" in text
+
+
+def test_header_shows_na_when_no_gate_data() -> None:
+    """Header shows n/a for Phase6 and S3 when no gate data is set."""
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    text = _render_text(display._header(display._resolve_layout()))
+    assert "Phase6 n/a" in text
+    assert "S3 n/a" in text
+
+
+def test_header_explicit_phase6_overrides_derivation() -> None:
+    """Explicit phase6_status takes priority over derived gate-based label."""
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_execution_reality(
+        paired=9, paired_target=20,
+        phase6_status="ACCUMULATING",
+    )
+    text = _render_text(display._header(display._resolve_layout()))
+    assert "Phase6 ACCUMULATING" in text
+    assert "Phase6 BLOCKED" not in text

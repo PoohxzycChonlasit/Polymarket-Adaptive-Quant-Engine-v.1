@@ -48,7 +48,7 @@ A run is eligible for the daily outcome table when:
 - `paper_trade_replay_key` is present on fills.
 - `model_output_ready=True` on fills.
 - `market_analysis_exception` count is 0.
-- `trade_close` events have non-null `trade_result` and `pnl_usdc`.
+- `trade_close` events have non-null `trade_result`, `pnl_usdc`, and `entry_price`.
 
 ---
 
@@ -69,6 +69,16 @@ Current JSONL aggregation from clean outcome-truth runs:
 | Date | Paired trades | BTC | ETH | TP | SL | WIN | LOSS | Mean PnL | Mean submit quote age | Mean fill quote age | Quote lineage IDs | 60s+ fills | Phase 6 readiness |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 2026-05-22 | 9 | 1 | 8 | 3 | 6 | 3 | 6 | -0.005455 | 18.987s | 18.990s | 18 | 1 | 65.0% |
+
+Readiness percent is the capped average of these five gates:
+
+```text
+paired / 20
+BTC / 5
+TP / 5
+SL / 5
+60s+ / 1
+```
 
 ---
 
@@ -92,11 +102,11 @@ ACCUMULATING
 ## Gate Progress
 
 ```text
-paired █████░░░░░
-BTC    █░░░░░
-TP     ███░░
-SL     █████
-60s+   █
+paired 9/20 [#########-----------]
+BTC    1/5  [####----------------]
+TP     3/5  [############--------]
+SL     6/5  [####################] capped
+60s+   1/1  [####################] capped
 ```
 
 ---
@@ -113,10 +123,10 @@ Rolling trend:
 
 | Metric | Previous | Current | Trend |
 |---|---:|---:|---|
-| Paired trades | 8 | 9 | ↑ |
-| BTC trades | 0 | 1 | ↑ |
-| TP outcomes | 3 | 3 | → |
-| Readiness | 60.0% | 65.0% | ↑ |
+| Paired trades | 8 | 9 | UP |
+| BTC trades | 0 | 1 | UP |
+| TP outcomes | 3 | 3 | FLAT |
+| Readiness | 60.0% | 65.0% | UP |
 
 Readiness ETA if current accumulation speed continues:
 
@@ -132,69 +142,20 @@ Trend status:
 ACCUMULATING
 ```
 
-Readiness percent is the capped average of these five gates:
-
-```text
-paired / 20
-BTC / 5
-TP / 5
-SL / 5
-60s+ / 1
-```
-
----
-
-## Requested Phase 6 Gate Snapshot
-
-Operator-requested progress baseline:
-
-```text
-paired 8/20
-BTC    0/5
-TP     3/5
-SL     5/5
-60s+   1/1
-```
-
-Progress bars:
-
-| Gate | Progress | Percent | Bar |
-|---|---:|---:|---|
-| Paired trades | 8/20 | 40% | `[########------------]` |
-| BTC trades | 0/5 | 0% | `[--------------------]` |
-| TP outcomes | 3/5 | 60% | `[############--------]` |
-| SL outcomes | 5/5 | 100% | `[####################]` |
-| 60s+ quote-age fills | 1/1 | 100% | `[####################]` |
-
-Requested baseline readiness:
-
-```text
-(40% + 0% + 60% + 100% + 100%) / 5 = 60.0%
-```
-
 ---
 
 ## Current Raw Gate Progress
 
-The current local JSONL contains one additional clean outcome-truth BTC SL close in run `20260522T130017Z_21712_035b3af7` relative to the requested baseline. The daily table above reflects the current raw clean-run aggregation.
-
-Raw current progress:
-
-| Gate | Progress | Percent | Bar |
+| Gate | Progress | Percent | Status |
 |---|---:|---:|---|
-| Paired trades | 9/20 | 45% | `[#########-----------]` |
-| BTC trades | 1/5 | 20% | `[####----------------]` |
-| TP outcomes | 3/5 | 60% | `[############--------]` |
-| SL outcomes | 6/5 | 100% capped | `[####################]` |
-| 60s+ quote-age fills | 1/1 | 100% capped | `[####################]` |
+| Paired trades | 9/20 | 45% | NOT MET |
+| BTC trades | 1/5 | 20% | NOT MET |
+| ETH trades | 8/5 | 100% capped | MET |
+| TP outcomes | 3/5 | 60% | NOT MET |
+| SL outcomes | 6/5 | 100% capped | MET |
+| 60s+ quote-age fills | 1/1 | 100% capped | MET |
 
-Raw current readiness:
-
-```text
-(45% + 20% + 60% + 100% + 100%) / 5 = 65.0%
-```
-
-The project should not promote based on either snapshot because paired count, BTC count, and TP count remain below readiness targets.
+The project should not promote because paired count, BTC count, and TP count remain below readiness targets.
 
 ---
 
@@ -204,9 +165,9 @@ The project should not promote based on either snapshot because paired count, BT
 
 - Confirmed outcome-truth evidence exists.
 - `trade_result` and `pnl_usdc` support direct TP/SL/WIN/LOSS counting.
-- Quote lineage is present on included fills.
-- ETH coverage is above the minimum gate in the raw daily table.
-- BTC remains under target even after the current raw clean BTC close.
+- `quote_age_at_submit_ms`, `quote_age_at_fill_ms`, and `quote_lineage_id` are present on included fills.
+- ETH coverage is above the minimum gate.
+- BTC coverage has started but remains under target.
 - TP coverage remains under target.
 - 60s+ evidence exists, but the stale-quote relationship is not strong enough for Phase 6.
 
@@ -218,11 +179,11 @@ The project should not promote based on either snapshot because paired count, BT
 
 Thesis: keep Phase 6 blocked until all gates pass with margin.
 
-Quant logic: paired sample and BTC coverage remain too thin, and stale-quote behavior is not stable enough to become policy.
+Quant logic: paired sample, BTC coverage, and TP coverage remain too thin, and stale-quote behavior is not stable enough to become policy.
 
 Likely outcome: additional clean sessions clarify whether BTC behaves differently and whether TP coverage catches up.
 
-Hidden risk: treating a capped SL or 60s+ gate as sufficient may hide poor BTC or TP coverage.
+Hidden risk: treating capped SL or 60s+ gates as sufficient may hide weak BTC and TP coverage.
 
 Recommended action: continue daily tracking without runtime changes.
 
@@ -230,7 +191,7 @@ Recommended action: continue daily tracking without runtime changes.
 
 Thesis: collect more clean outcome-truth rows across asset, side, quote source, and lifecycle.
 
-Quant logic: the tracker already shows useful daily structure, but the next information gain comes from BTC and TP samples.
+Quant logic: the tracker shows useful daily structure, but the next information gain comes from BTC and TP samples.
 
 Likely outcome: one or two more clean sessions will decide whether the current ETH-heavy evidence generalizes.
 
@@ -240,9 +201,9 @@ Recommended action: prioritize future analysis around BTC confirmed pairs and TP
 
 ## OPTION 3 - STRUCTURAL / ROOT-CAUSE PATH
 
-Thesis: gate readiness should separate the approved monitor baseline from raw append-only JSONL drift.
+Thesis: gate readiness should separate the accepted monitor baseline from raw append-only JSONL drift.
 
-Quant logic: raw logs can grow within the same date after a monitor note is written. A daily tracker should show raw current totals while preserving prior gate snapshots.
+Quant logic: raw logs can grow within the same date after a monitor note is written. A daily tracker should show current totals while preserving prior gate snapshots.
 
 Likely outcome: fewer contradictions between daily monitors, phase monitors, and Obsidian notes.
 
@@ -252,7 +213,7 @@ Recommended action: refresh this daily monitor after each accepted Phase 5 monit
 
 ---
 
-## Final Status
+## Recommendation
 
 ```text
 COLLECT_MORE_EVIDENCE
