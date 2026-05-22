@@ -10033,6 +10033,10 @@ class PolymarketTrader:
         _p4_submit_ql = self._phase4_quote_lineage_carry(_p4_submit_ticker)
         if not _p4_submit_ql.get("quote_lineage_id"):
             _p4_submit_ql = self._phase4_build_quote_lineage(source_market_id, _p4_submit_ticker)
+        _p5_quote_age_at_submit_ms = (
+            self._phase3_paper_proxy_ms(str(_p4_submit_ql.get("quote_capture_ts") or ""), order_submit_ts)
+            if self.settings.paper_trading else None
+        )
         self._emit_quant_event(
             "log_execution",
             {
@@ -10055,6 +10059,7 @@ class PolymarketTrader:
                 "quote_lineage_id": _p4_submit_ql.get("quote_lineage_id"),
                 "quote_capture_ts": _p4_submit_ql.get("quote_capture_ts"),
                 "quote_source": _p4_submit_ql.get("quote_source", "unknown"),
+                "quote_age_at_submit_ms": _p5_quote_age_at_submit_ms,
             },
         )
 
@@ -10080,6 +10085,9 @@ class PolymarketTrader:
             fill_ts = self._utc_timestamp()
             submit_to_ack_ms = self._phase3_paper_proxy_ms(order_submit_ts, order_ack_ts)
             submit_to_fill_ms = self._phase3_paper_proxy_ms(order_submit_ts, fill_ts)
+            _p5_quote_age_at_fill_ms = self._phase3_paper_proxy_ms(
+                str(_p4_submit_ql.get("quote_capture_ts") or ""), fill_ts
+            )
             LOGGER.info(
                 "[PAPER FILL] order_id=%s token=%s side=%s price=%.4f size=%.6f filled=%.6f remaining=%.6f",
                 receipt.order_id,
@@ -10115,6 +10123,8 @@ class PolymarketTrader:
                     "quote_lineage_id": _p4_submit_ql.get("quote_lineage_id"),
                     "quote_capture_ts": _p4_submit_ql.get("quote_capture_ts"),
                     "quote_source": _p4_submit_ql.get("quote_source", "unknown"),
+                    "quote_age_at_submit_ms": _p5_quote_age_at_submit_ms,
+                    "quote_age_at_fill_ms": _p5_quote_age_at_fill_ms,
                 },
             )
             self._log_order_section(
