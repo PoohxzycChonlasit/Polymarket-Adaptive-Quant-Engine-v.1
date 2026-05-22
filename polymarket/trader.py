@@ -10003,6 +10003,7 @@ class PolymarketTrader:
                 "[PAPER ORDER] side=%s type=LIMIT market=%s tier=%s price=%.4f size=%.6f live_orders=OFF",
                 side, market_id, tier_label, live_limit_price, size,
             )
+            order_ack_ts = self._utc_timestamp()
             receipt = OrderReceipt(
                 order_id="paper-" + market_id[:8],
                 status="paper",
@@ -10015,6 +10016,7 @@ class PolymarketTrader:
                 created_at=datetime.now().isoformat(),
                 order_type="GTC",
             )
+            fill_ts = self._utc_timestamp()
             LOGGER.info(
                 "[PAPER FILL] order_id=%s token=%s side=%s price=%.4f size=%.6f filled=%.6f remaining=%.6f",
                 receipt.order_id,
@@ -10038,6 +10040,12 @@ class PolymarketTrader:
                     "receipt": asdict(receipt),
                     **execution_risk_context,
                     "mode": self._runtime_mode(),
+                    "order_ack_ts": order_ack_ts,
+                    "fill_ts": fill_ts,
+                    "ack_source": "paper_simulated",
+                    "fill_source": "paper_simulated",
+                    "timestamp_source": "paper_fill_emit",
+                    "latency_truth_level": "paper_simulated",
                 },
             )
             self._log_order_section(
