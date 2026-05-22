@@ -1036,6 +1036,9 @@ class PolymarketTrader:
     def _utc_timestamp(self) -> str:
         return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
+    def _phase1_execution_latency_truth_level(self) -> str:
+        return "paper_simulated" if self.settings.paper_trading else "unknown"
+
     def _begin_cycle_timing(self) -> None:
         now_mono = time.monotonic()
         previous_started = float(getattr(self, "_previous_cycle_started_monotonic", 0.0) or 0.0)
@@ -3811,6 +3814,12 @@ class PolymarketTrader:
             **decision_diagnostics,
             **self._regime_pass_through_fields(outcome.display),
         }
+        phase1_decision_ts = str(decision_payload.get("decision_timestamp") or self._utc_timestamp())
+        phase1_signal_ts = str((outcome.display or {}).get("signal_generated_ts") or phase1_decision_ts)
+        decision_payload.setdefault("signal_generated_ts", phase1_signal_ts)
+        decision_payload.setdefault("decision_complete_ts", phase1_decision_ts)
+        decision_payload.setdefault("timestamp_source", "decision_emit")
+        decision_payload.setdefault("latency_truth_level", "proxy")
         risk_boundary_payload = self._risk_boundary_payload_from_decision(
             decision_payload,
             decision_type=decision_type,
@@ -9830,6 +9839,7 @@ class PolymarketTrader:
             tracked_inventory_size=tracked_inventory,
         ))
         if decision.approved:
+            order_intent_ts = self._utc_timestamp()
             LOGGER.info(
                 "[ORDER_INTENT] approved intent=%s token=%s side=%s outcome=%s position=%s size=%.6f reason=%s",
                 intent_kind.value,
@@ -9860,6 +9870,9 @@ class PolymarketTrader:
                     "risk_approved": bool(risk_plan and risk_plan.position_size > 0 and risk_plan.notional_size > 0),
                     "execution_context_source": "order_intent_validation",
                     "mode": self._runtime_mode(),
+                    "order_intent_ts": order_intent_ts,
+                    "timestamp_source": "order_intent_approved",
+                    "latency_truth_level": self._phase1_execution_latency_truth_level(),
                 },
             )
             return True
@@ -9961,6 +9974,7 @@ class PolymarketTrader:
             except Exception as e:
                 LOGGER.warning("[LIMIT_PRICE] Orderbook unavailable (%s) â€” using signal price %.4f", e, price)
 
+        order_submit_ts = self._utc_timestamp()
         self._emit_quant_event(
             "log_execution",
             {
@@ -9977,6 +9991,9 @@ class PolymarketTrader:
                 "paper": bool(self.settings.paper_trading),
                 **execution_risk_context,
                 "mode": self._runtime_mode(),
+                "order_submit_ts": order_submit_ts,
+                "timestamp_source": "order_submit_attempt",
+                "latency_truth_level": self._phase1_execution_latency_truth_level(),
             },
         )
 
