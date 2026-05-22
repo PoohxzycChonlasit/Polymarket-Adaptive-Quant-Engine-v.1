@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Deque, Mapping
 
 import shutil
+import subprocess
 import sys
 import time
 
@@ -1683,6 +1684,28 @@ class PolymarketRealtimeDisplay:
         self._session_summary: dict[str, object] = {}
         self._observability_health: dict[str, object] = {}
         self._research_obs: dict[str, object] = {}
+        self._execution_reality: dict[str, object] = {
+            "readiness_pct": None,
+            "phase6_status": "",
+            "s3_status": "",
+            "git_clean_state": self._detect_git_clean_state(),
+            "paired": None,
+            "paired_target": 20,
+            "btc": None,
+            "btc_target": 5,
+            "eth": None,
+            "eth_target": 5,
+            "tp": None,
+            "tp_target": 5,
+            "sl": None,
+            "sl_target": 5,
+            "win": None,
+            "loss": None,
+            "sixty_plus": None,
+            "sixty_plus_target": 1,
+            "blocking_gates": [],
+            "updated_at": "",
+        }
         self._ws_status = "connecting"
         self._logging_status = "SAFE"
         self._started_at = datetime.now(tz=UTC)
@@ -1764,6 +1787,29 @@ class PolymarketRealtimeDisplay:
 
     def update_run_id(self, run_id: str) -> None:
         self._run_id = str(run_id or "")
+        self._safe_live_update()
+
+    def update_execution_reality(self, **kwargs: object) -> None:
+        """Update display-only Phase A execution reality state.
+
+        This method intentionally accepts already-computed summary fields only.
+        It does not read JSONL, reports, logs, or runtime decision sources.
+        """
+        aliases = {
+            "paired_trades": "paired",
+            "btc_trades": "btc",
+            "eth_trades": "eth",
+            "tp_count": "tp",
+            "sl_count": "sl",
+            "win_count": "win",
+            "loss_count": "loss",
+            "sixty_plus_count": "sixty_plus",
+            "phase_status": "phase6_status",
+            "phase6": "phase6_status",
+        }
+        for key, value in kwargs.items():
+            self._execution_reality[aliases.get(key, key)] = value
+        self._execution_reality["updated_at"] = datetime.now(tz=UTC).strftime("%H:%M:%S")
         self._safe_live_update()
 
     def add_trade(
@@ -1992,7 +2038,7 @@ class PolymarketRealtimeDisplay:
                 Layout(self._cycle_panel(spec), name="ai"),
             )
             layout["bottom"].split_row(
-                Layout(self._execution_panel(spec), name="execution"),
+                Layout(self._execution_reality_panel(spec), name="execution_reality"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
                 Layout(self._quant_research_panel(spec), name="research"),
                 Layout(self._rolling_logs_panel(spec), name="logs"),
@@ -2005,16 +2051,31 @@ class PolymarketRealtimeDisplay:
         mode_style = "bold white on dark_orange" if self.paper_trading else "bold white on red"
         data_status = self._data_status_tag()
         data_style = "bold bright_green" if data_status == "OK" else "bold bright_yellow"
+        readiness_text, readiness_label, readiness_style = self._execution_readiness_label()
+        phase6 = self._safe_text(self._execution_reality.get("phase6_status"), "n/a")
+        s3 = self._safe_text(self._execution_reality.get("s3_status"), "n/a")
+        git = self._git_status_label()
+        run_id = self._run_id or "n/a"
+        safety = "NO LIVE ORDERS" if self.paper_trading else "LIVE MODE"
+        safety_style = "bold bright_green" if self.paper_trading else "bold bright_red"
         line1 = Text()
-        line1.append(" PolyTrade Bot ", style="bold bright_cyan")
+        line1.append(" PolyTrade Execution Reality ", style="bold bright_cyan")
         line1.append(" | ", style="grey42")
-        line1.append(f" {mode} ", style=mode_style)
+        line1.append(f"MODE {mode}", style=mode_style)
         line1.append(" | ", style="grey42")
-        line1.append(f"UI {spec.active_mode.upper()}  FPS {self.fps_mode.upper()} ", style="grey70")
+        line1.append(f"RUN {self._clip(run_id, 36)}", style="grey70")
         line1.append(" | DATA ", style="grey70")
         line1.append(data_status, style=data_style)
-        line1.append(f" ({self._oracle_status()}/{self._orderbook_status()}/{self._clip(self._ws_status, 10)})", style="grey62")
-        line2 = Text(" Operator view: data health | edge | blocker | risk | timing/cutoff", style="grey62")
+        line1.append(f" | {git}", style="grey62")
+        line2 = Text()
+        line2.append(f" STATUS {safety}", style=safety_style)
+        line2.append(" | READINESS ", style="grey70")
+        line2.append(f"{readiness_text} {readiness_label}", style=readiness_style)
+        line2.append(" | Phase6 ", style="grey70")
+        line2.append(self._clip(phase6, 18), style=self._traffic_label_style(phase6))
+        line2.append(" | S3 ", style="grey70")
+        line2.append(self._clip(s3, 12), style=self._traffic_label_style(s3))
+        line2.append(f" | JSONL {self._footer_jsonl_compact_tag()}", style="grey70")
         if spec.warning:
             line2.append("\n " + self._clip(spec.warning, max(40, spec.width - 8)), style="bold bright_yellow")
         return Panel(Text.assemble(line1, "\n", line2), border_style="bright_cyan", padding=(0, 1))
@@ -2521,11 +2582,18 @@ class PolymarketRealtimeDisplay:
             ], pw))
         s1 = str(obs.get("s1_status", "complete") or "complete")
         s2 = str(obs.get("s2_status", "valid") or "valid")
-        s3_hint = "READY" if s3_probe_ready else "collecting"
+        # s3_promoted requires explicit reviewed promotion; probe readiness alone is CAUTION.
+        s3_promoted = bool(obs.get("s3_promoted", False))
+        if s3_promoted:
+            s3_hint, s3_style = "READY", "bold bright_green"
+        elif s3_probe_ready:
+            s3_hint, s3_style = "CAUTION", "bright_yellow"
+        else:
+            s3_hint, s3_style = "collecting", "bright_yellow"
         lines.append(self._line([
             (" S1:", "grey70"), (self._clip(s1, 8), "bright_green"),
             (" S2:", "grey70"), (self._clip(s2, 8), "bright_green"),
-            (" S3:", "grey70"), (s3_hint, "bright_green" if s3_probe_ready else "bright_yellow"),
+            (" S3:", "grey70"), (s3_hint, s3_style),
         ], pw))
 
         # ── 4. ECONOMIC vs CLASSIFICATION ────────────────────────
@@ -2641,6 +2709,47 @@ class PolymarketRealtimeDisplay:
             Text.assemble(*self._with_breaks(lines)),
             title="[bold bright_white]Research Cockpit[/bold bright_white]",
             border_style="bold bright_magenta",
+        )
+
+    def _execution_reality_panel(self, spec: DashboardLayout | None = None) -> Panel:
+        spec = spec or self._standalone_layout()
+        er = self._execution_reality
+        lines = [
+            self._execution_gate_line("Paired", er.get("paired"), er.get("paired_target"), spec.panel_width),
+            self._execution_gate_line("BTC", er.get("btc"), er.get("btc_target"), spec.panel_width),
+            self._execution_gate_line("ETH", er.get("eth"), er.get("eth_target"), spec.panel_width),
+            self._execution_gate_line("TP", er.get("tp"), er.get("tp_target"), spec.panel_width),
+            self._execution_gate_line("SL", er.get("sl"), er.get("sl_target"), spec.panel_width),
+            self._execution_gate_line("60s+", er.get("sixty_plus"), er.get("sixty_plus_target"), spec.panel_width),
+        ]
+
+        win = self._optional_int(er.get("win"))
+        loss = self._optional_int(er.get("loss"))
+        if win is None and loss is None:
+            lines.append(self._line([("WIN/LOSS n/a", "grey50")], spec.panel_width))
+        else:
+            lines.append(self._line([
+                ("WIN ", "grey70"), (str(win) if win is not None else "n/a", "bright_green" if win else "grey50"),
+                (" | LOSS ", "grey70"), (str(loss) if loss is not None else "n/a", "bright_red" if loss else "grey50"),
+            ], spec.panel_width))
+
+        gates = er.get("blocking_gates")
+        if isinstance(gates, (list, tuple, set)):
+            gate_text = ",".join(str(g) for g in gates if str(g).strip()) or "none"
+        else:
+            gate_text = self._safe_text(gates, "evidence unavailable")
+        if not self._has_execution_reality_counts() and gate_text == "none":
+            gate_text = "evidence unavailable"
+        gate_style = "bright_green" if gate_text == "none" else "bright_yellow"
+        lines.append(self._line([
+            ("Blocking gates ", "grey70"),
+            (self._clip(gate_text, max(10, spec.panel_width - 15)), gate_style),
+        ], spec.panel_width))
+
+        return Panel(
+            Text.assemble(*self._with_breaks(lines)),
+            title="[bold bright_white]Execution Reality[/bold bright_white]",
+            border_style="bright_blue",
         )
 
     def _execution_panel(self, spec: DashboardLayout | None = None) -> Panel:
@@ -3290,6 +3399,96 @@ class PolymarketRealtimeDisplay:
         if regime == "--":
             return "--"
         return f"{regime[:4]} x{mult:.2f}"
+
+    def _detect_git_clean_state(self) -> str:
+        try:
+            result = subprocess.run(
+                ["git", "status", "--porcelain"],
+                capture_output=True,
+                text=True,
+                timeout=0.35,
+                check=False,
+            )
+        except FileNotFoundError:
+            return "n/a"
+        except Exception:
+            return "unknown"
+        if result.returncode != 0:
+            return "unknown"
+        return "clean" if not result.stdout.strip() else "dirty"
+
+    def _git_status_label(self) -> str:
+        state = str(self._execution_reality.get("git_clean_state", "") or "").strip().lower()
+        if state in {"clean", "dirty"}:
+            return f"git {state}"
+        if state in {"unknown", "n/a"}:
+            return f"git {state}"
+        return "git n/a"
+
+    def _execution_readiness_label(self) -> tuple[str, str, str]:
+        raw = self._execution_reality.get("readiness_pct")
+        value = self._optional_float(raw)
+        if value is None:
+            return "n/a", "N/A", "grey50"
+        label = "PASS" if value >= 100.0 else "ACCUMULATING" if value > 0 else "BLOCKED"
+        return f"{value:.1f}%", label, self._traffic_label_style(label)
+
+    def _execution_gate_line(self, label: str, current: object, target: object, width: int) -> Text:
+        cur = self._optional_int(current)
+        tgt = self._optional_int(target)
+        if cur is None:
+            return self._line([(f"{label:<6} n/a [n/a] N/A", "grey50")], width)
+        if tgt is None or tgt <= 0:
+            return self._line([(f"{label:<6} {cur} [n/a] ACCUMULATING", "bright_yellow")], width)
+        ratio = min(max(float(cur) / float(tgt), 0.0), 1.0)
+        pct = int(ratio * 100)
+        status = "PASS" if cur >= tgt else "ACCUMULATING" if cur > 0 else "BLOCKED"
+        status_style = self._traffic_label_style(status)
+        text = f"{label:<6} {cur}/{tgt:<2} {self._ascii_bar(cur, tgt)} {pct}% {status}"
+        return self._line([(text, status_style)], width)
+
+    def _ascii_bar(self, current: object, target: object, width: int = 20) -> str:
+        cur = self._optional_float(current)
+        tgt = self._optional_float(target)
+        if cur is None or tgt is None or tgt <= 0:
+            return "[n/a]"
+        filled = int(min(max(cur / tgt, 0.0), 1.0) * width)
+        return "[" + "#" * filled + "-" * (width - filled) + "]"
+
+    def _traffic_label_style(self, label: object) -> str:
+        upper = str(label or "").upper()
+        if any(token in upper for token in ("PASS", "READY", "CLEAN", "OK")):
+            return "bold bright_green"
+        if any(token in upper for token in ("BLOCK", "FAIL", "UNSAFE", "LIVE MODE")):
+            return "bold bright_red"
+        if any(token in upper for token in ("ACCUMULATING", "WATCH", "PARTIAL", "DIRTY")):
+            return "bold bright_yellow"
+        return "grey50"
+
+    def _has_execution_reality_counts(self) -> bool:
+        keys = ("paired", "btc", "eth", "tp", "sl", "sixty_plus", "win", "loss")
+        return any(self._execution_reality.get(key) is not None for key in keys)
+
+    def _safe_text(self, value: object, fallback: str = "n/a") -> str:
+        text = str(value or "").strip()
+        return text if text and text not in {"--", "None"} else fallback
+
+    def _optional_float(self, value: object) -> float | None:
+        if value is None:
+            return None
+        text = str(value).strip()
+        if not text or text.lower() in {"n/a", "na", "none", "--", "unknown"}:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    def _optional_int(self, value: object) -> int | None:
+        parsed = self._optional_float(value)
+        if parsed is None:
+            return None
+        return int(parsed)
 
     def _oracle_status(self) -> str:
         return "OK" if any(self._as_float(m.get("current_price", 0.0)) > 0 for m in self._markets.values()) else "WAIT"

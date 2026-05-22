@@ -442,6 +442,66 @@ def test_dashboard_small_terminal_warns_and_falls_back_to_compact() -> None:
     assert "Minimum" in text
 
 
+def test_execution_reality_header_renders_phase_a_status_fields() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_run_id("20260522T130017Z_21712_035b3af7")
+    display.update_execution_reality(
+        readiness_pct=65.0,
+        phase6_status="BLOCKED",
+        s3_status="CAUTION",
+        git_clean_state="dirty",
+    )
+
+    text = _render_text(display._header(display._resolve_layout()))
+
+    assert "PolyTrade Execution Reality" in text
+    assert "MODE PAPER" in text
+    assert "RUN 20260522T130017Z_21712_035b3af7" in text
+    assert "STATUS NO LIVE ORDERS" in text
+    assert "READINESS 65.0% ACCUMULATING" in text
+    assert "Phase6 BLOCKED" in text
+    assert "S3 CAUTION" in text
+    assert "git dirty" in text
+
+
+def test_execution_reality_panel_renders_gate_bars_and_missing_fields() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (190, 48))
+    display.update_execution_reality(
+        paired=9,
+        paired_target=20,
+        btc=1,
+        btc_target=5,
+        eth=8,
+        eth_target=5,
+        tp=3,
+        tp_target=5,
+        sl=6,
+        sl_target=5,
+        sixty_plus=1,
+        sixty_plus_target=1,
+        blocking_gates=["paired", "BTC", "TP"],
+    )
+
+    text = _render_text(display._execution_reality_panel(display._resolve_layout()))
+
+    assert "Execution Reality" in text
+    assert "Paired 9/20 [#########-----------] 45% ACCUMULATING" in text
+    assert "BTC    1/5  [####----------------] 20% ACCUMULATING" in text
+    assert "ETH    8/5  [####################] 100% PASS" in text
+    assert "TP     3/5  [############--------] 60% ACCUMULATING" in text
+    assert "SL     6/5  [####################] 100% PASS" in text
+    assert "60s+   1/1  [####################] 100% PASS" in text
+    assert "Blocking gates paired,BTC,TP" in text
+
+    missing = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (190, 48))
+    missing_text = _render_text(missing._execution_reality_panel(missing._resolve_layout()))
+
+    assert "Paired n/a [n/a] N/A" in missing_text
+    assert "BTC    n/a [n/a] N/A" in missing_text
+    assert "TP     n/a [n/a] N/A" in missing_text
+    assert "Blocking gates evidence unavailable" in missing_text
+
+
 def test_dashboard_long_log_message_is_clipped_inside_rolling_window() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (96, 28))
     long_message = "locked csv flush failed " + ("x" * 260)
@@ -998,7 +1058,7 @@ def test_quant_research_panel_shows_frozen_threshold() -> None:
 
 
 def test_quant_research_panel_probe_counts_and_s3_hint() -> None:
-    """Probe counts and S3 readiness hint render when supplied."""
+    """Probe counts show CAUTION when s3_probe_ready but not explicitly promoted."""
     display = PolymarketRealtimeDisplay()
     display.update_research_obs(
         zero_size_probe_count=59,
@@ -1012,10 +1072,24 @@ def test_quant_research_panel_probe_counts_and_s3_hint() -> None:
     assert "59" in text
     assert "235" in text
     assert "4677" in text
-    assert "READY" in text
+    assert "CAUTION" in text
+    assert "READY" not in text
     assert "S1:" in text
     assert "S2:" in text
     assert "S3:" in text
+
+
+def test_quant_research_panel_s3_ready_requires_explicit_promotion() -> None:
+    """S3 READY only appears when s3_promoted=True is explicitly passed."""
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        zero_size_probe_count=59,
+        s3_probe_ready=True,
+        s3_promoted=True,
+    )
+    text = _render_text(display._quant_research_panel())
+    assert "READY" in text
+    assert "CAUTION" not in text
 
 
 def test_quant_research_panel_probe_below_threshold_shows_not_ready() -> None:
@@ -1279,12 +1353,13 @@ def test_probe_counts_shown_when_update_research_obs_called() -> None:
     assert "cycle=105" in text
 
 
-def test_probe_counts_s3_ready_when_above_15() -> None:
-    """S3 readiness hint shows READY when zero_size_probe_count >= 15."""
+def test_probe_counts_s3_caution_when_above_15() -> None:
+    """Probe count >=15 marks probes initialized but shows CAUTION, not READY."""
     display = PolymarketRealtimeDisplay()
     display.update_research_obs(zero_size_probe_count=20)
     text = _render_text(display._quant_research_panel())
-    assert "READY" in text
+    assert "CAUTION" in text
+    assert "READY" not in text
     assert ">=15:" in text
 
 
