@@ -2,13 +2,13 @@
 
 Document type: read-only daily execution reality tracker.
 
-Updated: 2026-05-23
+Updated: 2026-05-23 02:11 UTC (monitor check — harvest session running)
 
 Runtime behavior changed: No.
 
 Live behavior changed: No.
 
-Paper launch: No.
+Paper launch: Yes — 2026-05-23T02:02:01Z, run_id `20260523T020201Z_1500_a1f33f5a`, PID 1500 (py launcher 13856).
 
 Replay run: No.
 
@@ -89,6 +89,9 @@ Latest-run-only readiness contribution under the old five-gate formula is 58%. T
 | 2026-05-22 | `20260522T153403Z_21756_65a54e7a` | 1 | ETH | 0 | 6/6 | Yes | Accumulation |
 | 2026-05-22 | `20260522T162413Z_24060_394d4a33` | 1 | ETH | 0 | 6/6 | Yes | Accumulation |
 | 2026-05-22 | `20260522T163940Z_15384_a58a5171` | 6 | BTC, ETH | 0 | 36/36 | Yes | Latest clean run; late BTC closes included |
+| 2026-05-23 | `20260523T014953Z_24280_63ef0520` | 3 | ETH | 0 | n/a | Yes | Pre-harvest; 1 TP 2 SL |
+| 2026-05-23 | `20260523T015426Z_16036_ac5d7312` | 1 | ETH | 0 | n/a | Yes | Pre-harvest; 1 SL |
+| 2026-05-23 | `20260523T020201Z_1500_a1f33f5a` | 1* | ETH | 0 | 146/146 | Yes | Harvest session (running); 1 SL |
 
 Earlier runs (`045152`, `052610`, `055830`, `075658`) have paired trades but lack outcome-truth fields (`trade_result` / `pnl_usdc` absent). Excluded.
 
@@ -99,6 +102,7 @@ Earlier runs (`045152`, `052610`, `055830`, `075658`) have paired trades but lac
 | Date | Paired | BTC | ETH | TP | SL | WIN | LOSS | Mean PnL | Mean entry submit age | Mean entry fill age | Lineage IDs | 60s+ fills | Readiness |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 2026-05-22 | 17 | 3 | 14 | 6 | 11 | 6 | 11 | -0.003512 | 24.136s | 24.139s | 17 | 2 | 89% |
+| 2026-05-23* | 5 | 0 | 5 | 1 | 4 | 1 | 4 | -0.004404 | 36.6s | 36.6s | 5 | 0 | 25% |
 
 Readiness = capped average of:
 
@@ -264,3 +268,160 @@ READY_FOR_PHASE6_REVIEW
 ```
 
 Open Phase 6 review. Do not promote S3, change runtime, change strategy/risk/execution, or infer BTC profitability from the current sample.
+
+---
+
+## 2026-05-23 Harvest Session
+
+### Run Metadata
+
+| Field | Value |
+|---|---|
+| run_id | `20260523T020201Z_1500_a1f33f5a` |
+| python PID | 1500 |
+| py launcher PID | 13856 |
+| Started | 2026-05-23T02:02:01Z |
+| Command | `py main.py --mode paper --interval 10 --ui compact --fps medium` |
+| git status | clean |
+| Runtime behavior changed | No |
+| Live behavior changed | No |
+
+### Initial Snapshot (02:05 UTC — cycle 21)
+
+| Metric | Value |
+|---|---|
+| Runtime healthy | Yes |
+| DATA status | OK |
+| JSONL status | OK |
+| market_analysis_exception | 0 |
+| trade_open | 0 |
+| trade_close | 0 |
+| BTC paired | 0 |
+| ETH paired | 0 |
+| TP | 0 |
+| SL | 0 |
+| Readiness | n/a (no paired trades yet) |
+| quote_age_at_submit_ms | n/a (no fills) |
+| quote_age_at_fill_ms | n/a (no fills) |
+| orderbook_age_ms (latest) | 14ms |
+| orderbook_snapshot_age_ms_at_decision | 514ms |
+
+### Skip Reason Distribution (first 21 cycles)
+
+| Skip reason | Count |
+|---|---:|
+| imbalance_extreme | 27 |
+| cutoff_passed | 7 |
+| confidence_below_threshold | 2 |
+
+Dominant pattern: market pricing YES at 0.67–0.75 across BTC/ETH windows, triggering imbalance_extreme blocks. No market_analysis_exception. Orderbooks live and fresh.
+
+### BTC/ETH Market Snapshot (02:05 UTC)
+
+| Asset | PTB | YES_BID | YES_ASK | NO_BID | NO_ASK | SPREAD |
+|---|---:|---:|---:|---:|---:|---:|
+| BTC | $75,336 | 0.70 | 0.71 | 0.29 | 0.30 | 0.01 |
+| ETH | $2,064 | 0.75 | 0.76 | 0.24 | 0.25 | 0.01 |
+
+### Monitor Schedule
+
+Next JSONL check: ~02:37 UTC. Abort conditions: market_analysis_exception > 0, JSONL failure, runtime crash.
+
+---
+
+### Monitor Check 02:07 UTC
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-05-23T02:07:23Z |
+| Cycle count | 31 |
+| Process alive | Yes (PID 1500, CPU 32.5, WS 165 MB) |
+| market_analysis_exception | 0 |
+| trade_open | 0 |
+| trade_close | 0 |
+| BTC paired | 0 |
+| ETH paired | 0 |
+| TP | 0 |
+| SL | 0 |
+| Readiness | n/a (no paired trades) |
+| quote_age_at_submit_ms | n/a (no fills) |
+| quote_age_at_fill_ms | n/a (no fills) |
+| JSONL status | OK (79 system_health events active) |
+| Abort | None |
+
+Skip reasons (66 decisions):
+
+| Skip reason | Count |
+|---|---:|
+| imbalance_extreme | 44 |
+| confidence_below_threshold | 14 |
+| cutoff_passed | 7 |
+| zero_size_plan | 1 |
+
+Notes: imbalance_extreme continues to dominate. `confidence_below_threshold` grew from 2→14 as new windows opened. One `zero_size_plan` event appeared. No market_analysis_exception. JSONL healthy.
+
+---
+
+### Monitor Check 02:11 UTC
+
+| Field | Value |
+|---|---|
+| Timestamp | 2026-05-23T02:11:53Z (latest JSONL write) |
+| Decision events (current run) | 146 |
+| Process alive | Yes (PID 1500, CPU 48.66s, WS 161MB) |
+| market_analysis_exception | 0 |
+| trade_open (current run) | 1 (ETH NO) |
+| trade_close (current run) | 1 (ETH NO SL) |
+| BTC paired | 0 |
+| ETH paired | 1 |
+| TP | 0 |
+| SL | 1 |
+| PnL (current run) | -0.004020 |
+| Open positions | 0 |
+| JSONL status | OK |
+| Abort | None |
+
+Entry fill detail (current run):
+
+| Field | Value |
+|---|---|
+| Asset | ETH NO |
+| quote_age_at_submit_ms | 59,355ms (59.4s — 30-60s bucket) |
+| quote_age_at_fill_ms | 59,356ms |
+| quote_stale_ms | 59,356ms |
+| quote_source | `display_snapshot_sampling` |
+| quote_lineage_id | `ql_96e5296b6cbe` |
+| hold_seconds | 7 |
+| trade_result | SL |
+| exit_price | 0.46 (from entry 0.5) |
+
+Skip reasons (122 decisions — current run through 02:11 UTC):
+
+| Skip reason | Count |
+|---|---:|
+| delta_extreme | 62 |
+| confidence_too_low | 23 |
+| Max entries per market reached | 15 |
+| empty_book | 5 |
+| cutoff (various) | 13 |
+| ev_below_threshold | 1 |
+| zero_size_plan | 1 |
+
+Bot status (02:11 UTC):
+
+| Asset | Regime | Signal | Score |
+|---|---|---|---:|
+| BTC | COMPRESSION | NO | 0.65 |
+| ETH | SIDEWAY | YES | 0.80 |
+
+All-runs today — entry quote source vs age summary:
+
+| Run | Entry qa_submit | Source | Result |
+|---|---:|---|---|
+| `20260523T014953Z` | 10.5s | `decision_cycle_fetch` | SL |
+| `20260523T014953Z` | 47.6s | `display_snapshot_sampling` | TP |
+| `20260523T014953Z` | 55.2s | `display_snapshot_sampling` | SL |
+| `20260523T020201Z` | 59.4s | `display_snapshot_sampling` | SL |
+| `20260523T015426Z` | 10.3s | `decision_cycle_fetch` | SL |
+
+Notes: `delta_extreme` is the dominant skip in decision_log (replaces `imbalance_extreme` label from the earlier real-time check — same blocking concept, different emit path). Entry quote age of 59.4s is the highest recorded this session and within 0.6s of the 60s+ threshold; source was `display_snapshot_sampling`, not a fresh `decision_cycle_fetch`. Pattern consistent across today's 5 trades: `display_snapshot_sampling` entries all had 30-60s quote ages; `decision_cycle_fetch` entries had 5-15s quote ages. No market_analysis_exception. No abort conditions. Session gate progress at 25% readiness (5 paired, 0 BTC, 1 TP — all task gates unmet; session is early).
