@@ -155,6 +155,54 @@ Date interpretation:
 
 `02h` is consistently adverse. `09h10h` is the only session with a strong upside day, but it is date-concentrated on 2026-05-23. `16h` weakened on 2026-05-23. `01h` has too little evidence.
 
+## 09h10h Recurrence
+
+Scope: latest three complete dates before the audit, 2026-05-21 through 2026-05-23.
+
+| Metric | 09h10h result |
+|---|---:|
+| Trades | `16` |
+| TP | `8` |
+| SL | `8` |
+| TP rate | `50.0%` |
+| Signal PnL | `+$0.026475` |
+| Executable PnL | `N/A` |
+| Dust ratio | `100.0%` |
+| Executable trades | `0` |
+| Fast SL <=15s | `7 / 8 SL`, `87.5%` |
+| Fast SL <=30s | `8 / 8 SL`, `100.0%` |
+| Median hold | `11.0s` |
+
+Date recurrence:
+
+| Date | TP | SL | Fast SL <=15s | Signal PnL | Interpretation |
+|---|---:|---:|---:|---:|---|
+| 2026-05-21 | `0` | `2` | `2` | `-$0.011260` | negative start, fast-loss dominated |
+| 2026-05-22 | `2` | `4` | `3` | `-$0.025318` | mixed but still adverse |
+| 2026-05-23 | `6` | `2` | `2` | `+$0.063053` | strong positive cluster |
+
+Lifecycle split:
+
+| Lifecycle | TP | SL | Read |
+|---|---:|---:|---|
+| OPENING | `5` | `6` | mixed, not enough to prove a recurring opening-only edge |
+| ACTIVE | `3` | `2` | cleaner than OPENING, but still low sample |
+
+Asset split:
+
+| Asset | TP | SL | Read |
+|---|---:|---:|---|
+| BTC | `3` | `1` | cleaner than baseline, but only four trades |
+| ETH | `5` | `7` | mixed and still absorbs most losses |
+
+Executable reality:
+
+All 16 trades remain dust-zone or simulation-only under the current executable overlay. Signal PnL is positive only because the 2026-05-23 cluster offsets the prior two negative dates. Executable PnL is therefore not established, and no live-executable session claim should be made from this sample.
+
+Recurrence verdict:
+
+`09h10h` remains a `SESSION_EDGE_CANDIDATE`, not a confirmed stable recurrence. The session has the best upside cluster, but cross-date stability is weak because 2026-05-21 and 2026-05-22 are negative while 2026-05-23 carries the positive result. Continue collecting evidence before treating 09h10h as a durable session regime.
+
 ## Ranking
 
 | Rank | Session | Current Research Read |
