@@ -1,263 +1,90 @@
-# Opening Scan Disconfirmation Monitor v1
+# Opening Scan Disconfirmation Monitor
 
-Document type: standing disconfirmation tracker. Updated whenever a disconfirmation event occurs or a snapshot is added to `opening_scan_policy_evidence_monitor.md`.
+Updated: 2026-05-23 post-shutdown-fix evidence refresh
 
-Created: 2026-05-23
+Scope: outcome-truth closed paper trades from 2026-05-22 through latest close `2026-05-23T11:17:06.416120Z`.
 
-Runtime behavior changed: No. Code changed: No.
+Runtime behavior changed: No
 
----
+Live behavior changed: No
 
-## Purpose
+## Verdict
 
-The opening-scan timing edge (`OPENING_SCAN_EDGE_CANDIDATE`) rests on two patterns observed across 28 trades:
+Classification: EDGE_WEAKENING
 
-1. All TP trades occurred within the first 30 seconds of their epoch window.
-2. All `ACTIVE_INVENTORY_TRADING` entries resolved as SL.
+Recommendation: COLLECT_MORE_EVIDENCE
 
-Both patterns are intact but unconfirmed. This document exists to prevent those patterns from being treated as confirmed before the evidence threshold is met. It tracks specific events that would weaken or break the hypothesis, and classifies the current edge state on every update.
+The original Opening Scan hypothesis is no longer cleanly intact. Active TP, elapsed >30s TP, and BTC TP all appeared after the newer harvest. However, OPENING_SCAN still beats ACTIVE_INVENTORY_TRADING by TP rate, and elapsed <=30s still beats elapsed >30s by TP rate. That weakens the edge but does not break it.
 
-**The cost of false confirmation is higher than the cost of delay.** A policy gate applied prematurely based on 28 trades could suppress valid entries, reduce learning signal, and cause real financial harm in any eventual live session. This monitor is the standing counterweight to confirmation bias.
+## Disconfirmation Counters
 
----
+| Signal | Count | Interpretation |
+| --- | ---: | --- |
+| ACTIVE TP | 3 | Disconfirms the earlier zero-Active-TP claim. |
+| elapsed >30s TP | 4 | Disconfirms the earlier zero-late-TP claim. |
+| BTC TP | 3 | Disconfirms the earlier zero-BTC-TP claim. |
+| 60s+ quote stale winners | 0 | No stale quote winner cluster yet. |
 
-## Current Classification
+## Current Outcome Matrix
 
-```
-EDGE_INTACT
-```
+| Slice | Trades | TP | SL | TP rate | Mean pnl_usdc |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| All outcome-truth | 35 | 13 | 22 | 37.1% | -0.00189161 |
+| OPENING_SCAN | 24 | 10 | 14 | 41.7% | -0.00245679 |
+| ACTIVE_INVENTORY_TRADING | 11 | 3 | 8 | 27.3% | -0.00065849 |
+| elapsed <=30s | 19 | 9 | 10 | 47.4% | -0.00118430 |
+| elapsed >30s | 16 | 4 | 12 | 25.0% | -0.00273154 |
+| BTC | 7 | 3 | 4 | 42.9% | -0.00171397 |
+| ETH | 28 | 10 | 18 | 35.7% | -0.00193602 |
 
-As of: 2026-05-23, Snapshot 1 (28 matched trades).
+## Disconfirmation Events
 
-All six disconfirmation event counters are at zero. Both core patterns hold without exception. Evidence is insufficient for confirmation — the current classification describes only the absence of disconfirmation, not the presence of confirmed edge.
+| Close timestamp UTC | Hour | Asset | Side | Lifecycle | Elapsed sec | Result | pnl_usdc | quote_stale_ms |
+| --- | ---: | --- | --- | --- | ---: | --- | ---: | ---: |
+| 2026-05-23T09:10:41.747343Z | 09 | BTC | YES | OPENING_SCAN | 31.65 | TP | 0.00200799 | 10548.36 |
+| 2026-05-23T09:17:06.393106Z | 09 | ETH | YES | ACTIVE_INVENTORY_TRADING | 53.24 | TP | 0.03219290 | 15336.34 |
+| 2026-05-23T09:20:31.789528Z | 09 | ETH | NO | OPENING_SCAN | 20.78 | TP | 0.00788456 | 11247.65 |
+| 2026-05-23T09:22:03.769909Z | 09 | BTC | YES | ACTIVE_INVENTORY_TRADING | 74.84 | TP | 0.01210521 | 15229.54 |
+| 2026-05-23T10:16:08.125207Z | 10 | ETH | NO | ACTIVE_INVENTORY_TRADING | 55.88 | TP | 0.01040964 | 12486.66 |
+| 2026-05-23T10:20:37.167892Z | 10 | BTC | NO | OPENING_SCAN | 7.81 | TP | 0.00774464 | 17006.72 |
 
----
+## Questions
 
-## Classification Rules
+1. Same trade or different?
 
-### EDGE_INTACT
+Different trades. Some ACTIVE TP and >30s TP overlap, but the disconfirmation set spans six TP events across BTC and ETH.
 
-All of the following must be true:
+2. Single hour anomaly?
 
-- Event 1 count (ACTIVE TP) = 0
-- Event 2 count (>30s TP) = 0
-- Policy D false-block count = 0
-- Policy B false-block count = 0
-- OPENING_SCAN TP rate ≥ 25% over cumulative matched trades
-- No single session produces ≥ 3 SL from the ≤30s window with 0 TP
+Mostly a 09h pocket, with continuation into 10h. It is not spread across the whole day.
 
-Classification does **not** mean the edge is confirmed. It means no specific disconfirmation event has occurred yet.
+3. 09h-only effect?
 
-### EDGE_WEAKENING
+Not strictly. 10h produced one ACTIVE TP and one BTC Opening TP. The strongest cluster remains 09h.
 
-Any one of the following:
+4. ETH-only?
 
-- Event 1 or Event 2 count = 1 (first ACTIVE TP or first >30s TP — isolated, possibly noise)
-- Policy D or Policy B false-block count reaches 1–2
-- OPENING_SCAN TP rate drops below 25% over the most recent 20 OPENING_SCAN trades (rolling)
-- TP rate differential between elapsed ≤30s and elapsed >30s narrows to < 15 percentage points over any 20-trade rolling window
-- BTC TP rate becomes > 0 AND the BTC TP occurred within the ≤30s window (would complicate the ETH-only narrative but not necessarily break the ETH timing pattern)
+No. BTC produced 3 TP / 4 SL in the current outcome-truth set.
 
-When EDGE_WEAKENING is reached: **do not act on any policy candidate**. Collect more evidence. Note the specific event in Section 2. Update this document. Do not revert classification without explicit written rationale.
+5. Does this weaken or break Opening edge?
 
-### EDGE_BROKEN
+Weakens. OPENING_SCAN remains ahead of ACTIVE by TP rate, and <=30s remains ahead of >30s, but the earlier zero-counter assumptions are false.
 
-Any one of the following hard-break conditions:
+6. Is quote staleness the explanation?
 
-- Event 1 count (ACTIVE TP) ≥ 3
-- Event 2 count (>30s TP) ≥ 3
-- ACTIVE_INVENTORY_TRADING TP rate reaches ≥ 15% over the full matched dataset
-- elapsed >30s TP rate reaches ≥ 15% over the full matched dataset
-- OPENING_SCAN TP rate drops below 15% over the cumulative matched dataset
-- Policy D or Policy B cumulative false-block rate ≥ 10%
+Not yet. 2026-05-23 quote_stale_ms coverage is 18/18, mean quote_stale_ms is 16942.48, and 60s+ count is 0. The TP pocket is not a 60s+ stale quote artifact in current evidence.
 
-When EDGE_BROKEN is reached: **all policy candidates (B, C, D, E) from `opening_scan_policy_candidate_design.md` are suspended**. The design document must be revised before any further replay evaluation is authorized. Note the breaking event, timestamp, run ID, and trade detail in Section 2.
+## Watch Conditions
 
----
+Escalate to EDGE_BROKEN if either condition appears:
 
-## Section 1 — Disconfirmation Event Definitions and Thresholds
+- ACTIVE TP rate reaches or exceeds OPENING_SCAN TP rate across at least 20 Active outcome-truth trades.
+- elapsed >30s TP rate reaches or exceeds elapsed <=30s TP rate across at least 20 late outcome-truth trades.
 
-### Event 1 — ACTIVE_INVENTORY_TRADING TP
+Escalate to SESSION_EDGE_CANDIDATE if 09h/10h positive pnl repeats across additional dates with both BTC and ETH coverage.
 
-**Definition:** Any matched trade where `trade_open.lifecycle_phase = ACTIVE_INVENTORY_TRADING` AND `trade_close.trade_result = TP`.
+## Current Action
 
-**Why it matters:** Policy D blocks all ACTIVE_INVENTORY_TRADING entries. If any ACTIVE entry produces TP, Policy D would have incorrectly suppressed a profitable trade. One such event may be noise; three would structurally weaken the policy.
+COLLECT_MORE_EVIDENCE.
 
-| Threshold | Classification impact |
-|---|---|
-| Count = 0 | No impact (current state) |
-| Count = 1–2 | EDGE_WEAKENING |
-| Count ≥ 3 | EDGE_BROKEN |
-| ACTIVE TP rate ≥ 15% cumulative | EDGE_BROKEN regardless of count |
-
-### Event 2 — Elapsed > 30s TP
-
-**Definition:** Any matched trade where `epoch_elapsed_s > 30` AND `trade_close.trade_result = TP`.
-
-**Why it matters:** Policy B blocks all entries after 30 seconds elapsed. A TP trade after 30s means Policy B would have blocked a real winner. The 30-second cliff is currently clean across 12 consecutive post-30s SL trades. A single TP after 30s reopens the question of where — or whether — the boundary exists.
-
-| Threshold | Classification impact |
-|---|---|
-| Count = 0 | No impact (current state) |
-| Count = 1–2 | EDGE_WEAKENING |
-| Count ≥ 3 | EDGE_BROKEN |
-| >30s TP rate ≥ 15% cumulative | EDGE_BROKEN regardless of count |
-
-### Event 3 — Policy D False-Block Count
-
-**Definition:** Cumulative count of ACTIVE_INVENTORY_TRADING entries that resolved TP (same as Event 1 count, viewed as a false-block metric).
-
-**Note:** Event 3 tracks the same underlying trades as Event 1 but frames them as a policy metric rather than an evidence metric. Both are updated together.
-
-| Threshold | Classification impact |
-|---|---|
-| 0 | No impact (current state) |
-| 1 | EDGE_WEAKENING |
-| ≥ 3, or rate ≥ 10% | EDGE_BROKEN |
-
-### Event 4 — Policy B False-Block Count
-
-**Definition:** Cumulative count of elapsed > 30s entries that resolved TP (same as Event 2 count, viewed as a false-block metric).
-
-**Note:** Event 4 tracks the same underlying trades as Event 2 but frames them as a policy metric. Both are updated together.
-
-| Threshold | Classification impact |
-|---|---|
-| 0 | No impact (current state) |
-| 1 | EDGE_WEAKENING |
-| ≥ 3, or rate ≥ 10% | EDGE_BROKEN |
-
-### Event 5 — BTC TP (any elapsed)
-
-**Definition:** Any matched BTC trade where `trade_close.trade_result = TP`, regardless of elapsed time or lifecycle phase.
-
-**Why it matters:** BTC is currently 0/4 TP across all timing windows, lifecycle phases, and quote sources. The opening-scan timing hypothesis applies primarily to ETH in the current evidence base. BTC may have independent market structure. A first BTC TP does not directly disconfirm the ETH timing edge, but it changes the BTC-specific story and affects how a future runtime policy would be scoped (ETH-only vs both assets).
-
-**Classification rule:**
-- First BTC TP within elapsed ≤ 30s and OPENING_SCAN phase: note as contextual update, **no classification change** (consistent with the ETH timing pattern).
-- First BTC TP within elapsed > 30s or ACTIVE_INVENTORY_TRADING: **EDGE_WEAKENING** (BTC behavior diverges from ETH pattern; policies that treat both assets identically would need reassessment).
-- BTC TP rate ≥ 15% after ≥ 10 BTC trades: **EDGE_WEAKENING** (BTC asset classification changes).
-
-| Threshold | Classification impact |
-|---|---|
-| 0 BTC TP | No impact (current state) |
-| First BTC TP, ≤30s OPENING_SCAN | Contextual note only; no classification change |
-| First BTC TP, >30s or ACTIVE | EDGE_WEAKENING |
-| BTC TP rate ≥ 15% after ≥ 10 BTC trades | EDGE_WEAKENING |
-
-### Event 6 — OPENING_SCAN TP Collapse
-
-**Definition:** OPENING_SCAN TP rate drops below 25% over the most recent 20 OPENING_SCAN matched trades (rolling window), OR drops below 15% cumulatively across all matched trades.
-
-**Why it matters:** The timing hypothesis depends on OPENING_SCAN entries having meaningfully higher TP rates than ACTIVE_INVENTORY_TRADING entries. If the OPENING_SCAN TP rate degrades toward the baseline (≈25%), the lifecycle-phase gate loses its discriminatory value. Cumulative OPENING_SCAN TP rate is currently 36.8% (7/19); a sustained fall toward 20–25% would suggest the early-window advantage is eroding, not just that late entries are failing.
-
-| Threshold | Classification impact |
-|---|---|
-| OPENING_SCAN TP rate ≥ 25% (rolling 20) | No impact (current state: 36.8%) |
-| OPENING_SCAN TP rate 20–24% (rolling 20) | EDGE_WEAKENING |
-| OPENING_SCAN TP rate < 20% (rolling 20) | EDGE_WEAKENING |
-| OPENING_SCAN TP rate < 15% cumulative | EDGE_BROKEN |
-
----
-
-## Section 2 — Event Log
-
-### Current state: No disconfirmation events recorded.
-
-| Seq | Event type | Date | Run ID | Asset | Side | Elapsed | Lifecycle | PnL | Classification change |
-|---|---|---|---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — | — | — | — |
-
-*This table is append-only. Rows are never removed.*
-
-When a disconfirmation event occurs, add a row using this format:
-
-```
-| N | Event[1-6] | YYYY-MM-DD | run_id_prefix | ETH/BTC | YES/NO | Xs | PHASE | ±0.XXXXXX | INTACT→WEAKENING / WEAKENING→BROKEN |
-```
-
----
-
-## Section 3 — Running Counters
-
-Updated at each snapshot.
-
-| Counter | Value | Last updated |
-|---|---|---|
-| Event 1 — ACTIVE TP count | **0** | 2026-05-23 Snapshot 1 |
-| Event 2 — >30s TP count | **0** | 2026-05-23 Snapshot 1 |
-| Event 3 — Policy D false-block | **0** | 2026-05-23 Snapshot 1 |
-| Event 4 — Policy B false-block | **0** | 2026-05-23 Snapshot 1 |
-| Event 5 — BTC TP count | **0** | 2026-05-23 Snapshot 1 |
-| Event 6 — OPENING_SCAN TP rate (cumulative) | **36.8%** (7/19) | 2026-05-23 Snapshot 1 |
-| Event 6 — OPENING_SCAN TP rate (rolling 20) | **36.8%** (n < 20; full window) | 2026-05-23 Snapshot 1 |
-| Total matched trades | **28** | 2026-05-23 Snapshot 1 |
-| Current classification | **EDGE_INTACT** | 2026-05-23 Snapshot 1 |
-
----
-
-## Section 4 — What Does NOT Count as Disconfirmation
-
-The following observations are consistent with the current evidence and do not trigger a classification change:
-
-| Observation | Why it is not disconfirmation |
-|---|---|
-| OPENING_SCAN entry resolves SL | Expected — OPENING_SCAN TP rate is 36.8%, not 100%. SL within ≤30s is normal variance |
-| BTC entry resolves SL | BTC = 0/4 TP already; additional BTC SL just adds to the existing BTC-SL pattern |
-| Very early entry (≤7s) resolves SL | 0–7s TP rate is 66.7% from n=3 — highly unstable; a single SL is expected |
-| Session with 0 TP trades | A session without TP trades adds SL evidence and is expected given ~25–37% TP rates |
-| OPENING_SCAN TP rate drops in one session | One session's TP rate is noise; rolling-20 and cumulative rates are what matter |
-| elapsed = 31–35s entry resolves SL | Adds to the >30s all-SL count; consistent with Policy B hypothesis |
-| Any `display_snapshot_sampling` entry resolves SL | Quote source is not the signal; timing is |
-| EV remains high on SL trades | Already established in `opening_scan_survival_audit.md`; EV is blind to timing |
-
----
-
-## Section 5 — Classification Decision Rules
-
-### When EDGE_WEAKENING is reached
-
-1. Record the disconfirmation event in Section 2 immediately.
-2. Update the running counters in Section 3.
-3. Do not act on any policy candidate from `opening_scan_policy_candidate_design.md`.
-4. Do not update the policy design document yet — collect at least 10 more matched trades first.
-5. If the event is isolated (count = 1) and no further disconfirmation events occur in the next 20 trades, the classification may be reviewed — but **it does not automatically revert to EDGE_INTACT**. A written rationale is required.
-6. Continue paper session monitoring normally.
-
-### When EDGE_BROKEN is reached
-
-1. Record the breaking event in Section 2 with full detail.
-2. Update the classification in the header of this document.
-3. **Suspend all policy candidates B, C, D, E.**
-4. Add a note to `opening_scan_policy_candidate_design.md` referencing this event.
-5. The policy design process must restart from the evidence base, not from the existing candidate definitions.
-6. Do not revert from EDGE_BROKEN without a new set of ≥ 50 matched trades showing the pattern has restabilized.
-
-### When evidence threshold is reached without disconfirmation
-
-If total matched trades reaches 100 AND ETH TP in ≤30s reaches ≥ 20 AND dates covered reaches ≥ 5 AND all event counters remain at zero throughout:
-
-- Classification upgrades from EDGE_INTACT to a new review-eligible state.
-- That upgrade is documented in `opening_scan_policy_evidence_monitor.md`, not here.
-- This document continues tracking disconfirmation events independently of the review state.
-
----
-
-## Section 6 — Update Schedule
-
-| Trigger | Required action |
-|---|---|
-| New snapshot in `opening_scan_policy_evidence_monitor.md` | Update Section 3 counters; verify classification |
-| Any disconfirmation event occurs | Update Section 2 log AND Section 3 counters immediately; reassess classification |
-| Classification changes | Update header; add note to `opening_scan_policy_candidate_design.md` |
-| Total matched trades crosses 50, 75, 100 | Update Section 3; note milestone |
-
----
-
-## Guardrails
-
-- This document tracks disconfirmation only. It does not recommend policy actions.
-- A classification of EDGE_INTACT does not authorize runtime policy changes.
-- A classification of EDGE_INTACT does not mean the edge is confirmed.
-- This document must be updated before any replay evaluation is initiated.
-- All events are read from existing offline JSONL data only. No runtime, no live data queries, no strategy changes.
+Do not implement policy, thresholds, strategy changes, risk changes, or execution changes from this monitor.

@@ -1,152 +1,88 @@
 # Session Survival Ranking
 
-Generated: 2026-05-23  
-Scope: read-only survivability ranking across all historical JSONL dates.  
-Hours are UTC.
+Updated: 2026-05-23 post-shutdown-fix evidence refresh
 
-No code, replay, runtime, policy, strategy, risk, execution, live, or S3 changes were made.
+Scope: outcome-truth closed paper trades from 2026-05-22 through latest close `2026-05-23T11:17:06.416120Z`. Earlier legacy rows without `trade_result` are treated as weak context only and are not used as primary promotion evidence.
 
-## Sources
+Runtime behavior changed: No
 
-- `runtime/quant_data/trade_journal/*.jsonl`
-- `runtime/quant_data/execution_log/*.jsonl`
-- `runtime/quant_data/decision_log/*.jsonl`
+Live behavior changed: No
 
-## Scoring Model
+## Executive Read
 
-Survival score combines:
+Best survivable session: 09h UTC, but only as a candidate.
 
-- TP / proxy-win rate.
-- Cross-date stability.
-- Mean PnL.
-- OPENING success rate.
-- ACTIVE success rate.
-- Modern outcome-truth weight.
-- Legacy penalty.
+Most dangerous session: 02h UTC.
 
-Weights:
+Current recommendation: COLLECT_MORE_EVIDENCE.
 
-| Component | Weight |
-|---|---:|
-| TP / proxy success rate | 28% |
-| Cross-date stability | 22% |
-| Mean PnL score | 18% |
-| OPENING success | 10% |
-| ACTIVE success | 10% |
-| Modern outcome-truth weight | +17% |
-| Legacy penalty | -15% |
+The post-shutdown-fix harvest materially changed the map. 09h produced the strongest modern cluster and includes both Opening and Active winners. 10h also produced positive evidence, but mixed. 02h remains the clearest avoid window.
 
-Historical rows without `trade_result` are counted by PnL sign only and penalized as legacy evidence. This means high-scoring legacy-heavy hours are deliberately held below S tier.
+## Ranking
 
-## Tier Summary
+| Tier | Hours UTC | Reason |
+| --- | --- | --- |
+| S candidate | 09h | 6 trades, 5 TP / 1 SL, mean pnl_usdc 0.00725024, includes BTC TP and ACTIVE TP. Needs cross-date repeat. |
+| A candidate | 10h | 6 trades, 3 TP / 3 SL, mean pnl_usdc 0.00169250, includes ACTIVE TP and BTC TP. Mixed but positive. |
+| B watch | 16h | 3 trades, 2 TP / 1 SL, mean pnl_usdc 0.00090138. Useful context, but current quote_stale_ms coverage is absent. |
+| B watch | 01h | 2 trades, 1 TP / 1 SL, mean pnl_usdc 0.00112488. Too small. |
+| Avoid | 02h | 5 trades, 0 TP / 5 SL, mean pnl_usdc -0.00802584. Strongest negative modern hour. |
+| Avoid | 03h, 11h, 12h, 15h, 19h | Negative or zero-TP outcome-truth hours with limited evidence. |
 
-| Tier | Hours |
-|---|---|
-| S | none |
-| A | 01h, 16h |
-| B | 18h, 20h, 06h, 13h, 19h, 09h, 12h, 11h, 17h, 10h, 04h |
-| Avoid | 08h, 03h, 02h, 14h, 15h, 07h, 05h, 00h, 21h, 22h, 23h |
+## Modern Outcome-Truth Hour Table
 
-## Full Ranking
+| Hour UTC | Trades | TP | SL | TP rate | Mean pnl_usdc | BTC | ETH | Opening TP | Active TP | quote_stale_ms coverage |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 01h | 2 | 1 | 1 | 50.0% | 0.00112488 | 0 | 2 | 1 | 0 | 2/2 |
+| 02h | 5 | 0 | 5 | 0.0% | -0.00802584 | 1 | 4 | 0 | 0 | 5/5 |
+| 03h | 1 | 0 | 1 | 0.0% | -0.01015042 | 0 | 1 | 0 | 0 | 1/1 |
+| 09h | 6 | 5 | 1 | 83.3% | 0.00725024 | 2 | 4 | 3 | 2 | 4/6 |
+| 10h | 6 | 3 | 3 | 50.0% | 0.00169250 | 1 | 5 | 2 | 1 | 4/6 |
+| 11h | 2 | 0 | 2 | 0.0% | -0.01076142 | 0 | 2 | 0 | 0 | 2/2 |
+| 12h | 1 | 0 | 1 | 0.0% | -0.01054603 | 0 | 1 | 0 | 0 | 0/1 |
+| 13h | 3 | 1 | 2 | 33.3% | -0.00301011 | 0 | 3 | 1 | 0 | 0/3 |
+| 15h | 2 | 0 | 2 | 0.0% | -0.01344219 | 1 | 1 | 0 | 0 | 0/2 |
+| 16h | 3 | 2 | 1 | 66.7% | 0.00090138 | 0 | 3 | 2 | 0 | 0/3 |
+| 17h | 3 | 1 | 2 | 33.3% | -0.00084027 | 1 | 2 | 1 | 0 | 0/3 |
+| 19h | 1 | 0 | 1 | 0.0% | -0.00403272 | 1 | 0 | 0 | 0 | 0/1 |
 
-| Tier | Hour | Score | Trades | TP/SL | Success Rate | Date W/L/M | Mean PnL | OPENING | ACTIVE | Modern Weight | Legacy Penalty | BTC/ETH | Mean quote_stale_ms |
-|---|---:|---:|---:|---|---:|---|---:|---|---|---:|---:|---|---:|
-| A | 01h | 0.608 | 7 | 1/1 | 85.7% | 2/0/1 | +0.714607 | 1/1 | 0/1 | 0.29 | 0.71 | 5/2 | 29010.5 |
-| A | 16h | 0.588 | 28 | 2/1 | 78.6% | 4/0/0 | +0.440293 | 5/6 | 0/1 | 0.11 | 0.89 | 22/6 | n/a |
-| B | 18h | 0.577 | 21 | 0/0 | 81.0% | 1/0/0 | +0.513333 | n/a | n/a | 0.00 | 1.00 | 21/0 | n/a |
-| B | 20h | 0.574 | 30 | 0/0 | 80.0% | 2/0/0 | +0.489000 | n/a | n/a | 0.00 | 1.00 | 30/0 | n/a |
-| B | 06h | 0.568 | 56 | 0/0 | 83.9% | 4/1/0 | +0.327362 | 6/10 | 2/3 | 0.00 | 1.00 | 45/11 | n/a |
-| B | 13h | 0.549 | 76 | 1/2 | 81.6% | 6/1/1 | +0.437316 | 5/8 | 1/2 | 0.04 | 0.96 | 66/10 | n/a |
-| B | 19h | 0.520 | 3 | 0/1 | 66.7% | 2/1/0 | +0.665322 | n/a | 0/1 | 0.33 | 0.67 | 3/0 | n/a |
-| B | 09h | 0.517 | 34 | 5/1 | 70.6% | 4/3/1 | +0.292287 | 9/16 | 2/3 | 0.18 | 0.82 | 18/16 | 9974.1 |
-| B | 12h | 0.503 | 63 | 0/1 | 79.4% | 5/1/0 | +0.468222 | 5/8 | 0/1 | 0.02 | 0.98 | 59/4 | n/a |
-| B | 11h | 0.464 | 80 | 0/0 | 82.5% | 3/1/1 | +0.387141 | 5/7 | 0/2 | 0.00 | 1.00 | 73/7 | n/a |
-| B | 17h | 0.463 | 12 | 1/2 | 75.0% | 2/2/0 | +0.666008 | 1/3 | 0/1 | 0.25 | 0.75 | 9/3 | n/a |
-| B | 10h | 0.463 | 19 | 2/1 | 63.2% | 4/2/1 | +0.258000 | 2/5 | 2/5 | 0.16 | 0.84 | 11/8 | 10945.0 |
-| B | 04h | 0.448 | 102 | 0/0 | 82.4% | 5/2/1 | +0.389820 | 7/14 | 0/1 | 0.00 | 1.00 | 91/11 | n/a |
-| Avoid | 08h | 0.396 | 12 | 0/0 | 66.7% | 2/0/1 | +0.005983 | 8/12 | 1/2 | 0.00 | 1.00 | 3/9 | n/a |
-| Avoid | 03h | 0.364 | 17 | 0/1 | 64.7% | 3/3/1 | +0.410302 | 4/10 | 0/1 | 0.06 | 0.94 | 8/9 | 10251.7 |
-| Avoid | 02h | 0.345 | 75 | 0/8 | 70.7% | 3/5/1 | +0.374056 | 1/10 | 0/6 | 0.11 | 0.89 | 62/13 | 23146.5 |
-| Avoid | 14h | 0.338 | 12 | 0/0 | 58.3% | 2/1/2 | +0.248573 | 4/7 | 0/2 | 0.00 | 1.00 | 5/7 | n/a |
-| Avoid | 15h | 0.318 | 26 | 0/2 | 65.4% | 1/3/0 | +0.374203 | 1/4 | 0/2 | 0.08 | 0.92 | 21/5 | n/a |
-| Avoid | 07h | 0.276 | 13 | 0/0 | 38.5% | 2/3/0 | +0.379924 | 0/8 | n/a | 0.00 | 1.00 | 5/8 | n/a |
-| Avoid | 05h | 0.264 | 18 | 0/0 | 38.9% | 1/3/1 | +0.112503 | 5/16 | n/a | 0.00 | 1.00 | 8/10 | n/a |
-| Avoid | 00h | 0.040 | 0 | 0/0 | n/a | 0/0/0 | n/a | n/a | n/a | 0.00 | 1.00 | 0/0 | n/a |
-| Avoid | 21h | 0.040 | 0 | 0/0 | n/a | 0/0/0 | n/a | n/a | n/a | 0.00 | 1.00 | 0/0 | n/a |
-| Avoid | 23h | 0.040 | 0 | 0/0 | n/a | 0/0/0 | n/a | n/a | n/a | 0.00 | 1.00 | 0/0 | n/a |
-| Avoid | 22h | 0.000 | 1 | 0/0 | 0.0% | 0/1/0 | -0.002402 | 0/1 | n/a | 0.00 | 1.00 | 1/0 | n/a |
+## Survivability Score Inputs
 
-## Best Survivable Session
-
-Best practical survivable session: `16h UTC`.
-
-Why not 01h despite higher score?
-
-- 01h has only three active dates.
-- Its modern outcome truth is mixed: 1 TP / 1 SL.
-- ACTIVE failed in the modern sample.
-- It looks like a narrow opening-dislocation candidate, not a broad survivable session.
-
-Why 16h survives better:
-
-- 4 active dates, 4 win dates, 0 loss dates.
-- Confirmed outcome truth: 2 TP / 1 SL.
-- Strong proxy success: 22 wins / 6 losses.
-- Better cross-date stability than 09h.
-
-Caveat: 16h is still legacy-heavy, so it is A tier, not S tier.
-
-## Most Dangerous Session
-
-Most dangerous tradable session: `02h UTC`.
-
-Evidence:
-
-- Confirmed outcome truth: 0 TP / 8 SL.
-- ACTIVE success: 0 / 6.
-- OPENING success: 1 / 10.
-- Loss dates exceed win dates: 5 loss dates vs 3 win dates.
-- Mean quote staleness where available: 23.147s.
-- Recent Phase 6 02h was especially bad: 0 TP / 8 SL on 2026-05-23.
-
-`22h` has the lowest numeric score, but it has only one trade and is better treated as low-evidence. `02h` is the more dangerous session because it has enough activity and confirmed adverse outcome truth.
+| Input | Current read |
+| --- | --- |
+| TP rate | 09h leads at 83.3%; 10h is mixed at 50.0%. |
+| Cross-date stability | Not proven. Current strongest cluster is 2026-05-23 heavy. |
+| Mean pnl | 09h and 10h positive; overall dataset remains negative. |
+| OPENING TP | OPENING_SCAN has 10 TP / 14 SL. Good relative to Active, not profitable overall. |
+| ACTIVE TP | ACTIVE has 3 TP / 8 SL. No longer zero, but still weaker than Opening. |
+| Modern outcome-truth weight | 35 closed trades. 2026-05-23 has quote_stale_ms coverage; 2026-05-22 does not. |
+| Legacy penalty | High. Older rows without `trade_result` are excluded from primary ranking. |
 
 ## Candidate Harvest Windows
 
-| Window | Tier | Use Case | Caveat |
-|---|---|---|---|
-| 16h | A | Best survivability candidate | Needs more Phase 6 quote-stale and outcome-truth evidence. |
-| 01h | A | Opening-dislocation candidate | Thin sample; modern result is mixed. |
-| 09h | B | Modern Phase 6 trend/session candidate | Cross-date stability is weak, but confirmed TP/SL is favorable. |
-| 06h | B | Legacy stable trend candidate | No modern outcome-truth support yet. |
-| 13h | B | Legacy BTC-active candidate | Confirmed TP/SL is mixed and legacy-biased. |
-| 10h | B | Balanced trend watchlist | Modern support exists but stability is not clean. |
+| Window | Action | Reason |
+| --- | --- | --- |
+| 09h UTC | Priority harvest candidate | Strongest TP and pnl pocket, includes BTC and Active disconfirmation events. |
+| 10h UTC | Secondary harvest candidate | Positive pnl but mixed TP/SL. Needs more separation. |
+| 16h UTC | Watch only | Positive but small and older/less instrumented. |
+| 02h UTC | Avoid / caution | 0 TP / 5 SL with strongly negative mean pnl. |
+| 11h UTC | Avoid / caution | Recent post-shutdown evidence added SL pressure. |
 
-## Avoid Windows
+## Phase Interpretation
 
-| Window | Reason |
-|---|---|
-| 02h | Confirmed SL-heavy profile; current chop/risk session. |
-| 05h | Low proxy success and recurring loss dates. |
-| 07h | Weak opening profile and recurring losses. |
-| 15h | Confirmed SL-heavy and unstable. |
-| 00h, 21h, 23h | No closed-trade survival evidence. |
-| 22h | One observed proxy loss, no positive evidence. |
+The original Opening-only thesis should not be promoted as a hard policy. A better current hypothesis is:
 
-## Final Interpretation
+09h/10h may be a session-regime pocket where both Opening and selective Active trades can work, while 02h behaves like a recurring failure window.
 
-No hour deserves S tier yet. The data is still split between modern outcome truth and legacy proxy evidence.
+This is a research hypothesis only. It does not authorize runtime policy, risk, strategy, threshold, or execution changes.
 
-- Best survivable session: `16h UTC`.
-- Strongest modern research window: `09h UTC`.
-- Most dangerous session: `02h UTC`.
-- Best opening-dislocation watch: `01h UTC`.
+## Next Evidence Needed
 
-Classification: `LEGACY_BIASED`
+- At least one more date with 09h/10h outcome-truth coverage.
+- More BTC trades before treating BTC 09h TP as stable.
+- More ACTIVE trades before deciding whether Active is conditionally useful or just a short pocket anomaly.
+- Continued quote_stale_ms coverage to confirm that winners are not stale-quote artifacts.
 
-Reason: the ranking can identify candidates, but too much of the cross-date strength still comes from older rows without confirmed `trade_result`, quote staleness, or full lifecycle evidence. The system should continue harvesting, not promote session policy.
+## Final Status
 
-Runtime behavior changed: No  
-Live behavior changed: No  
-Tests: not run, docs-only  
-Persistent tests unchanged
+COLLECT_MORE_EVIDENCE.
