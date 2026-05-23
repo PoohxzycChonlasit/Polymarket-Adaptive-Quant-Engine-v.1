@@ -2,7 +2,7 @@
 
 Document type: read-only daily execution reality tracker.
 
-Updated: 2026-05-22
+Updated: 2026-05-23
 
 Runtime behavior changed: No.
 
@@ -30,47 +30,77 @@ Daily rows use confirmed outcome-truth fields where available:
 
 - `trade_result`
 - `pnl_usdc`
-- `quote_age_at_submit_ms`
-- `quote_age_at_fill_ms`
+- `quote_age_at_submit_ms` from entry fill only
+- `quote_age_at_fill_ms` from entry fill only
 - `quote_lineage_id`
 
 Pre-instrumentation and pre-outcome-truth events are excluded from TP/SL/WIN/LOSS/PnL gate counts.
 
 ---
 
-## Inclusion Policy
+## BTC Window Post-Run Snapshot
 
-A run is eligible for the daily outcome table when:
+Latest clean run inspected only:
 
-- `paper_fill` events have non-null `quote_age_at_fill_ms`.
-- `order_submit_attempt` events have non-null `quote_age_at_submit_ms`.
-- `quote_lineage_id` is present on fills.
-- `paper_trade_replay_key` is present on fills.
-- `model_output_ready=True` on fills.
-- `market_analysis_exception` count is 0.
-- `trade_close` events have non-null `trade_result`, `pnl_usdc`, and `entry_price`.
+```text
+20260522T163940Z_15384_a58a5171
+```
+
+| Metric | Latest clean run |
+|---|---:|
+| Paired trades | 6 |
+| BTC | 2 |
+| ETH | 4 |
+| TP | 3 |
+| SL | 3 |
+| WIN | 3 |
+| LOSS | 3 |
+| Mean PnL | +0.001361 |
+| Mean `quote_age_at_submit_ms` | 22,815.579 |
+| Mean `quote_age_at_fill_ms` | 22,816.736 |
+| 60s+ count | 1 |
+| `market_analysis_exception` | 0 |
+| Model ready events | 36/36 |
+
+BTC outcome-truth trades in latest clean run:
+
+| Asset | Trades | TP | SL | Mean PnL | Mean submit age | Mean fill age |
+|---|---:|---:|---:|---:|---:|---:|
+| BTC | 2 | 0 | 2 | -0.004028 | 9.614s | 9.615s |
+
+BTC detail:
+
+| Result | PnL | Entry submit age | Entry fill age | Quote source | Lineage |
+|---|---:|---:|---:|---|---|
+| SL | -0.004023 | 7.265s | 7.266s | `decision_cycle_fetch` | `ql_c8743a8c219d` |
+| SL | -0.004033 | 11.963s | 11.964s | `decision_cycle_fetch` | `ql_e8834c24e73f` |
+
+Latest-run-only readiness contribution under the old five-gate formula is 58%. This is not the promotion metric; it only describes the latest run contribution.
 
 ---
 
 ## Instrumentation-Era Run Ledger
 
-| Date | Run ID | Phase 5 fills | Outcome-truth closes | Assets | Included in daily outcome table | Note |
-|---|---|---:|---:|---|---|---|
-| 2026-05-22 | `20260522T082440Z_32952_1b709e78` | 6 | 0 | ETH | No | Phase 5 quote-age clean, pre-outcome-truth |
-| 2026-05-22 | `20260522T094222Z_46088_040fac20` | 10 | 5 | ETH | Yes | Clean outcome-truth run |
-| 2026-05-22 | `20260522T130017Z_21712_035b3af7` | 8 | 4 | BTC, ETH | Yes | Clean outcome-truth run |
+| Date | Run ID | Outcome-truth closes | Assets | mex | model_ready | Included | Note |
+|---|---|---:|---|---:|---:|---|---|
+| 2026-05-22 | `20260522T082440Z_32952_1b709e78` | 0 | ETH | 0 | n/a | No | Pre-outcome-truth |
+| 2026-05-22 | `20260522T094222Z_46088_040fac20` | 5 | ETH | 0 | 30/30 | Yes | Baseline run |
+| 2026-05-22 | `20260522T130017Z_21712_035b3af7` | 4 | BTC, ETH | 0 | 24/24 | Yes | Baseline BTC run |
+| 2026-05-22 | `20260522T153403Z_21756_65a54e7a` | 1 | ETH | 0 | 6/6 | Yes | Accumulation |
+| 2026-05-22 | `20260522T162413Z_24060_394d4a33` | 1 | ETH | 0 | 6/6 | Yes | Accumulation |
+| 2026-05-22 | `20260522T163940Z_15384_a58a5171` | 6 | BTC, ETH | 0 | 36/36 | Yes | Latest clean run; late BTC closes included |
+
+Earlier runs (`045152`, `052610`, `055830`, `075658`) have paired trades but lack outcome-truth fields (`trade_result` / `pnl_usdc` absent). Excluded.
 
 ---
 
 ## Daily Execution Reality Table
 
-Current JSONL aggregation from clean outcome-truth runs:
-
-| Date | Paired trades | BTC | ETH | TP | SL | WIN | LOSS | Mean PnL | Mean submit quote age | Mean fill quote age | Quote lineage IDs | 60s+ fills | Phase 6 readiness |
+| Date | Paired | BTC | ETH | TP | SL | WIN | LOSS | Mean PnL | Mean entry submit age | Mean entry fill age | Lineage IDs | 60s+ fills | Readiness |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| 2026-05-22 | 9 | 1 | 8 | 3 | 6 | 3 | 6 | -0.005455 | 18.987s | 18.990s | 18 | 1 | 65.0% |
+| 2026-05-22 | 17 | 3 | 14 | 6 | 11 | 6 | 11 | -0.003512 | 24.136s | 24.139s | 17 | 2 | 89% |
 
-Readiness percent is the capped average of these five gates:
+Readiness = capped average of:
 
 ```text
 paired / 20
@@ -82,141 +112,155 @@ SL / 5
 
 ---
 
-## Daily Delta
+## Gate Progress
 
-Delta is measured from the prior accepted Phase 6 gate baseline to the current raw clean-run aggregation.
+Old-formula continuity gates:
+
+```text
+paired  17/20 [#################---] 85%  ACCUMULATING
+BTC      3/5  [############--------] 60%  ACCUMULATING
+ETH     14/5  [####################] 100% capped PASS
+TP       6/5  [####################] 100% capped PASS
+SL      11/5  [####################] 100% capped PASS
+60s+     2/1  [####################] 100% capped PASS
+```
+
+Task gates:
+
+| Gate | Required | Current | Status |
+|---|---:|---:|---|
+| Paired trades | >= 15 | 17 | MET |
+| BTC paired trades | >= 3 | 3 | MET |
+| TP / WIN outcomes | >= 4 | 6 | MET |
+| Readiness | >= 80% | 89% | MET |
+
+---
+
+## Delta Vs Previous Monitor
+
+Previous monitor state was 15 paired, 1 BTC, 14 ETH, 6 TP, 9 SL, 2 60s+ fills, and 79% readiness. The late BTC closes inside `20260522T163940Z_15384_a58a5171` add two BTC SL trades.
 
 | Field | Previous | Current | Delta |
 |---|---:|---:|---:|
-| Paired trades | 8 | 9 | +1 |
-| BTC trades | 0 | 1 | +1 |
-| TP outcomes | 3 | 3 | 0 |
-| Phase 6 readiness | 60.0% | 65.0% | +5.0 pp |
-
-Status:
-
-```text
-ACCUMULATING
-```
-
-## Gate Progress
-
-```text
-paired 9/20 [#########-----------]
-BTC    1/5  [####----------------]
-TP     3/5  [############--------]
-SL     6/5  [####################] capped
-60s+   1/1  [####################] capped
-```
+| Paired trades | 15 | 17 | +2 |
+| BTC trades | 1 | 3 | +2 |
+| ETH trades | 14 | 14 | 0 |
+| TP outcomes | 6 | 6 | 0 |
+| SL outcomes | 9 | 11 | +2 |
+| 60s+ fills | 2 | 2 | 0 |
+| Readiness | 79% | 89% | +10pp |
+| Mean entry submit age | 26.073s | 24.136s | -1.937s |
+| Mean entry fill age | 26.076s | 24.139s | -1.937s |
 
 ---
 
 ## Trend Layer
 
-Trend layer uses the prior accepted Phase 6 gate baseline as the previous point and the current raw clean-run aggregation as the current point.
-
-| Date | Paired trades | BTC | ETH | TP | SL | Readiness | Mean fill quote age | Mean PnL | 60s+ count | Daily delta |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| 2026-05-22 | 9 | 1 | 8 | 3 | 6 | 65.0% | 18.990s | -0.005455 | 1 | paired +1, BTC +1, TP 0, readiness +5.0 pp |
-
-Rolling trend:
-
 | Metric | Previous | Current | Trend |
 |---|---:|---:|---|
-| Paired trades | 8 | 9 | UP |
-| BTC trades | 0 | 1 | UP |
-| TP outcomes | 3 | 3 | FLAT |
-| Readiness | 60.0% | 65.0% | UP |
+| Paired trades | 15 | 17 | UP |
+| BTC trades | 1 | 3 | UP |
+| TP outcomes | 6 | 6 | FLAT |
+| Readiness | 79% | 89% | UP |
+| Mean entry quote age | 26.076s | 24.139s | DOWN (less stale) |
+| 60s+ fills | 2 | 2 | FLAT |
 
-Readiness ETA if current accumulation speed continues:
+---
 
-| Gate | Current | Target | Current speed | ETA |
-|---|---:|---:|---:|---|
-| Paired trades | 9 | 20 | +1 per monitor delta | 11 deltas |
-| BTC trades | 1 | 5 | +1 per monitor delta | 4 deltas |
-| TP outcomes | 3 | 5 | 0 per monitor delta | Not estimable until TP resumes |
+## Entry Quote-Age Distribution
 
-Trend status:
+All 17 outcome-truth trades:
+
+| Bucket | Count | Percent | TP | SL |
+|---|---:|---:|---:|---:|
+| 0-5s | 0 | 0.0% | 0 | 0 |
+| 5-15s | 12 | 70.6% | 3 | 9 |
+| 15-30s | 0 | 0.0% | 0 | 0 |
+| 30-60s | 3 | 17.6% | 1 | 2 |
+| 60s+ | 2 | 11.8% | 2 | 0 |
+
+Both 60s+ entries are ETH TP. The latest BTC trades were fresh 5-15s entries and both were SL.
+
+---
+
+## Asset Segmentation
+
+| Asset | Paired | TP | SL | WIN | LOSS | Mean PnL |
+|---|---:|---:|---:|---:|---:|---:|
+| BTC | 3 | 0 | 3 | 0 | 3 | -0.009392 |
+| ETH | 14 | 6 | 8 | 6 | 8 | -0.002252 |
+
+BTC count clears the task gate, but BTC has no TP yet. This is review-eligible evidence, not a positive BTC performance signal.
+
+---
+
+## Classification
 
 ```text
-ACCUMULATING
+READY_FOR_PHASE6_REVIEW
 ```
 
----
+Rationale:
 
-## Current Raw Gate Progress
+- Paired task gate cleared: 17 >= 15.
+- BTC task gate cleared: 3 >= 3.
+- TP task gate cleared: 6 >= 4.
+- Readiness cleared: 89% >= 80%.
+- `market_analysis_exception` remains 0 on the latest clean run.
 
-| Gate | Progress | Percent | Status |
-|---|---:|---:|---|
-| Paired trades | 9/20 | 45% | NOT MET |
-| BTC trades | 1/5 | 20% | NOT MET |
-| ETH trades | 8/5 | 100% capped | MET |
-| TP outcomes | 3/5 | 60% | NOT MET |
-| SL outcomes | 6/5 | 100% capped | MET |
-| 60s+ quote-age fills | 1/1 | 100% capped | MET |
+Caveats:
 
-The project should not promote because paired count, BTC count, and TP count remain below readiness targets.
-
----
-
-## Daily Notes
-
-2026-05-22:
-
-- Confirmed outcome-truth evidence exists.
-- `trade_result` and `pnl_usdc` support direct TP/SL/WIN/LOSS counting.
-- `quote_age_at_submit_ms`, `quote_age_at_fill_ms`, and `quote_lineage_id` are present on included fills.
-- ETH coverage is above the minimum gate.
-- BTC coverage has started but remains under target.
-- TP coverage remains under target.
-- 60s+ evidence exists, but the stale-quote relationship is not strong enough for Phase 6.
+- BTC outcome truth is 0 TP / 3 SL.
+- BTC old-formula gate is 3/5, not 5/5.
+- Overall mean PnL remains negative.
+- Phase 6 review eligibility does not authorize S3 promotion or runtime policy changes.
 
 ---
 
 ## Exactly Three Future Options
 
-## OPTION 1 - SAFE EV PRESERVATION
+### OPTION 1 - SAFE EV PRESERVATION
 
-Thesis: keep Phase 6 blocked until all gates pass with margin.
+Thesis: open Phase 6 review only, with no runtime promotion.
 
-Quant logic: paired sample, BTC coverage, and TP coverage remain too thin, and stale-quote behavior is not stable enough to become policy.
+Quant logic: the requested BTC and readiness gates are now met, but BTC-specific outcome quality is weak because all three BTC trades are SL.
 
-Likely outcome: additional clean sessions clarify whether BTC behaves differently and whether TP coverage catches up.
+Likely outcome: review can decide whether BTC SL concentration is a blocker or an acceptable evidence caveat.
 
-Hidden risk: treating capped SL or 60s+ gates as sufficient may hide weak BTC and TP coverage.
+Hidden risk: treating 3/3 BTC count as quality evidence would overstate the BTC signal.
 
-Recommended action: continue daily tracking without runtime changes.
+Recommended action: prepare Phase 6 review packet; do not promote S3.
 
-## OPTION 2 - AGGRESSIVE INFORMATION DISCOVERY
+### OPTION 2 - AGGRESSIVE INFORMATION DISCOVERY
 
-Thesis: collect more clean outcome-truth rows across asset, side, quote source, and lifecycle.
+Thesis: continue BTC accumulation until at least one BTC TP appears.
 
-Quant logic: the tracker shows useful daily structure, but the next information gain comes from BTC and TP samples.
+Quant logic: BTC count is now sufficient for the task gate, but BTC directionality is not balanced. A first BTC TP would reduce the current all-SL concentration concern.
 
-Likely outcome: one or two more clean sessions will decide whether the current ETH-heavy evidence generalizes.
+Likely outcome: additional BTC sessions clarify whether the 0/3 TP count is sample noise or asset-specific underperformance.
 
-Hidden risk: same-day clustering can make evidence look broader than it is.
+Hidden risk: waiting for a BTC TP may delay review despite gates being met.
 
-Recommended action: prioritize future analysis around BTC confirmed pairs and TP outcomes.
+Recommended action: continue BTC harvest windows if the operator wants stronger BTC quality before review.
 
-## OPTION 3 - STRUCTURAL / ROOT-CAUSE PATH
+### OPTION 3 - STRUCTURAL / ROOT-CAUSE PATH
 
-Thesis: gate readiness should separate the accepted monitor baseline from raw append-only JSONL drift.
+Thesis: separate count readiness from quality readiness.
 
-Quant logic: raw logs can grow within the same date after a monitor note is written. A daily tracker should show current totals while preserving prior gate snapshots.
+Quant logic: count gates are now met, while PnL and BTC TP/SL composition remain weak. A review checklist should show both.
 
-Likely outcome: fewer contradictions between daily monitors, phase monitors, and Obsidian notes.
+Likely outcome: fewer false promotions because "ready for review" is not confused with "ready to promote."
 
-Hidden risk: stale docs can silently lag new JSONL evidence and confuse readiness gates.
+Hidden risk: adding a new quality layer midstream may make previous readiness percentages harder to compare.
 
-Recommended action: refresh this daily monitor after each accepted Phase 5 monitor update.
+Recommended action: add a Phase 6 review worksheet that splits count gates, quality gates, and safety blockers.
 
 ---
 
 ## Recommendation
 
 ```text
-COLLECT_MORE_EVIDENCE
+READY_FOR_PHASE6_REVIEW
 ```
 
-Phase 6 is not ready. Paired count, BTC evidence, and TP evidence remain insufficient.
+Open Phase 6 review. Do not promote S3, change runtime, change strategy/risk/execution, or infer BTC profitability from the current sample.
