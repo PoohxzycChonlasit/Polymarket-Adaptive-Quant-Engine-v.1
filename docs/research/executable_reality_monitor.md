@@ -177,6 +177,35 @@ safe executable evidence begins around $250 bankroll
 
 Current `$20` T0 paper evidence is too small for executable-PnL claims.
 
+## 02h Session Addendum
+
+Updated 2026-05-24 from `docs/research/session_02h_fast_sl_audit.md`.
+
+02h UTC classification:
+
+```text
+HOSTILE_SESSION_CANDIDATE
+```
+
+02h executable reality:
+
+| Metric | Value |
+|---|---:|
+| 02h matched trades | `8` |
+| 02h TP | `0` |
+| 02h SL | `8` |
+| SL <= 15s | `6/8` |
+| SL <= 30s | `8/8` |
+| median hold | `6.5s` |
+| dust-zone trades | `8/8` |
+| executable trades | `0/8` |
+| signal PnL | `-$0.06515721` |
+| executable PnL | `N/A` |
+
+Interpretation:
+
+02h is a negative signal bucket, not executable evidence. It should be excluded from positive session-edge claims and tracked separately as a hostile-session candidate. This does not authorize a runtime block, threshold change, stop-loss change, risk change, or live behavior change.
+
 ## Required Answers
 
 1. Total paper trades:
