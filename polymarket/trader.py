@@ -453,15 +453,25 @@ class PolymarketTrader:
         self._last_risk_state_event_ts = 0.0
         self._shutdown_complete = False
 
-    def close(self) -> None:
+    def _call_shutdown_hook(self, hook, *, join_timeout: float | None = None) -> None:
+        if not callable(hook):
+            return
+        if join_timeout is None:
+            hook()
+            return
+        try:
+            hook(join_timeout=join_timeout)
+        except TypeError:
+            hook()
+
+    def close(self, *, join_timeout: float | None = None) -> None:
         """Release trader-owned background resources without changing trading state."""
         if self._shutdown_complete:
             return
         self._shutdown_complete = True
         try:
             close_ptb = getattr(self.ptb_tracker, "close", None)
-            if callable(close_ptb):
-                close_ptb()
+            self._call_shutdown_hook(close_ptb, join_timeout=join_timeout)
         except Exception as exc:
             LOGGER.debug("[SHUTDOWN] PTB/oracle feed close failed: %s", exc)
         for module_name, attr_name in (
@@ -472,8 +482,7 @@ class PolymarketTrader:
                 module = __import__(module_name, fromlist=[attr_name])
                 feed = getattr(module, attr_name, None)
                 stop_feed = getattr(feed, "stop", None)
-                if callable(stop_feed):
-                    stop_feed()
+                self._call_shutdown_hook(stop_feed, join_timeout=join_timeout)
             except Exception as exc:
                 LOGGER.debug("[SHUTDOWN] %s close failed: %s", module_name, exc)
         try:
@@ -481,11 +490,11 @@ class PolymarketTrader:
         except Exception:
             pass
 
-    def shutdown(self) -> None:
-        self.close()
+    def shutdown(self, *, join_timeout: float | None = None) -> None:
+        self.close(join_timeout=join_timeout)
 
-    def stop(self) -> None:
-        self.close()
+    def stop(self, *, join_timeout: float | None = None) -> None:
+        self.close(join_timeout=join_timeout)
 
     def _runtime_mode(self) -> str:
         return "paper" if self.settings.paper_trading else "live"
@@ -5557,11 +5566,12 @@ class PolymarketTrader:
             "critical_count": len(summary["critical_warnings"]),
         }
 
-    def log_paper_session_summary(self) -> None:
+    def log_paper_session_summary(self, *, include_runtime_evaluation: bool = True) -> None:
         if not self._paper_enabled():
             return
         self.log_quant_summary(force=True)
-        self._log_session_runtime_evaluation()
+        if include_runtime_evaluation:
+            self._log_session_runtime_evaluation()
 
     def _log_session_runtime_evaluation(self) -> None:
         try:

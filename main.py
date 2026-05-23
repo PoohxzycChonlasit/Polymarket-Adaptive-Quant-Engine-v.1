@@ -26,6 +26,7 @@ from polymarket.signal import BACKTEST_WIN_RATE
 
 
 LOGGER = logging.getLogger(__name__)
+REALTIME_SHUTDOWN_JOIN_TIMEOUT_SECONDS = 1.0
 
 
 def _call_with_optional_ui(func, interval: int, ui_mode: str, fps_mode: str) -> int:
@@ -34,6 +35,23 @@ def _call_with_optional_ui(func, interval: int, ui_mode: str, fps_mode: str) -> 
     if "ui_mode" in params or "fps_mode" in params:
         return func(interval, ui_mode=ui_mode, fps_mode=fps_mode)
     return func(interval)
+
+
+def _call_with_supported_kwargs(func, /, **kwargs):
+    params = inspect.signature(func).parameters
+    if any(param.kind == inspect.Parameter.VAR_KEYWORD for param in params.values()):
+        return func(**kwargs)
+    supported = {key: value for key, value in kwargs.items() if key in params}
+    return func(**supported)
+
+
+def _build_realtime_shutdown_signal_handler(stop_event: threading.Event, mark_shutdown_requested):
+    def _handle_signal(*_args: object) -> None:
+        mark_shutdown_requested()
+        stop_event.set()
+        raise KeyboardInterrupt
+
+    return _handle_signal
 
 
 DEPENDENCY_SPECS: tuple[dict[str, object], ...] = (
@@ -311,15 +329,19 @@ def _shutdown_realtime_resources(
     shutdown_requested: bool,
     cycle_num: int,
     stop_scheduler=None,
+    shutdown_join_timeout: float = REALTIME_SHUTDOWN_JOIN_TIMEOUT_SECONDS,
 ) -> None:
     """Quiet and stop realtime-owned resources before console output is restored."""
     quiet_http_client_loggers_for_shutdown()
     try:
-        trader.shutdown()
+        _call_with_supported_kwargs(trader.shutdown, join_timeout=shutdown_join_timeout)
     except Exception as exc:
         LOGGER.debug("[SHUTDOWN] trader shutdown failed: %s", exc)
     try:
-        trader.log_paper_session_summary()
+        _call_with_supported_kwargs(
+            trader.log_paper_session_summary,
+            include_runtime_evaluation=not shutdown_requested,
+        )
     finally:
         try:
             rl_logger.force_save_summary()
@@ -401,12 +423,14 @@ def run_polymarket_realtime(
     cycle_num  = 0
     shutdown_requested = False
 
-    def _handle_sigint(*_args: object) -> None:
+    def _mark_shutdown_requested() -> None:
         nonlocal shutdown_requested
         shutdown_requested = True
-        stop.set()
 
-    signal.signal(signal.SIGINT, _handle_sigint)
+    signal_handler = _build_realtime_shutdown_signal_handler(stop, _mark_shutdown_requested)
+    signal.signal(signal.SIGINT, signal_handler)
+    if hasattr(signal, "SIGBREAK"):
+        signal.signal(signal.SIGBREAK, signal_handler)
 
     # Identify console handlers (everything that is NOT a file handler).
     # We remove them before entering the Live screen so their output does not
@@ -453,369 +477,374 @@ def run_polymarket_realtime(
     except Exception as e:
         LOGGER.warning("Could not start daily report scheduler: %s", e)
 
-    for h in _console_handlers:
-        root_log.removeHandler(h)
+    try:
+        for h in _console_handlers:
+            root_log.removeHandler(h)
 
-    with display:
-        last_cycle = time.monotonic() - interval  # fire immediately on first loop
+        with display:
+            last_cycle = time.monotonic() - interval  # fire immediately on first loop
 
-        last_tick = 0.0
-        last_orderbook_tick = 0.0
-        last_balance_tick = 0.0
+            last_tick = 0.0
+            last_orderbook_tick = 0.0
+            last_balance_tick = 0.0
 
-        while not stop.is_set():
-            now_mono = time.monotonic()
-            elapsed  = now_mono - last_cycle
-            next_in  = max(0, int(interval - elapsed))
-            display.update_countdown(next_in)
+            while not stop.is_set():
+                now_mono = time.monotonic()
+                elapsed  = now_mono - last_cycle
+                next_in  = max(0, int(interval - elapsed))
+                display.update_countdown(next_in)
 
-            # ── REALTIME LOOP (every 1s) ── Oracle prices + countdown refresh ──
-            if now_mono - last_tick >= 1.0:
-                last_tick = now_mono
+                # ── REALTIME LOOP (every 1s) ── Oracle prices + countdown refresh ──
+                if now_mono - last_tick >= 1.0:
+                    last_tick = now_mono
 
-                if now_mono - last_balance_tick >= 30.0:
-                    last_balance_tick = now_mono
+                    if now_mono - last_balance_tick >= 30.0:
+                        last_balance_tick = now_mono
+                        try:
+                            trader.refresh_live_balance()
+                        except Exception as exc:
+                            LOGGER.warning("[BALANCE_REFRESH] Failed: %s", exc)
+                        display.update_portfolio(trader.dashboard_portfolio_state())
+                        display.update_session_summary(trader.dashboard_session_summary())
+                        display.update_recent_trades(trader.get_recent_display_trades())
+
+                    # Compute 5-minute window clock once (same for all assets)
+                    now_ts   = int(time.time())
+                    epoch    = now_ts - (now_ts % 300)
+                    countdown = max(0, epoch + 300 - now_ts)
+                    win_start = datetime.fromtimestamp(epoch, tz=timezone.utc).strftime("%H:%M")
+                    win_end   = datetime.fromtimestamp(epoch + 300, tz=timezone.utc).strftime("%H:%M")
+                    window_ts = f"{win_start}-{win_end}"
+
+                    ticker_updates: dict[str, dict] = {}
+                    for ticker in display._TICKERS:
+                        state  = trader.ptb_tracker.get_state(ticker)
+                        symbol = f"pm-5m-{ticker.lower()}"
+
+                        trader.tracker.update_polymarket_unrealized(symbol, state.is_above_ptb)
+                        trader.enforce_pre_close_exits(countdown)
+                        if countdown <= 5:
+                            trader.settle_and_record(symbol, state.is_above_ptb)
+
+                        ticker_updates[ticker] = {
+                            "ref_price":     state.price_to_beat,
+                            "current_price": state.current_price,
+                            "is_above":      state.is_above_ptb,
+                            "price_diff":    state.price_diff_pct,
+                            "countdown":     countdown,
+                            "window_ts":     window_ts,
+                        }
+                        quant_detail = trader.last_quant_details.get(ticker, {})
+                        if quant_detail:
+                            ticker_updates[ticker].update({
+                                "p_yes":       quant_detail.get("p_yes", 0.0),
+                                "p_no":        quant_detail.get("p_no", 0.0),
+                                "ev":          quant_detail.get("ev", 0.0),
+                                "min_ev":      quant_detail.get("min_ev", 0.0),
+                                "delta_regime": quant_detail.get("delta_regime", "--"),
+                                "delta_multiplier": quant_detail.get("delta_multiplier", 0.0),
+                                "skip_reason": quant_detail.get("skip_reason", ""),
+                                "score":       quant_detail.get("score", 0.0),
+                                "ask_price":   quant_detail.get("ask_price", 0.0),
+                                "final_size":  quant_detail.get("final_size", 0.0),
+                                "frequency_multiplier": quant_detail.get("frequency_multiplier", 0.0),
+                                "decision":    quant_detail.get("decision", "SKIP"),
+                            })
+                        else:
+                            ticker_updates[ticker].update({
+                                "skip_reason": "model_not_run",
+                                "decision": "SKIP",
+                            })
+
+                    if now_mono - last_orderbook_tick >= 5.0:
+                        last_orderbook_tick = now_mono
+                        for ticker in display._TICKERS:
+                            sig = trader.last_signals.get(ticker)
+                            outcome = sig.side if sig and sig.side in ("YES", "NO") else "YES"
+                            confidence = sig.score if sig and sig.score > 0 else BACKTEST_WIN_RATE
+                            metrics = trader.get_market_display_metrics(
+                                ticker=ticker,
+                                outcome=outcome,
+                                confidence=confidence,
+                            )
+                            ticker_updates.setdefault(ticker, {}).update({
+                                "bid":         metrics.bid,
+                                "ask":         metrics.ask,
+                                "spread":      metrics.spread,
+                                "snipe_score": metrics.snipe_score,
+                                "edge_pct":    metrics.edge_pct,
+                                "p_yes":       metrics.p_yes,
+                                "p_no":        metrics.p_no,
+                                "model_p_yes": metrics.p_yes,
+                                "model_p_no":  metrics.p_no,
+                                "yes_bid":     metrics.yes_bid,
+                                "yes_ask":     metrics.yes_ask,
+                                "no_bid":      metrics.no_bid,
+                                "no_ask":      metrics.no_ask,
+                                "yes_mid":     metrics.yes_mid,
+                                "no_mid":      metrics.no_mid,
+                                "clob_source": metrics.clob_source,
+                                "orderbook_age_ms": metrics.orderbook_age_ms,
+                                "yes_orderbook_age_ms": metrics.yes_orderbook_age_ms,
+                                "no_orderbook_age_ms": metrics.no_orderbook_age_ms,
+                                "token_id":    metrics.token_id,
+                                "yes_token_id": metrics.yes_token_id,
+                                "no_token_id": metrics.no_token_id,
+                                "condition_id": metrics.condition_id,
+                                "market_slug": metrics.market_slug,
+                                "outcome":     metrics.outcome,
+                                "token_mapping_warning": metrics.token_mapping_warning,
+                                "ev":          metrics.ev,
+                                "min_ev":      metrics.min_ev,
+                                "delta_regime": metrics.delta_regime,
+                                "delta_multiplier": metrics.delta_multiplier,
+                                "skip_reason": metrics.skip_reason,
+                                "score":       metrics.score,
+                                "ask_price":   metrics.ask_price,
+                                "final_size":  metrics.final_size,
+                                "frequency_multiplier": metrics.frequency_multiplier,
+                                # Research Cockpit wiring v1 — display-only, no trading effect
+                                "liquidity_state":        metrics.liquidity_state,
+                                "market_regime":          sig.market_regime if sig else "UNKNOWN",
+                                "signal_volatility_score": sig.volatility_score if sig else 0.0,
+                            })
+                            LOGGER.debug(
+                                "[DASHBOARD_PAYLOAD] ticker=%s yes_bid=%.4f yes_ask=%.4f no_bid=%.4f no_ask=%.4f spread=%.4f model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s age_ms=%s reason=%s",
+                                ticker,
+                                metrics.yes_bid,
+                                metrics.yes_ask,
+                                metrics.no_bid,
+                                metrics.no_ask,
+                                metrics.spread,
+                                metrics.p_yes,
+                                metrics.p_no,
+                                metrics.ev,
+                                metrics.min_ev,
+                                metrics.delta_regime,
+                                metrics.delta_multiplier,
+                                metrics.orderbook_age_ms,
+                                metrics.skip_reason,
+                            )
+                            if settings.arb_display_enabled:
+                                arb = trader.get_arbitrage_opportunity(ticker)
+                                arb_data = asdict(arb)
+                                arb_data.pop("ticker", None)
+                                display.update_arbitrage(ticker, **arb_data)
+
+                    display.update_realtime_batch(ticker_updates)
+
+                    # v3.1: Panic Sell check (every second when countdown <= 20s)
+                    trader.panic_sell_check(countdown)
+
+                    # v3.1: Take Profit check (every second — catch profits early)
+                    trader.check_take_profit(countdown)
+
+                    # v3.5: Stop Loss check (every second)
+                    trader.check_stop_loss(countdown)
+
+                    # Push WebSocket sync status
+                    ws_status = trader.ptb_tracker._feed.get_ws_sync_status()
+                    display.update_ws_status(ws_status)
+
+                    # Log a compact oracle line for active markets only (file log only — console removed).
+                    active_bits = []
+                    for ticker in display._TICKERS:
+                        item = ticker_updates.get(ticker, {})
+                        edge = display._markets[ticker].get("edge_pct") or 0.0
+                        active_bits.append(
+                            f"{ticker} PTB=${float(item.get('ref_price', 0.0)):,.2f} "
+                            f"Oracle=${float(item.get('current_price', 0.0)):,.2f} "
+                            f"Edge={float(edge) * 100:.2f}%"
+                        )
+                    LOGGER.info("[REALTIME 1s] %s | Countdown: %ds", " | ".join(active_bits), countdown)
+
+                if elapsed >= interval:
+                    last_cycle = time.monotonic()
+                    cycle_num += 1
+
+                    LOGGER.info("[PM-REALTIME] Cycle #%s starting", cycle_num)
+
+                    # ── Run full AI + execution cycle ──────────────────────────
                     try:
-                        trader.refresh_live_balance()
-                    except Exception as exc:
-                        LOGGER.warning("[BALANCE_REFRESH] Failed: %s", exc)
+                        outcomes = trader.run_single_cycle(top_n=7)
+                    except Exception:
+                        LOGGER.exception("Cycle #%s raised an exception — skipping.", cycle_num)
+                        outcomes = []
+
+                    # ── Refresh portfolio after cycle ──────────────────────────
                     display.update_portfolio(trader.dashboard_portfolio_state())
                     display.update_session_summary(trader.dashboard_session_summary())
-                    display.update_recent_trades(trader.get_recent_display_trades())
+                    # Research Cockpit v1: probe counts (in-memory only, no disk read)
+                    display.update_research_obs(**trader.dashboard_probe_counts())
 
-                # Compute 5-minute window clock once (same for all assets)
-                now_ts   = int(time.time())
-                epoch    = now_ts - (now_ts % 300)
-                countdown = max(0, epoch + 300 - now_ts)
-                win_start = datetime.fromtimestamp(epoch, tz=timezone.utc).strftime("%H:%M")
-                win_end   = datetime.fromtimestamp(epoch + 300, tz=timezone.utc).strftime("%H:%M")
-                window_ts = f"{win_start}-{win_end}"
+                    # ── Update per-market state and build cycle result list ────
+                    cycle_results: list[dict] = []
 
-                ticker_updates: dict[str, dict] = {}
-                for ticker in display._TICKERS:
-                    state  = trader.ptb_tracker.get_state(ticker)
-                    symbol = f"pm-5m-{ticker.lower()}"
+                    for outcome in outcomes:
+                        ticker = outcome.market_id.replace("pm-5m-", "").upper()
 
-                    trader.tracker.update_polymarket_unrealized(symbol, state.is_above_ptb)
-                    trader.enforce_pre_close_exits(countdown)
-                    if countdown <= 5:
-                        trader.settle_and_record(symbol, state.is_above_ptb)
+                        decision  = "rejected" if outcome.skipped else "approved"
+                        notional  = outcome.risk_plan.notional_size if outcome.risk_plan else 0.0
+                        signal    = "long" if outcome.decision == "buy" else "flat" if outcome.skipped else "wait"
 
-                    ticker_updates[ticker] = {
-                        "ref_price":     state.price_to_beat,
-                        "current_price": state.current_price,
-                        "is_above":      state.is_above_ptb,
-                        "price_diff":    state.price_diff_pct,
-                        "countdown":     countdown,
-                        "window_ts":     window_ts,
-                    }
-                    quant_detail = trader.last_quant_details.get(ticker, {})
-                    if quant_detail:
-                        ticker_updates[ticker].update({
-                            "p_yes":       quant_detail.get("p_yes", 0.0),
-                            "p_no":        quant_detail.get("p_no", 0.0),
-                            "ev":          quant_detail.get("ev", 0.0),
-                            "min_ev":      quant_detail.get("min_ev", 0.0),
-                            "delta_regime": quant_detail.get("delta_regime", "--"),
-                            "delta_multiplier": quant_detail.get("delta_multiplier", 0.0),
-                            "skip_reason": quant_detail.get("skip_reason", ""),
-                            "score":       quant_detail.get("score", 0.0),
-                            "ask_price":   quant_detail.get("ask_price", 0.0),
-                            "final_size":  quant_detail.get("final_size", 0.0),
-                            "frequency_multiplier": quant_detail.get("frequency_multiplier", 0.0),
-                            "decision":    quant_detail.get("decision", "SKIP"),
-                        })
-                    else:
-                        ticker_updates[ticker].update({
-                            "skip_reason": "model_not_run",
-                            "decision": "SKIP",
-                        })
+                        # Only call AI and Risk for open slots, but update display with latest fetched ptb
+                        ptb_info = trader.ptb_tracker.get_market_ptb(ticker)
 
-                if now_mono - last_orderbook_tick >= 5.0:
-                    last_orderbook_tick = now_mono
-                    for ticker in display._TICKERS:
                         sig = trader.last_signals.get(ticker)
-                        outcome = sig.side if sig and sig.side in ("YES", "NO") else "YES"
-                        confidence = sig.score if sig and sig.score > 0 else BACKTEST_WIN_RATE
+                        display_outcome = "NO" if outcome.decision == "sell" else "YES"
+                        if outcome.skipped and sig and sig.side in ("YES", "NO"):
+                            display_outcome = sig.side
+                        display_confidence = (
+                            outcome.confidence
+                            if outcome.confidence > 0
+                            else sig.score if sig and sig.score > 0
+                            else BACKTEST_WIN_RATE
+                        )
                         metrics = trader.get_market_display_metrics(
                             ticker=ticker,
-                            outcome=outcome,
-                            confidence=confidence,
+                            outcome=display_outcome,
+                            confidence=display_confidence,
                         )
-                        ticker_updates.setdefault(ticker, {}).update({
-                            "bid":         metrics.bid,
-                            "ask":         metrics.ask,
-                            "spread":      metrics.spread,
-                            "snipe_score": metrics.snipe_score,
-                            "edge_pct":    metrics.edge_pct,
-                            "p_yes":       metrics.p_yes,
-                            "p_no":        metrics.p_no,
-                            "model_p_yes": metrics.p_yes,
-                            "model_p_no":  metrics.p_no,
-                            "yes_bid":     metrics.yes_bid,
-                            "yes_ask":     metrics.yes_ask,
-                            "no_bid":      metrics.no_bid,
-                            "no_ask":      metrics.no_ask,
-                            "yes_mid":     metrics.yes_mid,
-                            "no_mid":      metrics.no_mid,
-                            "clob_source": metrics.clob_source,
-                            "orderbook_age_ms": metrics.orderbook_age_ms,
-                            "yes_orderbook_age_ms": metrics.yes_orderbook_age_ms,
-                            "no_orderbook_age_ms": metrics.no_orderbook_age_ms,
-                            "token_id":    metrics.token_id,
-                            "yes_token_id": metrics.yes_token_id,
-                            "no_token_id": metrics.no_token_id,
-                            "condition_id": metrics.condition_id,
-                            "market_slug": metrics.market_slug,
-                            "outcome":     metrics.outcome,
-                            "token_mapping_warning": metrics.token_mapping_warning,
-                            "ev":          metrics.ev,
-                            "min_ev":      metrics.min_ev,
-                            "delta_regime": metrics.delta_regime,
-                            "delta_multiplier": metrics.delta_multiplier,
-                            "skip_reason": metrics.skip_reason,
-                            "score":       metrics.score,
-                            "ask_price":   metrics.ask_price,
-                            "final_size":  metrics.final_size,
-                            "frequency_multiplier": metrics.frequency_multiplier,
-                            # Research Cockpit wiring v1 — display-only, no trading effect
-                            "liquidity_state":        metrics.liquidity_state,
-                            "market_regime":          sig.market_regime if sig else "UNKNOWN",
-                            "signal_volatility_score": sig.volatility_score if sig else 0.0,
-                        })
-                        LOGGER.debug(
-                            "[DASHBOARD_PAYLOAD] ticker=%s yes_bid=%.4f yes_ask=%.4f no_bid=%.4f no_ask=%.4f spread=%.4f model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s age_ms=%s reason=%s",
+
+                        display.update_market(
                             ticker,
-                            metrics.yes_bid,
-                            metrics.yes_ask,
-                            metrics.no_bid,
-                            metrics.no_ask,
-                            metrics.spread,
-                            metrics.p_yes,
-                            metrics.p_no,
-                            metrics.ev,
-                            metrics.min_ev,
-                            metrics.delta_regime,
-                            metrics.delta_multiplier,
-                            metrics.orderbook_age_ms,
-                            metrics.skip_reason,
-                        )
-                        if settings.arb_display_enabled:
-                            arb = trader.get_arbitrage_opportunity(ticker)
-                            arb_data = asdict(arb)
-                            arb_data.pop("ticker", None)
-                            display.update_arbitrage(ticker, **arb_data)
-
-                display.update_realtime_batch(ticker_updates)
-
-                # v3.1: Panic Sell check (every second when countdown <= 20s)
-                trader.panic_sell_check(countdown)
-
-                # v3.1: Take Profit check (every second — catch profits early)
-                trader.check_take_profit(countdown)
-
-                # v3.5: Stop Loss check (every second)
-                trader.check_stop_loss(countdown)
-
-                # Push WebSocket sync status
-                ws_status = trader.ptb_tracker._feed.get_ws_sync_status()
-                display.update_ws_status(ws_status)
-
-                # Log a compact oracle line for active markets only (file log only — console removed).
-                active_bits = []
-                for ticker in display._TICKERS:
-                    item = ticker_updates.get(ticker, {})
-                    edge = display._markets[ticker].get("edge_pct") or 0.0
-                    active_bits.append(
-                        f"{ticker} PTB=${float(item.get('ref_price', 0.0)):,.2f} "
-                        f"Oracle=${float(item.get('current_price', 0.0)):,.2f} "
-                        f"Edge={float(edge) * 100:.2f}%"
-                    )
-                LOGGER.info("[REALTIME 1s] %s | Countdown: %ds", " | ".join(active_bits), countdown)
-
-            if elapsed >= interval:
-                last_cycle = time.monotonic()
-                cycle_num += 1
-
-                LOGGER.info("[PM-REALTIME] Cycle #%s starting", cycle_num)
-
-                # ── Run full AI + execution cycle ──────────────────────────
-                try:
-                    outcomes = trader.run_single_cycle(top_n=7)
-                except Exception:
-                    LOGGER.exception("Cycle #%s raised an exception — skipping.", cycle_num)
-                    outcomes = []
-
-                # ── Refresh portfolio after cycle ──────────────────────────
-                display.update_portfolio(trader.dashboard_portfolio_state())
-                display.update_session_summary(trader.dashboard_session_summary())
-                # Research Cockpit v1: probe counts (in-memory only, no disk read)
-                display.update_research_obs(**trader.dashboard_probe_counts())
-
-                # ── Update per-market state and build cycle result list ────
-                cycle_results: list[dict] = []
-
-                for outcome in outcomes:
-                    ticker = outcome.market_id.replace("pm-5m-", "").upper()
-
-                    decision  = "rejected" if outcome.skipped else "approved"
-                    notional  = outcome.risk_plan.notional_size if outcome.risk_plan else 0.0
-                    signal    = "long" if outcome.decision == "buy" else "flat" if outcome.skipped else "wait"
-
-                    # Only call AI and Risk for open slots, but update display with latest fetched ptb
-                    ptb_info = trader.ptb_tracker.get_market_ptb(ticker)
-
-                    sig = trader.last_signals.get(ticker)
-                    display_outcome = "NO" if outcome.decision == "sell" else "YES"
-                    if outcome.skipped and sig and sig.side in ("YES", "NO"):
-                        display_outcome = sig.side
-                    display_confidence = (
-                        outcome.confidence
-                        if outcome.confidence > 0
-                        else sig.score if sig and sig.score > 0
-                        else BACKTEST_WIN_RATE
-                    )
-                    metrics = trader.get_market_display_metrics(
-                        ticker=ticker,
-                        outcome=display_outcome,
-                        confidence=display_confidence,
-                    )
-
-                    display.update_market(
-                        ticker,
-                        ref_price     = ptb_info.price_to_beat,
-                        current_price = ptb_info.current_price,
-                        is_above      = ptb_info.is_above_ptb,
-                        price_diff    = ptb_info.price_diff_pct,
-                        bid           = metrics.bid,
-                        ask           = metrics.ask,
-                        spread        = metrics.spread,
-                        snipe_score   = metrics.snipe_score,
-                        edge_pct      = metrics.edge_pct,
-                        p_yes         = metrics.p_yes,
-                        p_no          = metrics.p_no,
-                        model_p_yes   = metrics.p_yes,
-                        model_p_no    = metrics.p_no,
-                        yes_bid       = metrics.yes_bid,
-                        yes_ask       = metrics.yes_ask,
-                        no_bid        = metrics.no_bid,
-                        no_ask        = metrics.no_ask,
-                        yes_mid       = metrics.yes_mid,
-                        no_mid        = metrics.no_mid,
-                        clob_source   = metrics.clob_source,
-                        orderbook_age_ms = metrics.orderbook_age_ms,
-                        yes_orderbook_age_ms = metrics.yes_orderbook_age_ms,
-                        no_orderbook_age_ms = metrics.no_orderbook_age_ms,
-                        token_id      = metrics.token_id,
-                        yes_token_id  = metrics.yes_token_id,
-                        no_token_id   = metrics.no_token_id,
-                        condition_id  = metrics.condition_id,
-                        market_slug   = metrics.market_slug,
-                        outcome       = metrics.outcome,
-                        token_mapping_warning = metrics.token_mapping_warning,
-                        ev            = metrics.ev,
-                        min_ev        = metrics.min_ev,
-                        delta_regime  = metrics.delta_regime,
-                        delta_multiplier = metrics.delta_multiplier,
-                        skip_reason   = metrics.skip_reason or outcome.display.get("skip_reason", ""),
-                        score         = metrics.score,
-                        ask_price     = metrics.ask_price,
-                        final_size    = metrics.final_size,
-                        frequency_multiplier = metrics.frequency_multiplier,
-                        signal        = signal,
-                        confidence    = outcome.confidence,
-                        decision      = outcome.display.get("decision", "SKIP" if outcome.skipped else "ENTER"),
-                        size          = notional,
-                        # Research Cockpit wiring v1 — display-only, no trading effect
-                        liquidity_state        = metrics.liquidity_state,
-                        market_regime          = sig.market_regime if sig else "UNKNOWN",
-                        signal_volatility_score = sig.volatility_score if sig else 0.0,
-                    )
-
-                    # Record trade in display if order was placed
-                    if not outcome.skipped and outcome.receipt and outcome.risk_plan:
-                        rp = outcome.risk_plan
-                        display.add_trade(
-                            ticker   = ticker,
-                            side     = str(outcome.display.get("side", outcome.decision.upper())),
-                            price    = rp.entry_price,
-                            size     = rp.notional_size,
-                            notional = rp.notional_size,
-                            status   = outcome.receipt.status,
-                            reason   = "entry",
-                            mode     = str(outcome.display.get("mode", "--")),
+                            ref_price     = ptb_info.price_to_beat,
+                            current_price = ptb_info.current_price,
+                            is_above      = ptb_info.is_above_ptb,
+                            price_diff    = ptb_info.price_diff_pct,
+                            bid           = metrics.bid,
+                            ask           = metrics.ask,
+                            spread        = metrics.spread,
+                            snipe_score   = metrics.snipe_score,
+                            edge_pct      = metrics.edge_pct,
+                            p_yes         = metrics.p_yes,
+                            p_no          = metrics.p_no,
+                            model_p_yes   = metrics.p_yes,
+                            model_p_no    = metrics.p_no,
+                            yes_bid       = metrics.yes_bid,
+                            yes_ask       = metrics.yes_ask,
+                            no_bid        = metrics.no_bid,
+                            no_ask        = metrics.no_ask,
+                            yes_mid       = metrics.yes_mid,
+                            no_mid        = metrics.no_mid,
+                            clob_source   = metrics.clob_source,
+                            orderbook_age_ms = metrics.orderbook_age_ms,
+                            yes_orderbook_age_ms = metrics.yes_orderbook_age_ms,
+                            no_orderbook_age_ms = metrics.no_orderbook_age_ms,
+                            token_id      = metrics.token_id,
+                            yes_token_id  = metrics.yes_token_id,
+                            no_token_id   = metrics.no_token_id,
+                            condition_id  = metrics.condition_id,
+                            market_slug   = metrics.market_slug,
+                            outcome       = metrics.outcome,
+                            token_mapping_warning = metrics.token_mapping_warning,
+                            ev            = metrics.ev,
+                            min_ev        = metrics.min_ev,
+                            delta_regime  = metrics.delta_regime,
+                            delta_multiplier = metrics.delta_multiplier,
+                            skip_reason   = metrics.skip_reason or outcome.display.get("skip_reason", ""),
+                            score         = metrics.score,
+                            ask_price     = metrics.ask_price,
+                            final_size    = metrics.final_size,
+                            frequency_multiplier = metrics.frequency_multiplier,
+                            signal        = signal,
+                            confidence    = outcome.confidence,
+                            decision      = outcome.display.get("decision", "SKIP" if outcome.skipped else "ENTER"),
+                            size          = notional,
+                            # Research Cockpit wiring v1 — display-only, no trading effect
+                            liquidity_state        = metrics.liquidity_state,
+                            market_regime          = sig.market_regime if sig else "UNKNOWN",
+                            signal_volatility_score = sig.volatility_score if sig else 0.0,
                         )
 
-                    cycle_results.append({
-                        "ticker":      ticker,
-                        "decision":    decision,
-                        "confidence":  outcome.confidence,
-                        "skipped":     outcome.skipped,
-                        "snipe_score": metrics.snipe_score,
-                        "skip_reason": outcome.display.get("skip_reason", outcome.skip_reason),
-                        "ev":          outcome.display.get("ev", metrics.ev),
-                        "min_ev":      outcome.display.get("min_ev", metrics.min_ev),
-                    })
+                        # Record trade in display if order was placed
+                        if not outcome.skipped and outcome.receipt and outcome.risk_plan:
+                            rp = outcome.risk_plan
+                            display.add_trade(
+                                ticker   = ticker,
+                                side     = str(outcome.display.get("side", outcome.decision.upper())),
+                                price    = rp.entry_price,
+                                size     = rp.notional_size,
+                                notional = rp.notional_size,
+                                status   = outcome.receipt.status,
+                                reason   = "entry",
+                                mode     = str(outcome.display.get("mode", "--")),
+                            )
 
-                    # ── Write scan record to CSV log ──────────────────────────
-                    now_utc    = datetime.now(timezone.utc)
-                    sig        = trader.last_signals.get(ticker)
-                    rl_logger.log_scan(ScanRecord(
-                        timestamp_utc  = now_utc.isoformat(),
-                        date_th        = now_utc.strftime("%d/%m/%Y"),
-                        time_th        = now_utc.strftime("%H:%M:%S"),
-                        asset          = ticker,
-                        feed           = "polymarket-5m",
-                        decision       = decision,
-                        confidence     = outcome.confidence,
-                        edge           = sig.score if sig else 0.0,
-                        momentum_pct   = sig.momentum_pct if sig else 0.0,
-                        score          = sig.score if sig else 0.0,
-                        signal         = sig.side if sig else "SKIP",
-                        position_size  = notional,
-                        order_id       = outcome.receipt.order_id if outcome.receipt else "",
-                        order_status   = outcome.receipt.status if outcome.receipt else "skipped",
-                        skip_reason    = outcome.skip_reason or "",
-                        daily_pnl_pct  = (
-                            (settings.account_balance - rl_logger.start_of_day_balance)
-                            / max(rl_logger.start_of_day_balance, 0.01)
-                        ),
-                        bankroll       = settings.account_balance,
-                        raw_skip_reason = str(outcome.display.get("raw_skip_reason", outcome.skip_reason or "")),
-                        normalized_skip_reason = str(outcome.display.get("normalized_skip_reason", "")),
-                        seconds_remaining = int(outcome.display.get("seconds_remaining", ptb_info.seconds_remaining) or 0),
-                        entry_cutoff_seconds = int(outcome.display.get("entry_cutoff_seconds", settings.execution_entry_cutoff_seconds) or 0),
-                        time_bucket = str(outcome.display.get("time_bucket", "")),
-                        epoch_start = str(outcome.display.get("epoch_start", getattr(ptb_info, "epoch_start_ts", "")) or ""),
-                        market_start_time = str(outcome.display.get("market_start_time", "")),
-                        market_end_time = str(outcome.display.get("market_end_time", "")),
-                        token_id = str(outcome.display.get("token_id", "")),
-                        outcome = str(outcome.display.get("outcome", "")),
-                        source_module = str(outcome.display.get("source_module", "polymarket.trader")),
-                        market_slug = str(outcome.display.get("market_slug", "")),
-                        condition_id = str(outcome.display.get("condition_id", "")),
-                        orderbook_age_ms = int(outcome.display.get("orderbook_age_ms", 0) or 0),
-                        oracle_age_ms = int(outcome.display.get("oracle_age_ms", 0) or 0),
-                        market_feed_age_ms = int(outcome.display.get("market_feed_age_ms", 0) or 0),
-                        token_mapping_warning = str(outcome.display.get("token_mapping_warning", "")),
-                    ))
+                        cycle_results.append({
+                            "ticker":      ticker,
+                            "decision":    decision,
+                            "confidence":  outcome.confidence,
+                            "skipped":     outcome.skipped,
+                            "snipe_score": metrics.snipe_score,
+                            "skip_reason": outcome.display.get("skip_reason", outcome.skip_reason),
+                            "ev":          outcome.display.get("ev", metrics.ev),
+                            "min_ev":      outcome.display.get("min_ev", metrics.min_ev),
+                        })
 
-                display.update_cycle(cycle_results, cycle_num)
-                display.update_recent_trades(trader.get_recent_display_trades())
-                display.update_session_summary(trader.dashboard_session_summary())
+                        # ── Write scan record to CSV log ──────────────────────────
+                        now_utc    = datetime.now(timezone.utc)
+                        sig        = trader.last_signals.get(ticker)
+                        rl_logger.log_scan(ScanRecord(
+                            timestamp_utc  = now_utc.isoformat(),
+                            date_th        = now_utc.strftime("%d/%m/%Y"),
+                            time_th        = now_utc.strftime("%H:%M:%S"),
+                            asset          = ticker,
+                            feed           = "polymarket-5m",
+                            decision       = decision,
+                            confidence     = outcome.confidence,
+                            edge           = sig.score if sig else 0.0,
+                            momentum_pct   = sig.momentum_pct if sig else 0.0,
+                            score          = sig.score if sig else 0.0,
+                            signal         = sig.side if sig else "SKIP",
+                            position_size  = notional,
+                            order_id       = outcome.receipt.order_id if outcome.receipt else "",
+                            order_status   = outcome.receipt.status if outcome.receipt else "skipped",
+                            skip_reason    = outcome.skip_reason or "",
+                            daily_pnl_pct  = (
+                                (settings.account_balance - rl_logger.start_of_day_balance)
+                                / max(rl_logger.start_of_day_balance, 0.01)
+                            ),
+                            bankroll       = settings.account_balance,
+                            raw_skip_reason = str(outcome.display.get("raw_skip_reason", outcome.skip_reason or "")),
+                            normalized_skip_reason = str(outcome.display.get("normalized_skip_reason", "")),
+                            seconds_remaining = int(outcome.display.get("seconds_remaining", ptb_info.seconds_remaining) or 0),
+                            entry_cutoff_seconds = int(outcome.display.get("entry_cutoff_seconds", settings.execution_entry_cutoff_seconds) or 0),
+                            time_bucket = str(outcome.display.get("time_bucket", "")),
+                            epoch_start = str(outcome.display.get("epoch_start", getattr(ptb_info, "epoch_start_ts", "")) or ""),
+                            market_start_time = str(outcome.display.get("market_start_time", "")),
+                            market_end_time = str(outcome.display.get("market_end_time", "")),
+                            token_id = str(outcome.display.get("token_id", "")),
+                            outcome = str(outcome.display.get("outcome", "")),
+                            source_module = str(outcome.display.get("source_module", "polymarket.trader")),
+                            market_slug = str(outcome.display.get("market_slug", "")),
+                            condition_id = str(outcome.display.get("condition_id", "")),
+                            orderbook_age_ms = int(outcome.display.get("orderbook_age_ms", 0) or 0),
+                            oracle_age_ms = int(outcome.display.get("oracle_age_ms", 0) or 0),
+                            market_feed_age_ms = int(outcome.display.get("market_feed_age_ms", 0) or 0),
+                            token_mapping_warning = str(outcome.display.get("token_mapping_warning", "")),
+                        ))
+
+                    display.update_cycle(cycle_results, cycle_num)
+                    display.update_recent_trades(trader.get_recent_display_trades())
+                    display.update_session_summary(trader.dashboard_session_summary())
 
 
 
-            time.sleep(0.25)
+                time.sleep(0.25)
 
-    _shutdown_realtime_resources(
-        trader=trader,
-        rl_logger=rl_logger,
-        console_handlers=_console_handlers,
-        root_log=root_log,
-        shutdown_requested=shutdown_requested,
-        cycle_num=cycle_num,
-    )
+    except KeyboardInterrupt:
+        shutdown_requested = True
+        stop.set()
+    finally:
+        _shutdown_realtime_resources(
+            trader=trader,
+            rl_logger=rl_logger,
+            console_handlers=_console_handlers,
+            root_log=root_log,
+            shutdown_requested=shutdown_requested,
+            cycle_num=cycle_num,
+        )
     return 0
 
 

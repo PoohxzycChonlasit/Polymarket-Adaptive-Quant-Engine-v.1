@@ -46,16 +46,19 @@ class VirtualPriceToBeatTracker:
             self._feed.start()
             self._started = True
 
-    def close(self) -> None:
+    def close(self, *, join_timeout: float | None = None) -> None:
         if self._started:
-            self._feed.stop()
+            if join_timeout is None:
+                self._feed.stop()
+            else:
+                self._feed.stop(join_timeout=join_timeout)
             self._started = False
 
-    def stop(self) -> None:
-        self.close()
+    def stop(self, *, join_timeout: float | None = None) -> None:
+        self.close(join_timeout=join_timeout)
 
-    def shutdown(self) -> None:
-        self.close()
+    def shutdown(self, *, join_timeout: float | None = None) -> None:
+        self.close(join_timeout=join_timeout)
 
     def is_running(self) -> bool:
         return self._started and self._feed.is_running()

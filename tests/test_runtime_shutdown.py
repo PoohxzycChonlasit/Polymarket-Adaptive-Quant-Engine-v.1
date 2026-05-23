@@ -4,7 +4,7 @@ import logging
 import sys
 import time
 import types
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from polymarket.oracle_price_feed import PolymarketOracleFeed
 from polymarket.trader import PolymarketTrader
@@ -65,6 +65,18 @@ def test_trader_shutdown_closes_ptb_tracker() -> None:
     tracker.close.assert_called_once()
 
 
+def test_trader_shutdown_accepts_bounded_join_timeout() -> None:
+    trader = PolymarketTrader()
+    tracker = MagicMock()
+    trader.ptb_tracker = tracker
+
+    with patch("builtins.__import__") as imported:
+        imported.side_effect = ImportError("skip module feed shutdown")
+        trader.shutdown(join_timeout=0.25)
+
+    tracker.close.assert_called_once_with(join_timeout=0.25)
+
+
 def test_realtime_shutdown_stops_trader_before_summary_and_restores_console(
     monkeypatch,
 ) -> None:
@@ -77,11 +89,11 @@ def test_realtime_shutdown_stops_trader_before_summary_and_restores_console(
     handler = logging.StreamHandler()
 
     class Trader:
-        def shutdown(self) -> None:
-            calls.append("trader.shutdown")
+        def shutdown(self, *, join_timeout: float = 5.0) -> None:
+            calls.append(f"trader.shutdown:{join_timeout}")
 
-        def log_paper_session_summary(self) -> None:
-            calls.append("trader.summary")
+        def log_paper_session_summary(self, *, include_runtime_evaluation: bool = True) -> None:
+            calls.append(f"trader.summary:{include_runtime_evaluation}")
 
     class RealtimeLogger:
         def force_save_summary(self) -> None:
@@ -108,12 +120,64 @@ def test_realtime_shutdown_stops_trader_before_summary_and_restores_console(
 
     assert calls == [
         "quiet_http_logs",
-        "trader.shutdown",
-        "trader.summary",
+        "trader.shutdown:1.0",
+        "trader.summary:False",
         "realtime.summary",
         "stop_scheduler:1.0",
         "restore_console",
     ]
+
+
+def test_realtime_shutdown_path_is_bounded_for_slow_feeds(monkeypatch) -> None:
+    monkeypatch.setitem(sys.modules, "crypto_scalper.live_runner", types.SimpleNamespace(main=lambda: 0))
+    monkeypatch.setitem(sys.modules, "polymarket.signal", types.SimpleNamespace(BACKTEST_WIN_RATE=0.5))
+    import main
+
+    class Trader:
+        def shutdown(self, *, join_timeout: float = 5.0) -> None:
+            time.sleep(join_timeout + 0.05)
+
+        def log_paper_session_summary(self, *, include_runtime_evaluation: bool = True) -> None:
+            assert include_runtime_evaluation is False
+
+    class RealtimeLogger:
+        def force_save_summary(self) -> None:
+            return None
+
+    started = time.monotonic()
+    main._shutdown_realtime_resources(
+        trader=Trader(),
+        rl_logger=RealtimeLogger(),
+        console_handlers=[],
+        root_log=logging.getLogger(),
+        shutdown_requested=True,
+        cycle_num=1,
+        stop_scheduler=lambda *, join_timeout: None,
+        shutdown_join_timeout=0.1,
+    )
+
+    assert time.monotonic() - started < 1.0
+
+
+def test_realtime_shutdown_signal_handler_unwinds_immediately(monkeypatch) -> None:
+    monkeypatch.setitem(sys.modules, "crypto_scalper.live_runner", types.SimpleNamespace(main=lambda: 0))
+    monkeypatch.setitem(sys.modules, "polymarket.signal", types.SimpleNamespace(BACKTEST_WIN_RATE=0.5))
+    import main
+
+    stop_event = MagicMock()
+    marked: list[bool] = []
+    handler = main._build_realtime_shutdown_signal_handler(stop_event, lambda: marked.append(True))
+
+    started = time.monotonic()
+    try:
+        handler()
+        raise AssertionError("signal handler did not raise KeyboardInterrupt")
+    except KeyboardInterrupt:
+        pass
+
+    assert marked == [True]
+    stop_event.set.assert_called_once()
+    assert time.monotonic() - started < 0.1
 
 
 class _ClosedStream:
