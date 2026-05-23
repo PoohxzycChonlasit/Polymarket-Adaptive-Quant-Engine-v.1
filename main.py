@@ -21,7 +21,7 @@ from utils.config_validator import (
     build_startup_summary,
     validate_env,
 )
-from utils.logger import get_telegram_notifier, setup_logger
+from utils.logger import get_telegram_notifier, quiet_http_client_loggers_for_shutdown, setup_logger
 from polymarket.signal import BACKTEST_WIN_RATE
 
 
@@ -302,6 +302,46 @@ def _log_paper_mode_banner(settings=None) -> None:
     )
 
 
+def _shutdown_realtime_resources(
+    *,
+    trader,
+    rl_logger,
+    console_handlers: list[logging.Handler],
+    root_log: logging.Logger,
+    shutdown_requested: bool,
+    cycle_num: int,
+    stop_scheduler=None,
+) -> None:
+    """Quiet and stop realtime-owned resources before console output is restored."""
+    quiet_http_client_loggers_for_shutdown()
+    try:
+        trader.shutdown()
+    except Exception as exc:
+        LOGGER.debug("[SHUTDOWN] trader shutdown failed: %s", exc)
+    try:
+        trader.log_paper_session_summary()
+    finally:
+        try:
+            rl_logger.force_save_summary()
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] realtime logger close failed: %s", exc)
+        try:
+            if stop_scheduler is None:
+                from daily_report import stop_scheduler as stop_scheduler_func
+            else:
+                stop_scheduler_func = stop_scheduler
+            stop_scheduler_func(join_timeout=1.0)
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] daily report scheduler stop failed: %s", exc)
+        for handler in console_handlers:
+            root_log.addHandler(handler)
+
+    if shutdown_requested:
+        LOGGER.info("[SHUTDOWN] Ctrl+C received; runtime stopped cleanly after %s cycles.", cycle_num)
+    else:
+        LOGGER.info("polymarket-realtime stopped after %s cycles.", cycle_num)
+
+
 def run_polymarket_realtime(
     interval: int,
     force_paper: bool = True,
@@ -359,8 +399,11 @@ def run_polymarket_realtime(
 
     stop       = threading.Event()
     cycle_num  = 0
+    shutdown_requested = False
 
     def _handle_sigint(*_args: object) -> None:
+        nonlocal shutdown_requested
+        shutdown_requested = True
         stop.set()
 
     signal.signal(signal.SIGINT, _handle_sigint)
@@ -765,26 +808,14 @@ def run_polymarket_realtime(
 
             time.sleep(0.25)
 
-    for h in _console_handlers:
-        root_log.addHandler(h)
-
-    try:
-        trader.log_paper_session_summary()
-    finally:
-        try:
-            rl_logger.force_save_summary()
-        except Exception as exc:
-            LOGGER.debug("[SHUTDOWN] realtime logger close failed: %s", exc)
-        try:
-            trader.shutdown()
-        except Exception as exc:
-            LOGGER.debug("[SHUTDOWN] trader shutdown failed: %s", exc)
-        try:
-            from daily_report import stop_scheduler
-            stop_scheduler(join_timeout=1.0)
-        except Exception as exc:
-            LOGGER.debug("[SHUTDOWN] daily report scheduler stop failed: %s", exc)
-    LOGGER.info("polymarket-realtime stopped after %s cycles.", cycle_num)
+    _shutdown_realtime_resources(
+        trader=trader,
+        rl_logger=rl_logger,
+        console_handlers=_console_handlers,
+        root_log=root_log,
+        shutdown_requested=shutdown_requested,
+        cycle_num=cycle_num,
+    )
     return 0
 
 

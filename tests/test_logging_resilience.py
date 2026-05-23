@@ -53,6 +53,20 @@ def test_setup_logger_continues_console_only_when_log_dir_is_locked(monkeypatch:
     assert not any(isinstance(handler, logger_utils.SafeRotatingFileHandler) for handler in logging.getLogger().handlers)
 
 
+def test_setup_logger_suppresses_http_client_info_logs(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    monkeypatch.setattr("config.settings.get_settings", lambda: SimpleNamespace(
+        telegram_bot_token=_Secret(),
+        telegram_chat_id=_Secret(),
+    ))
+
+    logger_utils.setup_logger("INFO", str(tmp_path))
+
+    for logger_name in ("httpx", "httpcore"):
+        noisy_logger = logging.getLogger(logger_name)
+        assert not noisy_logger.isEnabledFor(logging.INFO)
+        assert noisy_logger.isEnabledFor(logging.ERROR)
+
+
 def test_realtime_logger_disables_csv_when_open_is_permission_denied(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path,

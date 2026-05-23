@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
+import types
 from unittest.mock import MagicMock
 
 from polymarket.oracle_price_feed import PolymarketOracleFeed
@@ -61,6 +63,57 @@ def test_trader_shutdown_closes_ptb_tracker() -> None:
     trader.shutdown()
 
     tracker.close.assert_called_once()
+
+
+def test_realtime_shutdown_stops_trader_before_summary_and_restores_console(
+    monkeypatch,
+) -> None:
+    monkeypatch.setitem(sys.modules, "crypto_scalper.live_runner", types.SimpleNamespace(main=lambda: 0))
+    monkeypatch.setitem(sys.modules, "polymarket.signal", types.SimpleNamespace(BACKTEST_WIN_RATE=0.5))
+    import main
+
+    calls: list[str] = []
+    root_log = logging.getLogger()
+    handler = logging.StreamHandler()
+
+    class Trader:
+        def shutdown(self) -> None:
+            calls.append("trader.shutdown")
+
+        def log_paper_session_summary(self) -> None:
+            calls.append("trader.summary")
+
+    class RealtimeLogger:
+        def force_save_summary(self) -> None:
+            calls.append("realtime.summary")
+
+    def quiet_http_logs() -> None:
+        calls.append("quiet_http_logs")
+
+    def stop_scheduler(*, join_timeout: float) -> None:
+        calls.append(f"stop_scheduler:{join_timeout}")
+
+    monkeypatch.setattr(main, "quiet_http_client_loggers_for_shutdown", quiet_http_logs)
+    monkeypatch.setattr(root_log, "addHandler", lambda added: calls.append("restore_console") if added is handler else None)
+
+    main._shutdown_realtime_resources(
+        trader=Trader(),
+        rl_logger=RealtimeLogger(),
+        console_handlers=[handler],
+        root_log=root_log,
+        shutdown_requested=True,
+        cycle_num=7,
+        stop_scheduler=stop_scheduler,
+    )
+
+    assert calls == [
+        "quiet_http_logs",
+        "trader.shutdown",
+        "trader.summary",
+        "realtime.summary",
+        "stop_scheduler:1.0",
+        "restore_console",
+    ]
 
 
 class _ClosedStream:

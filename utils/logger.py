@@ -88,6 +88,14 @@ class TelegramLogHandler(logging.Handler):
 
 _TELEGRAM_NOTIFIER: TelegramNotifier | None = None
 _TELEGRAM_ATEXIT_REGISTERED = False
+HTTP_CLIENT_LOGGERS = (
+    "httpx",
+    "httpcore",
+    "httpcore.connection",
+    "httpcore.http11",
+    "httpcore.http2",
+    "httpcore.proxy",
+)
 
 def get_telegram_notifier() -> TelegramNotifier | None:
     return _TELEGRAM_NOTIFIER
@@ -99,6 +107,16 @@ def shutdown_telegram_notifier() -> None:
     _TELEGRAM_NOTIFIER = None
     if notifier is not None:
         notifier.close(wait=False)
+
+
+def set_http_client_loggers_level(level: int = logging.WARNING) -> None:
+    """Suppress routine HTTP client chatter while preserving warnings/errors."""
+    for logger_name in HTTP_CLIENT_LOGGERS:
+        logging.getLogger(logger_name).setLevel(level)
+
+
+def quiet_http_client_loggers_for_shutdown() -> None:
+    set_http_client_loggers_level(logging.WARNING)
 
 
 class SafeStreamHandler(logging.StreamHandler):
@@ -279,6 +297,7 @@ def setup_logger(log_level: str = "INFO", log_dir: str = "logs") -> logging.Logg
         "urllib3.connectionpool"
     ]:
         logging.getLogger(noisy_logger).setLevel(logging.CRITICAL)
+    set_http_client_loggers_level(logging.WARNING)
 
     if RichHandler is None:
         logger.warning("Rich logging is unavailable; falling back to standard stream logging.")
