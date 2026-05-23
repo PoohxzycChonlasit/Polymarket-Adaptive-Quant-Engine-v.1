@@ -255,5 +255,3 @@ def test_phase1_to_phase4_fields_intact_alongside_phase5() -> None:
     # Phase 5 age metrics
     assert isinstance(fill.get("quote_age_at_fill_ms"), float)
     assert fill.get("quote_age_at_fill_ms") >= 0.0
-    # quote_stale_ms not yet emitted
-    assert "quote_stale_ms" not in fill

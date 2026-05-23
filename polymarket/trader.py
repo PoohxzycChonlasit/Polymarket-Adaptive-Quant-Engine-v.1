@@ -10110,6 +10110,14 @@ class PolymarketTrader:
             _p5_quote_age_at_fill_ms = self._phase3_paper_proxy_ms(
                 str(_p4_submit_ql.get("quote_capture_ts") or ""), fill_ts
             )
+            try:
+                _p6_quote_stale_ms = (
+                    float(max(_p5_quote_age_at_submit_ms, _p5_quote_age_at_fill_ms))
+                    if _p5_quote_age_at_submit_ms is not None and _p5_quote_age_at_fill_ms is not None
+                    else None
+                )
+            except Exception:
+                _p6_quote_stale_ms = None
             LOGGER.info(
                 "[PAPER FILL] order_id=%s token=%s side=%s price=%.4f size=%.6f filled=%.6f remaining=%.6f",
                 receipt.order_id,
@@ -10147,6 +10155,7 @@ class PolymarketTrader:
                     "quote_source": _p4_submit_ql.get("quote_source", "unknown"),
                     "quote_age_at_submit_ms": _p5_quote_age_at_submit_ms,
                     "quote_age_at_fill_ms": _p5_quote_age_at_fill_ms,
+                    "quote_stale_ms": _p6_quote_stale_ms,
                 },
             )
             self._log_order_section(

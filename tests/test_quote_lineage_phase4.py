@@ -345,5 +345,3 @@ def test_phase1_to_phase3_fields_still_present_with_phase4() -> None:
     assert "quote_source" in fill
     # signal_to_submit_ms not yet computed
     assert "signal_to_submit_ms" not in fill
-    # quote_stale_ms not yet computed
-    assert "quote_stale_ms" not in fill
