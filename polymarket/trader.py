@@ -56,7 +56,7 @@ from utils.risk_manager import (
     build_micro_survival_risk_plan,
 )
 from utils.quant_event_logger import QuantEventLogger
-from utils.telegram_alerts import TelegramAlertLayer
+from utils.telegram_alerts import TelegramAlertLayer, emit_startup_config_telemetry
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
 
 
@@ -602,7 +602,17 @@ class PolymarketTrader:
 
     def _init_telegram_alert_layer(self) -> TelegramAlertLayer | None:
         try:
-            return TelegramAlertLayer()
+            run_id = str(getattr(self.quant_events, "run_id", "") or "") or None
+            layer = TelegramAlertLayer(
+                telemetry_emit=self._emit_telegram_route_telemetry,
+                run_id=run_id,
+            )
+            emit_startup_config_telemetry(
+                self.settings,
+                telemetry_emit=self._emit_telegram_route_telemetry,
+                run_id=run_id,
+            )
+            return layer
         except Exception as exc:
             LOGGER.warning("[OBSERVABILITY] Telegram alert layer disabled at startup: %s", exc)
             return None
@@ -1360,6 +1370,12 @@ class PolymarketTrader:
     def _finish_cycle_timing(self, *, reason: str, force: bool = False) -> None:
         self._last_scan_cycle_duration_ms = self._cycle_elapsed_ms()
         self._maybe_emit_system_health(force=force, reason=reason)
+
+    def _emit_telegram_route_telemetry(self, event: dict[str, object]) -> None:
+        try:
+            self._emit_quant_event("log_system_health", dict(event))
+        except Exception:
+            LOGGER.debug("[OBSERVABILITY] telegram route telemetry emit failed", exc_info=True)
 
     def _notify_telegram(self, alert_method: str, message: str = "", **context: object):
         alerts = getattr(self, "telegram_alerts", None)

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import sys
 import threading
@@ -21,6 +21,8 @@ except ModuleNotFoundError:
 
 class TelegramNotifier:
     """Non-blocking Telegram notifier using thread pool and session."""
+    supports_async_telegram_telemetry = True
+
     def __init__(self, token: str, chat_id: str):
         self.token = token
         self.chat_id = chat_id
@@ -35,15 +37,45 @@ class TelegramNotifier:
         self._session.mount('http://', adapter)
         self._session.mount('https://', adapter)
 
-    def send_message(self, text: str) -> None:
+    def send_message(
+        self,
+        text: str,
+        *,
+        route: str | None = None,
+        source_event_id: str | None = None,
+        cooldown_key: str | None = None,
+        run_id: str | None = None,
+        telemetry_emit=None,
+    ) -> bool:
+        metadata = {
+            "route": route,
+            "source_event_id": source_event_id,
+            "cooldown_key": cooldown_key,
+            "run_id": run_id,
+            "telemetry_emit": telemetry_emit,
+        }
         if self._closed or not self.token or not self.chat_id:
-            return
+            self._emit_delivery_telemetry(
+                "telegram_send_failure",
+                metadata,
+                exception_class="NotifierUnavailable",
+                failure_stage="submit",
+            )
+            return False
         try:
-            self._executor.submit(self._send_blocking, text)
+            self._executor.submit(self._send_blocking, text, metadata)
+            return True
         except RuntimeError:
-            pass
+            self._emit_delivery_telemetry(
+                "telegram_send_failure",
+                metadata,
+                exception_class="RuntimeError",
+                failure_stage="submit",
+            )
+            return False
 
-    def _send_blocking(self, text: str) -> None:
+    def _send_blocking(self, text: str, metadata: dict | None = None) -> None:
+        metadata = metadata or {}
         try:
             payload = {
                 "chat_id": self.chat_id,
@@ -52,15 +84,59 @@ class TelegramNotifier:
             }
             resp = self._session.post(self._url, json=payload, timeout=5)
             resp.raise_for_status()
+            telegram_ok = None
+            try:
+                body = resp.json()
+                if isinstance(body, dict) and "ok" in body:
+                    telegram_ok = bool(body.get("ok"))
+            except Exception:
+                telegram_ok = None
+            self._emit_delivery_telemetry(
+                "telegram_send_success",
+                metadata,
+                http_status=getattr(resp, "status_code", None),
+                telegram_ok=telegram_ok,
+            )
         except Exception:
+            exc = sys.exc_info()[1]
+            self._emit_delivery_telemetry(
+                "telegram_send_failure",
+                metadata,
+                exception_class=exc.__class__.__name__ if exc is not None else "Exception",
+                failure_stage="http_post",
+            )
             pass  # intentionally silent — Telegram failures must never block the trading loop
+
+    @staticmethod
+    def _emit_delivery_telemetry(event_type: str, metadata: dict | None = None, **fields) -> None:
+        metadata = metadata or {}
+        emit = metadata.get("telemetry_emit")
+        if emit is None:
+            return
+        try:
+            event = {
+                "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "event_type": event_type,
+                "route": metadata.get("route") or "unknown",
+                "run_id": metadata.get("run_id"),
+                "source_event_id": metadata.get("source_event_id"),
+            }
+            cooldown_key = metadata.get("cooldown_key")
+            if cooldown_key is not None:
+                event["cooldown_key"] = cooldown_key
+            for key, value in fields.items():
+                if value is not None:
+                    event[key] = value
+            emit(event)
+        except Exception:
+            pass
 
     def close(self, *, wait: bool = False) -> None:
         if self._closed:
             return
         self._closed = True
         try:
-            self._executor.shutdown(wait=wait, cancel_futures=True)
+            self._executor.shutdown(wait=wait, cancel_futures=not wait)
         except Exception:
             pass
         try:

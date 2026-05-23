@@ -452,7 +452,7 @@ def run_polymarket_realtime(
         from utils.telegram_reporter import build_startup_alert
         wallet = settings.polymarket_proxy_wallet or settings.polymarket_funder
         portfolio = trader.dashboard_portfolio_state()
-        tg.send_message(build_startup_alert(
+        trader._notify_telegram("notify_startup", build_startup_alert(
             mode=mode,
             status=status,
             interval=interval,

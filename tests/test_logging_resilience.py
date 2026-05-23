@@ -4,6 +4,7 @@ import builtins
 import logging
 from datetime import datetime, timezone
 from types import SimpleNamespace
+from requests import Timeout
 
 import pytest
 
@@ -65,6 +66,77 @@ def test_setup_logger_suppresses_http_client_info_logs(monkeypatch: pytest.Monke
         noisy_logger = logging.getLogger(logger_name)
         assert not noisy_logger.isEnabledFor(logging.INFO)
         assert noisy_logger.isEnabledFor(logging.ERROR)
+
+
+class _TelegramResponse:
+    status_code = 200
+
+    def raise_for_status(self) -> None:
+        return None
+
+    def json(self) -> dict[str, bool]:
+        return {"ok": True}
+
+
+class _TelegramSession:
+    def __init__(self, *, fail: bool = False) -> None:
+        self.fail = fail
+
+    def mount(self, *_args, **_kwargs) -> None:
+        return None
+
+    def post(self, *_args, **_kwargs):
+        if self.fail:
+            raise Timeout("token and message must not leak")
+        return _TelegramResponse()
+
+    def close(self) -> None:
+        return None
+
+
+def test_telegram_notifier_emits_async_success_telemetry(monkeypatch: pytest.MonkeyPatch) -> None:
+    events: list[dict[str, object]] = []
+    monkeypatch.setattr(logger_utils.requests, "Session", lambda: _TelegramSession())
+
+    notifier = logger_utils.TelegramNotifier("secret-token", "secret-chat")
+    notifier.send_message(
+        "secret message body",
+        route="entry",
+        source_event_id="trade_open:abc",
+        run_id="run-telegram-test",
+        telemetry_emit=events.append,
+    )
+    notifier.close(wait=True)
+
+    assert [event["event_type"] for event in events] == ["telegram_send_success"]
+    assert events[0]["route"] == "entry"
+    assert events[0]["source_event_id"] == "trade_open:abc"
+    assert events[0]["http_status"] == 200
+    assert events[0]["telegram_ok"] is True
+    assert "secret" not in str(events)
+
+
+def test_telegram_notifier_emits_async_failure_telemetry_without_message_leak(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[dict[str, object]] = []
+    monkeypatch.setattr(logger_utils.requests, "Session", lambda: _TelegramSession(fail=True))
+
+    notifier = logger_utils.TelegramNotifier("secret-token", "secret-chat")
+    notifier.send_message(
+        "secret message body",
+        route="critical",
+        source_event_id="incident:def",
+        run_id="run-telegram-test",
+        telemetry_emit=events.append,
+    )
+    notifier.close(wait=True)
+
+    assert [event["event_type"] for event in events] == ["telegram_send_failure"]
+    assert events[0]["route"] == "critical"
+    assert events[0]["exception_class"] == "Timeout"
+    assert events[0]["failure_stage"] == "http_post"
+    assert "secret" not in str(events)
 
 
 def test_realtime_logger_disables_csv_when_open_is_permission_denied(
