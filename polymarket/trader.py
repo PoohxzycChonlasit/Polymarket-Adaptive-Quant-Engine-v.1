@@ -452,6 +452,10 @@ class PolymarketTrader:
         self._last_system_health_event_ts = 0.0
         self._last_risk_state_event_ts = 0.0
         self._shutdown_complete = False
+        self._path_truth_checkpoint_schedule_s = (15, 30, 45, 60)
+        self._path_truth_checkpoint_tolerance_s = {15: 2, 30: 2, 45: 3, 60: 3}
+        self._path_truth_max_writes_per_trade = 5
+        self._path_truth_emitted_checkpoints_by_trade: dict[str, set[str]] = {}
 
     def _call_shutdown_hook(self, hook, *, join_timeout: float | None = None) -> None:
         if not callable(hook):
@@ -469,6 +473,10 @@ class PolymarketTrader:
         if self._shutdown_complete:
             return
         self._shutdown_complete = True
+        try:
+            self._emit_path_truth_shutdown_events()
+        except Exception:
+            pass
         try:
             close_ptb = getattr(self.ptb_tracker, "close", None)
             self._call_shutdown_hook(close_ptb, join_timeout=join_timeout)
@@ -660,6 +668,7 @@ class PolymarketTrader:
             "log_risk_event": "risk_log",
             "log_trade_open": "trade_journal",
             "log_trade_close": "trade_journal",
+            "log_trade_path_checkpoint": "path_truth",
             "log_system_health": "system_health",
         }.get(event_method, "unknown")
 
@@ -5718,6 +5727,241 @@ class PolymarketTrader:
             LOGGER.warning("[MARK_PRICE] failed | position=%s token=%s error=%s", pos.position_id, token_id, exc)
         return max(0.01, min(0.99, float(pos.entry_price)))
 
+    def _path_truth_metadata(self, pos) -> dict[str, object]:
+        metadata = getattr(pos, "metadata", None)
+        if isinstance(metadata, dict):
+            return metadata
+        metadata = {}
+        try:
+            pos.metadata = metadata
+        except Exception:
+            pass
+        return metadata
+
+    def _path_truth_emitted_checkpoints(self, pos) -> set[str]:
+        trade_id = str(getattr(pos, "position_id", "") or "")
+        if not trade_id:
+            return set()
+        emitted = getattr(self, "_path_truth_emitted_checkpoints_by_trade", {}).get(trade_id, set())
+        return {str(value) for value in emitted}
+
+    def _remember_path_truth_checkpoint(self, pos, checkpoint_key: str) -> None:
+        trade_id = str(getattr(pos, "position_id", "") or "")
+        if not trade_id:
+            return
+        emitted_by_trade = getattr(self, "_path_truth_emitted_checkpoints_by_trade", None)
+        if not isinstance(emitted_by_trade, dict):
+            emitted_by_trade = {}
+            self._path_truth_emitted_checkpoints_by_trade = emitted_by_trade
+        emitted = {str(value) for value in emitted_by_trade.get(trade_id, set())}
+        emitted.add(str(checkpoint_key))
+        emitted_by_trade[trade_id] = emitted
+
+    @staticmethod
+    def _path_truth_parse_ts(raw: object) -> datetime | None:
+        text = str(raw or "").strip()
+        if not text:
+            return None
+        try:
+            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=UTC)
+            return parsed.astimezone(UTC)
+        except Exception:
+            return None
+
+    def _path_truth_elapsed_seconds(self, pos, now: datetime | None = None) -> int | None:
+        entry_dt = self._path_truth_parse_ts(getattr(pos, "entry_time", ""))
+        if entry_dt is None:
+            return None
+        current = now or datetime.now(UTC)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=UTC)
+        current = current.astimezone(UTC)
+        return max(0, int((current - entry_dt).total_seconds()))
+
+    def _path_truth_session_hour_utc(self, pos, now: datetime | None = None) -> int | None:
+        entry_dt = self._path_truth_parse_ts(getattr(pos, "entry_time", ""))
+        if entry_dt is not None:
+            return int(entry_dt.hour)
+        current = now or datetime.now(UTC)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=UTC)
+        return int(current.astimezone(UTC).hour)
+
+    def _path_truth_lifecycle_phase(self, pos, now: datetime | None = None) -> str | None:
+        metadata = self._path_truth_metadata(pos)
+        explicit = str(metadata.get("lifecycle_phase") or "").strip()
+        if explicit:
+            return explicit
+        epoch_start = self._diagnostic_int(metadata.get("epoch_start_ts"))
+        if epoch_start is None or epoch_start <= 0:
+            return None
+        current = now or datetime.now(UTC)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=UTC)
+        seconds_remaining = int(epoch_start + 300 - current.astimezone(UTC).timestamp())
+        return self._phase2_lifecycle_phase(seconds_remaining)
+
+    def _path_truth_market_state(self, pos) -> dict[str, object]:
+        token_id = self._position_token_id(pos)
+        ticker = self._ticker_from_market_id(getattr(pos, "symbol", ""))
+        state: dict[str, object] = {
+            "current_mark_price": None,
+            "bid": None,
+            "ask": None,
+            "spread": None,
+            "quote_age_ms": None,
+            "liquidity_state": None,
+        }
+        try:
+            ob = self.client.get_orderbook(token_id)
+            bid = float(getattr(ob, "best_bid", 0.0) or 0.0)
+            ask = float(getattr(ob, "best_ask", 0.0) or 0.0)
+            if bid > 0:
+                state["current_mark_price"] = bid
+                state["bid"] = bid
+            if ask > 0:
+                state["ask"] = ask
+            if bid > 0 and ask > 0:
+                state["spread"] = round(ask - bid, 6)
+            quote_age = self._orderbook_age_ms(ob)
+            if quote_age:
+                state["quote_age_ms"] = int(quote_age)
+        except Exception as exc:
+            LOGGER.debug(
+                "[PATH_TRUTH] orderbook checkpoint unavailable | position=%s token=%s error=%s",
+                getattr(pos, "position_id", ""),
+                token_id,
+                exc,
+            )
+        try:
+            metadata = self._path_truth_metadata(pos)
+            readiness = self._phase2_readiness_timestamps(ticker, int(metadata.get("epoch_start_ts", 0) or 0))
+            liquidity = str(
+                metadata.get("liquidity_state")
+                or readiness.get("liquidity_depth_state")
+                or ""
+            ).strip()
+            if liquidity:
+                state["liquidity_state"] = liquidity
+        except Exception:
+            pass
+        return state
+
+    def _emit_path_truth_checkpoint(
+        self,
+        pos,
+        *,
+        checkpoint_elapsed_s: int | str,
+        checkpoint_reason: str,
+        now: datetime | None = None,
+        market_state: dict[str, object] | None = None,
+    ) -> bool:
+        if not bool(getattr(self.settings, "paper_trading", False)):
+            return False
+        checkpoint_key = str(checkpoint_elapsed_s)
+        emitted = self._path_truth_emitted_checkpoints(pos)
+        if checkpoint_key in emitted:
+            return False
+        if len(emitted) >= int(getattr(self, "_path_truth_max_writes_per_trade", 5)):
+            return False
+
+        current = now or datetime.now(UTC)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=UTC)
+        current = current.astimezone(UTC)
+        metadata = self._path_truth_metadata(pos)
+        state = market_state if market_state is not None else self._path_truth_market_state(pos)
+
+        def _optional_float(value: object) -> float | None:
+            try:
+                if value is None or value == "":
+                    return None
+                return float(value)
+            except Exception:
+                return None
+
+        entry_price = _optional_float(getattr(pos, "entry_price", None))
+        mark_price = _optional_float(state.get("current_mark_price") if isinstance(state, dict) else None)
+        size = _optional_float(getattr(pos, "size", None))
+        unrealized_pnl = None
+        favorable = None
+        adverse = None
+        if entry_price is not None and mark_price is not None:
+            favorable = bool(mark_price > entry_price)
+            adverse = bool(mark_price < entry_price)
+            if size is not None:
+                unrealized_pnl = round((mark_price - entry_price) * size, 6)
+
+        payload = {
+            "event_type": "trade_path_checkpoint",
+            "ts": current.isoformat().replace("+00:00", "Z"),
+            "run_id": str(getattr(getattr(self, "quant_events", None), "run_id", "") or ""),
+            "trade_id": str(getattr(pos, "position_id", "") or ""),
+            "candidate_id": metadata.get("candidate_id") or None,
+            "decision_id": metadata.get("decision_id") or None,
+            "asset": self._ticker_from_market_id(getattr(pos, "symbol", "")),
+            "side": self._position_outcome(pos),
+            "market_slug": metadata.get("market_slug") or None,
+            "condition_id": metadata.get("condition_id") or None,
+            "lifecycle_phase": self._path_truth_lifecycle_phase(pos, current),
+            "session_hour_utc": self._path_truth_session_hour_utc(pos, current),
+            "checkpoint_elapsed_s": checkpoint_elapsed_s,
+            "entry_price": entry_price,
+            "current_mark_price": mark_price,
+            "bid": _optional_float(state.get("bid") if isinstance(state, dict) else None),
+            "ask": _optional_float(state.get("ask") if isinstance(state, dict) else None),
+            "spread": _optional_float(state.get("spread") if isinstance(state, dict) else None),
+            "quote_age_ms": self._diagnostic_int(state.get("quote_age_ms") if isinstance(state, dict) else None),
+            "liquidity_state": (
+                state.get("liquidity_state") if isinstance(state, dict) and state.get("liquidity_state") else None
+            ),
+            "unrealized_pnl": unrealized_pnl,
+            "adverse_from_entry": adverse,
+            "favorable_from_entry": favorable,
+            "checkpoint_reason": checkpoint_reason,
+        }
+
+        emitted_ok = self._emit_quant_event("log_trade_path_checkpoint", payload)
+        if emitted_ok:
+            self._remember_path_truth_checkpoint(pos, checkpoint_key)
+        return emitted_ok
+
+    def _maybe_emit_path_truth_checkpoints(self, positions: list | None = None, *, now: datetime | None = None) -> None:
+        if not bool(getattr(self.settings, "paper_trading", False)):
+            return
+        current = now or datetime.now(UTC)
+        open_positions = positions if positions is not None else self.tracker.open_positions()
+        for pos in list(open_positions or []):
+            if getattr(pos, "status", "open") != "open":
+                continue
+            elapsed = self._path_truth_elapsed_seconds(pos, current)
+            if elapsed is None:
+                continue
+            for checkpoint_s in getattr(self, "_path_truth_checkpoint_schedule_s", (15, 30, 45, 60)):
+                checkpoint = int(checkpoint_s)
+                tolerance = int(getattr(self, "_path_truth_checkpoint_tolerance_s", {}).get(checkpoint, 2))
+                if checkpoint <= elapsed <= checkpoint + tolerance:
+                    self._emit_path_truth_checkpoint(
+                        pos,
+                        checkpoint_elapsed_s=checkpoint,
+                        checkpoint_reason="scheduled" if elapsed == checkpoint else "late",
+                        now=current,
+                    )
+
+    def _emit_path_truth_shutdown_events(self) -> None:
+        if not bool(getattr(self.settings, "paper_trading", False)):
+            return
+        for pos in list(self.tracker.open_positions() or []):
+            self._emit_path_truth_checkpoint(
+                pos,
+                checkpoint_elapsed_s="event_end",
+                checkpoint_reason="event_end",
+                now=datetime.now(UTC),
+                market_state={},
+            )
+
     def _unrealized_pct(self, pos, mark_price: float) -> float:
         return (mark_price - float(pos.entry_price)) / max(float(pos.entry_price), 1e-8)
 
@@ -8449,7 +8693,7 @@ class PolymarketTrader:
         )
 
         if receipt is not None:
-            opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value, "condition_id": meta.get("condition_id", ""), "epoch_start_ts": int(ptb_info.epoch_start_ts or 0)})
+            opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value, "condition_id": meta.get("condition_id", ""), "epoch_start_ts": int(ptb_info.epoch_start_ts or 0), "market_slug": meta.get("market_slug", ""), "lifecycle_phase": timing_detail.get("lifecycle_phase", "")})
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
             self._record_market_entry(market.market_id, ptb_info.epoch_start_ts)
             self._emit_entry_budget_probe_event(
@@ -9026,6 +9270,14 @@ class PolymarketTrader:
                 position_id=pos.position_id,
             )
             if receipt is not None:
+                if self.settings.paper_trading:
+                    self._emit_path_truth_checkpoint(
+                        pos,
+                        checkpoint_elapsed_s="event_end",
+                        checkpoint_reason="event_end",
+                        now=datetime.now(UTC),
+                        market_state={"current_mark_price": price},
+                    )
                 closed = self.tracker.close_position(pos.position_id, price, reason=reason)
                 pnl = (price - pos.entry_price) * pos.size
                 self._risk_mgr.record_result(won=pnl >= 0, pnl=abs(pnl))
@@ -9489,6 +9741,8 @@ class PolymarketTrader:
         if not open_pos:
             return
 
+        self._maybe_emit_path_truth_checkpoints(open_pos)
+
         stop_loss_pct = float(self._setting("execution_stop_loss_pct", 0.08))
         for pos in open_pos:
             mark_price = self._position_mark_price(pos)
@@ -9631,6 +9885,8 @@ class PolymarketTrader:
         open_pos = self.tracker.open_positions()
         if not open_pos:
             return
+
+        self._maybe_emit_path_truth_checkpoints(open_pos)
 
         tp_partial = self.settings.tp_partial_pct
         tp_full = self.settings.tp_full_pct
