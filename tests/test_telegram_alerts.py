@@ -3,6 +3,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from utils.telegram_alerts import TelegramAlertLayer
+from utils.telegram_reporter import build_error_alert, build_startup_alert, build_trade_alert, build_exit_alert
 
 
 class FakeNotifier:
@@ -47,7 +48,12 @@ def test_entry_and_exit_alerts_send_without_cooldown() -> None:
     assert layer.notify_entry("entry one").sent
     assert layer.notify_exit("exit one").sent
 
-    assert notifier.messages == ["entry one", "entry one", "exit one"]
+    assert len(notifier.messages) == 3
+    assert all("━━━━━━━━━━━━━━" in message for message in notifier.messages)
+    assert "ENTRY OPENED" in notifier.messages[0]
+    assert "entry one" in notifier.messages[0]
+    assert "EXIT CLOSED" in notifier.messages[2]
+    assert "exit one" in notifier.messages[2]
 
 
 def test_risk_alerts_are_cooldown_limited() -> None:
@@ -62,7 +68,9 @@ def test_risk_alerts_are_cooldown_limited() -> None:
 
     now[0] += 301.0
     assert layer.notify_risk("risk", market="BTC", reason="drawdown").sent
-    assert notifier.messages == ["risk", "risk"]
+    assert len(notifier.messages) == 2
+    assert all("RISK / PAUSE" in message for message in notifier.messages)
+    assert all("Reason: drawdown" in message for message in notifier.messages)
 
 
 def test_critical_alerts_deduplicate_repeated_message_but_send_new_issue() -> None:
@@ -73,7 +81,10 @@ def test_critical_alerts_deduplicate_repeated_message_but_send_new_issue() -> No
     assert layer.notify_critical("api failure").suppressed
     assert layer.notify_critical("reconcile mismatch").sent
 
-    assert notifier.messages == ["api failure", "reconcile mismatch"]
+    assert len(notifier.messages) == 2
+    assert "INCIDENT | P0" in notifier.messages[0]
+    assert "api failure" in notifier.messages[0]
+    assert "reconcile mismatch" in notifier.messages[1]
 
 
 def test_telegram_failures_never_raise() -> None:
@@ -208,3 +219,146 @@ def test_async_notifier_telemetry_callback_preserves_event_shape() -> None:
     ]
     assert events[1]["route"] == "exit"
     assert events[1]["run_id"] == "run-telegram-test"
+
+
+def test_entry_blank_message_uses_operator_console_template() -> None:
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=300, now=lambda: 100.0)
+
+    assert layer.notify_entry(
+        "",
+        mode="paper",
+        market="ETH 5M",
+        side="NO",
+        price="0.530",
+        size="0.096",
+        session="09h10h",
+        lifecycle_phase="OPENING_SCAN",
+        price_bucket="0.50-0.70",
+        executable=False,
+        dust_zone=True,
+    ).sent
+
+    message = notifier.messages[0]
+    assert "ENTRY OPENED" in message
+    assert "Mode: PAPER / SIGNAL" in message
+    assert "Market: ETH 5M" in message
+    assert "Side: NO" in message
+    assert "Entry: 0.530" in message
+    assert "Size: 0.096" in message
+    assert "Session: 09h10h" in message
+    assert "Lifecycle: OPENING" in message
+    assert "Dust Zone" in message
+    assert "Executable: No" in message
+    assert "Research signal only." in message
+    assert "dedup_key" not in message
+
+
+def test_exit_blank_message_uses_tp_or_sl_operator_template() -> None:
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=300, now=lambda: 100.0)
+
+    assert layer.notify_exit(
+        "",
+        mode="paper",
+        market="BTC 5M",
+        side="YES",
+        reason="stop_loss",
+        entry_price="0.610",
+        exit_price="0.560",
+        pnl="-0.0045",
+        hold_seconds=12,
+        dust_zone=True,
+    ).sent
+
+    message = notifier.messages[0]
+    assert "STOP LOSS CLOSED" in message
+    assert "Mode: PAPER / SIGNAL" in message
+    assert "Market: BTC 5M" in message
+    assert "Side: YES" in message
+    assert "Price: 0.610 -> 0.560" in message
+    assert "Signal PnL: -0.0045" in message
+    assert "Reason: stop_loss" in message
+    assert "Dust Zone" in message
+
+
+def test_risk_and_incident_blank_messages_use_operator_console_templates() -> None:
+    now = [100.0]
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=300, now=lambda: now[0])
+
+    assert layer.notify_risk("", mode="paper", market="BTC", reason="cooldown", risk_state="PAUSED").sent
+    now[0] += 301
+    assert layer.notify_incident(
+        "",
+        mode="paper",
+        subsystem="telegram",
+        reason="send_failure",
+        impact="operator visibility degraded",
+    ).sent
+
+    risk_message, incident_message = notifier.messages
+    assert "RISK / PAUSE" in risk_message
+    assert "Mode: PAPER" in risk_message
+    assert "Reason: cooldown" in risk_message
+    assert "Meaning: Trading attention required." in risk_message
+    assert "INCIDENT" in incident_message
+    assert "Subsystem: telegram" in incident_message
+    assert "Impact: operator visibility degraded" in incident_message
+    assert "Trading: unaffected unless stated" in incident_message
+
+
+def test_reporter_startup_trade_exit_and_error_use_operator_console_copy() -> None:
+    startup = build_startup_alert(
+        mode="PAPER",
+        status="CONNECTED",
+        interval=60,
+        bankroll=250.0,
+        paper=True,
+        wallet="0x1234567890abcdef",
+        balance_source="wallet_reference_paper",
+        wallet_balance=250.0,
+        paper_cash=250.0,
+        execution_mode="PAPER ONLY",
+    )
+    entry = build_trade_alert(
+        asset="ETH 5M",
+        signal="NO",
+        momentum_pct=0.1,
+        score=0.7,
+        position_size=0.05,
+        bankroll=250.0,
+        entry_price=0.53,
+        paper=True,
+        shares=0.096,
+    )
+    exit_msg = build_exit_alert(
+        title="Stop Loss",
+        asset="BTC 5M",
+        side="YES",
+        entry_price=0.61,
+        exit_price=0.56,
+        pnl=-0.0045,
+        bankroll=249.99,
+        reason="stop_loss",
+        paper=True,
+        shares=0.096,
+        countdown=120,
+    )
+    error = build_error_alert("polymarket.trader", "secret <payload> " + "x" * 500, "ERROR")
+
+    assert "STARTUP" in startup
+    assert "Mode: PAPER" in startup
+    assert "wallet_reference_paper" in startup
+    assert "$250.0000 USDC" in startup
+    assert "NO LIVE ORDERS" in startup
+    assert "0x1234567890abcdef" not in startup
+    assert "ENTRY OPENED" in entry
+    assert "Mode: PAPER / SIGNAL" in entry
+    assert "Evidence:" in entry
+    assert "Dust Zone" in entry
+    assert "STOP LOSS CLOSED" in exit_msg
+    assert "Signal PnL: -$0.0045" in exit_msg
+    assert "INCIDENT" in error
+    assert "secret" not in error.lower()
+    assert "<payload>" not in error

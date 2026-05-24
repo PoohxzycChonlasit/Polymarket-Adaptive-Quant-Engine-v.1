@@ -186,6 +186,40 @@ def build_startup_alert(
     daily_dd_limit: float = 0.10,
     max_open_positions: int = 0,
 ) -> str:
+    wallet_short = f"{wallet[:6]}...{wallet[-4:]}" if wallet and len(wallet) > 10 else (wallet or "n/a")
+    source_label = balance_source or ("paper_virtual" if paper else "clob_collateral")
+    execution_label = execution_mode or ("PAPER ONLY" if paper else "LIVE")
+    lines = [
+        "🚀 STARTUP | P2",
+        "Operator console online",
+        "━━━━━━━━━━━━━━",
+        f"Mode: {'PAPER' if paper else 'LIVE'}",
+        f"Status: {escape(status)}",
+        f"Scan Loop: {interval}s",
+        f"Bankroll: ${bankroll:.4f} USDC",
+        f"Source: {escape(source_label)}",
+    ]
+    if wallet_balance is not None:
+        lines.append(f"Wallet Bankroll: ${float(wallet_balance):.4f} USDC (REFERENCE ONLY)")
+    if paper and paper_cash is not None:
+        lines.append(f"Paper Cash: ${float(paper_cash):.4f} USDC")
+    if wallet_reference_error:
+        lines.append("Warning: wallet reference unavailable; using paper virtual balance")
+    lines.extend([
+        "",
+        "Execution:",
+        f"Execution: {escape(execution_label)}",
+        f"Live Orders: {'NO LIVE ORDERS' if paper else 'ENABLED'}",
+        f"Wallet: {escape(wallet_short)}",
+        f"Gas: {escape(gas_note)}",
+        "",
+        "Evidence:",
+        "SIGNAL_MODE" if paper else "LIVE",
+        "",
+        "Meaning:",
+        "Paper evidence collection active." if paper else "Live runtime requested; monitor readiness closely.",
+    ])
+    return "\n".join(lines)
     mode_tag = "🟢 LIVE" if not paper else "🟡 PAPER"
     status_tag = "🟢 CONNECTED" if status == "CONNECTED" else "🔴 CONNECTION FAILED"
     wallet_short = f"{wallet[:6]}...{wallet[-4:]}" if wallet else "N/A"
@@ -252,6 +286,21 @@ def build_trade_alert(
     strategy: str = "auto",
     risk_tier: str = "",
 ) -> str:
+    from utils.telegram_alerts import _operator_entry_message
+
+    return _operator_entry_message(
+        {
+            "mode": "paper" if paper else "live",
+            "market": asset,
+            "side": signal,
+            "entry_price": f"{entry_price:.3f}",
+            "size": f"{shares or position_size:.3f}",
+            "position_size": f"{position_size:.4f}",
+            "dust_zone": bool(paper and position_size < 1.0),
+            "executable": False if paper and position_size < 1.0 else None,
+            "order_id": order_id,
+        }
+    )
     mode_tag = "🟡 PAPER" if paper else "🟢 LIVE"
     direction = "🔴 NO (revert down)" if signal == "NO" else "🟢 YES (revert up)"
     order_line = f"  • Order ID    <code>{escape(order_id)}</code>\n" if order_id else ""
@@ -299,6 +348,23 @@ def build_exit_alert(
     unrealized_pct: float = 0.0,
     countdown: int | None = None,
 ) -> str:
+    from utils.telegram_alerts import _operator_exit_message
+
+    pnl_str = f"+${pnl:.4f}" if pnl >= 0 else f"-${abs(pnl):.4f}"
+    return _operator_exit_message(
+        {
+            "mode": "paper" if paper else "live",
+            "market": asset,
+            "side": side,
+            "reason": reason or title,
+            "entry_price": f"{entry_price:.3f}",
+            "exit_price": f"{exit_price:.3f}",
+            "pnl": pnl_str,
+            "hold_seconds": countdown,
+            "dust_zone": bool(paper and shares < 1.0),
+            "executable": False if paper and shares < 1.0 else None,
+        }
+    )
     mode_tag = "🟡 PAPER" if paper else "🟢 LIVE"
     win = pnl >= 0
     result_tag = "🟢 PROFIT" if win else "🔴 LOSS"
@@ -327,6 +393,18 @@ def build_exit_alert(
 
 
 def build_floor_breach_alert(balance: float, floor: float) -> str:
+    from utils.telegram_alerts import _operator_risk_message
+
+    return _operator_risk_message(
+        {
+            "mode": "paper",
+            "market": "SYSTEM",
+            "reason": "floor_breach",
+            "risk_state": "PAUSED",
+            "impact": f"balance ${balance:.4f} below floor ${floor:.2f}",
+        }
+    )
+
     return (
         f"🛑 <b>FLOOR BREACH — Trading Suspended</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -340,6 +418,18 @@ def build_floor_breach_alert(balance: float, floor: float) -> str:
 
 
 def build_loss_cluster_alert(streak: int, pause_minutes: int, bankroll: float) -> str:
+    from utils.telegram_alerts import _operator_risk_message
+
+    return _operator_risk_message(
+        {
+            "mode": "paper",
+            "market": "SYSTEM",
+            "reason": f"loss_cluster_{streak}",
+            "risk_state": f"PAUSED {pause_minutes}m",
+            "impact": f"bankroll ${bankroll:.4f}",
+        }
+    )
+
     return (
         f"⏸ <b>Loss Cluster — Trading Paused</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -352,6 +442,18 @@ def build_loss_cluster_alert(streak: int, pause_minutes: int, bankroll: float) -
 
 
 def build_daily_drawdown_alert(dd_pct: float, limit_pct: float, bankroll: float) -> str:
+    from utils.telegram_alerts import _operator_risk_message
+
+    return _operator_risk_message(
+        {
+            "mode": "paper",
+            "market": "SYSTEM",
+            "reason": "daily_drawdown_limit",
+            "risk_state": "PAUSED",
+            "impact": f"drawdown {dd_pct:.1f}% / limit {limit_pct:.0f}% | bankroll ${bankroll:.4f}",
+        }
+    )
+
     return (
         f"🚨 <b>Daily Drawdown Limit Hit</b>\n"
         f"━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -364,6 +466,22 @@ def build_daily_drawdown_alert(dd_pct: float, limit_pct: float, bankroll: float)
 
 
 def build_error_alert(module: str, message: str, level: str = "ERROR") -> str:
+    from utils.telegram_alerts import _operator_incident_message
+
+    safe = str(message or "")
+    for token in ("secret", "token", "chat_id", "private_key", "authorization"):
+        safe = safe.replace(token, "[redacted]").replace(token.upper(), "[redacted]")
+    safe = safe.replace("<", "").replace(">", "")
+    return _operator_incident_message(
+        "CRITICAL" if level == "CRITICAL" else "INCIDENT",
+        {
+            "mode": "paper",
+            "module": module,
+            "reason": level,
+            "impact": safe[:160] or "review needed",
+        },
+    )
+
     safe  = message.replace("<", "&lt;").replace(">", "&gt;")
     emoji = "🏮 <b>CRITICAL</b>" if level == "CRITICAL" else "❌ <b>ERROR</b>"
     return (

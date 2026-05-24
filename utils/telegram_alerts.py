@@ -192,13 +192,13 @@ class TelegramAlertLayer:
     @staticmethod
     def _format_message(kind: str, message: str, context: dict[str, Any]) -> str:
         if message:
-            return message
-        parts = [f"[{kind}]"]
-        for key in sorted(context):
-            if key in {"dedup_key", "source_event_id"}:
-                continue
-            parts.append(f"{key}={context[key]}")
-        return " ".join(parts)
+            context = dict(context)
+            summary = _safe_message_summary(message)
+            context.setdefault("legacy_message", summary)
+            context.setdefault("reason", summary)
+            context.setdefault("headline", summary)
+            context.setdefault("impact", summary)
+        return _operator_console_message(kind, context)
 
     @staticmethod
     def _dedup_key(category: str, message: str, context: dict[str, Any]) -> str:
@@ -229,6 +229,230 @@ def _safe_optional_text(value: Any) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _safe_text(value: Any, default: str = "n/a") -> str:
+    text = _safe_optional_text(value)
+    if text is None:
+        return default
+    return text.replace("<", "").replace(">", "")
+
+
+def _safe_message_summary(value: Any, limit: int = 160) -> str:
+    text = _safe_text(value, "")
+    for token in ("secret", "token", "chat_id", "private_key", "authorization"):
+        text = text.replace(token, "[redacted]").replace(token.upper(), "[redacted]")
+    text = " ".join(text.split())
+    if len(text) > limit:
+        return text[: limit - 3].rstrip() + "..."
+    return text or "operator event"
+
+
+def _mode_label(context: dict[str, Any]) -> str:
+    raw = str(context.get("mode") or context.get("execution_mode") or "").strip().upper()
+    paper_hint = context.get("paper")
+    if raw in {"LIVE", "REAL"} or paper_hint is False:
+        return "LIVE"
+    return "PAPER"
+
+
+def _paper_signal_label(context: dict[str, Any]) -> str:
+    mode = _mode_label(context)
+    if mode == "LIVE":
+        return "LIVE"
+    state = str(context.get("state") or context.get("evidence") or context.get("evidence_label") or "SIGNAL").upper()
+    if "EXECUTABLE" in state and not bool(context.get("dust_zone")):
+        return "PAPER / EXECUTABLE_CANDIDATE"
+    return "PAPER / SIGNAL"
+
+
+def _market_label(context: dict[str, Any]) -> str:
+    return _safe_text(context.get("market") or context.get("asset") or context.get("ticker"), "SYSTEM")
+
+
+def _yes_no(value: Any) -> str:
+    if isinstance(value, str):
+        return "Yes" if value.strip().lower() in {"1", "true", "yes", "y", "on"} else "No"
+    return "Yes" if bool(value) else "No"
+
+
+def _compact_lifecycle(value: Any) -> str:
+    raw = _safe_text(value, "")
+    return raw.replace("_SCAN", "").replace("_INVENTORY_TRADING", "").replace("_OR_UNSAFE", "")
+
+
+def _evidence_lines(context: dict[str, Any]) -> list[str]:
+    executable = context.get("executable")
+    dust_zone = context.get("dust_zone")
+    lines = ["Evidence:"]
+    if dust_zone is not None:
+        lines.append("Dust Zone" if bool(dust_zone) else "Not Dust Zone")
+    elif _mode_label(context) == "PAPER":
+        lines.append("SIGNAL_MODE")
+    if executable is not None:
+        lines.append(f"Executable: {_yes_no(executable)}")
+    elif _mode_label(context) == "PAPER":
+        lines.append("Executable: Unknown")
+    return lines
+
+
+def _ref_line(context: dict[str, Any]) -> str:
+    ref = (
+        context.get("trade_id")
+        or context.get("order_id")
+        or context.get("position_id")
+        or context.get("source_event_id")
+        or context.get("run_id")
+    )
+    return f"Ref: {_safe_text(ref)}"
+
+
+def _operator_console_message(kind: str, context: dict[str, Any]) -> str:
+    kind = kind.upper()
+    if kind == "STARTUP":
+        return _operator_startup_message(context)
+    if kind == "ENTRY":
+        return _operator_entry_message(context)
+    if kind == "EXIT":
+        return _operator_exit_message(context)
+    if kind == "RISK":
+        return _operator_risk_message(context)
+    if kind in {"CRITICAL", "INCIDENT"}:
+        return _operator_incident_message(kind, context)
+    if kind == "SUMMARY":
+        return _operator_summary_message(context)
+    return _operator_incident_message(kind, context)
+
+
+def _operator_startup_message(context: dict[str, Any]) -> str:
+    mode = _mode_label(context)
+    status = _safe_text(context.get("status"), "started")
+    interval = _safe_text(context.get("interval") or context.get("scan_interval"), "n/a")
+    meaning = "Paper evidence collection active." if mode == "PAPER" else "Live mode requested; monitor readiness closely."
+    return "\n".join(
+        [
+            "🚀 STARTUP | P2",
+            "Operator console online",
+            "━━━━━━━━━━━━━━",
+            f"Mode: {mode}",
+            f"Status: {status}",
+            f"Scan Loop: {interval}s",
+            f"Evidence: {'SIGNAL_MODE' if mode == 'PAPER' else 'LIVE'}",
+            "",
+            "Meaning:",
+            meaning,
+            _ref_line(context),
+        ]
+    )
+
+
+def _operator_entry_message(context: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            "🟢 ENTRY OPENED",
+            "━━━━━━━━━━━━━━",
+            f"Mode: {_paper_signal_label(context)}",
+            f"Market: {_market_label(context)}",
+            f"Side: {_safe_text(context.get('side') or context.get('outcome'))}",
+            f"Entry: {_safe_text(context.get('entry_price') or context.get('price'))}",
+            f"Size: {_safe_text(context.get('size') or context.get('shares') or context.get('position_size'))}",
+            "",
+            "Context:",
+            f"Session: {_safe_text(context.get('session') or context.get('session_hour') or context.get('session_hour_utc'))}",
+            f"Lifecycle: {_compact_lifecycle(context.get('lifecycle_phase')) or 'n/a'}",
+            f"Price Bucket: {_safe_text(context.get('price_bucket'))}",
+            "",
+            *_evidence_lines(context),
+            "",
+            "Meaning:",
+            _safe_text(context.get("legacy_message"), "Research signal only." if _mode_label(context) == "PAPER" else "Live order path event."),
+            _ref_line(context),
+        ]
+    )
+
+
+def _operator_exit_message(context: dict[str, Any]) -> str:
+    reason = _safe_text(context.get("reason") or context.get("exit_reason"), "exit")
+    lower_reason = reason.lower()
+    pnl = _safe_text(context.get("pnl") or context.get("pnl_usdc"), "n/a")
+    is_tp = "take_profit" in lower_reason or lower_reason in {"tp", "profit"}
+    is_sl = "stop_loss" in lower_reason or lower_reason in {"sl", "loss"}
+    title = "✅ TAKE PROFIT CLOSED" if is_tp else "🔴 STOP LOSS CLOSED" if is_sl else "🟠 EXIT CLOSED"
+    pnl_label = "Signal PnL" if _mode_label(context) == "PAPER" else "PnL"
+    hold = _safe_text(context.get("hold_seconds") or context.get("hold"), "n/a")
+    return "\n".join(
+        [
+            title,
+            "━━━━━━━━━━━━━━",
+            f"Mode: {_paper_signal_label(context)}",
+            f"Market: {_market_label(context)}",
+            f"Side: {_safe_text(context.get('side') or context.get('outcome'))}",
+            f"Price: {_safe_text(context.get('entry_price'))} -> {_safe_text(context.get('exit_price') or context.get('price'))}",
+            f"Hold: {hold}s" if hold != "n/a" else "Hold: n/a",
+            f"{pnl_label}: {pnl}",
+            f"Reason: {reason}",
+            "",
+            *_evidence_lines(context),
+            "",
+            "Meaning:",
+            _safe_text(context.get("legacy_message"), "Research signal only." if _mode_label(context) == "PAPER" else "Live exit path event."),
+            _ref_line(context),
+        ]
+    )
+
+
+def _operator_risk_message(context: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            "🟡 RISK / PAUSE | P1",
+            "Trading attention required",
+            "━━━━━━━━━━━━━━",
+            f"Mode: {_mode_label(context)}",
+            f"Market: {_market_label(context)}",
+            f"Reason: {_safe_text(context.get('reason') or context.get('event_type'))}",
+            f"State: {_safe_text(context.get('risk_state') or context.get('state'), 'PAUSED')}",
+            "",
+            "Meaning: Trading attention required.",
+            _ref_line(context),
+        ]
+    )
+
+
+def _operator_incident_message(kind: str, context: dict[str, Any]) -> str:
+    priority = "P0" if kind == "CRITICAL" else "P1"
+    return "\n".join(
+        [
+            f"🚨 INCIDENT | {priority}",
+            _safe_text(context.get("headline") or context.get("reason") or context.get("event_type"), "Operator incident"),
+            "━━━━━━━━━━━━━━",
+            f"Mode: {_mode_label(context)}",
+            f"Subsystem: {_safe_text(context.get('subsystem') or context.get('module') or context.get('component'))}",
+            f"Market: {_market_label(context)}",
+            f"Impact: {_safe_text(context.get('impact'), 'review needed')}",
+            "Trading: unaffected unless stated",
+            "",
+            "Meaning: Inspect logs or dashboard before taking action.",
+            _ref_line(context),
+        ]
+    )
+
+
+def _operator_summary_message(context: dict[str, Any]) -> str:
+    return "\n".join(
+        [
+            "📊 DAILY DIGEST | P3",
+            "Evidence summary",
+            "━━━━━━━━━━━━━━",
+            f"Mode: {_mode_label(context)}",
+            f"Trades: {_safe_text(context.get('trades') or context.get('trade_count'))}",
+            f"TP/SL: {_safe_text(context.get('tp'))}/{_safe_text(context.get('sl'))}",
+            f"Signal PnL: {_safe_text(context.get('signal_pnl') or context.get('pnl'))}",
+            f"Executable: {_safe_text(context.get('executable_trade_count') or context.get('executable'))}",
+            "",
+            "Meaning: Daily research snapshot.",
+            _ref_line(context),
+        ]
+    )
 
 
 def _telegram_timestamp() -> str:
