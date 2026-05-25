@@ -1,6 +1,6 @@
 # Path Truth Multi-Day Coverage Monitor
 
-Last updated: 2026-05-25 18:20 Asia/Bangkok
+Last updated: 2026-05-25 21:15 Asia/Bangkok
 
 Scope: read-only running log of path truth checkpoint quality across paper run dates. No code changes. No runtime changes.
 
@@ -50,35 +50,58 @@ Eligible = trades with a 60s checkpoint, therefore eligible for all scheduled ch
 | Date | Status | Runs | Lines | Parse Err | Trades | Full Cov | Fast Close | Eligible Full % | Dup Keys | quote_age_ms miss% | candidate_id miss% | decision_id miss% | Write Err | File Size |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 2026-05-24 | completed | 4 | 46 | 0 | 21 | 3 | 18 | 100% | 0 | 100% | 100% | 100% | 0 | 68,943 B |
-| 2026-05-25 | in-progress | 3 | 19 | 0 | 14 | 0 | 14 | n/a | 0 | 100% | 100% | 100% | 0 | 28,520 B |
+| 2026-05-25 | in-progress | 4 | 40 | 0 | 25 | 0 | 25 | n/a | 0 | 100% | 100% | 100% | 0 | 60,012 B |
 | _(next completed date)_ | pending | - | - | - | - | - | - | - | - | - | - | - | - | - |
 | _(next completed date)_ | pending | - | - | - | - | - | - | - | - | - | - | - | - | - |
+
+## Clean Single-Run Slice
+
+Target clean run after stale-process cleanup:
+
+```text
+20260525T065423Z_53560_1b672958
+```
+
+This run is the current clean single-run audit target. It is not sufficient to count `2026-05-25` as a completed clean date because the day file also contains other run IDs.
+
+| Run ID | Lines | Trades | Full Cov | Fast Close | Dup Keys | Parse Err | Checkpoints |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `20260525T065423Z_53560_1b672958` | 6 | 5 | 0 | 5 | 0 | 0 | 15s: 1, event_end: 5 |
+
+Single-run trade outcome:
+
+| Scope | Trades | TP | SL | Fast Close | Read |
+|---|---:|---:|---:|---:|---|
+| all target-run trades | 5 | 2 | 3 | 5 / 5 | mixed, fast-close-heavy |
+| BTC | 1 | 0 | 1 | 1 / 1 | weak but tiny |
+| NO | 3 | 1 | 2 | 3 / 3 | weak/mixed, tiny |
+| 09h10h | 0 | 0 | 0 | 0 / 0 | no evidence |
 
 ## Growth Since Previous Audit
 
-Previous baseline:
+Previous total baseline:
 
-- 46 lines
-- 21 trades
-- 3 full coverage trades
-- 18 fast-close partial trades
-
-Current total across path-truth files:
-
-- 2 files
 - 65 lines
 - 35 trades
 - 3 full coverage trades
 - 32 fast-close partial trades
 
+Current total across path-truth files:
+
+- 2 files
+- 86 lines
+- 46 trades
+- 3 full coverage trades
+- 43 fast-close partial trades
+
 Growth:
 
-- lines: +19 (+41.3%)
-- trades: +14 (+66.7%)
+- lines: +21 (+32.3%)
+- trades: +11 (+31.4%)
 - full coverage: unchanged at 3
-- fast-close partial: +14 (+77.8%)
+- fast-close partial: +11 (+34.4%)
 
-Interpretation: evidence farming is growing, but all new growth is on the in-progress date and is fast-close partial evidence. The completed-date gate remains unchanged.
+Interpretation: evidence farming continues to grow, but the completed-date gate remains unchanged. The current date remains in progress and multi-run.
 
 ## Date Detail: 2026-05-24
 
@@ -128,19 +151,17 @@ Eligible full coverage:
 3 / 3 = 100%
 ```
 
-Interpretation: completed-date coverage remains stable. Partial coverage is explained by fast closes before scheduled checkpoint eligibility.
-
 ## Date Detail: 2026-05-25
 
 | Field | Value |
 |---|---|
 | Path | `runtime/quant_data/path_truth/2026-05-25.jsonl` |
 | Status | in-progress |
-| File size | 28,520 bytes |
-| JSONL lines | 19 |
+| File size | 60,012 bytes |
+| JSONL lines | 40 |
 | Parse errors | 0 |
-| Runs | 3 |
-| Trades | 14 |
+| Runs | 4 |
+| Trades | 25 |
 | Duplicate checkpoint keys | 0 |
 
 Run IDs observed:
@@ -150,34 +171,37 @@ Run IDs observed:
 | `20260525T024022Z_53032_26cbf48f` | 4 |
 | `20260525T053039Z_48048_63481f2f` | 9 |
 | `20260525T065423Z_53560_1b672958` | 6 |
+| `20260525T113528Z_21600_bca4f41e` | 21 |
 
 Checkpoint distribution:
 
 | Checkpoint | Count |
 |---|---:|
-| 15s | 4 |
-| 30s | 1 |
-| event_end | 14 |
+| 15s | 9 |
+| 30s | 4 |
+| 45s | 2 |
+| event_end | 25 |
 
 Coverage classification:
 
 | Classification | Count |
 |---|---:|
-| FAST_CLOSE_BEFORE_FIRST_CHECKPOINT | 10 |
-| FAST_CLOSE_BEFORE_SECOND_CHECKPOINT | 3 |
-| FAST_CLOSE_BEFORE_THIRD_CHECKPOINT | 1 |
+| FAST_CLOSE_BEFORE_FIRST_CHECKPOINT | 16 |
+| FAST_CLOSE_BEFORE_SECOND_CHECKPOINT | 5 |
+| FAST_CLOSE_BEFORE_THIRD_CHECKPOINT | 2 |
+| FAST_CLOSE_BEFORE_60S_CHECKPOINT | 2 |
 
-Interpretation: `2026-05-25` is active/in-progress and should not be counted as a completed date. Current rows are fast closes, not coverage failures.
+Interpretation: `2026-05-25` is active/in-progress and should not be counted as a completed date. Current rows are fast closes, not coverage failures. Day-level research must filter by run ID.
 
 ## Field Gap Status
 
 Tracked fields remain missing:
 
-| Field | 2026-05-24 present | 2026-05-24 miss% | 2026-05-25 present | 2026-05-25 miss% | Trend |
-|---|---:|---:|---:|---:|---|
-| `quote_age_ms` | 0 / 46 | 100% | 0 / 19 | 100% | unchanged known gap |
-| `candidate_id` | 0 / 46 | 100% | 0 / 19 | 100% | unchanged known gap |
-| `decision_id` | 0 / 46 | 100% | 0 / 19 | 100% | unchanged known gap |
+| Field | 2026-05-24 present | 2026-05-24 miss% | 2026-05-25 present | 2026-05-25 miss% | Target run present | Target run miss% | Trend |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `quote_age_ms` | 0 / 46 | 100% | 0 / 40 | 100% | 0 / 6 | 100% | unchanged known gap |
+| `candidate_id` | 0 / 46 | 100% | 0 / 40 | 100% | 0 / 6 | 100% | unchanged known gap |
+| `decision_id` | 0 / 46 | 100% | 0 / 40 | 100% | 0 / 6 | 100% | unchanged known gap |
 
 This is not a new regression. It is the known field wiring gap, and wiring remains blocked by the date gate.
 
