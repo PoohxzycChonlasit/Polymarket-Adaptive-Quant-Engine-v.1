@@ -458,6 +458,62 @@ def test_execution_reality_header_renders_phase_a_status_fields() -> None:
     assert "git dirty" in text
 
 
+def test_header_research_strip_renders_available_fields() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+    display.update_run_id("20260525T065423Z_53560_1b672958")
+    display.update_research_obs(
+        research_phase="PATH_TRUTH",
+        path_truth_gate="INSUFFICIENT_DATES",
+        stage_a_completed_dates=1,
+        stage_a_target_dates=3,
+        active_session_label="02h_HOSTILE",
+        path_truth_status="FAST_CLOSE_HEAVY",
+    )
+
+    text = _render_text(display._header(display._resolve_layout()))
+
+    assert "PHASE PATH_TRUTH" in text
+    assert "GATE 1/3" in text
+    assert "RUN 1b672958" in text
+    assert "SESSION 02h_HOSTILE" in text
+    assert "PATH FAST_CLOSE_HEAVY" in text
+
+
+def test_header_research_strip_fails_soft_when_fields_missing() -> None:
+    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
+
+    text = _render_text(display._header(display._resolve_layout()))
+
+    assert "PHASE n/a" in text
+    assert "GATE n/a" in text
+    assert "SESSION n/a" in text
+    assert "PATH n/a" in text
+
+
+def test_header_research_strip_clips_long_compact_labels() -> None:
+    display = PolymarketRealtimeDisplay(
+        terminal_size_provider=lambda: (88, 24),
+        ui_mode="compact",
+    )
+    very_long_session = "02h_HOSTILE_SESSION_CANDIDATE_WITH_EXTRA_CONTEXT"
+    very_long_path = "PATH_TRUTH_FAST_CLOSE_HEAVY_WITH_EXTRA_CONTEXT"
+    display.update_research_obs(
+        research_phase="PATH_TRUTH_EVIDENCE_FARMING_WITH_EXTRA_CONTEXT",
+        path_truth_gate="INSUFFICIENT_DATES_WITH_EXTRA_CONTEXT",
+        stage_a_completed_dates=1,
+        stage_a_target_dates=3,
+        active_session_label=very_long_session,
+        path_truth_status=very_long_path,
+    )
+
+    text = _render_text(display._header(display._resolve_layout()))
+
+    assert "PHASE PATH_TRUTH_EVIDENCE_FARMING_WITH_EXTRA_CONTEXT" not in text
+    assert very_long_session not in text
+    assert very_long_path not in text
+    assert "PHASE PATH_TRUTH" in text
+
+
 def test_execution_reality_panel_renders_gate_bars_and_missing_fields() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (190, 48))
     display.update_execution_reality(

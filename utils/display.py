@@ -2013,7 +2013,7 @@ class PolymarketRealtimeDisplay:
         self._last_layout_signature = signature
 
         layout = Layout()
-        header_size = 4 if not spec.warning else 5
+        header_size = 5 if not spec.warning else 6
         layout.split_column(
             Layout(self._header(spec), name="header", size=header_size),
             Layout(name="top", size=spec.top_height),
@@ -2095,9 +2095,62 @@ class PolymarketRealtimeDisplay:
         line2.append(" | S3 ", style="grey70")
         line2.append(self._clip(s3, 12), style=self._traffic_label_style(s3))
         line2.append(f" | JSONL {self._footer_jsonl_compact_tag()}", style="grey70")
+        line3 = self._research_header_strip(spec)
         if spec.warning:
-            line2.append("\n " + self._clip(spec.warning, max(40, spec.width - 8)), style="bold bright_yellow")
-        return Panel(Text.assemble(line1, "\n", line2), border_style="bright_cyan", padding=(0, 1))
+            line3.append("\n " + self._clip(spec.warning, max(40, spec.width - 8)), style="bold bright_yellow")
+        return Panel(Text.assemble(line1, "\n", line2, "\n", line3), border_style="bright_cyan", padding=(0, 1))
+
+    def _research_header_strip(self, spec: DashboardLayout) -> Text:
+        obs = self._research_obs
+        phase = self._compact_research_value(obs.get("research_phase"), width=18)
+        gate_label = self._compact_gate_progress(obs)
+        gate_status = self._compact_research_value(
+            obs.get("path_truth_gate") or obs.get("research_gate"),
+            width=10,
+        )
+        run_short = self._short_run_id(self._run_id)
+        session = self._compact_research_value(
+            obs.get("active_session_label")
+            or obs.get("session_research_label")
+            or obs.get("current_utc_session_bucket"),
+            width=18,
+        )
+        path_status = self._compact_research_value(
+            obs.get("path_truth_status") or obs.get("path_truth_state"),
+            width=18,
+        )
+        gate = gate_label
+        if gate != "n/a" and gate_status != "n/a":
+            gate = f"{gate} {gate_status}"
+        label = (
+            f" PHASE {phase} | GATE {gate} | RUN {run_short} | "
+            f"SESSION {session} | PATH {path_status}"
+        )
+        return Text(self._clip(label, max(24, spec.width - 4)), style="grey70")
+
+    def _compact_research_value(self, value: object, *, width: int) -> str:
+        text = str(value or "").strip()
+        if not text:
+            return "n/a"
+        return self._clip(text, max(3, width))
+
+    def _compact_gate_progress(self, obs: Mapping[str, object]) -> str:
+        current = self._optional_int(obs.get("stage_a_completed_dates"))
+        target = self._optional_int(obs.get("stage_a_target_dates"))
+        if current is None:
+            current = self._optional_int(obs.get("completed_dates"))
+        if target is None:
+            target = self._optional_int(obs.get("target_dates"))
+        if current is None or target is None:
+            return "n/a"
+        return f"{current}/{target}"
+
+    def _short_run_id(self, run_id: str) -> str:
+        raw = str(run_id or "").strip()
+        if not raw:
+            return "n/a"
+        tail = raw.split("_")[-1] if "_" in raw else raw
+        return self._clip(tail, 8)
 
     def _system_panel(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
