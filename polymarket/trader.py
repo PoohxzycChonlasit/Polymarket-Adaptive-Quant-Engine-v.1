@@ -3987,6 +3987,65 @@ class PolymarketTrader:
             pass
         self._emit_quant_event("log_research_snapshot", snapshot_payload)
 
+    @staticmethod
+    def _build_paper_trade_replay_key(
+        *,
+        condition_id: object,
+        epoch_start_ts: object,
+        ticker: object,
+        outcome: object,
+        token_id: object,
+    ) -> str:
+        try:
+            epoch = int(epoch_start_ts or 0)
+        except (TypeError, ValueError):
+            epoch = 0
+        condition_text = str(condition_id or "")
+        outcome_text = str(outcome or "")
+        token_text = str(token_id or "")
+        ticker_text = str(ticker or "")
+        if condition_text and epoch and outcome_text and token_text:
+            return f"{condition_text}|{epoch}|{ticker_text}|{outcome_text}|{token_text}"
+        return ""
+
+    def _build_trade_position_metadata(
+        self,
+        *,
+        strategy: object,
+        signal_strategy: object,
+        token_id: object,
+        outcome: object,
+        entry_ev: object,
+        confidence: object,
+        delta_regime: object,
+        condition_id: object,
+        epoch_start_ts: object,
+        market_slug: object,
+        lifecycle_phase: object,
+        ticker: object,
+    ) -> dict[str, object]:
+        paper_trade_replay_key = self._build_paper_trade_replay_key(
+            condition_id=condition_id,
+            epoch_start_ts=epoch_start_ts,
+            ticker=ticker,
+            outcome=outcome,
+            token_id=token_id,
+        )
+        return {
+            "strategy": strategy,
+            "signal_strategy": signal_strategy,
+            "token_id": token_id,
+            "outcome": outcome,
+            "entry_ev": entry_ev,
+            "confidence": confidence,
+            "delta_regime": delta_regime,
+            "condition_id": condition_id,
+            "epoch_start_ts": epoch_start_ts,
+            "market_slug": market_slug,
+            "lifecycle_phase": lifecycle_phase,
+            "paper_trade_replay_key": paper_trade_replay_key or None,
+        }
+
     def _emit_trade_opened_event(
         self,
         *,
@@ -4104,10 +4163,12 @@ class PolymarketTrader:
             "risk_budget_used": exposure_before,
         })
         epoch_start_ts = int(epoch_start or 0)
-        paper_trade_replay_key = (
-            f"{condition_id}|{epoch_start_ts}|{ticker}|{outcome}|{token_id}"
-            if condition_id and epoch_start_ts and outcome and token_id
-            else ""
+        paper_trade_replay_key = self._build_paper_trade_replay_key(
+            condition_id=condition_id,
+            epoch_start_ts=epoch_start_ts,
+            ticker=ticker,
+            outcome=outcome,
+            token_id=token_id,
         )
         self._emit_quant_event(
             "log_trade_open",
@@ -4166,10 +4227,12 @@ class PolymarketTrader:
                 hold_seconds = int((exit_dt - entry_dt).total_seconds())
             except Exception:
                 pass
-        paper_trade_replay_key = (
-            f"{condition_id}|{epoch_start_ts}|{ticker}|{outcome}|{token_id}"
-            if condition_id and epoch_start_ts and outcome and token_id
-            else ""
+        paper_trade_replay_key = self._build_paper_trade_replay_key(
+            condition_id=condition_id,
+            epoch_start_ts=epoch_start_ts,
+            ticker=ticker,
+            outcome=outcome,
+            token_id=token_id,
         )
         # Outcome truth fields (observability only, additive)
         try:
@@ -5899,6 +5962,7 @@ class PolymarketTrader:
             "ts": current.isoformat().replace("+00:00", "Z"),
             "run_id": str(getattr(getattr(self, "quant_events", None), "run_id", "") or ""),
             "trade_id": str(getattr(pos, "position_id", "") or ""),
+            "paper_trade_replay_key": metadata.get("paper_trade_replay_key") or None,
             "candidate_id": metadata.get("candidate_id") or None,
             "decision_id": metadata.get("decision_id") or None,
             "asset": self._ticker_from_market_id(getattr(pos, "symbol", "")),
@@ -8693,7 +8757,30 @@ class PolymarketTrader:
         )
 
         if receipt is not None:
-            opened_pos = self.tracker.open_position(symbol=market.market_id, source="polymarket", side="BUY", entry_price=entry_price, size=risk_plan.position_size, stop_loss=risk_plan.stop_loss_price, take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))), order_id=receipt.order_id, metadata={"strategy": quant_decision, "signal_strategy": signal.strategy, "token_id": clob_token_id, "outcome": model_side, "entry_ev": model_ev, "confidence": confidence, "delta_regime": delta.delta_regime.value, "condition_id": meta.get("condition_id", ""), "epoch_start_ts": int(ptb_info.epoch_start_ts or 0), "market_slug": meta.get("market_slug", ""), "lifecycle_phase": timing_detail.get("lifecycle_phase", "")})
+            opened_pos = self.tracker.open_position(
+                symbol=market.market_id,
+                source="polymarket",
+                side="BUY",
+                entry_price=entry_price,
+                size=risk_plan.position_size,
+                stop_loss=risk_plan.stop_loss_price,
+                take_profit=entry_price * (1 + float(self._setting("execution_take_profit_pct", 0.10))),
+                order_id=receipt.order_id,
+                metadata=self._build_trade_position_metadata(
+                    strategy=quant_decision,
+                    signal_strategy=signal.strategy,
+                    token_id=clob_token_id,
+                    outcome=model_side,
+                    entry_ev=model_ev,
+                    confidence=confidence,
+                    delta_regime=delta.delta_regime.value,
+                    condition_id=meta.get("condition_id", ""),
+                    epoch_start_ts=int(ptb_info.epoch_start_ts or 0),
+                    market_slug=meta.get("market_slug", ""),
+                    lifecycle_phase=timing_detail.get("lifecycle_phase", ""),
+                    ticker=ticker,
+                ),
+            )
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
             self._record_market_entry(market.market_id, ptb_info.epoch_start_ts)
             self._emit_entry_budget_probe_event(
