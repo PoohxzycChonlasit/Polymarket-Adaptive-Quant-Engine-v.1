@@ -1,6 +1,6 @@
 # Path Truth Multi-Day Coverage Monitor
 
-Last updated: 2026-05-26 09:30 Asia/Bangkok
+Last updated: 2026-05-27 07:55 Asia/Bangkok
 
 Scope: read-only running log of path truth checkpoint quality across paper run dates. No code changes. No runtime changes.
 
@@ -30,18 +30,21 @@ Stage B: `IMPLEMENTATION_GATE`
 ## Current Verdict
 
 ```text
-INSUFFICIENT_DATES
+EARLY_RESEARCH_GATE_READY
+IMPLEMENTATION_GATE_BLOCKED
 ```
 
-Early research progress: **2 / 3 completed dates**
+Early research progress: **3 / 3 completed dates**
 
-Implementation progress: **2 / 7 completed dates**
+Implementation progress: **3 / 7 completed dates**
 
 In-progress dates with path-truth data: **0**
 
 Gate open for field wiring: **No**
 
 Most recent completed date-level quality: **COVERAGE_STABLE_FOR_WRITER_HEALTH / FAST_CLOSE_HEAVY_FOR_PATH_DEPTH**
+
+Read: Stage A is now satisfied for research review. Stage B remains blocked, so this does not authorize field wiring, strategy changes, risk changes, or live promotion.
 
 ## Running Summary Table
 
@@ -51,34 +54,54 @@ Eligible = trades with a 60s checkpoint, therefore eligible for all scheduled ch
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 2026-05-24 | completed | 4 | 46 | 0 | 21 | 3 | 18 | 100% | 0 | 100% | 100% | 100% | 0 | 68,943 B |
 | 2026-05-25 | completed | 5 | 49 | 0 | 30 | 0 | 30 | n/a | 0 | 100% | 100% | 100% | 0 | 73,532 B |
-| 2026-05-26 | active runtime / no path-truth file yet | - | - | - | - | - | - | - | - | - | - | - | - | - |
+| 2026-05-26 | completed | 3 | 45 | 0 | 37 | 0 | 37 | n/a | 0 | 93.3% | 100% | 100% | 0 | 67,649 B |
+| 2026-05-27 | active runtime / no path-truth file yet | - | - | - | - | - | - | - | - | - | - | - | - | - |
 | _(next completed date)_ | pending | - | - | - | - | - | - | - | - | - | - | - | - | - |
 
 ## Growth Since Previous Audit
 
-Previous total baseline from the 2026-05-25 21:15 monitor:
+Previous completed-date baseline from the 2026-05-26 monitor:
 
-- 86 lines
-- 46 trades
-- 3 full coverage trades
-- 43 fast-close partial trades
-
-Current total across completed path-truth files:
-
-- 2 files
+- 2 completed files
 - 95 lines
 - 51 trades
 - 3 full coverage trades
 - 48 fast-close partial trades
 
+Current total across completed path-truth files:
+
+- 3 completed files
+- 140 lines
+- 88 trades
+- 3 full coverage trades
+- 85 fast-close partial trades
+
 Growth:
 
-- lines: +9 (+10.5%)
-- trades: +5 (+10.9%)
+- completed dates: +1
+- lines: +45 (+47.4%)
+- trades: +37 (+72.5%)
 - full coverage: unchanged at 3
-- fast-close partial: +5 (+11.6%)
+- fast-close partial: +37 (+77.1%)
 
-Interpretation: evidence farming continued overnight and added a second completed date. The early research gate is closer, but still blocked at 2 / 3 completed dates. The implementation gate remains blocked at 2 / 7 completed dates.
+Interpretation: evidence farming added the third completed path-truth date. JSONL writer health remains clean, but the added date is entirely fast-close partial coverage, so path depth remains shallow.
+
+## Aggregate Coverage
+
+| Metric | Value |
+|---|---:|
+| completed dates | 3 |
+| total lines | 140 |
+| event-end trades | 88 |
+| full coverage trades | 3 |
+| fast-close partial trades | 85 |
+| parse errors | 0 |
+| duplicate checkpoint keys | 0 |
+| full coverage share of all event-end trades | 3.4% |
+| fast-close share of all event-end trades | 96.6% |
+| eligible full coverage | 3 / 3 = 100% |
+
+Read: writer coverage is stable, but market/trade behavior remains fast-close heavy. The low full-coverage share is a path-depth limitation, not a parse/write regression.
 
 ## Date Detail: 2026-05-24
 
@@ -93,15 +116,6 @@ Interpretation: evidence farming continued overnight and added a second complete
 | Trades | 21 |
 | Duplicate checkpoint keys | 0 |
 
-Run IDs observed:
-
-| Run ID | Events |
-|---|---:|
-| `20260524T043315Z_29264_52c95bee` | 11 |
-| `20260524T045213Z_24036_f64d2821` | 4 |
-| `20260524T052743Z_26444_0defea84` | 22 |
-| `20260524T134430Z_22940_add0ad1f` | 9 |
-
 Checkpoint distribution:
 
 | Checkpoint | Count |
@@ -112,21 +126,12 @@ Checkpoint distribution:
 | 60s | 3 |
 | event_end | 21 |
 
-Coverage classification from prior monitor:
+Coverage classification:
 
 | Classification | Count |
 |---|---:|
 | FULL_COVERAGE | 3 |
-| FAST_CLOSE_BEFORE_FIRST_CHECKPOINT | 8 |
-| FAST_CLOSE_BEFORE_SECOND_CHECKPOINT | 8 |
-| FAST_CLOSE_BEFORE_THIRD_CHECKPOINT | 1 |
-| FAST_CLOSE_BEFORE_60S_CHECKPOINT | 1 |
-
-Eligible full coverage:
-
-```text
-3 / 3 = 100%
-```
+| FAST_CLOSE_PARTIAL | 18 |
 
 ## Date Detail: 2026-05-25
 
@@ -142,16 +147,6 @@ Eligible full coverage:
 | Trades | 30 |
 | Duplicate checkpoint keys | 0 |
 
-Run IDs observed:
-
-| Run ID | Events |
-|---|---:|
-| `20260525T024022Z_53032_26cbf48f` | 4 |
-| `20260525T053039Z_48048_63481f2f` | 9 |
-| `20260525T065423Z_53560_1b672958` | 6 |
-| `20260525T113528Z_21600_bca4f41e` | 24 |
-| `20260525T145417Z_52872_1761df0e` | 6 |
-
 Checkpoint distribution:
 
 | Checkpoint | Count |
@@ -162,36 +157,67 @@ Checkpoint distribution:
 | 60s | 0 |
 | event_end | 30 |
 
-Coverage read:
+Coverage classification:
 
 | Classification | Count |
 |---|---:|
 | FULL_COVERAGE | 0 |
 | FAST_CLOSE_PARTIAL | 30 |
 
-Interpretation: `2026-05-25` is now a completed evidence date. It had clean JSONL health, but every event-end trade closed before the full 60s path sequence. This is fast-close behavior, not a JSONL writer failure.
+## Date Detail: 2026-05-26
+
+| Field | Value |
+|---|---|
+| Path | `runtime/quant_data/path_truth/2026-05-26.jsonl` |
+| Status | completed |
+| File size | 67,649 bytes |
+| Last write | 2026-05-27 04:55:32 Asia/Bangkok |
+| JSONL lines | 45 |
+| Parse errors | 0 |
+| Runs | 3 |
+| Trades | 37 |
+| Duplicate checkpoint keys | 0 |
+
+Checkpoint distribution:
+
+| Checkpoint | Count |
+|---|---:|
+| 15s | 7 |
+| 30s | 1 |
+| 45s | 0 |
+| 60s | 0 |
+| event_end | 37 |
+
+Coverage classification:
+
+| Classification | Count |
+|---|---:|
+| FULL_COVERAGE | 0 |
+| FAST_CLOSE_PARTIAL | 37 |
+
+Interpretation: 2026-05-26 completes the early research date gate, but all event-end trades were fast-close partial. This strengthens the fast-close behavior finding and does not improve full-depth path coverage.
 
 ## Current Active Runtime Date
 
-Active run observed during the 2026-05-26 morning audit:
+Active run observed during the 2026-05-27 morning audit:
 
 ```text
-20260525T145417Z_52872_1761df0e
+20260526T120255Z_19460_52b2e66e
 ```
 
-No `runtime/quant_data/path_truth/2026-05-26.jsonl` file was present at audit time. The active paper process can continue farming evidence, but `2026-05-26` is not yet countable as a completed path-truth date.
+No `runtime/quant_data/path_truth/2026-05-27.jsonl` file was present at audit time. The active paper process can continue farming evidence, but 2026-05-27 is not yet countable as a completed path-truth date.
 
 ## Field Gap Status
 
 Tracked fields remain missing:
 
-| Field | 2026-05-24 present | 2026-05-24 miss% | 2026-05-25 present | 2026-05-25 miss% | Trend |
-|---|---:|---:|---:|---:|---|
-| `quote_age_ms` | 0 / 46 | 100% | 0 / 49 | 100% | unchanged known gap |
-| `candidate_id` | 0 / 46 | 100% | 0 / 49 | 100% | unchanged known gap |
-| `decision_id` | 0 / 46 | 100% | 0 / 49 | 100% | unchanged known gap |
+| Field | 2026-05-24 present | 2026-05-24 miss% | 2026-05-25 present | 2026-05-25 miss% | 2026-05-26 present | 2026-05-26 miss% | Trend |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `quote_age_ms` | 0 / 46 | 100% | 0 / 49 | 100% | 3 / 45 | 93.3% | slight improvement, still mostly missing |
+| `candidate_id` | 0 / 46 | 100% | 0 / 49 | 100% | 0 / 45 | 100% | unchanged known gap |
+| `decision_id` | 0 / 46 | 100% | 0 / 49 | 100% | 0 / 45 | 100% | unchanged known gap |
 
-This is not a new regression. It is the known field wiring gap, and wiring remains blocked by the date gates.
+This is not a new regression. It is the known field wiring gap, and wiring remains blocked by the implementation gate.
 
 ## Regression Verdict
 
@@ -199,23 +225,27 @@ Completed date verdict:
 
 ```text
 COVERAGE_STABLE_FOR_WRITER_HEALTH
+FAST_CLOSE_HEAVY_FOR_PATH_DEPTH
 ```
 
 Overall gate verdict:
 
 ```text
-INSUFFICIENT_DATES
+EARLY_RESEARCH_GATE_READY
+IMPLEMENTATION_GATE_BLOCKED
 ```
 
 Reason:
 
-- early research completed dates: 2 / 3
-- implementation completed dates: 2 / 7
+- early research completed dates: 3 / 3
+- implementation completed dates: 3 / 7
 - parse errors: 0
 - duplicate keys: 0
 - path truth write errors observed: 0
-- tracked field gaps still 100% missing, as expected before field wiring
-- path depth remains fast-close-heavy, especially on 2026-05-25
+- full coverage unchanged at 3 trades
+- fast-close partial increased to 85 trades
+- `candidate_id` and `decision_id` remain 100% missing
+- `quote_age_ms` improved slightly on 2026-05-26 but remains mostly missing
 
 ## Field Wiring Candidates
 
@@ -227,10 +257,9 @@ When an explicit future implementation task opens the gate, the known candidates
 2. `candidate_id`
 3. `decision_id`
 
-No field wiring until at least:
+No field wiring until:
 
 ```text
-EARLY_RESEARCH_GATE: >=3 completed dates AND coverage stable
 IMPLEMENTATION_GATE: >=7 completed dates AND coverage stable
 ```
 
