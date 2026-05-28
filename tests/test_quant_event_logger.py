@@ -157,6 +157,135 @@ def test_quant_event_logger_trace_identity_handles_missing_fields_safely(tmp_pat
     assert "side" not in event["payload"]
 
 
+def test_market_observation_key_helper_resolves_epoch_aliases() -> None:
+    aliases = (
+        ("epoch_start_ts", 1779926400),
+        ("epoch_start", "1779926401"),
+        ("market_epoch_start_ts", 1779926402),
+        ("market_epoch_start", 1779926403),
+        ("event_start_ts", 1779926404),
+    )
+
+    for field, value in aliases:
+        key, source = QuantEventLogger._compute_market_observation_key(
+            {
+                "condition_id": "condition-1",
+                field: value,
+            }
+        )
+        assert key == f"condition-1|{value}"
+        assert source == "resolved"
+
+
+def test_market_observation_key_helper_fails_soft_when_identity_missing() -> None:
+    missing_condition_key, missing_condition_reason = QuantEventLogger._compute_market_observation_key(
+        {"epoch_start": 1779926400}
+    )
+    missing_epoch_key, missing_epoch_reason = QuantEventLogger._compute_market_observation_key(
+        {"condition_id": "condition-1"}
+    )
+
+    assert missing_condition_key == ""
+    assert missing_condition_reason == "condition_id_absent"
+    assert missing_epoch_key == ""
+    assert missing_epoch_reason == "epoch_unresolvable"
+
+
+def test_market_observation_key_emits_on_market_snapshot_and_decision_only(tmp_path: Path) -> None:
+    logger = QuantEventLogger(
+        base_dir=tmp_path,
+        enabled=True,
+        mode="paper",
+        run_id="run-test",
+        schema_version="1.0",
+        now=_fixed_now,
+    )
+
+    assert logger.log_market_snapshot(
+        {
+            "condition_id": "condition-1",
+            "epoch_start_ts": 1779926400,
+            "yes_token_id": "yes-token",
+            "no_token_id": "no-token",
+            "outcome": "YES/NO",
+        }
+    )
+    assert logger.log_decision(
+        {
+            "condition_id": "condition-1",
+            "epoch_start": 1779926400,
+            "token_id": "yes-token",
+            "side": "YES",
+        }
+    )
+    assert logger.log_risk_event(
+        {
+            "condition_id": "condition-1",
+            "market_epoch_start": 1779926400,
+            "token_id": "yes-token",
+            "side": "YES",
+        }
+    )
+    assert logger.log_trade_open(
+        {
+            "condition_id": "condition-1",
+            "epoch_start_ts": 1779926400,
+            "asset": "BTC",
+            "token_id": "yes-token",
+            "side": "YES",
+        }
+    )
+
+    market_payload = _read_jsonl(tmp_path / "market_snapshots" / "2026-05-08.jsonl")[0]["payload"]
+    decision_payload = _read_jsonl(tmp_path / "decision_log" / "2026-05-08.jsonl")[0]["payload"]
+    risk_payload = _read_jsonl(tmp_path / "risk_log" / "2026-05-08.jsonl")[0]["payload"]
+    trade_payload = _read_jsonl(tmp_path / "trade_journal" / "2026-05-08.jsonl")[0]["payload"]
+
+    assert market_payload["market_observation_key"] == "condition-1|1779926400"
+    assert market_payload["market_observation_key_source"] == "resolved"
+    assert "market_observation_key_missing_reason" not in market_payload
+    assert decision_payload["market_observation_key"] == "condition-1|1779926400"
+    assert decision_payload["market_observation_key_source"] == "resolved"
+    assert "market_observation_key_missing_reason" not in decision_payload
+
+    assert "market_observation_key" not in risk_payload
+    assert "market_observation_key_source" not in risk_payload
+    assert "market_observation_key_missing_reason" not in risk_payload
+    assert "market_observation_key" not in trade_payload
+    assert "market_observation_key_source" not in trade_payload
+    assert "market_observation_key_missing_reason" not in trade_payload
+
+
+def test_market_observation_key_preserves_candidate_and_replay_keys(tmp_path: Path) -> None:
+    logger = QuantEventLogger(
+        base_dir=tmp_path,
+        enabled=True,
+        mode="paper",
+        run_id="run-test",
+        schema_version="1.0",
+        now=_fixed_now,
+    )
+    payload = {
+        "condition_id": "condition-1",
+        "epoch_start": 1779926400,
+        "asset": "BTC",
+        "token_id": "yes-token",
+        "side": "YES",
+        "lifecycle_phase": "OPENING_SCAN",
+    }
+    expected_trace = QuantEventLogger._candidate_trace_identity_fields(payload, "2026-05-08T12:30:00Z")[
+        "candidate_trace_id"
+    ]
+    expected_replay_key = QuantEventLogger._compute_paper_trade_replay_key(payload)
+
+    assert logger.log_decision(payload)
+
+    emitted = _read_jsonl(tmp_path / "decision_log" / "2026-05-08.jsonl")[0]["payload"]
+    assert emitted["candidate_trace_id"] == expected_trace
+    assert emitted["paper_trade_replay_key"] == expected_replay_key
+    assert emitted["market_observation_key"] == "condition-1|1779926400"
+
+
 def test_quant_event_logger_trace_id_remains_observability_only_for_execution(tmp_path: Path) -> None:
     logger = QuantEventLogger(base_dir=tmp_path, enabled=True, mode="live", run_id="run-test", now=_fixed_now)
 

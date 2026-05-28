@@ -143,7 +143,7 @@ class QuantEventLogger:
             return False
 
         timestamp = self._timestamp()
-        enriched_payload = self._with_candidate_trace_identity(payload or {}, timestamp)
+        enriched_payload = self._with_candidate_trace_identity(payload or {}, timestamp, event_type=event_type)
         event = {
             "timestamp_utc": timestamp,
             "event_type": event_type,
@@ -156,7 +156,13 @@ class QuantEventLogger:
         path = self.base_dir / category / f"{timestamp[:10]}.jsonl"
         return self._append_jsonl(category, path, event)
 
-    def _with_candidate_trace_identity(self, payload: dict[str, Any], timestamp_utc: str) -> dict[str, Any]:
+    def _with_candidate_trace_identity(
+        self,
+        payload: dict[str, Any],
+        timestamp_utc: str,
+        *,
+        event_type: str | None = None,
+    ) -> dict[str, Any]:
         enriched = dict(payload)
         for key, value in self._normalized_identity_companion_fields(enriched).items():
             if value and not enriched.get(key):
@@ -216,6 +222,15 @@ class QuantEventLogger:
             replay_key = self._compute_paper_trade_replay_key(enriched)
             if replay_key:
                 enriched["paper_trade_replay_key"] = replay_key
+        # market_observation_key: coarse MS/DL market-window bridge only.
+        # Not candidate identity, trade identity, replay grouping, or policy input.
+        if event_type in {"market_snapshot", "decision"} and not enriched.get("market_observation_key"):
+            observation_key, observation_source = self._compute_market_observation_key(enriched)
+            if observation_key:
+                enriched["market_observation_key"] = observation_key
+                enriched.setdefault("market_observation_key_source", observation_source)
+            else:
+                enriched.setdefault("market_observation_key_missing_reason", observation_source)
         return enriched
 
     @classmethod
@@ -361,6 +376,24 @@ class QuantEventLogger:
         if condition_id and epoch_start_ts and side and token_id:
             return f"{condition_id}|{epoch_start_ts}|{asset or ''}|{side}|{token_id}"
         return ""
+
+    @classmethod
+    def _compute_market_observation_key(cls, payload: dict[str, Any]) -> tuple[str, str]:
+        """Coarse market-window bridge: condition_id|alias-resolved epoch.
+
+        Evidence-only. Do not use for candidate identity, trade attribution,
+        replay grouping, risk sizing, or runtime decisions.
+        """
+        condition_id = cls._first_text(payload, ("condition_id", "conditionId"))
+        epoch_start = cls._first_text(
+            payload,
+            ("epoch_start_ts", "epoch_start", "market_epoch_start_ts", "market_epoch_start", "event_start_ts"),
+        )
+        if condition_id and epoch_start:
+            return f"{condition_id}|{epoch_start}", "resolved"
+        if not condition_id:
+            return "", "condition_id_absent"
+        return "", "epoch_unresolvable"
 
     def _timestamp(self) -> str:
         now = self._now()
