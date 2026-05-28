@@ -20,8 +20,8 @@ Files inspected:
 - `docs/quant_agent_setup_md/roles/10_BACKTEST_REPLAY_AGENT.md`
 - `docs/quant_agent_setup_md/roles/16_PAPER_EVALUATION_AGENT.md`
 - `docs/quant_agent_setup_md/roles/18_MARKET_REGIME_AGENT.md`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
-- `docs/research/early_research_gate_review.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/early_research_gate_review.md`
 - `docs/research/dynamic_executable_expectancy_audit.md`
 - `runtime/quant_data/trade_journal/2026-05-24.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-25.jsonl`

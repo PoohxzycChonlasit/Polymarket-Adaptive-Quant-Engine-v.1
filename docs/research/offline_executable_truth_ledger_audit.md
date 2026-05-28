@@ -55,7 +55,7 @@ Executable evidence docs:
 - `docs/research/executable_reality_overlay_design.md`
 - `docs/research/executable_overlay_phase_a.md`
 - `docs/research/paper_sizing_audit.md`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 Runtime JSONL sampled:
 

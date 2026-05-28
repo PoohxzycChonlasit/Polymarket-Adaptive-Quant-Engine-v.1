@@ -18,7 +18,7 @@ Why selected: this spec defines replay evidence needed for early failure, surviv
 
 Files inspected:
 
-- `docs/research/path_truth_observability_design.md`
+- `docs/research/path_truth/path_truth_observability_design.md`
 - `docs/research/session_09h10h_truth_layer_audit.md`
 - `docs/research/session_09h10h_early_failure_replay_test_plan.md`
 - `runtime/research_state/latest_research_state.md`

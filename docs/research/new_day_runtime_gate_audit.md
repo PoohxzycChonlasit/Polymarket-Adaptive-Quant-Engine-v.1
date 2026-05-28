@@ -9,7 +9,7 @@ Scope: read-only morning audit. No code changes. No runtime changes. No replay. 
 - Primary role: `11_OBSERVABILITY_INCIDENT_AGENT.md`
 - Supporting roles: `10_BACKTEST_REPLAY_AGENT.md`, `16_PAPER_EVALUATION_AGENT.md`
 - Why selected: the task checks runtime health, path-truth gate progress, and evidence-candidate stability without changing runtime behavior.
-- Files inspected: process list, `runtime/bot_status.json`, active log, `runtime/quant_data/path_truth/*.jsonl`, `runtime/quant_data/trade_journal/*.jsonl`, `runtime/quant_data/system_health/*.jsonl`, prior `docs/research/path_truth_multiday_coverage_monitor.md`.
+- Files inspected: process list, `runtime/bot_status.json`, active log, `runtime/quant_data/path_truth/*.jsonl`, `runtime/quant_data/trade_journal/*.jsonl`, `runtime/quant_data/system_health/*.jsonl`, prior `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`.
 - Files intentionally ignored: strategy modules, risk modules, execution modules, wallet/live config, replay execution paths, and runtime code.
 
 ## Runtime Health

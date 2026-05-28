@@ -16,8 +16,8 @@ Strategy/risk/execution changed: No
 - `utils/display.py`
 - `main.py`
 - `polymarket/trader.py`
-- `docs/research/path_truth_gate_revision.md`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_gate_revision.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 ## Role Routing
 

@@ -25,9 +25,9 @@ Source lineage:
 - `docs/research/runtime_executable_truth_source_audit.md`
 - `docs/research/executable_truth_frontier_map.md`
 - `docs/research/executable_truth_blocker_observatory_design.md`
-- `docs/research/path_truth_field_coverage_gap_audit.md`
-- `docs/research/path_truth_checkpoint_validation.md`
-- `docs/research/replay_join_key_contract.md`
+- `docs/research/path_truth/path_truth_field_coverage_gap_audit.md`
+- `docs/research/path_truth/path_truth_checkpoint_validation.md`
+- `docs/research/path_truth/replay_join_key_contract.md`
 
 ## Executive Verdict
 

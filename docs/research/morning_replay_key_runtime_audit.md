@@ -24,7 +24,7 @@ Supporting roles: none
 
 Why selected: this task is a targeted runtime/log/JSONL evidence audit with docs-only output.
 
-Files inspected: process list, targeted 2026-05-27 paper logs, `runtime/quant_data/*/2026-05-27.jsonl`, `docs/research/path_truth_multiday_coverage_monitor.md`, and the prior live validation note.
+Files inspected: process list, targeted 2026-05-27 paper logs, `runtime/quant_data/*/2026-05-27.jsonl`, `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`, and the prior live validation note.
 
 Files intentionally ignored: strategy modules, risk modules, execution policy modules, wallet/live config, replay tools, and unrelated raw reports.
 
@@ -109,7 +109,7 @@ The old rows remain valid legacy rows, but they do not validate post-patch wirin
 
 ## Check 4 - Path Truth Gate
 
-Current monitor state from `docs/research/path_truth_multiday_coverage_monitor.md`:
+Current monitor state from `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`:
 
 | Gate | Progress | Verdict |
 |---|---:|---|

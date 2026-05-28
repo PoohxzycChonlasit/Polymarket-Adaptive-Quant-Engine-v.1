@@ -14,9 +14,9 @@ Why selected: the task is an observability identity contract for JSONL lineage, 
 
 Files inspected:
 
-- `docs/research/path_join_root_cause_map.md`
-- `docs/research/path_truth_field_coverage_gap_audit.md`
-- `docs/research/path_truth_implementation_spec.md`
+- `docs/research/path_truth/path_join_root_cause_map.md`
+- `docs/research/path_truth/path_truth_field_coverage_gap_audit.md`
+- `docs/research/path_truth/path_truth_implementation_spec.md`
 - `tests/test_path_truth_checkpoints.py`
 - `polymarket/trader.py` (read-only, targeted identity/path-truth methods)
 - `utils/position_tracker.py` (read-only, position metadata boundary)
@@ -50,7 +50,7 @@ The recommended future patch is additive observability only. It should not alter
 
 `PATH_JOIN_0_77` exists because `path_truth` has checkpoints but lacks the canonical trade replay key.
 
-Known state from `docs/research/path_join_root_cause_map.md`:
+Known state from `docs/research/path_truth/path_join_root_cause_map.md`:
 
 | Producer | Records | `paper_trade_replay_key` | `trade_id` | `candidate_id` | `decision_id` |
 |---|---:|---:|---:|---:|---:|

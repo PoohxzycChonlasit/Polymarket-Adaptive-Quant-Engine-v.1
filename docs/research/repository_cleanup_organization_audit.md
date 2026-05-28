@@ -93,7 +93,7 @@ Current tracked/untracked working-tree findings:
 | `docs/research/no_trade_open_runtime_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
 | `docs/research/runtime_replay_key_blocker_audit.md` | staged/add shown by git status | KEEP / REVIEW | untracked/staged research doc not part of this task; review before commit |
 | `docs/research/signal_rejection_root_cause_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
-| `docs/research/path_truth_replay_key_live_validation.md` | modified | KEEP | ongoing validation note |
+| `docs/research/path_truth/path_truth_replay_key_live_validation.md` | modified | KEEP | ongoing validation note |
 
 Ignored local/generated areas:
 

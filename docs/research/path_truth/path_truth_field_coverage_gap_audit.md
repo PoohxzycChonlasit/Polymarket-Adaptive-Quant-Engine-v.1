@@ -26,8 +26,8 @@ Files inspected:
 - `runtime/quant_data/trade_journal/2026-05-24.jsonl`
 - `polymarket/trader.py` (path truth methods only — read-only)
 - `polymarket/client.py` (orderbook dataclass and `get_orderbook()` — read-only)
-- `docs/research/path_truth_checkpoint_validation.md`
-- `docs/research/path_truth_implementation_spec.md`
+- `docs/research/path_truth/path_truth_checkpoint_validation.md`
+- `docs/research/path_truth/path_truth_implementation_spec.md`
 
 Files intentionally ignored: strategy modules, risk modules, sizing modules, stop-loss logic, wallet/live config, replay execution, all offline tools.
 

@@ -199,21 +199,21 @@ No moves are authorized by this plan. These are proposed future targets.
 
 Candidate files:
 
-- `docs/research/path_join_root_cause_map.md`
-- `docs/research/path_truth_checkpoint_validation.md`
-- `docs/research/path_truth_field_coverage_gap_audit.md`
-- `docs/research/path_truth_gate_revision.md`
-- `docs/research/path_truth_identity_wiring_spec.md`
-- `docs/research/path_truth_implementation_spec.md`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
-- `docs/research/path_truth_observability_design.md`
-- `docs/research/path_truth_replay_key_live_validation.md`
-- `docs/research/path_truth_replay_key_wiring_validation.md`
-- `docs/research/single_run_path_truth_audit.md`
+- `docs/research/path_truth/path_join_root_cause_map.md`
+- `docs/research/path_truth/path_truth_checkpoint_validation.md`
+- `docs/research/path_truth/path_truth_field_coverage_gap_audit.md`
+- `docs/research/path_truth/path_truth_gate_revision.md`
+- `docs/research/path_truth/path_truth_identity_wiring_spec.md`
+- `docs/research/path_truth/path_truth_implementation_spec.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_observability_design.md`
+- `docs/research/path_truth/path_truth_replay_key_live_validation.md`
+- `docs/research/path_truth/path_truth_replay_key_wiring_validation.md`
+- `docs/research/path_truth/single_run_path_truth_audit.md`
 
 Keep hot until replay-key validation closes:
 
-- `docs/research/path_truth_replay_key_live_validation.md`
+- `docs/research/path_truth/path_truth_replay_key_live_validation.md`
 - `docs/research/morning_replay_key_runtime_audit.md`
 - `docs/research/runtime_replay_key_blocker_audit.md`
 

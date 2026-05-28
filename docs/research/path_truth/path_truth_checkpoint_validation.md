@@ -24,8 +24,8 @@ Files inspected:
 - `runtime/quant_data/trade_journal/2026-05-24.jsonl`
 - `runtime/quant_data/execution_log/2026-05-24.jsonl`
 - `logs/polytrade_bot_20260524_113314_29264.log`
-- `docs/research/path_truth_observability_design.md`
-- `docs/research/path_truth_implementation_spec.md`
+- `docs/research/path_truth/path_truth_observability_design.md`
+- `docs/research/path_truth/path_truth_implementation_spec.md`
 
 Files intentionally ignored: strategy modules, risk modules, sizing modules, execution policy changes, wallet/live config, replay execution.
 

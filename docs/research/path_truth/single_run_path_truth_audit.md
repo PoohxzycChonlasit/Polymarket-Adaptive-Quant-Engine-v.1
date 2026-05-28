@@ -11,7 +11,7 @@ Target run only: `20260525T065423Z_53560_1b672958`
 - `runtime/quant_data/path_truth/2026-05-25.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-25.jsonl`
 - `logs/polytrade_bot_20260525_135420_53560.log`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 The 2026-05-25 path-truth file contains multiple run IDs. This audit ignores all non-target run IDs.
 

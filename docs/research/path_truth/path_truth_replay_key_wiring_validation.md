@@ -50,7 +50,7 @@ Legacy comparison:
 - `runtime/quant_data/path_truth/2026-05-24.jsonl`
 - `runtime/quant_data/path_truth/2026-05-25.jsonl`
 - `runtime/quant_data/path_truth/2026-05-26.jsonl`
-- `docs/research/path_join_root_cause_map.md`
+- `docs/research/path_truth/path_join_root_cause_map.md`
 
 Runtime health spot-check:
 

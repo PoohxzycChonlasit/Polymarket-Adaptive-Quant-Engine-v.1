@@ -15,7 +15,7 @@ Strategy/risk/execution changed: No
 - Primary role: `11_OBSERVABILITY_INCIDENT_AGENT.md`
 - Supporting roles: `08_RESEARCH_QUANT_AGENT.md`, `16_PAPER_EVALUATION_AGENT.md`
 - Why selected: the task audits operator-visible observability against research evidence and paper-evidence gates.
-- Files inspected: `utils/display.py`, `main.py`, `docs/OBSERVABILITY_PLAN.md`, `docs/research/path_truth_multiday_coverage_monitor.md`, `docs/research/single_run_path_truth_audit.md`, `docs/research/path_truth_gate_revision.md`, selected research summaries under `docs/research/`.
+- Files inspected: `utils/display.py`, `main.py`, `docs/OBSERVABILITY_PLAN.md`, `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`, `docs/research/path_truth/single_run_path_truth_audit.md`, `docs/research/path_truth/path_truth_gate_revision.md`, selected research summaries under `docs/research/`.
 - Files intentionally ignored: strategy modules, risk modules, order placement modules, wallet/live config, replay execution, paper runtime launch.
 
 ## Current UI

@@ -117,7 +117,7 @@ Interpretation:
 Updated monitor:
 
 ```text
-docs/research/path_truth_multiday_coverage_monitor.md
+docs/research/path_truth/path_truth_multiday_coverage_monitor.md
 ```
 
 Gate verdict:

@@ -14,7 +14,7 @@ BLOCKER: NONE
 
 Run `20260527T110608Z_26764_9d379e2c` produced 3 paper trades, 4 path-truth checkpoints,
 and a 100% direct join rate on `(run_id, paper_trade_replay_key)`.
-PATH_JOIN_0_77 is resolved. See full analysis: `docs/research/replay_key_validation_after_trade.md`
+PATH_JOIN_0_77 is resolved. See full analysis: `docs/research/path_truth/replay_key_validation_after_trade.md`
 
 **Previous status (2026-05-27):** PENDING_NO_TRADE_OPEN — the active paper runtime remained alive
 and continued writing decision/system-health evidence, but no `trade_open`, `trade_close`, or
@@ -253,4 +253,4 @@ Prior blocker `PATH_JOIN_0_77` is **resolved**. `paper_trade_replay_key` is emit
 Legacy pre-patch path_truth rows (runs `59360`, `33304`) remain null — they will not be
 upgraded retroactively and must not be counted toward post-patch join rate.
 
-Full detail: `docs/research/replay_key_validation_after_trade.md`
+Full detail: `docs/research/path_truth/replay_key_validation_after_trade.md`

@@ -36,7 +36,7 @@ Why selected: this task is primarily runtime/log/JSONL health plus evidence suff
 - `runtime/quant_data/decision_log/2026-05-25.jsonl`
 - `runtime/quant_data/execution_log/2026-05-25.jsonl`
 - `runtime/quant_data/system_health/2026-05-25.jsonl`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 Files intentionally ignored:
 
@@ -186,7 +186,7 @@ Reason:
 
 The coverage monitor was updated:
 
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 ## Check 4 - Field Gap Status
 
@@ -260,7 +260,7 @@ Files created:
 
 Files modified:
 
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 Tests run: none. This was a read-only observability and documentation audit.
 

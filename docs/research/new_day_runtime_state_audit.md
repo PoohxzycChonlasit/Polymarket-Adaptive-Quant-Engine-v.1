@@ -8,7 +8,7 @@ Role routing:
 
 - Primary: `11_OBSERVABILITY_INCIDENT_AGENT.md`
 - Supporting: `10_BACKTEST_REPLAY_AGENT.md`, `16_PAPER_EVALUATION_AGENT.md`, `07_TEST_CI_AGENT.md`
-- Files inspected: active Python process list, `runtime/bot_status.json`, latest `logs/polytrade_bot_*.log`, `runtime/quant_data/path_truth/*.jsonl`, recent `runtime/quant_data/system_health/*.jsonl`, `runtime/quant_data/trade_journal/*.jsonl`, `utils/display.py`, `docs/research/path_truth_multiday_coverage_monitor.md`
+- Files inspected: active Python process list, `runtime/bot_status.json`, latest `logs/polytrade_bot_*.log`, `runtime/quant_data/path_truth/*.jsonl`, recent `runtime/quant_data/system_health/*.jsonl`, `runtime/quant_data/trade_journal/*.jsonl`, `utils/display.py`, `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 - Files intentionally ignored: strategy/risk/execution/live config files except the display surface needed for header-strip verification
 
 ## Runtime Health

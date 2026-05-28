@@ -17,7 +17,7 @@ Why selected:
 Files inspected:
 - `runtime/research_state/latest_research_state.md`
 - `MASTER_AGENT_ROUTER.md`
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 - `docs/research/fast_close_distribution_audit.md`
 - `docs/research/failure_triangle_audit.md`
 - `runtime/quant_data/path_truth/2026-05-24.jsonl`

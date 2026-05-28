@@ -189,7 +189,7 @@ Tracked fields:
 
 Interpretation:
 
-The gaps remain exactly where expected. This is not a newly worsening field-coverage regression; it is the same known field-carry / quote-age serialization problem documented in `docs/research/path_truth_field_coverage_gap_audit.md`.
+The gaps remain exactly where expected. This is not a newly worsening field-coverage regression; it is the same known field-carry / quote-age serialization problem documented in `docs/research/path_truth/path_truth_field_coverage_gap_audit.md`.
 
 ## Next Action
 
@@ -210,7 +210,7 @@ No code changes. No runtime changes. No live changes. No strategy/risk/execution
 
 Files updated:
 
-- `docs/research/path_truth_multiday_coverage_monitor.md`
+- `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 - `docs/research/morning_runtime_health_check.md`
 
 Tests: not run; docs-only evidence review.
