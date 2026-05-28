@@ -220,13 +220,13 @@ Primary docs:
 
 | Doc | Status | Lineage | Do not infer |
 |---|---|---|---|
-| [runtime_ui_observability_gap_audit.md](runtime_ui_observability_gap_audit.md) | `GAP_AUDIT` | operator UI gaps | UI implemented |
-| [research_cockpit_mounting_spec.md](research_cockpit_mounting_spec.md) | `SPEC` | cockpit mount plan | runtime mount exists |
-| [research_cockpit_v2_architecture.md](research_cockpit_v2_architecture.md) | `BLUEPRINT` | cockpit architecture | implementation |
-| [research_cockpit_v2_roadmap.md](research_cockpit_v2_roadmap.md) | `ROADMAP` | cockpit build order | runtime behavior change |
-| [research_cockpit_frontend_blueprint_v1.md](research_cockpit_frontend_blueprint_v1.md) | `BLUEPRINT` | frontend design | dashboard shipped |
-| [terminal_ui_v2_redesign.md](terminal_ui_v2_redesign.md) | `DESIGN` | terminal UI | active display state |
-| [telegram_operator_console_design.md](telegram_operator_console_design.md) | `DESIGN` | Telegram console | Telegram behavior |
+| [runtime_ui_observability_gap_audit.md](performance/runtime_ui_observability_gap_audit.md) | `GAP_AUDIT` | operator UI gaps | UI implemented |
+| [research_cockpit_mounting_spec.md](performance/research_cockpit_mounting_spec.md) | `SPEC` | cockpit mount plan | runtime mount exists |
+| [research_cockpit_v2_architecture.md](performance/research_cockpit_v2_architecture.md) | `BLUEPRINT` | cockpit architecture | implementation |
+| [research_cockpit_v2_roadmap.md](performance/research_cockpit_v2_roadmap.md) | `ROADMAP` | cockpit build order | runtime behavior change |
+| [research_cockpit_frontend_blueprint_v1.md](performance/research_cockpit_frontend_blueprint_v1.md) | `BLUEPRINT` | frontend design | dashboard shipped |
+| [terminal_ui_v2_redesign.md](performance/terminal_ui_v2_redesign.md) | `DESIGN` | terminal UI | active display state |
+| [telegram_operator_console_design.md](performance/telegram_operator_console_design.md) | `DESIGN` | Telegram console | Telegram behavior |
 
 Warning: Performance docs describe visibility and operator experience. They do not alter strategy, risk, execution, or live behavior.
 

@@ -3,7 +3,7 @@
 ```
 scope: design only
 inputs:
-  - docs/research/research_cockpit_v2_architecture.md
+  - docs/research/performance/research_cockpit_v2_architecture.md
   - research_cockpit_v2_gap_audit.md
 runtime_behavior_changed: No
 live_behavior_changed: No

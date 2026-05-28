@@ -442,7 +442,7 @@ Keep all fields observability-only, additive, fail-soft, and clearly labeled as 
 
 Files created:
 
-- `docs/research/runtime_ui_observability_gap_audit.md`
+- `docs/research/performance/runtime_ui_observability_gap_audit.md`
 
 Files modified:
 

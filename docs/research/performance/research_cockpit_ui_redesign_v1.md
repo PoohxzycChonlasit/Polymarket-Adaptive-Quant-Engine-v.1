@@ -24,7 +24,7 @@ S3 promotion: No.
 
 - `docs/research/runtime_health/execution_reality_daily_monitor.md`
 - `docs/research/sessions/2026-05-22/phase5_evidence_monitor.md`
-- `docs/research/research_cockpit_v2_architecture.md`
+- `docs/research/performance/research_cockpit_v2_architecture.md`
 
 ---
 

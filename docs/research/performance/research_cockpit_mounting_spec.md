@@ -12,7 +12,7 @@ Strategy/risk/execution changed: No
 
 ## Inputs
 
-- `docs/research/runtime_ui_observability_gap_audit.md`
+- `docs/research/performance/runtime_ui_observability_gap_audit.md`
 - `utils/display.py`
 - `main.py`
 - `polymarket/trader.py`
@@ -613,7 +613,7 @@ Future implementation should add or update focused terminal display tests for:
 
 Files created:
 
-- `docs/research/research_cockpit_mounting_spec.md`
+- `docs/research/performance/research_cockpit_mounting_spec.md`
 
 Runtime behavior changed: No
 

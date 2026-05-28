@@ -247,7 +247,7 @@ These fixes were NOT made in this audit. They are findings only.
 
 ### Issue 4 — No runtime wiring from research state to header S3 label
 
-The header's `| Phase6 ... | S3 ... |` line was designed to surface evidence state at a glance, but the state is never populated from the runtime. The intended flow described in `docs/research/terminal_ui_v2_redesign.md:588` (`display.update_execution_reality(**summary)`) was not implemented.
+The header's `| Phase6 ... | S3 ... |` line was designed to surface evidence state at a glance, but the state is never populated from the runtime. The intended flow described in `docs/research/performance/terminal_ui_v2_redesign.md:588` (`display.update_execution_reality(**summary)`) was not implemented.
 
 ---
 

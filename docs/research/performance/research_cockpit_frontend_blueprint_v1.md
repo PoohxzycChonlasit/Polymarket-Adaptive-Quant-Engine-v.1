@@ -22,10 +22,10 @@ S3 promotion: No.
 
 ## Source Documents Inspected
 
-- `docs/research/research_cockpit_ui_redesign_v1.md`
+- `docs/research/performance/research_cockpit_ui_redesign_v1.md`
 - `docs/research/runtime_health/execution_reality_daily_monitor.md`
 - `docs/research/sessions/2026-05-22/phase5_evidence_monitor.md`
-- `docs/research/research_cockpit_v2_architecture.md`
+- `docs/research/performance/research_cockpit_v2_architecture.md`
 
 ---
 

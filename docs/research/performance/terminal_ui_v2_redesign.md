@@ -51,7 +51,7 @@ Files allowed to inspect:
 - `tests/test_terminal_dashboard_display.py`
 - `docs/research/runtime_health/execution_reality_daily_monitor.md`
 - `docs/research/sessions/2026-05-22/phase5_evidence_monitor.md`
-- `docs/research/research_cockpit_ui_redesign_v1.md`
+- `docs/research/performance/research_cockpit_ui_redesign_v1.md`
 
 Files intentionally ignored:
 

@@ -276,13 +276,13 @@ Candidate files:
 
 Candidate files:
 
-- `docs/research/research_cockpit_frontend_blueprint_v1.md`
-- `docs/research/research_cockpit_mounting_spec.md`
-- `docs/research/research_cockpit_ui_redesign_v1.md`
-- `docs/research/research_cockpit_v2_architecture.md`
-- `docs/research/research_cockpit_v2_roadmap.md`
-- `docs/research/runtime_ui_observability_gap_audit.md`
-- `docs/research/terminal_ui_v2_redesign.md`
+- `docs/research/performance/research_cockpit_frontend_blueprint_v1.md`
+- `docs/research/performance/research_cockpit_mounting_spec.md`
+- `docs/research/performance/research_cockpit_ui_redesign_v1.md`
+- `docs/research/performance/research_cockpit_v2_architecture.md`
+- `docs/research/performance/research_cockpit_v2_roadmap.md`
+- `docs/research/performance/runtime_ui_observability_gap_audit.md`
+- `docs/research/performance/terminal_ui_v2_redesign.md`
 - root `research_cockpit_v2_gap_audit.md`
 
 ### Move To `docs/research/sessions/YYYY-MM-DD/`
