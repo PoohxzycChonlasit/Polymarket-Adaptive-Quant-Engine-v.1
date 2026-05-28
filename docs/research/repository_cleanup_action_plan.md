@@ -237,23 +237,23 @@ Candidate files:
 
 Candidate files:
 
-- `docs/research/failure_triangle_audit.md`
-- `docs/research/fast_close_distribution_audit.md`
-- `docs/research/no_side_weakness_audit.md`
-- `docs/research/session_02h_fast_sl_audit.md`
-- `docs/research/session_02h_multiday_validation.md`
-- `docs/research/session_09h10h_btc_strength_audit.md`
-- `docs/research/session_09h10h_failure_escape_audit.md`
-- `docs/research/session_09h10h_structural_edge.md`
-- `docs/research/session_09h10h_truth_layer_audit.md`
-- `docs/research/session_edge_missing_split_refresh.md`
-- `docs/research/session_edge_outside_control_audit.md`
-- `docs/research/session_personality_stability.md`
-- `docs/research/session_pressure_comparison_audit.md`
-- `docs/research/session_regime_09h_recurrence.md`
-- `docs/research/session_regime_09h10h_persistence.md`
-- `docs/research/session_survival_ranking.md`
-- `docs/research/regime_exception_09h_audit.md`
+- `docs/research/session_edge/failure_triangle_audit.md`
+- `docs/research/session_edge/fast_close_distribution_audit.md`
+- `docs/research/session_edge/no_side_weakness_audit.md`
+- `docs/research/session_edge/session_02h_fast_sl_audit.md`
+- `docs/research/session_edge/session_02h_multiday_validation.md`
+- `docs/research/session_edge/session_09h10h_btc_strength_audit.md`
+- `docs/research/session_edge/session_09h10h_failure_escape_audit.md`
+- `docs/research/session_edge/session_09h10h_structural_edge.md`
+- `docs/research/session_edge/session_09h10h_truth_layer_audit.md`
+- `docs/research/session_edge/session_edge_missing_split_refresh.md`
+- `docs/research/session_edge/session_edge_outside_control_audit.md`
+- `docs/research/session_edge/session_personality_stability.md`
+- `docs/research/session_edge/session_pressure_comparison_audit.md`
+- `docs/research/session_edge/session_regime_09h_recurrence.md`
+- `docs/research/session_edge/session_regime_09h10h_persistence.md`
+- `docs/research/session_edge/session_survival_ranking.md`
+- `docs/research/session_edge/regime_exception_09h_audit.md`
 
 ### Move To `docs/research/runtime_health/`
 

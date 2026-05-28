@@ -179,7 +179,7 @@ Current `$20` T0 paper evidence is too small for executable-PnL claims.
 
 ## 02h Session Addendum
 
-Updated 2026-05-24 from `docs/research/session_02h_fast_sl_audit.md`.
+Updated 2026-05-24 from `docs/research/session_edge/session_02h_fast_sl_audit.md`.
 
 02h UTC classification:
 

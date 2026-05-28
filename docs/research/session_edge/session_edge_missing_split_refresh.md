@@ -25,7 +25,7 @@ Lineage preserved:
   - `09h10h`: 29 trades, 16 TP / 13 SL, +0.072870 PnL.
   - `09h10h + 0.50-0.70`: 27 trades, 15 TP / 12 SL, +0.069378 PnL.
 - `docs/research/positive_expectancy_zone_deep_dive.md` treated `09h10h + 0.50-0.70` as a primary signal-harvest candidate.
-- Newer path-truth-era evidence in `docs/research/path_truth/early_research_gate_review.md` and `docs/research/session_edge_outside_control_audit.md` weakened the claim:
+- Newer path-truth-era evidence in `docs/research/path_truth/early_research_gate_review.md` and `docs/research/session_edge/session_edge_outside_control_audit.md` weakened the claim:
   - Current completed-gate `09h10h`: 3 trades, 0 TP / 3 SL, -0.035710 PnL.
 
 This refresh does not erase the older signal-mode support. It updates the missing split status using the current completed path-truth gate slice.
@@ -43,7 +43,7 @@ Why selected:
 Files inspected:
 - `runtime/research_state/latest_research_state.md`
 - `MASTER_AGENT_ROUTER.md`
-- `docs/research/session_edge_outside_control_audit.md`
+- `docs/research/session_edge/session_edge_outside_control_audit.md`
 - `docs/research/path_truth/early_research_gate_review.md`
 - `docs/research/dynamic_executable_expectancy_audit.md`
 - `docs/research/positive_expectancy_zone_deep_dive.md`

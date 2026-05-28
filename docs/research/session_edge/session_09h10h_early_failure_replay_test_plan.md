@@ -26,8 +26,8 @@ This plan is not a runtime policy, stop-loss change, risk change, execution chan
 
 ## Sources
 
-- `docs/research/session_09h10h_early_failure_filter_design.md`
-- `docs/research/session_09h10h_structural_edge.md`
+- `docs/research/session_edge/session_09h10h_early_failure_filter_design.md`
+- `docs/research/session_edge/session_09h10h_structural_edge.md`
 - `docs/research/positive_expectancy_zone_deep_dive.md`
 - `docs/research/dynamic_executable_expectancy_audit.md`
 

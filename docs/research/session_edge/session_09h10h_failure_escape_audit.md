@@ -26,9 +26,9 @@ Why selected: this is an offline session/lifecycle outcome audit using trade-jou
 
 - `runtime/research_state/latest_research_state.md`
 - `MASTER_AGENT_ROUTER.md`
-- `docs/research/session_pressure_comparison_audit.md`
-- `docs/research/session_regime_09h10h_persistence.md`
-- `docs/research/failure_triangle_audit.md`
+- `docs/research/session_edge/session_pressure_comparison_audit.md`
+- `docs/research/session_edge/session_regime_09h10h_persistence.md`
+- `docs/research/session_edge/failure_triangle_audit.md`
 - `runtime/quant_data/trade_journal/*.jsonl`
 - `runtime/quant_data/path_truth/*.jsonl`
 
@@ -199,7 +199,7 @@ Recommended option: OPTION 1 now, with OPTION 2 as the next research monitor.
 
 Files created:
 
-- `docs/research/session_09h10h_failure_escape_audit.md`
+- `docs/research/session_edge/session_09h10h_failure_escape_audit.md`
 
 Tests run: none. This was a read-only documentation and evidence audit.
 

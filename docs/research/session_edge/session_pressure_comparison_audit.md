@@ -29,13 +29,13 @@ executable_pnl = N/A
 
 ## Sources
 
-- `docs/research/session_02h_multiday_validation.md`
-- `docs/research/session_02h_fast_sl_audit.md`
+- `docs/research/session_edge/session_02h_multiday_validation.md`
+- `docs/research/session_edge/session_02h_fast_sl_audit.md`
 - `docs/research/fast_stop_loss_audit.md`
-- `docs/research/session_regime_09h10h_persistence.md`
-- `docs/research/session_survival_ranking.md`
-- `docs/research/hourly_market_personality_map.md`
-- `docs/research/session_personality_stability.md`
+- `docs/research/session_edge/session_regime_09h10h_persistence.md`
+- `docs/research/session_edge/session_survival_ranking.md`
+- `docs/research/session_edge/hourly_market_personality_map.md`
+- `docs/research/session_edge/session_personality_stability.md`
 - `runtime/quant_data/trade_journal/2026-05-21.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-22.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-23.jsonl`

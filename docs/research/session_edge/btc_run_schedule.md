@@ -123,8 +123,8 @@ python tools/no_entry_analyzer.py --date YYYY-MM-DD --run-id RUN_ID --write-repo
 
 # 5. Update monitors
 # docs/research/runtime_health/execution_reality_daily_monitor.md
-# docs/research/btc_evidence_watch.md
-# docs/research/btc_harvest_window_monitor.md
+# docs/research/session_edge/btc_evidence_watch.md
+# docs/research/session_edge/btc_harvest_window_monitor.md
 ```
 
 ---

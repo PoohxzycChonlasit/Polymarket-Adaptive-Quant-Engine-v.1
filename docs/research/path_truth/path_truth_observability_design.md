@@ -10,9 +10,9 @@ Live behavior changed: No
 
 ## Sources
 
-- `docs/research/session_09h10h_truth_layer_audit.md`
-- `docs/research/session_09h10h_early_failure_replay_test_plan.md`
-- `docs/research/session_09h10h_structural_edge.md`
+- `docs/research/session_edge/session_09h10h_truth_layer_audit.md`
+- `docs/research/session_edge/session_09h10h_early_failure_replay_test_plan.md`
+- `docs/research/session_edge/session_09h10h_structural_edge.md`
 
 ## Problem
 

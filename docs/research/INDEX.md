@@ -111,7 +111,7 @@ Do not infer executable PnL or live readiness from resolved path joins.
 | Session edge | `REVIEW_ONLY` | [early_research_gate_review.md](path_truth/early_research_gate_review.md) | Candidates survive only as research until stronger controls exist. |
 | Runtime no-trade / rejection | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md) | No strategy/risk change is implied. |
 | Delta extreme | `REVIEW_ONLY` | [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Gate should remain untouched until more evidence. |
-| Contradiction review | `ACTIVE_REVIEW` | [session_edge_missing_split_refresh.md](session_edge_missing_split_refresh.md), [quote_source_outcome_audit.md](quote_source_outcome_audit.md) | Track weakened/adverse/unavailable splits without changing policy. |
+| Contradiction review | `ACTIVE_REVIEW` | [session_edge_missing_split_refresh.md](session_edge/session_edge_missing_split_refresh.md), [quote_source_outcome_audit.md](quote_source_outcome_audit.md) | Track weakened/adverse/unavailable splits without changing policy. |
 
 ## Executable Truth
 
@@ -170,15 +170,15 @@ Primary docs:
 | Doc | Status | Lineage | Do not infer |
 |---|---|---|---|
 | [early_research_gate_review.md](path_truth/early_research_gate_review.md) | `GATE_REVIEW` | 3-date early review | implementation approval |
-| [failure_triangle_audit.md](failure_triangle_audit.md) | `RESEARCH_ONLY` | BTC/NO/ACTIVE interaction | policy change |
-| [fast_close_distribution_audit.md](fast_close_distribution_audit.md) | `RESEARCH_ONLY` | fast-close behavior | stop-loss change |
-| [no_side_weakness_audit.md](no_side_weakness_audit.md) | `RESEARCH_ONLY` | NO side weakness | side filter |
-| [session_02h_multiday_validation.md](session_02h_multiday_validation.md) | `RESEARCH_ONLY` | 02h hostile candidate | session block |
-| [session_09h10h_btc_strength_audit.md](session_09h10h_btc_strength_audit.md) | `RESEARCH_ONLY` | 09h10h BTC candidate | BTC policy |
-| [session_edge_missing_split_refresh.md](session_edge_missing_split_refresh.md) | `CONTRADICTION_REVIEW` | target vs controls | strategy update |
-| [session_edge_outside_control_audit.md](session_edge_outside_control_audit.md) | `CONTROL_AUDIT` | outside-session controls | session edge confirmed |
-| [session_pressure_comparison_audit.md](session_pressure_comparison_audit.md) | `RESEARCH_ONLY` | session pressure | executable edge |
-| [hourly_market_personality_map.md](hourly_market_personality_map.md) | `MAP` | hourly behavior | runtime schedule |
+| [failure_triangle_audit.md](session_edge/failure_triangle_audit.md) | `RESEARCH_ONLY` | BTC/NO/ACTIVE interaction | policy change |
+| [fast_close_distribution_audit.md](session_edge/fast_close_distribution_audit.md) | `RESEARCH_ONLY` | fast-close behavior | stop-loss change |
+| [no_side_weakness_audit.md](session_edge/no_side_weakness_audit.md) | `RESEARCH_ONLY` | NO side weakness | side filter |
+| [session_02h_multiday_validation.md](session_edge/session_02h_multiday_validation.md) | `RESEARCH_ONLY` | 02h hostile candidate | session block |
+| [session_09h10h_btc_strength_audit.md](session_edge/session_09h10h_btc_strength_audit.md) | `RESEARCH_ONLY` | 09h10h BTC candidate | BTC policy |
+| [session_edge_missing_split_refresh.md](session_edge/session_edge_missing_split_refresh.md) | `CONTRADICTION_REVIEW` | target vs controls | strategy update |
+| [session_edge_outside_control_audit.md](session_edge/session_edge_outside_control_audit.md) | `CONTROL_AUDIT` | outside-session controls | session edge confirmed |
+| [session_pressure_comparison_audit.md](session_edge/session_pressure_comparison_audit.md) | `RESEARCH_ONLY` | session pressure | executable edge |
+| [hourly_market_personality_map.md](session_edge/hourly_market_personality_map.md) | `MAP` | hourly behavior | runtime schedule |
 
 Active contradiction review state:
 
