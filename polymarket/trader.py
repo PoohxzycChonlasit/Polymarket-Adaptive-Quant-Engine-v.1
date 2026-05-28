@@ -1552,6 +1552,71 @@ class PolymarketTrader:
             or ("orderbook_error" if error_text else "")
         )
         terminal = str(terminal_blocker_reason or "").strip()
+        terminal_stage_raw = str(terminal_blocker_stage or "").strip()
+        terminal_gate_stage = "unknown"
+        if terminal:
+            terminal_gate_stage = "market_data" if terminal_stage_raw.startswith("market_data") else terminal_stage_raw or "unknown"
+        elif current_fetch_status != "unknown":
+            terminal_gate_stage = "none"
+
+        yes_fetch_status = self._orderbook_lineage_side_status(
+            ob=yes_ob,
+            bid=yes_bid,
+            ask=yes_ask,
+            current_fetch_status=current_fetch_status,
+            orderbook_error=error_text,
+        )
+        no_fetch_status = self._orderbook_lineage_side_status(
+            ob=no_ob,
+            bid=no_bid,
+            ask=no_ask,
+            current_fetch_status=current_fetch_status,
+            orderbook_error=error_text,
+        )
+
+        def normalization_status_for(side_status: str) -> str:
+            return {
+                "executable": "accepted_executable",
+                "one_sided_empty_bids": "rejected_empty_bids",
+                "one_sided_empty_asks": "rejected_empty_asks",
+                "both_sides_empty": "rejected_empty_both",
+                "stale": "rejected_stale",
+                "invalid": "rejected_invalid_price",
+                "not_attempted": "not_attempted",
+            }.get(side_status, "unknown")
+
+        serialized_yes_no_bid_ask_present = bool(current_executable_yes_no_book)
+        serialized_book_source = (
+            "current_fetch"
+            if book_used_source == "current_fetch"
+            else "not_serialized"
+            if book_used_source == "none"
+            else "unknown"
+        )
+        book_used_for_decision = (
+            "current_fetch"
+            if book_used_source == "current_fetch"
+            else "unavailable"
+            if book_used_source == "none"
+            else "unknown"
+        )
+        book_used_token_pair_match = (
+            bool(token_pair_key)
+            if book_used_source == "current_fetch"
+            else cache_token_pair_match
+            if book_used_source == "none"
+            else None
+        )
+        contextual_lower = {str(value or "").lower() for value in contextual}
+        terminal_lower = terminal.lower()
+        if "empty_book" in terminal_lower or "empty_orderbook" in terminal_lower:
+            empty_book_role = "terminal"
+        elif any("empty_book" in value or "empty_orderbook" in value for value in contextual_lower):
+            empty_book_role = "contextual"
+        elif current_fetch_status == "unknown" and not readiness:
+            empty_book_role = "unknown"
+        else:
+            empty_book_role = "absent"
 
         return {
             "probe_id": "ORDERBOOK_LINEAGE_PROBE_V1",
@@ -1585,20 +1650,8 @@ class PolymarketTrader:
             "current_fetch_succeeded": orderbook_fetch_succeeded,
             "current_fetch_error_type": error_type,
             "current_fetch_error_message": error_text,
-            "yes_fetch_status": self._orderbook_lineage_side_status(
-                ob=yes_ob,
-                bid=yes_bid,
-                ask=yes_ask,
-                current_fetch_status=current_fetch_status,
-                orderbook_error=error_text,
-            ),
-            "no_fetch_status": self._orderbook_lineage_side_status(
-                ob=no_ob,
-                bid=no_bid,
-                ask=no_ask,
-                current_fetch_status=current_fetch_status,
-                orderbook_error=error_text,
-            ),
+            "yes_fetch_status": yes_fetch_status,
+            "no_fetch_status": no_fetch_status,
             "yes_bids_count": self._orderbook_lineage_raw_count(yes_ob, "top_bids"),
             "yes_asks_count": self._orderbook_lineage_raw_count(yes_ob, "top_asks"),
             "no_bids_count": self._orderbook_lineage_raw_count(no_ob, "top_bids"),
@@ -1622,18 +1675,29 @@ class PolymarketTrader:
             "cache_reuse_reason": str(detail.get("orderbook_stale_reuse_source") or ""),
             "book_used_for_decision_source": book_used_source,
             "book_used_for_decision_token_pair_key": token_pair_key if book_used_source == "current_fetch" else "",
+            "book_used_for_decision": book_used_for_decision,
+            "book_used_token_pair_match": book_used_token_pair_match,
             "normalization_status": "accepted" if current_executable_yes_no_book else "not_executable",
+            "yes_normalization_status": normalization_status_for(yes_fetch_status),
+            "no_normalization_status": normalization_status_for(no_fetch_status),
             "serialized_truth_source": (
                 "current_fetch_yes_no_top_of_book"
                 if current_executable_yes_no_book
                 else "unavailable_or_non_executable"
             ),
+            "serialized_book_source": serialized_book_source,
+            "serialized_yes_no_bid_ask_present": serialized_yes_no_bid_ask_present,
+            "serialized_depth_present": bool(serialized_yes_no_bid_ask_present),
+            "serialized_spread_present": bool(serialized_yes_no_bid_ask_present),
             "orderbook_readiness_reason": readiness,
             "orderbook_unavailable_reason": readiness,
             "liquidity_state": str(recovery_detail.get("liquidity_state") or ""),
             "terminal_blocker": terminal,
-            "terminal_blocker_stage": str(terminal_blocker_stage or ""),
+            "terminal_blocker_stage": terminal_stage_raw,
+            "terminal_skip_reason": terminal or None,
+            "terminal_gate_stage": terminal_gate_stage,
             "contextual_blockers": contextual,
+            "empty_book_role": empty_book_role,
             "quote_age_ms": quote_age_ms,
             "quote_age_source": quote_age_source,
             "quote_age_truth_level": "current_fetch" if quote_age_source == "current_fetch_raw_timestamp" else "proxy" if quote_age_ms is not None else "unknown",

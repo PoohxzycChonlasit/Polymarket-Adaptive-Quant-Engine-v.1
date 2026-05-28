@@ -120,6 +120,17 @@ def test_orderbook_lineage_probe_marks_side_specific_current_fetch_truth() -> No
     assert payload["yes_fetch_status"] == "executable"
     assert payload["no_fetch_status"] == "executable"
     assert payload["book_used_for_decision_source"] == "current_fetch"
+    assert payload["book_used_for_decision"] == "current_fetch"
+    assert payload["book_used_token_pair_match"] is True
+    assert payload["empty_book_role"] == "absent"
+    assert payload["serialized_book_source"] == "current_fetch"
+    assert payload["serialized_yes_no_bid_ask_present"] is True
+    assert payload["serialized_depth_present"] is True
+    assert payload["serialized_spread_present"] is True
+    assert payload["yes_normalization_status"] == "accepted_executable"
+    assert payload["no_normalization_status"] == "accepted_executable"
+    assert payload["terminal_skip_reason"] is None
+    assert payload["terminal_gate_stage"] == "none"
     assert payload["quote_age_ms"] == 700
     assert payload["quote_age_source"] == "current_fetch_raw_timestamp"
 
@@ -158,8 +169,19 @@ def test_orderbook_lineage_probe_distinguishes_cached_available_from_used() -> N
     assert payload["cache_token_pair_match"] is True
     assert payload["cached_book_used_for_decision"] is False
     assert payload["book_used_for_decision_source"] == "none"
+    assert payload["book_used_for_decision"] == "unavailable"
+    assert payload["book_used_token_pair_match"] is True
     assert payload["terminal_blocker"] == "empty_book"
+    assert payload["terminal_skip_reason"] == "empty_book"
+    assert payload["terminal_gate_stage"] == "market_data"
     assert payload["contextual_blockers"] == ["empty_book"]
+    assert payload["empty_book_role"] == "terminal"
+    assert payload["serialized_book_source"] == "not_serialized"
+    assert payload["serialized_yes_no_bid_ask_present"] is False
+    assert payload["serialized_depth_present"] is False
+    assert payload["serialized_spread_present"] is False
+    assert payload["yes_normalization_status"] == "unknown"
+    assert payload["no_normalization_status"] == "unknown"
     assert payload["quote_age_ms"] == 4500
     assert payload["quote_age_source"] == "last_successful_yes_no_book_cache"
 
@@ -175,6 +197,39 @@ def test_orderbook_lineage_probe_fails_soft_with_missing_fields() -> None:
     assert payload["no_fetch_status"] == "unknown"
     assert payload["quote_age_ms"] is None
     assert payload["book_used_for_decision_source"] == "unknown"
+    assert payload["book_used_for_decision"] == "unknown"
+    assert payload["empty_book_role"] == "unknown"
+    assert payload["serialized_book_source"] == "unknown"
+    assert payload["terminal_skip_reason"] is None
+    assert payload["terminal_gate_stage"] == "unknown"
+    assert payload["yes_normalization_status"] == "unknown"
+    assert payload["no_normalization_status"] == "unknown"
+
+
+def test_orderbook_lineage_probe_marks_contextual_empty_book_role() -> None:
+    trader = _trader()
+
+    payload = trader._build_orderbook_lineage_probe_payload(
+        ticker="BTC",
+        yes_ob=_ob(token_id="yes-token", bid=0.44, ask=0.46, bid_size=12, ask_size=10, age_ms=900),
+        no_ob=_ob(token_id="no-token", bid=0.54, ask=0.56, bid_size=9, ask_size=8, age_ms=1100),
+        yes_bid=0.44,
+        yes_ask=0.46,
+        no_bid=0.54,
+        no_ask=0.56,
+        yes_orderbook_age_ms=900,
+        no_orderbook_age_ms=1100,
+        orderbook_fetch_succeeded=True,
+        current_executable_yes_no_book=True,
+        orderbook_refresh_detail={"orderbook_current_fetch_status": "fresh_fetch_executable"},
+        contextual_blockers=["empty_book"],
+        terminal_blocker_reason="delta_extreme",
+        terminal_blocker_stage="ev",
+    )
+
+    assert payload["empty_book_role"] == "contextual"
+    assert payload["terminal_skip_reason"] == "delta_extreme"
+    assert payload["terminal_gate_stage"] == "ev"
 
 
 def test_emit_orderbook_lineage_probe_is_fail_soft() -> None:
