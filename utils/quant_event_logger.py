@@ -66,6 +66,7 @@ class QuantEventLogger:
         "trade_open": "trade_journal",
         "trade_close": "trade_journal",
         "trade_path_checkpoint": "path_truth",
+        "orderbook_lineage_probe": "orderbook_lineage",
         "risk_event": "risk_log",
         "system_health": "system_health",
         "research_snapshot": "research_log",
@@ -121,6 +122,9 @@ class QuantEventLogger:
 
     def log_trade_path_checkpoint(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("trade_path_checkpoint", payload)
+
+    def log_orderbook_lineage_probe(self, payload: dict[str, Any] | None = None) -> bool:
+        return self._write_event("orderbook_lineage_probe", payload)
 
     def log_risk_event(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("risk_event", payload)

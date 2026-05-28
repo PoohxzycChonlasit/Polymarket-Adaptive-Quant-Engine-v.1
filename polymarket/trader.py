@@ -669,6 +669,7 @@ class PolymarketTrader:
             "log_trade_open": "trade_journal",
             "log_trade_close": "trade_journal",
             "log_trade_path_checkpoint": "path_truth",
+            "log_orderbook_lineage_probe": "orderbook_lineage",
             "log_system_health": "system_health",
         }.get(event_method, "unknown")
 
@@ -1375,6 +1376,280 @@ class PolymarketTrader:
             ),
             "executable_book_last_seen_age_ms": executable_age_ms,
         }
+
+    @staticmethod
+    def _orderbook_lineage_compact_text(value: object, *, limit: int = 160) -> str:
+        text = str(value or "").replace("\r", " ").replace("\n", " ").strip()
+        if len(text) > limit:
+            return text[: max(0, limit - 3)] + "..."
+        return text
+
+    @staticmethod
+    def _orderbook_lineage_raw_count(ob: object, key: str) -> int | None:
+        raw = getattr(ob, "raw_response", None)
+        if not isinstance(raw, dict):
+            return None
+        value = raw.get(key)
+        if isinstance(value, list):
+            return len(value)
+        return None
+
+    def _orderbook_lineage_side_status(
+        self,
+        *,
+        ob: object,
+        bid: object,
+        ask: object,
+        current_fetch_status: str,
+        orderbook_error: str = "",
+    ) -> str:
+        error = str(orderbook_error or "").lower()
+        if ob is None:
+            if current_fetch_status == "fresh_fetch_failed":
+                return "fetch_failed"
+            if current_fetch_status == "fresh_fetch_not_attempted":
+                return "not_attempted"
+            return "unknown"
+        if "stale_orderbook" in error or "stale_book" in error:
+            return "stale"
+        if "invalid_orderbook" in error:
+            return "invalid"
+        bid_value = self._diagnostic_float(bid)
+        ask_value = self._diagnostic_float(ask)
+        if bid_value > 0 and ask_value > 0:
+            return "executable"
+        if bid_value <= 0 and ask_value <= 0:
+            return "both_sides_empty"
+        if bid_value <= 0:
+            return "one_sided_empty_bids"
+        return "one_sided_empty_asks"
+
+    @staticmethod
+    def _orderbook_lineage_current_fetch_status(
+        orderbook_refresh_detail: dict[str, object],
+        orderbook_fetch_succeeded: bool | None,
+        current_executable_yes_no_book: bool,
+    ) -> str:
+        raw = str(orderbook_refresh_detail.get("orderbook_current_fetch_status") or "").strip()
+        if raw == "fresh_fetch_not_attempted_or_unobserved":
+            return "fresh_fetch_not_attempted"
+        if raw:
+            return raw
+        if orderbook_fetch_succeeded is True and current_executable_yes_no_book:
+            return "fresh_fetch_executable"
+        if orderbook_fetch_succeeded is True:
+            return "fresh_fetch_non_executable"
+        if orderbook_fetch_succeeded is False:
+            return "fresh_fetch_failed"
+        if orderbook_fetch_succeeded is None:
+            return "unknown"
+        return "unknown"
+
+    def _build_orderbook_lineage_probe_payload(
+        self,
+        *,
+        ticker: str,
+        market_id: object = "",
+        market_slug: object = "",
+        condition_id: object = "",
+        yes_token_id: object = "",
+        no_token_id: object = "",
+        yes_ob: object = None,
+        no_ob: object = None,
+        yes_bid: object = 0.0,
+        yes_ask: object = 0.0,
+        yes_bid_size: object = 0.0,
+        yes_ask_size: object = 0.0,
+        no_bid: object = 0.0,
+        no_ask: object = 0.0,
+        no_bid_size: object = 0.0,
+        no_ask_size: object = 0.0,
+        yes_orderbook_age_ms: object = None,
+        no_orderbook_age_ms: object = None,
+        orderbook_fetch_succeeded: bool | None = None,
+        current_executable_yes_no_book: bool = False,
+        orderbook_refresh_detail: dict[str, object] | None = None,
+        orderbook_readiness_reason: object = "",
+        orderbook_error: object = "",
+        clob_error_detail: dict[str, object] | None = None,
+        empty_book_recovery_detail: dict[str, object] | None = None,
+        token_mapping_warning: object = "",
+        lifecycle_phase: object = "",
+        seconds_remaining: object = None,
+        fetch_attempt_ts: object = "",
+        fetch_complete_ts: object = "",
+        fetch_duration_ms: object = None,
+        terminal_blocker_reason: object = "",
+        terminal_blocker_stage: object = "",
+        contextual_blockers: list[str] | None = None,
+    ) -> dict[str, object]:
+        detail = dict(orderbook_refresh_detail or {})
+        clob_detail = dict(clob_error_detail or {})
+        recovery_detail = dict(empty_book_recovery_detail or {})
+        ticker_key = str(ticker or "").upper()
+        event_ts = self._utc_timestamp()
+        current_fetch_status = self._orderbook_lineage_current_fetch_status(
+            detail,
+            orderbook_fetch_succeeded,
+            current_executable_yes_no_book,
+        )
+        token_pair_key = str(
+            detail.get("decision_token_pair_key")
+            or self._orderbook_token_pair_key(
+                condition_id=condition_id,
+                yes_token_id=yes_token_id,
+                no_token_id=no_token_id,
+                market_slug=market_slug,
+            )
+        )
+        run_id = str(getattr(getattr(self, "quant_events", None), "run_id", "") or "")
+        lineage_raw = "|".join(
+            str(part or "")
+            for part in (
+                run_id,
+                ticker_key,
+                token_pair_key,
+                fetch_attempt_ts,
+                current_fetch_status,
+            )
+        )
+        lineage_id = "oblp_" + hashlib.sha1(lineage_raw.encode("utf-8")).hexdigest()[:12]
+
+        yes_age = self._diagnostic_int(yes_orderbook_age_ms)
+        no_age = self._diagnostic_int(no_orderbook_age_ms)
+        current_ages = [age for age in (yes_age, no_age) if age is not None and age > 0]
+        cached_age = self._diagnostic_int(detail.get("executable_book_last_seen_age_ms"))
+        quote_age_ms = max(current_ages) if current_ages and current_fetch_status == "fresh_fetch_executable" else cached_age
+        if quote_age_ms is None:
+            quote_age_source = "not_available"
+        elif current_ages and current_fetch_status == "fresh_fetch_executable":
+            quote_age_source = "current_fetch_raw_timestamp"
+        else:
+            quote_age_source = "last_successful_yes_no_book_cache"
+
+        cached_available = bool(detail.get("last_successful_yes_no_book_at") or cached_age is not None)
+        cache_match_raw = detail.get("orderbook_lineage_match")
+        cache_token_pair_match = bool(cache_match_raw) if cache_match_raw is not None else None
+        book_used_source = "unknown"
+        cached_used = False
+        if current_fetch_status == "fresh_fetch_executable" and current_executable_yes_no_book:
+            book_used_source = "current_fetch"
+        elif current_fetch_status in {"fresh_fetch_failed", "fresh_fetch_non_executable", "fresh_fetch_not_attempted"}:
+            book_used_source = "none"
+
+        contextual = list(contextual_blockers or [])
+        readiness = str(orderbook_readiness_reason or "").strip()
+        if readiness and readiness not in contextual:
+            contextual.append(readiness)
+        token_warning = str(token_mapping_warning or "").strip()
+        if token_warning and "token_mapping_warning" not in contextual:
+            contextual.append("token_mapping_warning")
+
+        error_text = self._orderbook_lineage_compact_text(orderbook_error)
+        error_type = str(
+            clob_detail.get("clob_error_category")
+            or clob_detail.get("clob_exception_type")
+            or ("orderbook_error" if error_text else "")
+        )
+        terminal = str(terminal_blocker_reason or "").strip()
+
+        return {
+            "probe_id": "ORDERBOOK_LINEAGE_PROBE_V1",
+            "schema_version": "orderbook_lineage_probe_v1",
+            "event_type": "orderbook_lineage_probe",
+            "event_ts": event_ts,
+            "producer": "trader.orderbook_lineage_probe",
+            "probe_scope": "decision_cycle_fetch",
+            "latency_truth_level": "proxy",
+            "timestamp_source": "runtime_utc_clock",
+            "probe_authority_level": "evidence_only",
+            "policy_authority": "none",
+            "runtime_decision_authority": False,
+            "execution_authority": False,
+            "risk_authority": False,
+            "asset": ticker_key,
+            "ticker": ticker_key,
+            "market_id": str(market_id or ""),
+            "market_slug": str(market_slug or ""),
+            "condition_id": str(condition_id or ""),
+            "yes_token_id": str(yes_token_id or ""),
+            "no_token_id": str(no_token_id or ""),
+            "token_id": str(yes_token_id or ""),
+            "outcome": "YES/NO",
+            "orderbook_token_pair_key": token_pair_key,
+            "orderbook_lineage_id": lineage_id,
+            "fetch_attempt_ts": str(fetch_attempt_ts or ""),
+            "fetch_complete_ts": str(fetch_complete_ts or ""),
+            "fetch_duration_ms": self._diagnostic_float(fetch_duration_ms, default=0.0) if fetch_duration_ms is not None else None,
+            "current_fetch_status": current_fetch_status,
+            "current_fetch_succeeded": orderbook_fetch_succeeded,
+            "current_fetch_error_type": error_type,
+            "current_fetch_error_message": error_text,
+            "yes_fetch_status": self._orderbook_lineage_side_status(
+                ob=yes_ob,
+                bid=yes_bid,
+                ask=yes_ask,
+                current_fetch_status=current_fetch_status,
+                orderbook_error=error_text,
+            ),
+            "no_fetch_status": self._orderbook_lineage_side_status(
+                ob=no_ob,
+                bid=no_bid,
+                ask=no_ask,
+                current_fetch_status=current_fetch_status,
+                orderbook_error=error_text,
+            ),
+            "yes_bids_count": self._orderbook_lineage_raw_count(yes_ob, "top_bids"),
+            "yes_asks_count": self._orderbook_lineage_raw_count(yes_ob, "top_asks"),
+            "no_bids_count": self._orderbook_lineage_raw_count(no_ob, "top_bids"),
+            "no_asks_count": self._orderbook_lineage_raw_count(no_ob, "top_asks"),
+            "yes_best_bid": self._diagnostic_float(yes_bid),
+            "yes_best_ask": self._diagnostic_float(yes_ask),
+            "yes_best_bid_size": self._diagnostic_float(yes_bid_size),
+            "yes_best_ask_size": self._diagnostic_float(yes_ask_size),
+            "no_best_bid": self._diagnostic_float(no_bid),
+            "no_best_ask": self._diagnostic_float(no_ask),
+            "no_best_bid_size": self._diagnostic_float(no_bid_size),
+            "no_best_ask_size": self._diagnostic_float(no_ask_size),
+            "yes_raw_age_ms": yes_age,
+            "no_raw_age_ms": no_age,
+            "last_successful_yes_no_book_at": str(detail.get("last_successful_yes_no_book_at") or ""),
+            "last_successful_yes_no_book_age_ms": cached_age,
+            "last_successful_yes_no_book_token_pair_key": str(detail.get("last_successful_yes_no_book_token_pair_key") or ""),
+            "cache_token_pair_match": cache_token_pair_match,
+            "cached_executable_book_available": cached_available,
+            "cached_book_used_for_decision": cached_used,
+            "cache_reuse_reason": str(detail.get("orderbook_stale_reuse_source") or ""),
+            "book_used_for_decision_source": book_used_source,
+            "book_used_for_decision_token_pair_key": token_pair_key if book_used_source == "current_fetch" else "",
+            "normalization_status": "accepted" if current_executable_yes_no_book else "not_executable",
+            "serialized_truth_source": (
+                "current_fetch_yes_no_top_of_book"
+                if current_executable_yes_no_book
+                else "unavailable_or_non_executable"
+            ),
+            "orderbook_readiness_reason": readiness,
+            "orderbook_unavailable_reason": readiness,
+            "liquidity_state": str(recovery_detail.get("liquidity_state") or ""),
+            "terminal_blocker": terminal,
+            "terminal_blocker_stage": str(terminal_blocker_stage or ""),
+            "contextual_blockers": contextual,
+            "quote_age_ms": quote_age_ms,
+            "quote_age_source": quote_age_source,
+            "quote_age_truth_level": "current_fetch" if quote_age_source == "current_fetch_raw_timestamp" else "proxy" if quote_age_ms is not None else "unknown",
+            "lifecycle_phase": str(lifecycle_phase or ""),
+            "seconds_remaining": self._diagnostic_int(seconds_remaining),
+            "lineage_confidence": "DIRECT" if token_pair_key else "UNKNOWN",
+            "source_module": "polymarket.trader",
+        }
+
+    def _emit_orderbook_lineage_probe(self, **kwargs: object) -> bool:
+        try:
+            payload = self._build_orderbook_lineage_probe_payload(**kwargs)
+            return bool(self._emit_quant_event("log_orderbook_lineage_probe", payload))
+        except Exception as exc:
+            LOGGER.debug("[OBSERVABILITY] orderbook lineage probe failed: %s", exc)
+            return False
 
     def _finish_cycle_timing(self, *, reason: str, force: bool = False) -> None:
         self._last_scan_cycle_duration_ms = self._cycle_elapsed_ms()
@@ -7917,6 +8192,25 @@ class PolymarketTrader:
                 **regime_detail,
                 **self._regime_pass_through_fields(regime_detail),
             }
+            self._emit_orderbook_lineage_probe(
+                ticker=ticker,
+                market_id=market.market_id,
+                market_slug=meta.get("slug", ""),
+                condition_id=meta.get("condition_id", ""),
+                yes_token_id=yes_token_id,
+                no_token_id=no_token_id,
+                orderbook_fetch_succeeded=None,
+                current_executable_yes_no_book=False,
+                orderbook_refresh_detail=detail,
+                orderbook_readiness_reason=orderbook_readiness_reason,
+                orderbook_error=skip_reason,
+                empty_book_recovery_detail=empty_book_recovery_detail,
+                token_mapping_warning=token_mapping_warning,
+                lifecycle_phase=timing_detail.get("lifecycle_phase", ""),
+                seconds_remaining=seconds_to_close,
+                terminal_blocker_reason=skip_reason,
+                terminal_blocker_stage="market_data_token_mapping",
+            )
             self._emit_quant_event(
                 "log_market_snapshot",
                 {
@@ -7945,6 +8239,10 @@ class PolymarketTrader:
                 extra_detail=detail,
             )
 
+        orderbook_fetch_attempt_ts = self._utc_timestamp()
+        orderbook_fetch_attempt_mono = time.monotonic()
+        orderbook_fetch_complete_ts = ""
+        orderbook_fetch_duration_ms = None
         try:
             LOGGER.info(
                 "[ORDERBOOK_FLOW] ticker=%s market_slug=%s condition_id=%s yes_token_id=%s no_token_id=%s",
@@ -8053,6 +8351,8 @@ class PolymarketTrader:
                 clob_error_detail.get("retry_count", 0),
                 exc,
             )
+        orderbook_fetch_complete_ts = self._utc_timestamp()
+        orderbook_fetch_duration_ms = round(max(0.0, time.monotonic() - orderbook_fetch_attempt_mono) * 1000.0, 3)
 
         orderbook_readiness_reason = self._classify_orderbook_readiness_reason(
             ticker,
@@ -8078,6 +8378,46 @@ class PolymarketTrader:
             no_token_id=no_token_id,
             market_slug=meta.get("slug", ""),
             record_decision_cycle=False,
+        )
+        orderbook_terminal_blocker = (
+            orderbook_readiness_reason or "orderbook_unavailable"
+            if yes_ask <= 0 or no_ask <= 0 or token_mapping_warning
+            else ""
+        )
+        self._emit_orderbook_lineage_probe(
+            ticker=ticker,
+            market_id=market.market_id,
+            market_slug=meta.get("slug", ""),
+            condition_id=meta.get("condition_id", ""),
+            yes_token_id=yes_token_id,
+            no_token_id=no_token_id,
+            yes_ob=yes_ob,
+            no_ob=no_ob,
+            yes_bid=yes_bid,
+            yes_ask=yes_ask,
+            yes_bid_size=yes_bid_size,
+            yes_ask_size=yes_ask_size,
+            no_bid=no_bid,
+            no_ask=no_ask,
+            no_bid_size=no_bid_size,
+            no_ask_size=no_ask_size,
+            yes_orderbook_age_ms=yes_orderbook_age_ms,
+            no_orderbook_age_ms=no_orderbook_age_ms,
+            orderbook_fetch_succeeded=orderbook_fetch_succeeded,
+            current_executable_yes_no_book=current_executable_yes_no_book,
+            orderbook_refresh_detail=orderbook_refresh_detail,
+            orderbook_readiness_reason=orderbook_readiness_reason,
+            orderbook_error=orderbook_error,
+            clob_error_detail=clob_error_detail,
+            empty_book_recovery_detail=empty_book_recovery_detail,
+            token_mapping_warning=token_mapping_warning,
+            lifecycle_phase=timing_detail.get("lifecycle_phase", ""),
+            seconds_remaining=seconds_to_close,
+            fetch_attempt_ts=orderbook_fetch_attempt_ts,
+            fetch_complete_ts=orderbook_fetch_complete_ts,
+            fetch_duration_ms=orderbook_fetch_duration_ms,
+            terminal_blocker_reason=orderbook_terminal_blocker,
+            terminal_blocker_stage="market_data_orderbook" if orderbook_terminal_blocker else "",
         )
         timing_detail.update(
             self._active_window_alignment_detail(
