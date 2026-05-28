@@ -214,8 +214,8 @@ Candidate files:
 Keep hot until replay-key validation closes:
 
 - `docs/research/path_truth/path_truth_replay_key_live_validation.md`
-- `docs/research/morning_replay_key_runtime_audit.md`
-- `docs/research/runtime_replay_key_blocker_audit.md`
+- `docs/research/runtime_health/morning_replay_key_runtime_audit.md`
+- `docs/research/runtime_health/runtime_replay_key_blocker_audit.md`
 
 ### Move To `docs/research/executable_truth/`
 
@@ -259,18 +259,18 @@ Candidate files:
 
 Candidate files:
 
-- `docs/research/daily_runtime_path_truth_audit.md`
-- `docs/research/morning_runtime_health_check.md`
-- `docs/research/new_day_runtime_gate_audit.md`
-- `docs/research/new_day_runtime_state_audit.md`
-- `docs/research/paper_process_cleanup_audit.md`
-- `docs/research/paper_runtime_replay_key_boot.md`
-- `docs/research/runtime_evidence_farming_audit.md`
-- `docs/research/morning_replay_key_runtime_audit.md`
-- `docs/research/no_trade_open_runtime_audit.md`
-- `docs/research/signal_rejection_root_cause_audit.md`
-- `docs/research/delta_extreme_gate_audit.md`
-- `docs/research/runtime_replay_key_blocker_audit.md`
+- `docs/research/runtime_health/daily_runtime_path_truth_audit.md`
+- `docs/research/runtime_health/morning_runtime_health_check.md`
+- `docs/research/runtime_health/new_day_runtime_gate_audit.md`
+- `docs/research/runtime_health/new_day_runtime_state_audit.md`
+- `docs/research/runtime_health/paper_process_cleanup_audit.md`
+- `docs/research/runtime_health/paper_runtime_replay_key_boot.md`
+- `docs/research/runtime_health/runtime_evidence_farming_audit.md`
+- `docs/research/runtime_health/morning_replay_key_runtime_audit.md`
+- `docs/research/runtime_health/no_trade_open_runtime_audit.md`
+- `docs/research/runtime_health/signal_rejection_root_cause_audit.md`
+- `docs/research/runtime_health/delta_extreme_gate_audit.md`
+- `docs/research/runtime_health/runtime_replay_key_blocker_audit.md`
 
 ### Move To `docs/research/performance/`
 

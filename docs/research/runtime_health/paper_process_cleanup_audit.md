@@ -109,7 +109,7 @@ Historical files for `2026-05-25` may still contain pre-cleanup multi-process ev
 
 Files created:
 
-- `docs/research/paper_process_cleanup_audit.md`
+- `docs/research/runtime_health/paper_process_cleanup_audit.md`
 
 Runtime behavior changed: No, process cleanup only
 

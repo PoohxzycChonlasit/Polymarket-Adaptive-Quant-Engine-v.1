@@ -88,11 +88,11 @@ Current tracked/untracked working-tree findings:
 
 | Path | Status | Classification | Recommendation |
 |---|---|---|---|
-| `docs/research/delta_extreme_gate_audit.md` | staged/add shown by git status | KEEP | recent requested audit; commit with related docs when ready |
-| `docs/research/morning_replay_key_runtime_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
-| `docs/research/no_trade_open_runtime_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
-| `docs/research/runtime_replay_key_blocker_audit.md` | staged/add shown by git status | KEEP / REVIEW | untracked/staged research doc not part of this task; review before commit |
-| `docs/research/signal_rejection_root_cause_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
+| `docs/research/runtime_health/delta_extreme_gate_audit.md` | staged/add shown by git status | KEEP | recent requested audit; commit with related docs when ready |
+| `docs/research/runtime_health/morning_replay_key_runtime_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
+| `docs/research/runtime_health/no_trade_open_runtime_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
+| `docs/research/runtime_health/runtime_replay_key_blocker_audit.md` | staged/add shown by git status | KEEP / REVIEW | untracked/staged research doc not part of this task; review before commit |
+| `docs/research/runtime_health/signal_rejection_root_cause_audit.md` | staged/add shown by git status | KEEP | recent requested audit |
 | `docs/research/path_truth/path_truth_replay_key_live_validation.md` | modified | KEEP | ongoing validation note |
 
 Ignored local/generated areas:

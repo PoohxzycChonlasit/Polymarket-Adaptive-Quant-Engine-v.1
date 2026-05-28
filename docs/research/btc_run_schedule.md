@@ -122,7 +122,7 @@ python tools/replay_analyzer.py --date YYYY-MM-DD --csv
 python tools/no_entry_analyzer.py --date YYYY-MM-DD --run-id RUN_ID --write-report
 
 # 5. Update monitors
-# docs/research/execution_reality_daily_monitor.md
+# docs/research/runtime_health/execution_reality_daily_monitor.md
 # docs/research/btc_evidence_watch.md
 # docs/research/btc_harvest_window_monitor.md
 ```

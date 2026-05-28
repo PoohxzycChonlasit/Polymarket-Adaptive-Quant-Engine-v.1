@@ -211,7 +211,7 @@ No code changes. No runtime changes. No live changes. No strategy/risk/execution
 Files updated:
 
 - `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
-- `docs/research/morning_runtime_health_check.md`
+- `docs/research/runtime_health/morning_runtime_health_check.md`
 
 Tests: not run; docs-only evidence review.
 

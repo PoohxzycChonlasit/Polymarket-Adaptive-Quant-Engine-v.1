@@ -54,8 +54,8 @@ Research docs are evidence and design artifacts. They do not change trading beha
 8. [offline_executable_truth_ledger_audit.md](offline_executable_truth_ledger_audit.md)
 9. [executable_truth_frontier_map.md](executable_truth_frontier_map.md)
 10. [early_research_gate_review.md](path_truth/early_research_gate_review.md)
-11. [signal_rejection_root_cause_audit.md](signal_rejection_root_cause_audit.md)
-12. [delta_extreme_gate_audit.md](delta_extreme_gate_audit.md)
+11. [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md)
+12. [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md)
 
 Operator guidance: start with active blockers and active reviews, then read the domain section for the work you are about to touch. Do not start from raw runtime data unless a task explicitly requires it.
 
@@ -89,7 +89,7 @@ Operator guidance: start with active blockers and active reviews, then read the 
 | `RUNTIME_TRUTH_UNKNOWN` | runtime health / executable truth | `BLOCKED` | [runtime_executable_truth_source_audit.md](runtime_executable_truth_source_audit.md) | Canonical runtime truth fields and approved ledger semantics. |
 | `MOS_UNKNOWN` | executable truth | `BLOCKED` | [minimum_executable_reality_audit.md](minimum_executable_reality_audit.md), [paper_sizing_audit.md](paper_sizing_audit.md) | Authoritative minimum order size / minimum shares source. |
 | `EXECUTABLE_PNL_BLOCKED` | executable truth | `BLOCKED` | [offline_executable_truth_ledger_audit.md](offline_executable_truth_ledger_audit.md), [executable_truth_frontier_map.md](executable_truth_frontier_map.md) | Fill truth, cancel truth, partial-fill truth, MOS authority, and non-dust coverage. |
-| `empty_book ambiguity` | runtime health | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](signal_rejection_root_cause_audit.md), [delta_extreme_gate_audit.md](delta_extreme_gate_audit.md) | Cross-run evidence distinguishing true liquidity absence from parsing/staleness artifacts. |
+| `empty_book ambiguity` | runtime health | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md), [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Cross-run evidence distinguishing true liquidity absence from parsing/staleness artifacts. |
 
 ## Resolved Lineage
 
@@ -104,13 +104,13 @@ Do not infer executable PnL or live readiness from resolved path joins.
 
 | Theme | Status | Primary doc | Notes |
 |---|---|---|---|
-| Evidence farming | `ACTIVE` | [runtime_evidence_farming_audit.md](runtime_evidence_farming_audit.md) | Current operating posture remains paper evidence collection. |
+| Evidence farming | `ACTIVE` | [runtime_evidence_farming_audit.md](runtime_health/runtime_evidence_farming_audit.md) | Current operating posture remains paper evidence collection. |
 | Path truth gate | `ACTIVE` | [path_truth_multiday_coverage_monitor.md](path_truth/path_truth_multiday_coverage_monitor.md) | Gate state should be read before path-truth conclusions. |
 | Replay-key validation | `RECENT / KEEP_HOT` | [path_truth_replay_key_live_validation.md](path_truth/path_truth_replay_key_live_validation.md) | Keep linked until validation lineage closes. |
 | Executable truth | `BLOCKED` | [executable_truth_frontier_map.md](executable_truth_frontier_map.md) | Hermes may ingest signal/blocker/dust evidence, not executable PnL. |
 | Session edge | `REVIEW_ONLY` | [early_research_gate_review.md](path_truth/early_research_gate_review.md) | Candidates survive only as research until stronger controls exist. |
-| Runtime no-trade / rejection | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](signal_rejection_root_cause_audit.md) | No strategy/risk change is implied. |
-| Delta extreme | `REVIEW_ONLY` | [delta_extreme_gate_audit.md](delta_extreme_gate_audit.md) | Gate should remain untouched until more evidence. |
+| Runtime no-trade / rejection | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md) | No strategy/risk change is implied. |
+| Delta extreme | `REVIEW_ONLY` | [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Gate should remain untouched until more evidence. |
 | Contradiction review | `ACTIVE_REVIEW` | [session_edge_missing_split_refresh.md](session_edge_missing_split_refresh.md), [quote_source_outcome_audit.md](quote_source_outcome_audit.md) | Track weakened/adverse/unavailable splits without changing policy. |
 
 ## Executable Truth
@@ -197,16 +197,16 @@ Primary docs:
 
 | Doc | Status | Lineage | Do not infer |
 |---|---|---|---|
-| [runtime_evidence_farming_audit.md](runtime_evidence_farming_audit.md) | `ACTIVE` | evidence farming | strategy/risk change |
-| [new_day_runtime_gate_audit.md](new_day_runtime_gate_audit.md) | `DAILY_AUDIT` | gate/runtime health | promotion |
-| [morning_replay_key_runtime_audit.md](morning_replay_key_runtime_audit.md) | `KEEP_HOT` | replay-key runtime status | validation complete for all future rows |
-| [runtime_replay_key_blocker_audit.md](runtime_replay_key_blocker_audit.md) | `KEEP_HOT` | replay-key blocker | runtime fix authorization |
-| [no_trade_open_runtime_audit.md](no_trade_open_runtime_audit.md) | `AUDIT` | no-trade evidence | risk/strategy change |
-| [signal_rejection_root_cause_audit.md](signal_rejection_root_cause_audit.md) | `ROOT_CAUSE` | rejection blockers | over-filtering proof |
-| [delta_extreme_gate_audit.md](delta_extreme_gate_audit.md) | `REVIEW_ONLY` | delta gate evidence | gate change |
-| [execution_timestamp_contract_v1.md](execution_timestamp_contract_v1.md) | `CONTRACT` | timestamp fields | implementation complete |
+| [runtime_evidence_farming_audit.md](runtime_health/runtime_evidence_farming_audit.md) | `ACTIVE` | evidence farming | strategy/risk change |
+| [new_day_runtime_gate_audit.md](runtime_health/new_day_runtime_gate_audit.md) | `DAILY_AUDIT` | gate/runtime health | promotion |
+| [morning_replay_key_runtime_audit.md](runtime_health/morning_replay_key_runtime_audit.md) | `KEEP_HOT` | replay-key runtime status | validation complete for all future rows |
+| [runtime_replay_key_blocker_audit.md](runtime_health/runtime_replay_key_blocker_audit.md) | `KEEP_HOT` | replay-key blocker | runtime fix authorization |
+| [no_trade_open_runtime_audit.md](runtime_health/no_trade_open_runtime_audit.md) | `AUDIT` | no-trade evidence | risk/strategy change |
+| [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md) | `ROOT_CAUSE` | rejection blockers | over-filtering proof |
+| [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | `REVIEW_ONLY` | delta gate evidence | gate change |
+| [execution_timestamp_contract_v1.md](runtime_health/execution_timestamp_contract_v1.md) | `CONTRACT` | timestamp fields | implementation complete |
 | [quote_lineage_contract_v1.md](quote_lineage_contract_v1.md) | `CONTRACT` | quote lineage | quote truth complete |
-| [telegram_telemetry_validation.md](telegram_telemetry_validation.md) | `VALIDATION` | Telegram telemetry | alert policy change |
+| [telegram_telemetry_validation.md](runtime_health/telegram_telemetry_validation.md) | `VALIDATION` | Telegram telemetry | alert policy change |
 
 Warning: Runtime Health docs diagnose observability and evidence cleanliness. They do not authorize trading behavior changes.
 

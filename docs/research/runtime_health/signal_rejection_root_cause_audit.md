@@ -42,7 +42,7 @@ Why selected: this is a run-scoped observability, JSONL, and evidence-quality di
 
 Files inspected:
 
-- `docs/research/no_trade_open_runtime_audit.md`
+- `docs/research/runtime_health/no_trade_open_runtime_audit.md`
 - `runtime/quant_data/decision_log/2026-05-27.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-27.jsonl`
 - `runtime/quant_data/execution_log/2026-05-27.jsonl`

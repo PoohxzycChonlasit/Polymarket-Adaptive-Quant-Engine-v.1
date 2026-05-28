@@ -42,7 +42,7 @@ Evidence harvest mode
 - `tests/test_terminal_dashboard_display.py` — test fixture source
 - `polymarket/trader.py` — `dashboard_probe_counts()` and runtime call sites
 - `main.py` — display update call sites
-- `docs/research/execution_reality_daily_monitor.md`
+- `docs/research/runtime_health/execution_reality_daily_monitor.md`
 - `docs/research/sessions/2026-05-22/phase5_evidence_monitor.md`
 - `docs/research/sessions/2026-05-21/warmup_session_maturation_audit.md`
 - `docs/research/sessions/2026-05-21/model_visibility_entry_handoff_audit.md`

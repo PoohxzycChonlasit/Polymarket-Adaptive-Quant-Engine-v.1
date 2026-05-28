@@ -38,7 +38,7 @@ Why selected: this is a run-scoped JSONL observability and blocker-root-cause au
 
 Files inspected:
 
-- `docs/research/signal_rejection_root_cause_audit.md`
+- `docs/research/runtime_health/signal_rejection_root_cause_audit.md`
 - `runtime/quant_data/decision_log/2026-05-27.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-27.jsonl`
 - `runtime/quant_data/execution_log/2026-05-27.jsonl`
