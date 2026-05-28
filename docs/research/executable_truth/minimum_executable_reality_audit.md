@@ -17,8 +17,8 @@ Treat current T0/T1 paper trades as signal, lifecycle, quote-age, and outcome-tr
 
 ## Sources
 
-- `docs/research/paper_sizing_audit.md`
-- `docs/research/capital_ladder_audit.md`
+- `docs/research/executable_truth/paper_sizing_audit.md`
+- `docs/research/executable_truth/capital_ladder_audit.md`
 - `runtime/quant_data/trade_journal/2026-05-23.jsonl`
 - `runtime/quant_data/execution_log/2026-05-23.jsonl`
 - `config/settings.py`
@@ -115,7 +115,7 @@ Current paper orders are `20x-80x` too small by notional under the `5 share` ass
 
 ## Capital Ladder Executability
 
-Representative clean order sizes are from `docs/research/capital_ladder_audit.md` plus a local check for `$25`.
+Representative clean order sizes are from `docs/research/executable_truth/capital_ladder_audit.md` plus a local check for `$25`.
 
 Classification rules:
 

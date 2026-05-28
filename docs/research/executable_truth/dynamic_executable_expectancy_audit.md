@@ -30,9 +30,9 @@ Files inspected:
 - `CURRENT_PROJECT_STATUS.md`
 - `FILE_INDEX.md`
 - `runtime/research_state/latest_research_state.md`
-- `docs/research/minimum_executable_reality_audit.md`
-- `docs/research/executable_reality_overlay_design.md`
-- `docs/research/executable_reality_monitor.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/executable_reality_overlay_design.md`
+- `docs/research/executable_truth/executable_reality_monitor.md`
 - `docs/research/session_edge/session_pressure_comparison_audit.md`
 - `runtime/quant_data/trade_journal/2026-05-19.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-20.jsonl`

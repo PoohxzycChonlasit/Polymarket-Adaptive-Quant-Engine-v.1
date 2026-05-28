@@ -6,10 +6,10 @@ Scope: DOCS ONLY. Design of the offline executable replay layer. No code. No run
 
 Prior art:
 - `docs/research/growth_mode_feasibility_audit.md`
-- `docs/research/minimum_executable_reality_audit.md`
-- `docs/research/capital_ladder_audit.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/capital_ladder_audit.md`
 - `docs/research/fast_stop_loss_audit.md`
-- `docs/research/paper_sizing_audit.md`
+- `docs/research/executable_truth/paper_sizing_audit.md`
 
 Evidence base:
 - `runtime/quant_data/trade_journal/2026-05-22.jsonl`

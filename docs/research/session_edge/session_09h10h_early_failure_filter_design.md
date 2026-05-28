@@ -22,7 +22,7 @@ This is not a runtime rule. It is a replay hypothesis to test whether the observ
 
 - `docs/research/session_edge/session_09h10h_structural_edge.md`
 - `docs/research/positive_expectancy_zone_deep_dive.md`
-- `docs/research/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
 
 ## Evidence Basis
 

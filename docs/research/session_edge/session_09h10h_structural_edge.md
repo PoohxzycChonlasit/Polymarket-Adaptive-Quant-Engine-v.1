@@ -11,7 +11,7 @@ Live behavior changed: No
 
 Primary research inputs:
 
-- `docs/research/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
 - `docs/research/positive_expectancy_zone_deep_dive.md`
 - `runtime/quant_data/trade_journal/2026-05-19.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-20.jsonl`

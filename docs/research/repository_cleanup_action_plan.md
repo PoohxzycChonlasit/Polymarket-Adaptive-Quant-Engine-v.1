@@ -221,17 +221,17 @@ Keep hot until replay-key validation closes:
 
 Candidate files:
 
-- `docs/research/runtime_executable_truth_source_audit.md`
-- `docs/research/offline_executable_truth_ledger_audit.md`
-- `docs/research/executable_truth_frontier_map.md`
-- `docs/research/executable_truth_blocker_observatory_design.md`
-- `docs/research/dynamic_executable_expectancy_audit.md`
-- `docs/research/minimum_executable_reality_audit.md`
-- `docs/research/executable_reality_overlay_design.md`
-- `docs/research/executable_overlay_phase_a.md`
-- `docs/research/executable_reality_monitor.md`
-- `docs/research/paper_sizing_audit.md`
-- `docs/research/capital_ladder_audit.md`
+- `docs/research/executable_truth/runtime_executable_truth_source_audit.md`
+- `docs/research/executable_truth/offline_executable_truth_ledger_audit.md`
+- `docs/research/executable_truth/executable_truth_frontier_map.md`
+- `docs/research/executable_truth/executable_truth_blocker_observatory_design.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/executable_reality_overlay_design.md`
+- `docs/research/executable_truth/executable_overlay_phase_a.md`
+- `docs/research/executable_truth/executable_reality_monitor.md`
+- `docs/research/executable_truth/paper_sizing_audit.md`
+- `docs/research/executable_truth/capital_ladder_audit.md`
 
 ### Move To `docs/research/session_edge/`
 

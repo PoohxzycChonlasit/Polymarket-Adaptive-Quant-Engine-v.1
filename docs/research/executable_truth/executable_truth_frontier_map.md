@@ -27,8 +27,8 @@ SIGNAL_MODE
 
 ## Inputs
 
-- `docs/research/runtime_executable_truth_source_audit.md`
-- `docs/research/offline_executable_truth_ledger_audit.md`
+- `docs/research/executable_truth/runtime_executable_truth_source_audit.md`
+- `docs/research/executable_truth/offline_executable_truth_ledger_audit.md`
 - `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 ## Current Truth State

@@ -5,9 +5,9 @@ Date: 2026-05-24
 Scope: READ ONLY / DESIGN ONLY. No code changes. No runtime changes. No threshold changes. No live.
 
 Prior art:
-- `docs/research/paper_sizing_audit.md`
-- `docs/research/capital_ladder_audit.md`
-- `docs/research/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/paper_sizing_audit.md`
+- `docs/research/executable_truth/capital_ladder_audit.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
 - `polymarket/bankroll_tiers.py`
 - `polymarket/position_sizing.py`
 - `polymarket/risk_modes.py`
@@ -317,7 +317,7 @@ code branch is reached.
 
 ### 10.2 Observed Paper SL Rate
 
-From `docs/research/paper_sizing_audit.md`, latest 2026-05-23 trade journal:
+From `docs/research/executable_truth/paper_sizing_audit.md`, latest 2026-05-23 trade journal:
 - `TP: 10` (34%)
 - `SL: 19` (66%)
 

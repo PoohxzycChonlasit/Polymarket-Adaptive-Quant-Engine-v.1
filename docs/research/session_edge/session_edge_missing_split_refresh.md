@@ -21,7 +21,7 @@ SESSION_EDGE: PARTIALLY_INVALIDATED
 Lineage preserved:
 
 - Historical signal-mode research supported `09h10h` as a session-edge candidate.
-- `docs/research/dynamic_executable_expectancy_audit.md` reported:
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md` reported:
   - `09h10h`: 29 trades, 16 TP / 13 SL, +0.072870 PnL.
   - `09h10h + 0.50-0.70`: 27 trades, 15 TP / 12 SL, +0.069378 PnL.
 - `docs/research/positive_expectancy_zone_deep_dive.md` treated `09h10h + 0.50-0.70` as a primary signal-harvest candidate.
@@ -45,7 +45,7 @@ Files inspected:
 - `MASTER_AGENT_ROUTER.md`
 - `docs/research/session_edge/session_edge_outside_control_audit.md`
 - `docs/research/path_truth/early_research_gate_review.md`
-- `docs/research/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
 - `docs/research/positive_expectancy_zone_deep_dive.md`
 - `runtime/quant_data/trade_journal/2026-05-24.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-25.jsonl`

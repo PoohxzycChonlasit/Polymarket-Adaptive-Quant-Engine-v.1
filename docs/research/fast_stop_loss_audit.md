@@ -26,8 +26,8 @@ Current fast-SL evidence should be treated as signal evidence only, not executab
 
 - `runtime/quant_data/trade_journal/2026-05-23.jsonl`
 - `runtime/quant_data/execution_log/2026-05-23.jsonl`
-- `docs/research/executable_reality_monitor.md`
-- `docs/research/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/executable_reality_monitor.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
 
 ## Latest Run Snapshot
 

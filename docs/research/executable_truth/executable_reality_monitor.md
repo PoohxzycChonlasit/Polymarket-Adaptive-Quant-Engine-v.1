@@ -29,10 +29,10 @@ Current paper PnL is not executable PnL. It should be used as signal/lifecycle/o
 
 ## Sources
 
-- `docs/research/paper_sizing_audit.md`
-- `docs/research/capital_ladder_audit.md`
-- `docs/research/minimum_executable_reality_audit.md`
-- `docs/research/executable_reality_overlay_design.md`
+- `docs/research/executable_truth/paper_sizing_audit.md`
+- `docs/research/executable_truth/capital_ladder_audit.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/executable_reality_overlay_design.md`
 - `runtime/quant_data/trade_journal/2026-05-23.jsonl`
 - `runtime/quant_data/execution_log/2026-05-23.jsonl`
 - `runtime/quant_data/decision_log/2026-05-23.jsonl`

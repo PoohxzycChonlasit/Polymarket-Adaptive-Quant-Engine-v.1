@@ -26,7 +26,7 @@ This audit does not implement an analyzer, replay job, runtime policy, stop-loss
 
 - `docs/research/session_edge/session_09h10h_early_failure_replay_test_plan.md`
 - `docs/research/session_edge/session_09h10h_structural_edge.md`
-- `docs/research/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
 - `runtime/quant_data/trade_journal/2026-05-19.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-20.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-21.jsonl`

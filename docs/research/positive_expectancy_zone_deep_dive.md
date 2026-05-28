@@ -25,7 +25,7 @@ The first two are positive signal buckets. The third is the negative control / w
 
 Sources:
 
-- `docs/research/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
 - `runtime/quant_data/trade_journal/2026-05-19.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-20.jsonl`
 - `runtime/quant_data/trade_journal/2026-05-21.jsonl`

@@ -46,15 +46,15 @@ Latest sampled runtime evidence:
 
 Primary source doc:
 
-- `docs/research/runtime_executable_truth_source_audit.md`
+- `docs/research/executable_truth/runtime_executable_truth_source_audit.md`
 
 Executable evidence docs:
 
-- `docs/research/dynamic_executable_expectancy_audit.md`
-- `docs/research/minimum_executable_reality_audit.md`
-- `docs/research/executable_reality_overlay_design.md`
-- `docs/research/executable_overlay_phase_a.md`
-- `docs/research/paper_sizing_audit.md`
+- `docs/research/executable_truth/dynamic_executable_expectancy_audit.md`
+- `docs/research/executable_truth/minimum_executable_reality_audit.md`
+- `docs/research/executable_truth/executable_reality_overlay_design.md`
+- `docs/research/executable_truth/executable_overlay_phase_a.md`
+- `docs/research/executable_truth/paper_sizing_audit.md`
 - `docs/research/path_truth/path_truth_multiday_coverage_monitor.md`
 
 Runtime JSONL sampled:

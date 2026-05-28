@@ -50,9 +50,9 @@ Research docs are evidence and design artifacts. They do not change trading beha
 4. [research_root_index_design.md](research_root_index_design.md)
 5. [path_truth_multiday_coverage_monitor.md](path_truth/path_truth_multiday_coverage_monitor.md)
 6. [path_join_root_cause_map.md](path_truth/path_join_root_cause_map.md)
-7. [runtime_executable_truth_source_audit.md](runtime_executable_truth_source_audit.md)
-8. [offline_executable_truth_ledger_audit.md](offline_executable_truth_ledger_audit.md)
-9. [executable_truth_frontier_map.md](executable_truth_frontier_map.md)
+7. [runtime_executable_truth_source_audit.md](executable_truth/runtime_executable_truth_source_audit.md)
+8. [offline_executable_truth_ledger_audit.md](executable_truth/offline_executable_truth_ledger_audit.md)
+9. [executable_truth_frontier_map.md](executable_truth/executable_truth_frontier_map.md)
 10. [early_research_gate_review.md](path_truth/early_research_gate_review.md)
 11. [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md)
 12. [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md)
@@ -86,9 +86,9 @@ Operator guidance: start with active blockers and active reviews, then read the 
 
 | Blocker | Area | Status | Source | Required unlock |
 |---|---|---|---|---|
-| `RUNTIME_TRUTH_UNKNOWN` | runtime health / executable truth | `BLOCKED` | [runtime_executable_truth_source_audit.md](runtime_executable_truth_source_audit.md) | Canonical runtime truth fields and approved ledger semantics. |
-| `MOS_UNKNOWN` | executable truth | `BLOCKED` | [minimum_executable_reality_audit.md](minimum_executable_reality_audit.md), [paper_sizing_audit.md](paper_sizing_audit.md) | Authoritative minimum order size / minimum shares source. |
-| `EXECUTABLE_PNL_BLOCKED` | executable truth | `BLOCKED` | [offline_executable_truth_ledger_audit.md](offline_executable_truth_ledger_audit.md), [executable_truth_frontier_map.md](executable_truth_frontier_map.md) | Fill truth, cancel truth, partial-fill truth, MOS authority, and non-dust coverage. |
+| `RUNTIME_TRUTH_UNKNOWN` | runtime health / executable truth | `BLOCKED` | [runtime_executable_truth_source_audit.md](executable_truth/runtime_executable_truth_source_audit.md) | Canonical runtime truth fields and approved ledger semantics. |
+| `MOS_UNKNOWN` | executable truth | `BLOCKED` | [minimum_executable_reality_audit.md](executable_truth/minimum_executable_reality_audit.md), [paper_sizing_audit.md](executable_truth/paper_sizing_audit.md) | Authoritative minimum order size / minimum shares source. |
+| `EXECUTABLE_PNL_BLOCKED` | executable truth | `BLOCKED` | [offline_executable_truth_ledger_audit.md](executable_truth/offline_executable_truth_ledger_audit.md), [executable_truth_frontier_map.md](executable_truth/executable_truth_frontier_map.md) | Fill truth, cancel truth, partial-fill truth, MOS authority, and non-dust coverage. |
 | `empty_book ambiguity` | runtime health | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md), [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Cross-run evidence distinguishing true liquidity absence from parsing/staleness artifacts. |
 
 ## Resolved Lineage
@@ -107,7 +107,7 @@ Do not infer executable PnL or live readiness from resolved path joins.
 | Evidence farming | `ACTIVE` | [runtime_evidence_farming_audit.md](runtime_health/runtime_evidence_farming_audit.md) | Current operating posture remains paper evidence collection. |
 | Path truth gate | `ACTIVE` | [path_truth_multiday_coverage_monitor.md](path_truth/path_truth_multiday_coverage_monitor.md) | Gate state should be read before path-truth conclusions. |
 | Replay-key validation | `RECENT / KEEP_HOT` | [path_truth_replay_key_live_validation.md](path_truth/path_truth_replay_key_live_validation.md) | Keep linked until validation lineage closes. |
-| Executable truth | `BLOCKED` | [executable_truth_frontier_map.md](executable_truth_frontier_map.md) | Hermes may ingest signal/blocker/dust evidence, not executable PnL. |
+| Executable truth | `BLOCKED` | [executable_truth_frontier_map.md](executable_truth/executable_truth_frontier_map.md) | Hermes may ingest signal/blocker/dust evidence, not executable PnL. |
 | Session edge | `REVIEW_ONLY` | [early_research_gate_review.md](path_truth/early_research_gate_review.md) | Candidates survive only as research until stronger controls exist. |
 | Runtime no-trade / rejection | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md) | No strategy/risk change is implied. |
 | Delta extreme | `REVIEW_ONLY` | [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Gate should remain untouched until more evidence. |
@@ -123,16 +123,16 @@ Primary docs:
 
 | Doc | Status | Lineage | Do not infer |
 |---|---|---|---|
-| [runtime_executable_truth_source_audit.md](runtime_executable_truth_source_audit.md) | `PARTIAL_RAW_EVIDENCE` | runtime source inventory | executable PnL |
-| [offline_executable_truth_ledger_audit.md](offline_executable_truth_ledger_audit.md) | `LEDGER_SPEC_ONLY` | offline ledger audit | executable approval |
-| [executable_truth_frontier_map.md](executable_truth_frontier_map.md) | `FRONTIER_MAP` | Signal Mode -> Executable Truth roadmap | Growth readiness |
-| [executable_truth_blocker_observatory_design.md](executable_truth_blocker_observatory_design.md) | `DESIGN_ONLY` | blocker observatory | runtime telemetry exists |
-| [minimum_executable_reality_audit.md](minimum_executable_reality_audit.md) | `BLOCKER_EVIDENCE` | MOS/minimum reality | exchange-confirmed MOS |
-| [dynamic_executable_expectancy_audit.md](dynamic_executable_expectancy_audit.md) | `RESEARCH_ONLY` | expectancy/MOS scenarios | executable profitability |
-| [paper_sizing_audit.md](paper_sizing_audit.md) | `DUST_EVIDENCE` | paper sizing/dust | executable sizing approval |
-| [capital_ladder_audit.md](capital_ladder_audit.md) | `RESEARCH_ONLY` | capital ladder | live sizing |
-| [executable_reality_overlay_design.md](executable_reality_overlay_design.md) | `DESIGN_ONLY` | overlay design | runtime overlay exists |
-| [executable_reality_monitor.md](executable_reality_monitor.md) | `MONITOR` | executable reality tracking | executable PnL |
+| [runtime_executable_truth_source_audit.md](executable_truth/runtime_executable_truth_source_audit.md) | `PARTIAL_RAW_EVIDENCE` | runtime source inventory | executable PnL |
+| [offline_executable_truth_ledger_audit.md](executable_truth/offline_executable_truth_ledger_audit.md) | `LEDGER_SPEC_ONLY` | offline ledger audit | executable approval |
+| [executable_truth_frontier_map.md](executable_truth/executable_truth_frontier_map.md) | `FRONTIER_MAP` | Signal Mode -> Executable Truth roadmap | Growth readiness |
+| [executable_truth_blocker_observatory_design.md](executable_truth/executable_truth_blocker_observatory_design.md) | `DESIGN_ONLY` | blocker observatory | runtime telemetry exists |
+| [minimum_executable_reality_audit.md](executable_truth/minimum_executable_reality_audit.md) | `BLOCKER_EVIDENCE` | MOS/minimum reality | exchange-confirmed MOS |
+| [dynamic_executable_expectancy_audit.md](executable_truth/dynamic_executable_expectancy_audit.md) | `RESEARCH_ONLY` | expectancy/MOS scenarios | executable profitability |
+| [paper_sizing_audit.md](executable_truth/paper_sizing_audit.md) | `DUST_EVIDENCE` | paper sizing/dust | executable sizing approval |
+| [capital_ladder_audit.md](executable_truth/capital_ladder_audit.md) | `RESEARCH_ONLY` | capital ladder | live sizing |
+| [executable_reality_overlay_design.md](executable_truth/executable_reality_overlay_design.md) | `DESIGN_ONLY` | overlay design | runtime overlay exists |
+| [executable_reality_monitor.md](executable_truth/executable_reality_monitor.md) | `MONITOR` | executable reality tracking | executable PnL |
 
 Warning: executable PnL remains blocked unless source docs prove fill truth, cancel truth, partial-fill truth, MOS authority, and non-dust executable minimum coverage.
 
