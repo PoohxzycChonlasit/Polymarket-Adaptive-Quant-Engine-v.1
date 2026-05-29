@@ -260,7 +260,7 @@ class PolymarketTraderPaperModeTests(unittest.TestCase):
         trader = self._make_trader()
         market = SimpleNamespace(yes_token_id="yes-token", no_token_id="no-token")
 
-        with patch.object(trader.gamma, "get_current_5min_market", return_value=market):
+        with patch.object(trader.gamma, "get_current_and_next_5min_markets", return_value=[market]):
             selected = trader._select_markets()
 
         self.assertEqual(selected[0].market_id, "pm-5m-btc")
@@ -281,10 +281,14 @@ class PolymarketTraderPaperModeTests(unittest.TestCase):
             "epoch_end_ts": epoch + 300,
         }
 
-        with patch.object(trader, "_market_preload_lead_seconds", return_value=0), \
-             patch.object(trader.gamma, "get_current_5min_market", side_effect=AssertionError("gamma called")):
+        batch_mock = MagicMock(return_value=[])
+        with patch.object(trader.gamma, "get_current_and_next_5min_markets", batch_mock), \
+             patch.object(trader.gamma, "get_exact_5min_ptb", return_value=None), \
+             patch.object(trader, "_market_preload_lead_seconds", return_value=0):
             selected = trader._select_markets(top_n=1)
 
+        called_tickers = {call.args[0] for call in batch_mock.call_args_list}
+        self.assertNotIn("BTC", called_tickers)  # BTC cache hit — gamma must not be called for BTC
         self.assertEqual(selected[0].market_id, "pm-5m-btc")
         self.assertEqual(trader._real_token_ids["BTC"], ("yes-token", "no-token"))
 
@@ -342,8 +346,7 @@ class PolymarketTraderPaperModeTests(unittest.TestCase):
             market_id="market-next",
         )
 
-        with patch.object(trader.gamma, "get_current_5min_market", return_value=active), \
-             patch.object(trader.gamma, "get_next_5min_market", return_value=next_market):
+        with patch.object(trader.gamma, "get_current_and_next_5min_markets", return_value=[active, next_market]):
             trader._refresh_token_ids(("BTC",))
 
         self.assertEqual(trader._real_token_ids["BTC"], ("yes-current", "no-current"))
