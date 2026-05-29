@@ -29,12 +29,13 @@ LOGGER = logging.getLogger(__name__)
 REALTIME_SHUTDOWN_JOIN_TIMEOUT_SECONDS = 1.0
 
 
-def _call_with_optional_ui(func, interval: int, ui_mode: str, fps_mode: str) -> int:
+def _call_with_optional_ui(func, interval: int, ui_mode: str, fps_mode: str, **optional_kwargs) -> int:
     """Call realtime runners with UI args while keeping old test monkeypatches valid."""
     params = inspect.signature(func).parameters
+    kwargs = {key: value for key, value in optional_kwargs.items() if key in params}
     if "ui_mode" in params or "fps_mode" in params:
-        return func(interval, ui_mode=ui_mode, fps_mode=fps_mode)
-    return func(interval)
+        kwargs.update({"ui_mode": ui_mode, "fps_mode": fps_mode})
+    return func(interval, **kwargs)
 
 
 def _call_with_supported_kwargs(func, /, **kwargs):
@@ -52,6 +53,63 @@ def _build_realtime_shutdown_signal_handler(stop_event: threading.Event, mark_sh
         raise KeyboardInterrupt
 
     return _handle_signal
+
+
+def _runtime_run_id_from_trader(trader) -> str:
+    quant_events = getattr(trader, "quant_events", None)
+    return str(getattr(quant_events, "run_id", "") or "")
+
+
+def _emit_runtime_loop_exception(*, trader, cycle_num: int, exc: Exception) -> None:
+    payload = {
+        "health_event": "runtime_loop_exception",
+        "exception_type": type(exc).__name__,
+        "exception_message": str(exc),
+        "cycle_num": int(cycle_num),
+        "run_id": _runtime_run_id_from_trader(trader),
+        "recovery_action": "cycle_skipped_continue",
+        "telemetry_scope": "runtime_loop",
+        "runtime_behavior_changed": "exception_observability_only",
+        "strategy_risk_execution_changed": False,
+        "replay_lineage_semantics_changed": False,
+    }
+    try:
+        quant_events = getattr(trader, "quant_events", None)
+        if quant_events is not None and hasattr(quant_events, "log_system_health"):
+            quant_events.log_system_health(payload)
+            return
+        emit = getattr(trader, "_emit_quant_event", None)
+        if callable(emit):
+            emit("log_system_health", payload)
+    except Exception as telemetry_exc:
+        LOGGER.debug("[SYSTEM_HEALTH] runtime_loop_exception telemetry failed: %s", telemetry_exc)
+
+
+def _acquire_paper_runtime_owner(
+    *,
+    trader,
+    allow_duplicate_paper_runtime: bool = False,
+    owner_dir: str | Path = "runtime/ownership",
+):
+    from utils.runtime_ownership import DuplicateRuntimeError, RuntimeOwnerManager
+
+    run_id = _runtime_run_id_from_trader(trader)
+    try:
+        return RuntimeOwnerManager(owner_dir=owner_dir, run_id=run_id).acquire(
+            mode="paper",
+            override=allow_duplicate_paper_runtime,
+        )
+    except DuplicateRuntimeError as exc:
+        LOGGER.critical(
+            "[RUNTIME_OWNERSHIP_BLOCKED] reason=%s existing_pid=%s existing_run_id=%s",
+            exc.reason,
+            exc.existing_owner.get("pid"),
+            exc.existing_owner.get("run_id"),
+        )
+        return None
+    except Exception as exc:
+        LOGGER.critical("[RUNTIME_OWNERSHIP_BLOCKED] ownership guard failed closed: %s", exc)
+        return None
 
 
 DEPENDENCY_SPECS: tuple[dict[str, object], ...] = (
@@ -164,6 +222,15 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["low", "medium", "high"],
         default="medium",
         help="Terminal dashboard refresh rate for paper/live realtime modes (default: medium).",
+    )
+    parser.add_argument(
+        "--allow-duplicate-paper-runtime",
+        action="store_true",
+        default=False,
+        help=(
+            "Operator override for paper runtime ownership guard. "
+            "Use only when intentionally accepting evidence contamination risk."
+        ),
     )
     parser.add_argument(
         "--days",
@@ -330,8 +397,14 @@ def _shutdown_realtime_resources(
     cycle_num: int,
     stop_scheduler=None,
     shutdown_join_timeout: float = REALTIME_SHUTDOWN_JOIN_TIMEOUT_SECONDS,
+    runtime_owner=None,
 ) -> None:
     """Quiet and stop realtime-owned resources before console output is restored."""
+    if runtime_owner is not None:
+        try:
+            runtime_owner.mark_stopping()
+        except Exception as exc:
+            LOGGER.debug("[SHUTDOWN] runtime owner stopping marker failed: %s", exc)
     quiet_http_client_loggers_for_shutdown()
     try:
         _call_with_supported_kwargs(trader.shutdown, join_timeout=shutdown_join_timeout)
@@ -357,6 +430,11 @@ def _shutdown_realtime_resources(
             LOGGER.debug("[SHUTDOWN] daily report scheduler stop failed: %s", exc)
         for handler in console_handlers:
             root_log.addHandler(handler)
+        if runtime_owner is not None:
+            try:
+                runtime_owner.release()
+            except Exception as exc:
+                LOGGER.debug("[SHUTDOWN] runtime owner release failed: %s", exc)
 
     if shutdown_requested:
         LOGGER.info("[SHUTDOWN] Ctrl+C received; runtime stopped cleanly after %s cycles.", cycle_num)
@@ -369,6 +447,7 @@ def run_polymarket_realtime(
     force_paper: bool = True,
     ui_mode: str = "auto",
     fps_mode: str = "medium",
+    allow_duplicate_paper_runtime: bool = False,
 ) -> int:
     import signal
     import time
@@ -400,6 +479,22 @@ def run_polymarket_realtime(
             market_discovery_interval_seconds=15.0,
             outer_loop_poll_interval_seconds=0.25,
         )
+
+    runtime_owner = None
+    if settings.paper_trading:
+        runtime_owner = _acquire_paper_runtime_owner(
+            trader=trader,
+            allow_duplicate_paper_runtime=allow_duplicate_paper_runtime,
+        )
+        if runtime_owner is None:
+            try:
+                _call_with_supported_kwargs(
+                    trader.shutdown,
+                    join_timeout=REALTIME_SHUTDOWN_JOIN_TIMEOUT_SECONDS,
+                )
+            except Exception as exc:
+                LOGGER.debug("[RUNTIME_OWNERSHIP_BLOCKED] trader shutdown after block failed: %s", exc)
+            return 1
 
     # Pre-fetch balance so the display and logger start with correct data
     LOGGER.info("Fetching initial bankroll...")
@@ -487,9 +582,16 @@ def run_polymarket_realtime(
             last_tick = 0.0
             last_orderbook_tick = 0.0
             last_balance_tick = 0.0
+            last_owner_heartbeat_tick = 0.0
 
             while not stop.is_set():
                 now_mono = time.monotonic()
+                if runtime_owner is not None and now_mono - last_owner_heartbeat_tick >= 15.0:
+                    last_owner_heartbeat_tick = now_mono
+                    try:
+                        runtime_owner.heartbeat()
+                    except Exception as exc:
+                        LOGGER.debug("[RUNTIME_OWNERSHIP] heartbeat failed: %s", exc)
                 elapsed  = now_mono - last_cycle
                 next_in  = max(0, int(interval - elapsed))
                 display.update_countdown(next_in)
@@ -667,8 +769,9 @@ def run_polymarket_realtime(
                     # ── Run full AI + execution cycle ──────────────────────────
                     try:
                         outcomes = trader.run_single_cycle(top_n=7)
-                    except Exception:
+                    except Exception as exc:
                         LOGGER.exception("Cycle #%s raised an exception — skipping.", cycle_num)
+                        _emit_runtime_loop_exception(trader=trader, cycle_num=cycle_num, exc=exc)
                         outcomes = []
 
                     # ── Refresh portfolio after cycle ──────────────────────────
@@ -844,15 +947,24 @@ def run_polymarket_realtime(
             root_log=root_log,
             shutdown_requested=shutdown_requested,
             cycle_num=cycle_num,
+            runtime_owner=runtime_owner,
         )
     return 0
 
 
-def run_polymarket_paper(interval: int = 15, ui_mode: str = "auto", fps_mode: str = "medium") -> int:
+def run_polymarket_paper(
+    interval: int = 15,
+    ui_mode: str = "auto",
+    fps_mode: str = "medium",
+    allow_duplicate_paper_runtime: bool = False,
+) -> int:
     params = inspect.signature(run_polymarket_realtime).parameters
+    kwargs = {"force_paper": True}
     if "ui_mode" in params or "fps_mode" in params:
-        return run_polymarket_realtime(interval=interval, force_paper=True, ui_mode=ui_mode, fps_mode=fps_mode)
-    return run_polymarket_realtime(interval=interval, force_paper=True)
+        kwargs.update({"ui_mode": ui_mode, "fps_mode": fps_mode})
+    if "allow_duplicate_paper_runtime" in params:
+        kwargs["allow_duplicate_paper_runtime"] = allow_duplicate_paper_runtime
+    return run_polymarket_realtime(interval=interval, **kwargs)
 
 
 def run_polymarket_live(interval: int = 60, ui_mode: str = "auto", fps_mode: str = "medium") -> int:
@@ -1259,7 +1371,13 @@ def main() -> int:
     if args.mode == "polymarket":
         return run_polymarket_mode()
     if args.mode in {"paper", "polymarket-paper", "polymarket-realtime"}:
-        return _call_with_optional_ui(run_polymarket_paper, args.interval, args.ui, args.fps)
+        return _call_with_optional_ui(
+            run_polymarket_paper,
+            args.interval,
+            args.ui,
+            args.fps,
+            allow_duplicate_paper_runtime=args.allow_duplicate_paper_runtime,
+        )
     if args.mode == "live":
         return _call_with_optional_ui(run_polymarket_live, args.interval, args.ui, args.fps)
     if args.mode == "verify":
