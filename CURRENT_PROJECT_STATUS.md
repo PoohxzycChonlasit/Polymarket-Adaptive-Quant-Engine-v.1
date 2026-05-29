@@ -1,6 +1,6 @@
 # PolyTrade Bot / Polymarket 5M BTC-ETH Quant System - Current Project Status
 
-> Updated: 2026-05-15
+> Updated: 2026-05-29
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -78,6 +78,34 @@ The following parts are currently working or present in the project:
   - Runtime now emits JSONL events for market snapshots, decisions, order intent/submit/fill/fail, trade open/close, risk events, reconciliation blocks, and low-frequency system health.
   - Clear trader Telegram sends were routed through centralized `notify_startup`, `notify_entry`, `notify_exit`, `notify_risk`, `notify_critical`, `notify_summary`, and `notify_incident` helpers where safe.
   - Observability and Telegram failures are caught and must not crash paper execution.
+- Runtime Ownership v1 was paper-validated on 2026-05-29:
+  - Controlled consolidation removed two pre-ownership duplicate paper runtimes, then fresh patched run `20260529T033511Z_32308_89dc46d3` validated the owner guard.
+  - Paper runtime owner file creation, heartbeat update, duplicate startup block, Ctrl+Break shutdown, and owner release were observed.
+  - Fresh patched run PID `32308` exited with return code `0` and had zero run-scoped parse errors across emitted rows.
+  - Previous date-level evidence from duplicate-runtime periods remains contamination-risk evidence; use run-scoped analysis only for old mixed periods.
+- Exception Observability v1 is PAPER_VALIDATED as of 2026-05-29:
+  - Targeted tests passed and simulated `runtime_loop_exception` system_health emission works.
+  - Paper run B `20260529T062249Z_57004_46908310` produced 77 `runtime_loop_exception` system_health rows (cycles 124–200+) from a real `AttributeError: 'RiskManager' object has no attribute '_balance'` bug.
+  - All 77 exception rows were correctly captured with: `health_event: runtime_loop_exception`, `exception_type: AttributeError`, `exception_message`, `cycle_num`, `run_id_in_payload`, `recovery_action: cycle_skipped_continue`. The runtime loop never crashed.
+  - Bug root cause: 4 call sites in `polymarket/trader.py` accessed `_balance` incorrectly on `RiskManager`. Three used `self._risk_mgr._balance` directly (raised `AttributeError` at runtime). A fourth used `getattr(self._risk_mgr, "_balance", 0.0)` which silently returned `0.0` for every `cycle_risk_pause` JSONL event. Fixed 2026-05-29: all 4 changed to `self._risk_mgr.balance` (public property). `cycle_risk_pause` events now carry the real bankroll balance.
+  - Exception Observability validated: real runtime-loop exceptions are captured in `system_health` JSONL, runtime continues via `cycle_skipped_continue`, no crash.
+- ENTRY_MODEL_TRUTH_ENVELOPE_V1 is PAPER_VALIDATED as of 2026-05-29 (Verdict: PASS — all 5 JSONL categories confirmed across two paper runs):
+  - Implemented 2026-05-29. Additive `entry_model_truth_envelope_v1` sub-object added to decision_log, risk_log, trade_open, position.metadata, path_truth, and trade_close.
+  - Envelope carries: schema_version, truth_status, producer_stage, model_output_ready, model_attempted, model_probability_yes/no, selected_side, true_probability, fair_value, ev_after_spread, expected_value, confidence, ev_missing_reason, lineage_reference_only.
+  - truth_status values: full | probability_only | ev_only | absent.
+  - path_truth and trade_close carry the envelope from position.metadata; emit entry_model_truth_carry_status=absent_in_metadata for legacy/minimal fill paths.
+  - 23 focused tests pass. No regressions introduced (all pre-existing failures confirmed pre-existing).
+  - Paper validation run A `20260529T050453Z_42972_33b927b5`: decision_log 100% envelope (truth_status: ev_only + absent + full observed), risk_log carry-path confirmed, 0 orphans.
+  - Trade lifecycle audit (Run A zero trades): TRADE_BLOCKED — delta_extreme/imbalance_extreme post-EV guard blocked all EV-positive cycles. Report: `docs/research/runtime_health/trade_lifecycle_evidence_audit_20260529.md`.
+  - Paper validation run B `20260529T062249Z_57004_46908310` (snapshot 06:31:35Z): 2 ETH NO trades opened and closed naturally.
+    - trade_open (2 rows): truth_status=full, computed_by=trade_open_context, serialization_source=last_quant_details, model_probability_yes/no non-null.
+    - path_truth (6 rows, 3 per trade): truth_status=full, carried_from=position_metadata, model_probability_yes/no=None (expected thinning), true_probability exact float match to trade_open.
+    - trade_close (2 rows): truth_status=full, carried_from=position_metadata, true_probability exact match.
+    - Cross-stage paper_trade_replay_key join confirmed: Trade 1 → DL=27, TJ=2, PT=3; Trade 2 → DL=9, TJ=2, PT=3.
+    - candidate_trace_id differs between trade_open and trade_close (empirically confirmed — paper_trade_replay_key is the only reliable cross-stage join key).
+  - All 8 confirmation items confirmed. No bugs found. No lineage contamination. No runtime impact.
+  - Paper validation report: `docs/research/runtime_health/entry_model_truth_envelope_v1_paper_validation.md`.
+  - Lifecycle audit report: `docs/research/runtime_health/entry_model_truth_envelope_v1_lifecycle_audit.md`.
 - Phase 4 runtime stability / clean shutdown hardening was implemented on 2026-05-08:
   - `PolymarketOracleFeed` start/stop is now idempotent and owns clean shutdown for its price, epoch/PTB, and WebSocket threads.
   - Oracle shutdown signals the WebSocket loop, joins background threads with timeouts, closes the HTTP client, and suppresses closed-stream logging failures.
@@ -111,6 +139,7 @@ The following parts are currently working or present in the project:
   - MICRO adaptive timing is available only for paper MICRO family tiers. It does not loosen STANDARD / BASE / GROWTH / CAPITAL behavior and keeps the hard MICRO close floor.
   - Orderbook empty-book recovery uses a short bounded recovery window and reports `liquidity_state`, recovery attempt/success/failure, and retry count.
   - CLOB orderbook resilience classifies HTTP/rate-limit/timeout/token/client issues, uses bounded retry/backoff/cooldowns, and degrades safely without changing strategy or execution behavior.
+  - `empty_orderbook` retry regression fixed 2026-05-29 in `polymarket/client.py`: epoch-boundary empty books were previously in the immediate-raise block alongside `stale_orderbook` and `invalid_orderbook`, bypassing all retry machinery. Fixed by removing `empty_orderbook` from the raise block and routing it through the `clob_empty_response` retry path. `stale_orderbook` and `invalid_orderbook` remain terminal.
   - `tools/session_runtime_evaluator.py` supports same-day UTC filters with `--since HH:MM` and `--until HH:MM`, so current runs can be evaluated without stale same-day events.
   - Terminal UI V2 now shows compact bankroll tier, MICRO survival, MICRO timing, liquidity/recovery, cutoff reason, and early-window timing fields.
 - Strict startup config validation was implemented on 2026-05-08:
@@ -170,6 +199,8 @@ Stability classification:
   - Oracle/WebSocket background threads stop cleanly through explicit lifecycle hooks.
   - Repeated oracle start/stop does not duplicate worker threads.
   - Closed pytest/logging streams are handled fail-soft during shutdown.
+  - Runtime Ownership v1 prevents duplicate paper runtime startup through a paper owner file, startup guard, heartbeat, stale-owner recovery, explicit operator override, and graceful release. Status: `PAPER_VALIDATED` on run `20260529T033511Z_32308_89dc46d3`.
+  - Exception Observability v1 emits structured `runtime_loop_exception` system_health telemetry in tests. Status: `TEST_VALIDATED`; natural paper-runtime exception evidence is still required.
 - Implemented offline quant analysis:
   - Quant JSONL data quality checker.
   - Offline replay analyzer and report writer.
@@ -547,6 +578,10 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
    - Review and clean stale daily Telegram message wording.
    - Add retention/compaction and incident-report writers only in a scoped phase.
    - Keep logging changes isolated from strategy/risk/execution behavior.
+   - Treat Runtime Ownership v1 as `PAPER_VALIDATED`; duplicate paper runtimes should now be blocked unless `--allow-duplicate-paper-runtime` is explicitly used.
+   - Treat Exception Observability v1 as `PAPER_VALIDATED`; status confirmed by paper run B `20260529T062249Z_57004_46908310` (77 natural `runtime_loop_exception` rows from real `AttributeError` bug).
+   - Keep old duplicate-runtime date-level evidence under contamination caveat; prefer run-scoped evidence for 2026-05-28/2026-05-29 mixed periods.
+   - JSONL Writer Integrity v1.1 remains a future blocker; Runtime Ownership v1 reduces duplicate writers but does not add interprocess writer locking.
 
 10. Monitor shutdown behavior during longer paper sessions.
    - Confirm Ctrl+C exits stop the oracle/WebSocket feed without delayed logging.
@@ -605,6 +640,12 @@ python main.py --mode live --interval 60
 ```
 
 Run the strategy smoke only when strategy or import paths changed.
+
+Known pre-existing test failures (do not fix without a scoped task):
+
+- `tests/test_paper_mode.py`: 3 failures in the `event_driven_admission_packet_price_detail` family — correct specs for an unimplemented feature, intentionally deferred.
+- `tests/test_stale_feed_kill_switch.py::test_fresh_feed_allows_normal_analysis_to_continue` — pre-existing integration gap.
+- Total pre-existing: ~7 failures; all others pass (2217+ tests pass).
 
 Any signal change must update both:
 

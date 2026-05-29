@@ -1,6 +1,6 @@
 # Observability Plan
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-05-29.
 > Scope: current logging/alerting implementation and planned quant observability work.
 
 This plan documents what exists now and what still needs to be built. Do not describe planned observability systems as implemented.
@@ -27,6 +27,8 @@ Implemented:
 - Optional Telegram notifier and Telegram error handler.
 - Runtime shutdown hardening for oracle/WebSocket feeds, realtime CSV logging, Telegram notifier executor, daily report scheduler, and trader-owned feed cleanup.
 - Closed-stream console logging is fail-soft during shutdown.
+- Runtime Ownership v1 is `PAPER_VALIDATED`: fresh patched run `20260529T033511Z_32308_89dc46d3` validated owner file creation, heartbeat, duplicate startup block, graceful Ctrl+Break shutdown, owner release, return code `0`, and zero run-scoped parse errors.
+- Exception Observability v1 is `TEST_VALIDATED`: targeted tests passed and simulated `runtime_loop_exception` system_health emission works. Paper validation is pending until a natural runtime-loop exception occurs.
 - Offline quant data quality checker in `tools/quant_data_quality.py`.
 - Offline replay analyzer in `tools/replay_analyzer.py`.
 
@@ -42,6 +44,8 @@ Known gaps:
 
 - No formal retention/compaction job yet.
 - No incident report writer yet.
+- JSONL Writer Integrity v1.1 is not implemented. Runtime Ownership v1 reduces duplicate paper runtime writers, but it does not provide interprocess JSONL writer locking.
+- Previous date-level evidence from duplicate-runtime periods remains contamination-risk evidence; use run-scoped analysis only for old mixed periods.
 - No health endpoint that consolidates market/user feed lag, orderbook age, reconciliation status, logging state, and Telegram state.
 - Some daily Telegram message wording still contains stale context and needs a copy/content cleanup pass.
 
@@ -181,6 +185,7 @@ Implemented trader integration:
 - Trade journal events for opened and closed/reduced/settled positions.
 - Risk events for risk mode, floor breach, balance guard, reconciliation mismatch, exit failure, cycle risk pause, and periodic risk state.
 - System health events on startup and low-frequency cycle checkpoints.
+- `runtime_loop_exception` system_health events are implemented and test-validated; natural paper-runtime validation is pending.
 
 Still planned:
 
@@ -188,6 +193,7 @@ Still planned:
 - Incident report writer.
 - Deeper analytics over JSONL files.
 - Dedicated `LOGGING_DEGRADED` events for every file logger state transition.
+- JSONL Writer Integrity v1.1 interprocess durability/locking design.
 
 ## Offline Data Quality And Replay
 

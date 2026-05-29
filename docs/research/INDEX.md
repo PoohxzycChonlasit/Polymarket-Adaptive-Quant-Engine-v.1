@@ -1,6 +1,6 @@
 # Research Index
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 Mode: navigation and lineage only. This index does not authorize runtime, strategy, risk, execution, wallet, replay, or live changes.
 
@@ -66,6 +66,8 @@ Operator guidance: start with active blockers and active reviews, then read the 
 | Signal evidence | `ACTIVE` | Paper signal evidence exists and remains evidence-only. |
 | Path Truth | `ACTIVE` | Checkpoint and replay-key identity work is the current continuity layer. |
 | Evidence farming | `ACTIVE` | Continue collecting clean paper/path truth evidence before policy changes. |
+| Runtime Ownership v1 | `PAPER_VALIDATED` | Fresh run `20260529T033511Z_32308_89dc46d3` validated owner file, heartbeat, duplicate block, and owner release. |
+| Exception Observability v1 | `TEST_VALIDATED` | Simulated `runtime_loop_exception` system_health emission works; natural runtime-loop exception evidence is still pending. |
 | Executable Truth | `NOT_REACHED` | Raw ingredients exist, but canonical executable PnL remains blocked. |
 | Growth Mode | `BLOCKED` | Blocked by dust/MOS/fill/cancel/partial-fill truth gaps. |
 | Live | `NOT_READY` | No live promotion is implied or authorized. |
@@ -74,12 +76,14 @@ Operator guidance: start with active blockers and active reviews, then read the 
 
 ```text
 1. Keep clean paper evidence farming stable.
-2. Preserve Path Truth direct join continuity.
-3. Resolve runtime truth and empty_book ambiguity.
-4. Establish MOS authority and dust-zone classification.
-5. Add fill/cancel/partial-fill truth.
-6. Only then evaluate executable PnL.
-7. Only after executable PnL truth can Growth readiness be reviewed.
+2. Preserve Runtime Ownership v1 as the paper evidence integrity guard.
+3. Collect natural Exception Observability v1 runtime-loop evidence.
+4. Preserve Path Truth direct join continuity.
+5. Resolve runtime truth and empty_book ambiguity.
+6. Establish MOS authority and dust-zone classification.
+7. Add fill/cancel/partial-fill truth.
+8. Only then evaluate executable PnL.
+9. Only after executable PnL truth can Growth readiness be reviewed.
 ```
 
 ## Active Blockers
@@ -89,6 +93,8 @@ Operator guidance: start with active blockers and active reviews, then read the 
 | `RUNTIME_TRUTH_UNKNOWN` | runtime health / executable truth | `BLOCKED` | [runtime_executable_truth_source_audit.md](executable_truth/runtime_executable_truth_source_audit.md) | Canonical runtime truth fields and approved ledger semantics. |
 | `MOS_UNKNOWN` | executable truth | `BLOCKED` | [minimum_executable_reality_audit.md](executable_truth/minimum_executable_reality_audit.md), [paper_sizing_audit.md](executable_truth/paper_sizing_audit.md) | Authoritative minimum order size / minimum shares source. |
 | `EXECUTABLE_PNL_BLOCKED` | executable truth | `BLOCKED` | [offline_executable_truth_ledger_audit.md](executable_truth/offline_executable_truth_ledger_audit.md), [executable_truth_frontier_map.md](executable_truth/executable_truth_frontier_map.md) | Fill truth, cancel truth, partial-fill truth, MOS authority, and non-dust coverage. |
+| `EXCEPTION_OBSERVABILITY_NATURAL_VALIDATION` | runtime health | `PENDING` | `CURRENT_PROJECT_STATUS.md`, `docs/KNOWN_ISSUES.md` | Natural paper-runtime `runtime_loop_exception` system_health row. |
+| `JSONL_WRITER_INTEGRITY_V1_1` | runtime health / evidence integrity | `BLOCKED` | `docs/KNOWN_ISSUES.md` | Interprocess JSONL writer locking or equivalent durability design. |
 | `empty_book ambiguity` | runtime health | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md), [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Cross-run evidence distinguishing true liquidity absence from parsing/staleness artifacts. |
 
 ## Resolved Lineage
@@ -97,8 +103,11 @@ Operator guidance: start with active blockers and active reviews, then read the 
 |---|---|---|---|
 | `PATH_JOIN_0_77` | `RESOLVED_LINEAGE` | [path_join_root_cause_map.md](path_truth/path_join_root_cause_map.md), [path_truth_identity_wiring_spec.md](path_truth/path_truth_identity_wiring_spec.md), [path_truth_replay_key_wiring_validation.md](path_truth/path_truth_replay_key_wiring_validation.md) | Root cause was identity island; direct key target is `(run_id, paper_trade_replay_key)`. |
 | Path truth direct join validation | `100_PERCENT_DIRECT_JOIN_VALIDATION` | [path_truth_replay_key_live_validation.md](path_truth/path_truth_replay_key_live_validation.md), [replay_key_validation_after_trade.md](path_truth/replay_key_validation_after_trade.md) | Treat as resolved lineage for post-wiring rows; legacy/null rows remain historical caveats. |
+| Runtime Ownership v1 | `PAPER_VALIDATED` | `CURRENT_PROJECT_STATUS.md`, `docs/KNOWN_ISSUES.md` | Fresh patched run `20260529T033511Z_32308_89dc46d3` validated duplicate guard, owner file, heartbeat, release, duplicate block, return code `0`, and zero run-scoped parse errors. |
 
 Do not infer executable PnL or live readiness from resolved path joins.
+
+Old evidence caveat: previous date-level evidence from duplicate-runtime periods remains contamination-risk evidence. Use run-scoped analysis only for old mixed periods.
 
 ## Active Reviews
 
@@ -111,6 +120,7 @@ Do not infer executable PnL or live readiness from resolved path joins.
 | Session edge | `REVIEW_ONLY` | [early_research_gate_review.md](path_truth/early_research_gate_review.md) | Candidates survive only as research until stronger controls exist. |
 | Runtime no-trade / rejection | `REVIEW_ONLY` | [signal_rejection_root_cause_audit.md](runtime_health/signal_rejection_root_cause_audit.md) | No strategy/risk change is implied. |
 | Delta extreme | `REVIEW_ONLY` | [delta_extreme_gate_audit.md](runtime_health/delta_extreme_gate_audit.md) | Gate should remain untouched until more evidence. |
+| Exception observability | `TEST_VALIDATED` | `CURRENT_PROJECT_STATUS.md`, `docs/KNOWN_ISSUES.md` | Simulated system_health `runtime_loop_exception` emission works; natural paper-runtime validation is pending. |
 | Contradiction review | `ACTIVE_REVIEW` | [session_edge_missing_split_refresh.md](session_edge/session_edge_missing_split_refresh.md), [quote_source_outcome_audit.md](quote_source_outcome_audit.md) | Track weakened/adverse/unavailable splits without changing policy. |
 
 ## Executable Truth

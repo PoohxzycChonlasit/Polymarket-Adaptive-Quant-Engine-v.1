@@ -65,7 +65,7 @@ Evidence:
 
 ### OBS-002 - JSONL quant event logging and offline analysis are wired, deeper analytics/retention pending
 
-Status: implemented for main trader runtime, offline analysis, run-scoped evidence review, and session runtime evaluation; retention follow-up planned.
+Status: implemented for main trader runtime, offline analysis, run-scoped evidence review, and session runtime evaluation; runtime ownership is paper-validated; retention and writer-integrity follow-up planned.
 
 Implemented:
 
@@ -97,6 +97,13 @@ Impact:
 - Latest scoped run evidence can be used for root-cause review even when whole-day quality has unrelated malformed-line warnings, as long as the scoped continuity report passes.
 - The offline dashboard improves report visibility only; it does not call live APIs, connect to runtime websockets, write runtime evidence, or change paper/live behavior.
 - Retention, compression, and deeper analytics are still not implemented.
+- Runtime Ownership v1 is `PAPER_VALIDATED`: fresh patched run `20260529T033511Z_32308_89dc46d3` validated owner file creation, heartbeat, duplicate startup block, graceful Ctrl+Break shutdown, owner release, return code `0`, and zero run-scoped parse errors.
+- Previous date-level evidence from duplicate-runtime periods remains contamination-risk evidence; use run-scoped analysis only for old mixed periods.
+- Exception Observability v1 is `PAPER_VALIDATED` (2026-05-29): 77 natural `runtime_loop_exception` system_health rows captured in paper run B `20260529T062249Z_57004_46908310` from a real `AttributeError: 'RiskManager' object has no attribute '_balance'` bug at cycles 124–200+. All rows correctly emitted with exception_type, exception_message, cycle_num, recovery_action=cycle_skipped_continue. Runtime never crashed.
+- All 4 `RiskManager._balance` access sites in `polymarket/trader.py` fixed (2026-05-29): three direct `self._risk_mgr._balance` references changed to `self._risk_mgr.balance`; a fourth `getattr(self._risk_mgr, "_balance", 0.0)` at the `cycle_risk_pause` emission path silently returned `0.0` — also fixed to `self._risk_mgr.balance`. `cycle_risk_pause` JSONL events now carry the real bankroll balance. Regression test `test_cycle_risk_pause_emits_real_balance_not_zero` covers this.
+- `empty_orderbook` retry regression fixed (2026-05-29) in `polymarket/client.py`: `empty_orderbook` RuntimeError was grouped with `stale_orderbook`/`invalid_orderbook` in the immediate-raise block, bypassing retry. Fix: removed from raise block; added `clob_empty_response` category → routes to `transient_api_issue` retry path. `stale_orderbook` and `invalid_orderbook` remain terminal. Regression test `test_get_orderbook_retries_empty_temporary_response` covers this.
+- 3 trader test fixture drift fixes (2026-05-29) in `tests/test_polymarket_trader.py`: tests patched `get_current_5min_market` (old single-market API) but production code calls `get_current_and_next_5min_markets` (batch API). Fixed by updating patches to target `get_current_and_next_5min_markets`. Test-only changes; no production behavior changed.
+- JSONL Writer Integrity v1.1 remains unimplemented. Runtime Ownership v1 reduces duplicate writers but does not provide interprocess JSONL writer locking.
 
 Next:
 
@@ -105,6 +112,9 @@ Next:
 - Prefer `--run-id` for paper-session root-cause work when a real paper run ID is available.
 - Add retention/compaction only in a scoped phase.
 - Keep analyzer output offline-only until a separate approved phase explicitly scopes feedback into strategy or risk research.
+- Keep Runtime Ownership v1 marked `PAPER_VALIDATED`.
+- Exception Observability v1 is `PAPER_VALIDATED` — no further status change needed unless implementation changes.
+- All 4 `_balance` fix sites and `empty_orderbook` retry regression are fully resolved with regression tests; no further action needed.
 
 Latest scoped evidence:
 
@@ -374,3 +384,9 @@ python -m pytest tests/ -q
 ```
 
 Tests should not call live external APIs unless explicitly scoped as integration/verify work.
+
+Known pre-existing failures (do not fix without a scoped task):
+
+- `tests/test_paper_mode.py` — 3 failures: `event_driven_admission_packet_price_detail` family. These are correct specs for an unimplemented feature, intentionally deferred.
+- `tests/test_stale_feed_kill_switch.py::test_fresh_feed_allows_normal_analysis_to_continue` — pre-existing integration gap.
+- All other failures in the suite (total ~7) are pre-existing and grouped; 2217+ tests pass.
