@@ -2694,3 +2694,64 @@ def test_paper_summary_tracks_skips_average_ev_and_trade_frequency() -> None:
     assert summary["skipped_trade_reasons"]["ev_below_threshold"] == 1
     assert summary["top_skip_reasons"] == [("ev_below_threshold", 1)]
     assert summary["order_cancel_reasons"]["stale_entry_order"] == 1
+
+
+# ---------------------------------------------------------------------------
+# Residual balance fix: cycle_risk_pause emits real bankroll (not silent 0.0)
+# ---------------------------------------------------------------------------
+
+def test_cycle_risk_pause_emits_real_balance_not_zero() -> None:
+    """Regression test: cycle_risk_pause JSONL event must carry the real bankroll.
+
+    Root cause of original bug: trader.py used
+        getattr(self._risk_mgr, "_balance", 0.0)
+    RiskManager is a facade — it has no _balance attribute of its own
+    (_balance lives in _tier_mgr). getattr always silently returned 0.0.
+
+    Fix: replaced with self._risk_mgr.balance (the public property).
+
+    This test:
+      1. Proves getattr returns 0.0 on RiskManager (proof of old bug).
+      2. Proves .balance returns the real figure.
+      3. Proves the emitted JSONL event carries the real figure, not 0.0.
+    """
+    # Start at $80.00, record 3 × $1.00 losses → balance drops to $77.00
+    # and triggers LOSS_CLUSTER_THRESHOLD (= 3), pausing can_trade().
+    trader = _trader(_settings(account_balance=80.0))
+    collector = _CollectingQuantLogger()
+    trader.quant_events = collector
+
+    for _ in range(3):
+        trader._risk_mgr.record_result(won=False, pnl=1.0)
+
+    ok, pause_reason = trader._risk_mgr.can_trade()
+    assert not ok, "3 consecutive losses should have activated the loss-cluster pause"
+
+    # --- Proof of old bug ---
+    # RiskManager has no _balance; getattr silently returns the default 0.0.
+    assert getattr(trader._risk_mgr, "_balance", 0.0) == 0.0
+
+    # --- Proof of fix ---
+    # The public .balance property correctly delegates to _tier_mgr.balance.
+    assert trader._risk_mgr.balance == pytest.approx(77.0)
+
+    # --- Emit using the fixed expression ---
+    trader._emit_risk_event(
+        "cycle_risk_pause",
+        {
+            "reason": pause_reason,
+            "balance": float(trader._risk_mgr.balance),   # fixed expression
+        },
+    )
+
+    # The JSONL risk event must carry the real balance, not the silent 0.0.
+    pause_events = [
+        p for cat, p in collector.events
+        if cat == "risk" and p.get("event") == "cycle_risk_pause"
+    ]
+    assert len(pause_events) == 1
+    assert pause_events[0]["balance"] == pytest.approx(77.0), (
+        f"Expected balance=77.0 in cycle_risk_pause payload, got {pause_events[0]['balance']}"
+    )
+    assert pause_events[0]["balance"] != 0.0
+    assert pause_events[0]["reason"] == pause_reason

@@ -4181,6 +4181,9 @@ class PolymarketTrader:
             "does_not_change_risk_decision": True,
             "run_id": str(getattr(getattr(self, "quant_events", None), "run_id", "") or ""),
         })
+        # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from decision payload, observability-only
+        if decision_payload.get("entry_model_truth_envelope_v1"):
+            payload["entry_model_truth_envelope_v1"] = decision_payload["entry_model_truth_envelope_v1"]
         return self._display_payload_with_candidate_trace_identity(payload)
 
     def _regime_pass_through_fields(self, source: dict[str, object] | None) -> dict[str, object]:
@@ -4244,6 +4247,26 @@ class PolymarketTrader:
         decision_payload.setdefault("quote_capture_ts", _p4_ql.get("quote_capture_ts"))
         decision_payload.setdefault("quote_snapshot_id", _p4_ql.get("quote_snapshot_id"))
         decision_payload.setdefault("quote_source", _p4_ql.get("quote_source", "unknown"))
+        # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
+        decision_payload.update(
+            self._build_entry_model_truth_envelope(
+                true_probability=decision_payload.get("true_probability"),
+                fair_value=decision_payload.get("fair_value"),
+                ev_after_spread=decision_payload.get("ev_after_spread"),
+                confidence=decision_payload.get("confidence"),
+                model_probability_yes=decision_payload.get("model_probability_yes"),
+                model_probability_no=decision_payload.get("model_probability_no"),
+                selected_side=decision_payload.get("side") or decision_payload.get("outcome"),
+                model_handoff_stage=decision_payload.get("model_handoff_stage"),
+                probability_model_stage=decision_payload.get("probability_model_stage"),
+                model_output_ready=decision_payload.get("probability_model_output_visible") or decision_payload.get("model_output_ready"),
+                model_attempted=decision_payload.get("probability_model_called") or decision_payload.get("model_attempted"),
+                model_not_run_reason=decision_payload.get("model_not_run_reason"),
+                ev_missing_reason=decision_payload.get("ev_after_spread_null_reason") or decision_payload.get("ev_missing_reason"),
+                computed_by="decision_log",
+                serialization_source="phase2_observability_payload",
+            )
+        )
         risk_boundary_payload = self._risk_boundary_payload_from_decision(
             decision_payload,
             decision_type=decision_type,
@@ -4347,6 +4370,111 @@ class PolymarketTrader:
             return f"{condition_text}|{epoch}|{ticker_text}|{outcome_text}|{token_text}"
         return ""
 
+    def _build_entry_model_truth_envelope(
+        self,
+        *,
+        true_probability: object = None,
+        fair_value: object = None,
+        ev_after_spread: object = None,
+        confidence: object = None,
+        model_probability_yes: object = None,
+        model_probability_no: object = None,
+        selected_side: object = None,
+        model_handoff_stage: object = None,
+        probability_model_stage: object = None,
+        model_output_ready: object = None,
+        model_attempted: object = None,
+        model_not_run_reason: object = None,
+        ev_missing_reason: object = None,
+        computed_by: str = "unknown",
+        serialization_source: str = "unknown",
+    ) -> dict[str, object]:
+        # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive, fail-soft
+        try:
+            def _sf(v: object) -> "float | None":
+                if v is None or v == "":
+                    return None
+                try:
+                    return float(v)
+                except (TypeError, ValueError):
+                    return None
+
+            p_true = _sf(true_probability)
+            fv = _sf(fair_value)
+            ev = _sf(ev_after_spread)
+            conf = _sf(confidence)
+            p_yes = _sf(model_probability_yes)
+            p_no = _sf(model_probability_no)
+            side_str = str(selected_side).upper() if selected_side else ""
+
+            if p_true is not None and ev is not None:
+                truth_status = "full"
+            elif p_true is not None:
+                truth_status = "probability_only"
+            elif ev is not None:
+                truth_status = "ev_only"
+            else:
+                truth_status = "absent"
+
+            _model_output_ready: bool = (
+                bool(model_output_ready)
+                if model_output_ready is not None
+                else (p_true is not None or fv is not None)
+            )
+            _model_attempted: bool = (
+                bool(model_attempted)
+                if model_attempted is not None
+                else (p_true is not None or ev is not None)
+            )
+            _ev_missing_reason = (
+                str(ev_missing_reason)
+                if ev_missing_reason
+                else ("" if ev is not None else "ev_not_available")
+            )
+            return {
+                "entry_model_truth_envelope_v1": {
+                    "schema_version": "1.0",
+                    "truth_status": truth_status,
+                    "truth_source": str(serialization_source),
+                    "producer_stage": str(computed_by),
+                    "model_output_ready": _model_output_ready,
+                    "model_attempted": _model_attempted,
+                    "model_not_run_reason": str(model_not_run_reason) if model_not_run_reason else "",
+                    "probability_model_stage": str(probability_model_stage) if probability_model_stage else "",
+                    "model_handoff_stage": str(model_handoff_stage) if model_handoff_stage else "",
+                    "model_probability_yes": p_yes,
+                    "model_probability_no": p_no,
+                    "selected_side": side_str,
+                    "true_probability": p_true,
+                    "fair_value": fv,
+                    "ev_after_spread": ev,
+                    "expected_value": ev,
+                    "confidence": conf,
+                    "ev_missing_reason": _ev_missing_reason,
+                    "lineage_reference_only": True,
+                    "computed_at": self._utc_timestamp(),
+                    "computed_by": str(computed_by),
+                    "serialization_source": str(serialization_source),
+                }
+            }
+        except Exception:
+            return {}
+
+    def _carry_entry_model_truth_from_metadata(
+        self,
+        metadata: dict,
+    ) -> dict[str, object]:
+        # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, carry from position metadata, fail-soft
+        try:
+            envelope = metadata.get("entry_model_truth_envelope_v1")
+            if not isinstance(envelope, dict):
+                return {"entry_model_truth_carry_status": "absent_in_metadata"}
+            carried = dict(envelope)
+            carried["carried_from"] = "position_metadata"
+            return {"entry_model_truth_envelope_v1": carried}
+        except Exception:
+            return {}
+
     def _build_trade_position_metadata(
         self,
         *,
@@ -4362,6 +4490,8 @@ class PolymarketTrader:
         market_slug: object,
         lifecycle_phase: object,
         ticker: object,
+        true_probability: object = None,
+        fair_value: object = None,
     ) -> dict[str, object]:
         paper_trade_replay_key = self._build_paper_trade_replay_key(
             condition_id=condition_id,
@@ -4370,6 +4500,16 @@ class PolymarketTrader:
             outcome=outcome,
             token_id=token_id,
         )
+        # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
+        _envelope = self._build_entry_model_truth_envelope(
+            true_probability=true_probability,
+            fair_value=fair_value,
+            ev_after_spread=entry_ev,
+            confidence=confidence,
+            selected_side=outcome,
+            computed_by="position_metadata",
+            serialization_source="build_trade_position_metadata",
+        ).get("entry_model_truth_envelope_v1")
         return {
             "strategy": strategy,
             "signal_strategy": signal_strategy,
@@ -4383,6 +4523,7 @@ class PolymarketTrader:
             "market_slug": market_slug,
             "lifecycle_phase": lifecycle_phase,
             "paper_trade_replay_key": paper_trade_replay_key or None,
+            "entry_model_truth_envelope_v1": _envelope,
         }
 
     def _emit_trade_opened_event(
@@ -4536,6 +4677,24 @@ class PolymarketTrader:
                 "expected_value": selected_ev,
                 "ev": selected_ev,
                 "confidence": selected_confidence,
+                # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
+                **self._build_entry_model_truth_envelope(
+                    true_probability=selected_probability,
+                    fair_value=selected_fair_value,
+                    ev_after_spread=selected_ev,
+                    confidence=selected_confidence,
+                    model_probability_yes=model_p_yes,
+                    model_probability_no=model_p_no,
+                    selected_side=outcome,
+                    model_handoff_stage=phase2_detail.get("model_handoff_stage"),
+                    probability_model_stage=phase2_detail.get("probability_model_stage"),
+                    model_output_ready=model_output_visible,
+                    model_attempted=phase2_detail.get("probability_model_called") or phase2_detail.get("model_attempted"),
+                    model_not_run_reason=phase2_detail.get("model_not_run_reason"),
+                    ev_missing_reason=phase2_detail.get("ev_after_spread_null_reason") or phase2_detail.get("ev_missing_reason"),
+                    computed_by="trade_open_context",
+                    serialization_source="last_quant_details",
+                ),
             },
         )
 
@@ -4618,6 +4777,8 @@ class PolymarketTrader:
                 "paper_trade_replay_key": paper_trade_replay_key,
                 "candidate_peak_favorable": None,
                 "candidate_peak_adverse": None,
+                # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
+                **self._carry_entry_model_truth_from_metadata(metadata),
             },
         )
 
@@ -6324,6 +6485,8 @@ class PolymarketTrader:
             "adverse_from_entry": adverse,
             "favorable_from_entry": favorable,
             "checkpoint_reason": checkpoint_reason,
+            # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
+            **self._carry_entry_model_truth_from_metadata(metadata),
         }
 
         emitted_ok = self._emit_quant_event("log_trade_path_checkpoint", payload)
@@ -9160,6 +9323,8 @@ class PolymarketTrader:
             outcome=model_side,
         )
 
+        # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — compute _true_prob before position open so it can be stored in metadata
+        _true_prob = probability.p_yes if model_side == "YES" else probability.p_no if model_side == "NO" else None
         if receipt is not None:
             opened_pos = self.tracker.open_position(
                 symbol=market.market_id,
@@ -9183,6 +9348,8 @@ class PolymarketTrader:
                     market_slug=meta.get("market_slug", ""),
                     lifecycle_phase=timing_detail.get("lifecycle_phase", ""),
                     ticker=ticker,
+                    true_probability=_true_prob,
+                    fair_value=_true_prob,
                 ),
             )
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
@@ -9223,7 +9390,6 @@ class PolymarketTrader:
                 mode=quant_decision,
                 status=receipt.status,
             )
-            _true_prob = probability.p_yes if model_side == "YES" else probability.p_no if model_side == "NO" else None
             self._emit_trade_opened_event(
                 market_id=market.market_id,
                 ticker=ticker,
@@ -11045,7 +11211,7 @@ class PolymarketTrader:
 
             if total_redeemed > 0:
                 # Update internal balance tracker with redeemed funds
-                new_balance = self._risk_mgr._balance + total_redeemed
+                new_balance = self._risk_mgr.balance + total_redeemed
                 self._apply_balance(new_balance)
 
                 LOGGER.info(
@@ -11291,7 +11457,7 @@ class PolymarketTrader:
                     asset=symbol,
                     won=won,
                     pnl=pnl,
-                    bankroll=self._risk_mgr._balance,
+                    bankroll=self._risk_mgr.balance,
                     paper=self.settings.paper_trading,
                 ),
                 dedup_key=f"settlement:{pos.position_id}",
@@ -11687,7 +11853,7 @@ class PolymarketTrader:
                 "cycle_risk_pause",
                 {
                     "reason": pause_reason,
-                    "balance": float(getattr(self._risk_mgr, "_balance", 0.0) or 0.0),
+                    "balance": float(self._risk_mgr.balance),
                 },
             )
             from utils.telegram_reporter import (
@@ -11695,7 +11861,7 @@ class PolymarketTrader:
             )
             from utils.risk_manager import LOSS_CLUSTER_PAUSE_SECONDS, HARD_DAILY_DRAWDOWN
 
-            balance = self._risk_mgr._balance
+            balance = self._risk_mgr.balance
             if "LOSS CLUSTER" in pause_reason or "consecutive" in pause_reason.lower():
                 self._notify_telegram(
                     "notify_risk",

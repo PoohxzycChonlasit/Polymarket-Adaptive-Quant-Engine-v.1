@@ -308,6 +308,8 @@ class PolymarketClient:
         exc_name = exc.__class__.__name__.lower()
         if not token_id or "not connected" in message or "not installed" in message or "client_not_connected" in message:
             return "clob_client_not_connected"
+        if message.startswith("empty_orderbook"):
+            return "clob_empty_response"
         if "timeout" in message or "timed out" in message or "timeout" in exc_name:
             return "clob_timeout"
         if status_code == 429 or "rate limit" in message or "too many requests" in message:
@@ -779,10 +781,10 @@ class PolymarketClient:
                 message = str(exc).lower()
                 if (
                     message.startswith("stale_orderbook")
-                    or message.startswith("empty_orderbook")
                     or message.startswith("invalid_orderbook")
                 ):
                     raise
+                # empty_orderbook at epoch boundaries is transient — wrap and retry.
                 last_error = self._wrap_orderbook_exception(exc, token_id=token_id)
             except Exception as exc:
                 last_error = self._wrap_orderbook_exception(exc, token_id=token_id)
