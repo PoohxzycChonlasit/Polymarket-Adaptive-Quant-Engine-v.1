@@ -3741,6 +3741,15 @@ class PolymarketTrader:
             "market_snapshot_decision_pipeline_linkage",
             "candidate_handoff_boundary",
             "empty_book_recovery_duration_ms",
+            # Observability v1: probability model inputs
+            "probability_model_reason",
+            "prob_model_momentum_input",
+            "prob_model_liquidity_usd",
+            # Observability v2: signal and regime inputs (additive, read-only)
+            "price_change_pct",
+            "realized_volatility",
+            "price_velocity",
+            "distance_from_ptb_pct",
         ):
             value = display.get(field_name)
             if value is not None and value != "":
@@ -8968,6 +8977,10 @@ class PolymarketTrader:
             "signal_trend_strength": float(getattr(signal, "trend_strength", regime_detail.get("trend_strength", 0.0)) or 0.0),
             "signal_volatility_score": float(getattr(signal, "volatility_score", regime_detail.get("volatility_score", 0.0)) or 0.0),
             "indicator_evidence": str(getattr(signal, "indicator_evidence", "") or ""),
+            # Observability v1: probability model inputs (additive, read-only, no model change)
+            "probability_model_reason": str(probability.model_reason),
+            "prob_model_momentum_input": float(momentum_decimal),
+            "prob_model_liquidity_usd": float(ob_liquidity_usd),
             **orderbook_refresh_detail,
         }
         quant_detail = self._record_quant_detail(
