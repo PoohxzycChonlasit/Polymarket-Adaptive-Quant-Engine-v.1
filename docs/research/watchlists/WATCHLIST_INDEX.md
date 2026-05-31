@@ -2,7 +2,7 @@
 
 type: index
 created: 2026-05-30
-last_updated: 2026-05-30
+last_updated: 2026-05-31
 code_changed: No
 strategy_changed: No
 runtime_changed: No
@@ -14,6 +14,7 @@ runtime_changed: No
 | Watchlist | Priority | Status | Current n | Required n | Last Snapshot |
 |---|---|---|---|---|---|
 | MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / OBSERVED (outcomes) | 40 conf≥0.75 | 100 | 2026-05-30 |
+| MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes | 10 episodes | 2026-05-31 |
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | 2026-05-30 |
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 AI trades | 500 | 2026-05-30 |
@@ -49,6 +50,8 @@ runtime_changed: No
 | Any cell reaches promotion n threshold | Flag in this index, request dedicated audit session |
 | Any cell win rate moves > 5pp from last snapshot | Flag as movement alert in snapshot header |
 | P0 cell crosses p < 0.05 (correct tail) | Immediate audit, governance decision required |
+| MICRO_RECOVERY_LOCKOUT episode ends (win or restart) | Append episode snapshot immediately |
+| MICRO_RECOVERY_LOCKOUT episode duration exceeds 24h | Append interim snapshot noting duration milestone |
 
 ---
 

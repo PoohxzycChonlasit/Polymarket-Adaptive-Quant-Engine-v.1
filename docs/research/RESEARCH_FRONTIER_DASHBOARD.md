@@ -122,6 +122,39 @@ In ACTIVE_INVENTORY time windows (35–240s since epoch open):
 
 ---
 
+### V6 — MICRO_RECOVERY Has No Time-Based Exit
+
+**Classification:** VERIFIED (code trace)
+**Confidence:** Certain — follows from BankrollManager architecture, not statistical inference
+
+`_consecutive_losses` (the counter that drives MICRO_RECOVERY) resets to 0 in
+exactly two situations:
+
+```python
+# Path A — record_win() called on a trade close with won=True:
+def record_win(self, profit: float) -> float:
+    self._consecutive_losses = 0   # ← sole in-session reset
+
+# Path B — BankrollManager.__init__() on process restart:
+def __init__(self, ...):
+    self._consecutive_losses = 0   # ← resets on every new session
+```
+
+`reset_daily_stats()` (called at day boundaries) resets `_daily_loss` only —
+not `_consecutive_losses`. The 30-minute loss-cluster pause expires, restoring
+`can_trade()=True`, but the counter and MICRO_RECOVERY mode are unchanged.
+There is no time-based decay, no daily reset of the streak, and no drawdown-
+recovery path that reduces the loss counter.
+
+**Evidence:** Code trace (`utils/risk_manager.py` lines 341–363, 380–393).
+Scan log analysis: 5 observed lockout episodes, all exiting via win (4
+confirmed) or process restart — zero time-only exits.
+**Current n:** 5 lockout episodes (4 completed, 1 ongoing at 53+ hours)
+**Next threshold:** n=10 episodes for duration OBSERVED → VERIFIED
+**Watchlist:** `MICRO_RECOVERY_LOCKOUT.md`
+
+---
+
 ## 2. OBSERVED FINDINGS
 
 Directionally confirmed patterns. n insufficient for VERIFIED or statistical threshold not yet met.
@@ -402,6 +435,7 @@ Summary table of all active watchlists with current status.
 | Watchlist | Priority | Status | Current n | Required n | Calib gap | Last Snapshot |
 |---|---|---|---|---|---|---|
 | MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / OBSERVED (outcomes) | 40 | 100 | +0.449 | 2026-05-30 |
+| MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes | 10 episodes | — | 2026-05-31 |
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | +0.345 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | +0.324 | 2026-05-30 |
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 | 500 | — | 2026-05-30 |
