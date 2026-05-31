@@ -155,6 +155,40 @@ confirmed) or process restart — zero time-only exits.
 
 ---
 
+### V7 — Distance Clamp Destroys Magnitude Information Above 2%
+
+**Classification:** VERIFIED (code trace + empirical confirmation)
+**Confidence:** Certain — follows from probability model formula
+
+`probability_model.py` line 136 applies a hard clamp to the distance signal:
+```python
+distance_pct = _clamp(_distance_pct(model_input), -0.02, 0.02)
+```
+Any price deviation ≥ 2% from PTB is mapped to ±0.020. The model assigns
+identical confidence to a 2.1% and a 10% deviation. All magnitude information
+above the 2% threshold is permanently destroyed.
+
+**Empirical confirmation:** In the post-patch trade dataset (n=24 saturated
+trades), winners and losers have |distance| = 0.0200 identically (Δ = 0.0000).
+Within the saturated group, distance provides zero discriminating power — the
+clamp artifact is confirmed both by code and by outcome data.
+
+**Structural consequence:** 96% of saturated trades are in COMPRESSION (23/24),
+where a ≥2% mid-window price deviation from PTB is a local extreme and a
+mean-reversion signal, not a sustained directional signal. The model treats
+these identically to a 10% directional breakout. Saturated COMPRESSION trades
+win at 33.3% vs 60.0% for non-saturated COMPRESSION trades (n=24 vs n=5,
+directional — not yet statistically significant).
+
+**Evidence:** Code trace (`probability_model.py` line 136) + 24/24 saturated
+trade post-patch records show |distance| = 0.0200, Δ = 0.0000 between winners
+and losers.
+**Current n:** 24 saturated / 5 normal (post-patch trades with distance data)
+**Next threshold:** n=45 saturated for win rate gap VERIFIED (p < 0.05)
+**Watchlist:** `DISTANCE_SATURATION.md`
+
+---
+
 ## 2. OBSERVED FINDINGS
 
 Directionally confirmed patterns. n insufficient for VERIFIED or statistical threshold not yet met.
@@ -440,6 +474,7 @@ Summary table of all active watchlists with current status.
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | +0.324 | 2026-05-30 |
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 | 500 | — | 2026-05-30 |
 | ORDERBOOK_STATE_HEALTH | P1 | OBSERVED | 402 | 600 | +0.326 (empty_book) | 2026-05-30 |
+| DISTANCE_SATURATION | P1 | VERIFIED (clamp) / OBSERVED (win rate) | 24 sat / 5 norm | 45 sat | +0.323 (sat) | 2026-05-31 |
 
 Review workflow: `docs/research/watchlists/WATCHLIST_REVIEW_WORKFLOW.md`
 
