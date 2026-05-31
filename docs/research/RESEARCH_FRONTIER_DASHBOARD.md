@@ -243,6 +243,7 @@ liq_mult=0.75 or 1.00 to stand even when binary prices are incomplete.
 
 **Current n:** 192 empty_book (BTC=58, ETH=134)
 **Next threshold:** n=250 per asset for VERIFIED
+**Watchlist:** `ORDERBOOK_STATE_HEALTH.md`
 
 ---
 
@@ -270,6 +271,7 @@ All exits are stop-loss. No strategy-level conclusions drawn from n=9.
 
 **Current n:** 9
 **Next threshold:** n=30 for any conclusion
+**Watchlist:** `ORDERBOOK_STATE_HEALTH.md`
 
 ---
 
@@ -286,6 +288,7 @@ The conf≥0.75 gate routes into BTC COMPRESSION → more losses → pause re-fi
 
 **Current n:** 1 session demonstrating the loop
 **Next threshold:** ≥3 independent sessions showing the same escalation pattern
+**Watchlist:** `MICRO_RECOVERY_SELECTION.md`
 
 ---
 

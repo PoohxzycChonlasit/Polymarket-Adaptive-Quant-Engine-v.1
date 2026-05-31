@@ -160,3 +160,7 @@ Both have liq_usd populated from stale depth, artificially elevating confidence.
 
 liq_mult=0.75 is the dangerous tier: sufficient to push confidence into 0.65+
 range but representing genuinely uncertain book quality in COMPRESSION.
+
+---
+
+*See also: [WATCHLIST_INDEX.md](WATCHLIST_INDEX.md) | [WATCHLIST_REVIEW_WORKFLOW.md](WATCHLIST_REVIEW_WORKFLOW.md) | [RESEARCH_FRONTIER_DASHBOARD.md](../RESEARCH_FRONTIER_DASHBOARD.md)*

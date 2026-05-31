@@ -78,7 +78,7 @@ new_trades_since_last: 52 (first snapshot)
 
 ```
 Total n:     52 / 350  [########-----------------------------------------]  14.9%
-Win rate:   30.8%      → 7.1pp below baseline (38.1%) ✓
+Win rate:   30.8%      → 7.1pp below baseline (37.9%) ✓
 p-value:    0.145      → NOT significant — needs ~7× more data
 Calib gap: +0.345      → model overestimates by 21.5pp ✓
 true_p:     0.650 ± 0.008 — VERIFIED mechanically stable ✓
@@ -153,3 +153,7 @@ not session-specific.
 | May 30 | 3 | 33% |
 
 10 of 12 days are negative or near-zero. May 24–25 (n=9, 67%) is the exception.
+
+---
+
+*See also: [WATCHLIST_INDEX.md](WATCHLIST_INDEX.md) | [WATCHLIST_REVIEW_WORKFLOW.md](WATCHLIST_REVIEW_WORKFLOW.md) | [RESEARCH_FRONTIER_DASHBOARD.md](../RESEARCH_FRONTIER_DASHBOARD.md)*

@@ -141,3 +141,7 @@ Run `20260530T125144Z` demonstrated the feedback loop in real-time:
 - Loss #5 (18:12): BTC YES COMPRESSION (conf=0.716) → pause (still active 18:41+)
 
 Gate escalation → BTC COMPRESSION selection → continued losses → gate re-fires.
+
+---
+
+*See also: [WATCHLIST_INDEX.md](WATCHLIST_INDEX.md) | [WATCHLIST_REVIEW_WORKFLOW.md](WATCHLIST_REVIEW_WORKFLOW.md) | [RESEARCH_FRONTIER_DASHBOARD.md](../RESEARCH_FRONTIER_DASHBOARD.md)*

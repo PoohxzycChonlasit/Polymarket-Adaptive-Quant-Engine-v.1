@@ -155,3 +155,7 @@ COMPRESSION, SIDEWAY, and TREND_DOWN all show EV inversion.
 
 liq_mult=1.00 has highest average EV AND worst win rate. Deep books inflate
 EV via liq_mult without improving directional accuracy.
+
+---
+
+*See also: [WATCHLIST_INDEX.md](WATCHLIST_INDEX.md) | [WATCHLIST_REVIEW_WORKFLOW.md](WATCHLIST_REVIEW_WORKFLOW.md) | [RESEARCH_FRONTIER_DASHBOARD.md](../RESEARCH_FRONTIER_DASHBOARD.md)*

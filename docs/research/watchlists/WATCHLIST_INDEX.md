@@ -31,8 +31,8 @@ runtime_changed: No
 
 ## Governance Rules
 
-1. **Do not promote any cell to VERIFIED** without n ≥ 50 per cell AND independent run replication across ≥ 3 sessions from different calendar periods.
-2. **Do not downgrade to NOT_SUPPORTED** until p > 0.30 (two-sided) in the correct tail on new n ≥ 50 data.
+1. **Do not promote any cell to VERIFIED** without n ≥ 50 per cell AND independent run replication across ≥ 3 sessions from different calendar periods AND calendar breadth of ≥ 7 unique calendar dates in the evidence set.
+2. **Do not downgrade to NOT_SUPPORTED** until p > 0.30 (lower tail) on new n ≥ 50 data.
 3. **All findings are evidence only.** No strategy, risk, EV, confidence, or execution changes from watchlist data alone.
 4. **Snapshot append rule:** Add a new snapshot when ≥ 10 new trades arrive in any tracked cell, OR when 7 calendar days have elapsed — whichever comes first.
 5. **Snapshots are append-only.** Never overwrite a previous snapshot entry.

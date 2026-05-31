@@ -150,4 +150,8 @@ May 30 session `20260530T125144Z` had 95% `orderbook_unavailable` all day:
 | orderbook_unavailable | 0.121 | 0.123 | −0.002 (slight inversion) |
 
 EV inversion is present in all ob_states — it is not an orderbook quality artifact.
+
+---
+
+*See also: [WATCHLIST_INDEX.md](WATCHLIST_INDEX.md) | [WATCHLIST_REVIEW_WORKFLOW.md](WATCHLIST_REVIEW_WORKFLOW.md) | [RESEARCH_FRONTIER_DASHBOARD.md](../RESEARCH_FRONTIER_DASHBOARD.md)*
 The root cause is the probability model, not the CLOB state.
