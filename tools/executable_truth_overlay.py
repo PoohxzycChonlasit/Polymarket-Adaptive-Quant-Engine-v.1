@@ -255,6 +255,25 @@ def extract_fields(
         LOGGER.debug("Skipping test artifact: |pnl|=%.4f > %.2f run=%s", abs(pnl), MAX_REAL_PNL_ABS, run_id)
         return None
 
+    # --- Verification-session artifact guard (epoch_start_ts == 0) ---
+    # Real production paper trades are always anchored to a valid market epoch
+    # (non-zero UNIX timestamp set from ptb_info.epoch_start_ts at trade open).
+    # Verification sessions use epoch=0 as a sentinel for synthetic orders.
+    # Belt-and-suspenders: also flag rows with no paper_trade_replay_key when epoch=0.
+    epoch_ts_raw = payload.get("epoch_start_ts")
+    _epoch_is_zero = False
+    if epoch_ts_raw is not None:
+        try:
+            _epoch_is_zero = int(float(str(epoch_ts_raw))) == 0
+        except (ValueError, TypeError):
+            pass  # fail-open: unparseable epoch does not auto-skip
+    _replay_key_absent = not payload.get("paper_trade_replay_key")
+    if _epoch_is_zero and _replay_key_absent:
+        LOGGER.debug(
+            "Skipping verification artifact: epoch_start_ts=0 and no replay_key run=%s", run_id
+        )
+        return None
+
     # --- Zero-value guard ---
     if entry_price == 0.0 or size == 0.0:
         LOGGER.debug("Skipping zero-value row: entry_price=%s size=%s run=%s", entry_price, size, run_id)
@@ -349,6 +368,19 @@ def load_trade_closes(
         pnl_val = _as_float(pnl_raw)
         reason = str(payload.get("reason") or "").lower().strip()
         if reason == "test" or (pnl_val is not None and abs(pnl_val) > MAX_REAL_PNL_ABS):
+            n_artifact += 1
+            continue
+
+        # Pre-check for verification-session artifact (epoch_start_ts == 0)
+        epoch_ts_raw = payload.get("epoch_start_ts")
+        _epoch_zero = False
+        if epoch_ts_raw is not None:
+            try:
+                _epoch_zero = int(float(str(epoch_ts_raw))) == 0
+            except (ValueError, TypeError):
+                pass
+        _no_replay = not payload.get("paper_trade_replay_key")
+        if _epoch_zero and _no_replay:
             n_artifact += 1
             continue
 
