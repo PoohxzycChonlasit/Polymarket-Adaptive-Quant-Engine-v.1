@@ -13,7 +13,7 @@ runtime_changed: No
 
 | Watchlist | Priority | Status | Current n | Required n | Last Snapshot |
 |---|---|---|---|---|---|
-| MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / OBSERVED (outcomes) | 40 conf≥0.75 | 100 | 2026-05-30 |
+| MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / VERIFIED (ep002 divergence) / OBSERVED (outcomes) | 40 executed; 147 ep002 q75 (decision log) | 100 executed | 2026-06-01 |
 | MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes | 10 episodes | 2026-05-31 |
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | 2026-05-30 |
@@ -75,3 +75,12 @@ All Snapshot 1 data captured during research session covering:
 - 406 total real paper trades (post-filter)
 - Decision log: ~14,636 indexed candidates
 - Observability patches: Tier 1 (prob_model_reason, momentum_input, liq_usd) + Tier 2 (price_change_pct, realized_volatility, price_velocity, distance_from_ptb_pct)
+
+**June 2026 Audit Series (Risk Plan Zero, Extreme Underdog, Universe Share) — 2026-06-01:**
+- Decision log full-scan: 17 days (May 8 – June 1), 86,552 total decision events
+- Sampled: 6 additional days (May 21–26, 100 MB sample each)
+- Qualified candidates (conf≥0.75): 837 full-scan / ~1,124 estimated all dates
+- ep002 qualified candidates (entry_price ≤ $0.02, conf≥0.75): 147 full-scan / ~168 estimated
+- Evidence fields used: `risk_plan.diagnostics.entry_price`, `risk_plan_zero_diagnostics`,
+  `risk_plan.diagnostics.blocked_reasons`, `lifecycle_phase`, `market_regime`, `asset`
+- No new executed trades since Snapshot 1 (Episode #5 active, 0 trades, 18+ hours)

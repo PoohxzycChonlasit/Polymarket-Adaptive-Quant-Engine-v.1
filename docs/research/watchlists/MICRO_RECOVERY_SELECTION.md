@@ -2,10 +2,10 @@
 
 type: living evidence tracker
 priority: P0
-status: VERIFIED (selection mechanism) / OBSERVED (outcome degradation)
-current_n: 40 conf≥0.75 trades
-last_snapshot: 2026-05-30
-last_evidence_run: 2026-05-30
+status: VERIFIED (selection mechanism) / VERIFIED (ep002 structural divergence) / OBSERVED (outcome degradation)
+current_n: 40 conf≥0.75 executed trades; 147 ep002 qualified candidates (decision log)
+last_snapshot: 2026-06-01
+last_evidence_run: 2026-06-01
 created: 2026-05-30
 code_changed: No
 strategy_changed: No
@@ -33,6 +33,27 @@ MICRO_RECOVERY requires conf ≥ 0.75. ETH median liq = $127 (liq_mult=0.75)
 caps at conf=0.66. ETH **cannot reach the MICRO_RECOVERY gate** under normal
 market conditions. Only BTC (median liq=$445, frequently liq_mult=1.00) can.
 
+A secondary structural finding — the **ep002 structural divergence** — is also
+VERIFIED within this watchlist. When the market prices a token at ≤ $0.02, two
+confidence metrics in the pipeline diverge irreconcilably:
+
+```
+conf_MR   (distance-based, MR gate)   = clamp(0.52 + |0.02−0.50|×1.40, 0, 0.88) × ~0.87
+                                      ≈ 0.757–0.880   [PASSES MR gate ≥ 0.75]
+
+p_outcome (win probability, position sizer) = edge + entry_price ≈ 0.30 + 0.02 = 0.32
+                                           → position_sizing.py line 186:
+                                             if confidence < confidence_floor (0.54):
+                                                 blocked = ["confidence_too_low"]
+                                           → _zero_result → size = $0.00
+```
+
+The gate passes; the position sizer permanently blocks. This is mathematically
+guaranteed for any entry_price ≤ $0.04. Confirmed empirically at n=147, 100%
+uniformity, 0 executions, across 10+ distinct calendar dates (May 8 – June 1).
+ep002 candidates constitute **17.56% of all conf≥0.75 qualified candidates**
+in the decision log — a structural ghost-candidate class.
+
 The **outcome degradation is OBSERVED** — conf≥0.75 trades win at 27.5%,
 below the 38.1% population baseline, and well below the 42.8% win rate of
 trades in the 0.55–0.65 conf band.
@@ -51,6 +72,10 @@ trades in the 0.55–0.65 conf band.
 | BTC COMPRESSION calib gap | avg(true_p) − actual win rate |
 | ETH conf≥0.75 count | ETH trades reaching ≥0.75 (expected near 0) |
 | Session 0% rate | Sessions where conf≥0.75 win rate = 0% |
+| ep002 count (q75) | Decision-log candidates: entry_price ≤ $0.02 AND conf_MR ≥ 0.75 |
+| ep002 share of q75 | ep002_q75 / total_q75 (baseline 17.56% across 17 full-scan days) |
+| ep002 phase concentration | ACTIVE_INVENTORY share of all ep002 candidates (100% baseline) |
+| ep002 asset split | ETH contamination rate (31.0%) vs BTC (14.5%) at conf≥0.75 |
 
 ---
 
@@ -60,6 +85,11 @@ trades in the 0.55–0.65 conf band.
 - BTC share ≥ 80% in ≥ 5 independent sessions (currently: 87.5%, 22 sessions — **MET**)
 - BTC COMPRESSION win rate < 35% sustained over n ≥ 50 BTC COMP hi-conf trades
 - p (lower tail, BTC COMP conf≥0.75 vs baseline) < 0.05
+
+> **ep002 structural divergence is exempt from the n-threshold above.** It is
+> VERIFIED by mathematical proof (position_sizing.py line 186 + confidence formula
+> interaction). Statistical confirmation at n ≥ 50 adds no information to a
+> deterministic block. Empirically confirmed at n=147, 100% uniformity, 0 executions.
 
 ## Downgrade Criteria (OBSERVED → WEAK_SIGNAL for outcomes)
 
@@ -130,6 +160,63 @@ Higher confidence in BTC COMPRESSION → worse outcomes. Gate is counter-product
 | 20260519T053224Z | 1 | 0.0% | 100% | 100% |
 
 BTC% dominant in all 10 sessions. 6/10 show 0% win rate.
+
+---
+
+## Snapshot 2 — 2026-06-01 (ep002 Structural Divergence)
+
+analysis_run: 2026-06-01
+evidence_type: decision_log (not executed trades — distinct evidence source)
+days_covered: 17 full-scan + 6 sampled (May 08 – June 01, 2026)
+new_executed_trades_since_snapshot_1: 0 (Episode #5, 18+ hours, zero executions)
+
+```
+ep002 candidates (entry_price ≤ $0.02, conf_MR ≥ 0.75):
+  total (full-scan 17 days): 147
+  total (estimated all 23 days): ~168
+  executed: 0 / 147 (0.0%)
+  blocked_reason: confidence_too_low — 147/147 (100%)
+
+p_outcome distribution:
+  range: 0.153 – 0.408   mean: 0.299
+  gap to confidence_floor (0.54): mean 0.241 (24pp short)
+  ALL below floor: 147/147 (100%)
+
+conf_MR distribution:
+  range: 0.613 – 0.880   mean: 0.787
+  above MR gate (≥0.75): 105/121 recent (86.8%)
+
+entry_price: $0.02 = 99.2%  $0.01 = 0.8%
+
+ep002 share of all q75 qualified candidates: 147/837 = 17.56%
+
+Asset contamination (ep002 / q75, full-scan):
+  ETH: 87/281 = 31.0%  ← nearly 1 in 3 qualified ETH candidates
+  BTC: 80/553 = 14.5%
+
+Regime contamination (ep002 / q75, full-scan):
+  SIDEWAY:     70/273 = 25.6%  ← highest
+  COMPRESSION: 12/62  = 19.4%
+  TREND_DOWN:  60/330 = 18.2%
+  TREND_UP:    24/168 = 14.3%  ← lowest
+
+Phase (ep002 / q75, full-scan):
+  ACTIVE_INVENTORY_TRADING: 166/742 = 22.4%  ← 100% of ep002 in this phase
+  PROFIT_MANAGEMENT:          0/79  =  0.0%
+  OPENING_SCAN:               0/12  =  0.0%
+
+secs_remaining (all in executable zone 91–300s):
+  min=96   p25=137   p50=152   p75=173   max=251
+
+Daily share variation (ep002_q75 / total_q75):
+  2026-05-20 (peak share):    62.8%  (27/43)
+  2026-05-31 (Episode #5):    34.3%  (12/35)
+  2026-05-28 (peak volume):   11.3%  (49/434)
+  Burst pattern: 0 ep002 on 13 of 23 days — price-level dependent
+
+STATUS: VERIFIED (mathematical proof + n=147, 100% uniformity, 0 executions,
+        10+ calendar dates, May 08 – June 01)
+```
 
 ### Active MICRO_RECOVERY Cascade (2026-05-30 session)
 

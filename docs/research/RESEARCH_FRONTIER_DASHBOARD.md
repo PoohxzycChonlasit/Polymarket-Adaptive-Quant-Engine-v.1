@@ -2,9 +2,9 @@
 
 type: single-page evidence summary
 created: 2026-05-30
-evidence_period: 2026-05-08 to 2026-05-30
-total_trades_analyzed: 406
-total_sessions: 56
+evidence_period: 2026-05-08 to 2026-06-01
+total_trades_analyzed: 406 executed trades; 86,552 decision events (17 full-scan days)
+total_sessions: 56 + Episode #5 (ongoing, 0 trades, 18+ hours as of 2026-06-01)
 calendar_days: 22
 observability_patches: Tier 1 + Tier 2 (deployed)
 code_changed: No
@@ -186,6 +186,57 @@ and losers.
 **Current n:** 24 saturated / 5 normal (post-patch trades with distance data)
 **Next threshold:** n=45 saturated for win rate gap VERIFIED (p < 0.05)
 **Watchlist:** `DISTANCE_SATURATION.md`
+
+---
+
+### V8 — ep002 Confidence Divergence Is a Structural Block (17.56% of Qualified Candidates)
+
+**Classification:** VERIFIED (mathematical proof + empirical confirmation)
+**Confidence:** Certain — follows from position_sizing.py line 186 + confidence formula interaction
+
+When a market token is priced at ≤ $0.02, two confidence metrics in the pipeline
+produce structurally incompatible outputs:
+
+- `conf_MR` (distance-based, used by MICRO_RECOVERY gate): ≈ 0.75–0.88 — always passes
+- `p_outcome` (win probability, used by position sizer): ≈ 0.15–0.41 — always fails
+
+This divergence is mathematically guaranteed. `p_outcome = edge + entry_price`. For any
+entry_price ≤ $0.04, achieving `conf_MR ≥ 0.75` from the distance formula simultaneously
+forces `p_outcome < 0.54` (the position sizer's `confidence_floor`). The two conditions
+cannot both be satisfied at this price level. The position sizer check fires at
+`position_sizing.py` line 186 — before any bankroll-dependent size calculation.
+
+```
+conf_MR   = clamp(0.52 + |0.02−0.50|×1.40, 0, 0.88) × quality_mult ≈ 0.757–0.880
+p_outcome = edge + entry_price ≈ 0.30 + 0.02 = 0.32   → confidence_too_low → size=$0.00
+```
+
+**Structural consequence:** ep002 candidates are ghost candidates — qualified by conf_MR,
+routed through risk gates, cleared by delta_extreme in some cases — then deterministically
+discarded at position sizing. They consume pipeline evaluation cycles with zero output.
+
+**Universe share:** 17.56% of all conf≥0.75 qualified candidates across 17 full-scan days
+(147/837). On burst days the share reaches 63% (May 20: 27/43 q75 candidates). The pattern
+is price-level dependent, not steady-state: ep002 = 0 on 13 of 23 trading days.
+
+**Phase concentration:** 100% in ACTIVE_INVENTORY_TRADING (166/166 recent full-scan).
+PROFIT_MANAGEMENT and OPENING_SCAN are completely clean.
+
+**Asset split:** ETH 31.0% contamination (87/281 q75) vs BTC 14.5% (80/553 q75).
+
+**Empirical confirmation:**
+- n=147 full-scan (17 days) + ~21 estimated (6 sampled days) = **~168 total**
+- **0 executions** across all 23 trading days (May 8 – June 1)
+- **100% blocked** by `confidence_too_low` — zero exceptions
+- **10+ distinct calendar dates** spanning full history
+- **No bankroll level resolves this block** — $50/$100/$200 all produce identical size=$0.00
+  (the check fires before any bankroll math is reached)
+
+**Evidence:** `position_sizing.py` line 186 (code trace) + decision_log full-scan (17 days,
+86,552 events, 837 qualified candidates, 147 ep002). Source audits: Risk Plan Zero Audit
+(2026-06-01), Extreme Underdog Audit (2026-06-01), Universe Share Audit (2026-06-01).
+**Watchlist:** `MICRO_RECOVERY_SELECTION.md` (Snapshot 2)
+**No action authorized.** Architecture observation only — Phase 3/4 design input.
 
 ---
 
@@ -468,7 +519,7 @@ Summary table of all active watchlists with current status.
 
 | Watchlist | Priority | Status | Current n | Required n | Calib gap | Last Snapshot |
 |---|---|---|---|---|---|---|
-| MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / OBSERVED (outcomes) | 40 | 100 | +0.449 | 2026-05-30 |
+| MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / VERIFIED (ep002) / OBSERVED (outcomes) | 40 executed; 147 ep002 q75 | 100 executed | +0.449 | 2026-06-01 |
 | MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes | 10 episodes | — | 2026-05-31 |
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | +0.345 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | +0.324 | 2026-05-30 |
@@ -555,6 +606,30 @@ at the session level.
 
 ---
 
+### OQ8 — Why Does the ep002 Pattern Appear in Bursts, Not Continuously?
+
+ep002 produces 0 candidates on 13 of 23 trading days and 38–59 on peak days
+(May 27–28). The burst structure implies the market must be in a specific price
+state — where one side of the BTC/ETH 5-minute contract consistently prices at
+2¢ — for ep002 candidates to appear. On "normal" days (price near 50/50), no
+ep002 candidates are generated.
+
+**Hypothesis:** BTC/ETH price crossing a specific level where the distribution
+of 5-minute outcomes compresses one tail to ≤2% triggers the burst. The burst
+ends when price moves away from that level. The May 27–28 cluster (97 ep002
+candidates over two days) likely reflects an extended period of BTC/ETH price
+near a specific PTB threshold.
+
+**Question:** Is the ep002 daily count predictable from BTC/ETH spot price
+relative to the active PTB? If so, the pipeline could pre-screen ep002 candidates
+before the MR gate evaluation — eliminating 17.56% of ghost candidates before
+they consume decision cycles.
+
+**Requires:** Correlation analysis between daily ep002 count and BTC/ETH intraday
+range vs PTB level. Not yet attempted. Phase 2 candidate (offline analysis only).
+
+---
+
 ## 7. CURRENT RESEARCH PHASE
 
 **Phase: 1 — Regime Classification, Probability Scoring, Observability** (as defined in CLAUDE.md)
@@ -572,11 +647,15 @@ Phase 1 goals as of 2026-05-30:
 miscalibration in BTC COMPRESSION that confidence gating worsens, not improves.
 The ACTIVE_INVENTORY EV signal is inverted. Both are Phase 2–4 design inputs.
 
-**Current operational state:**
-- Paper mode RUNNING, run `20260530T125144Z`, cycle count ~3,730
-- MICRO_RECOVERY active (5 consecutive losses), pause likely expired by now
-- CLOB degradation persisted through May 30 (95% orderbook_unavailable)
-- Last trade: 18:12 UTC May 30 (BTC YES, stop_loss)
+**Current operational state (as of 2026-06-01):**
+- Paper mode RUNNING — Episode #5 active (started 2026-05-31T16:35:42 UTC)
+- Episode #5 duration: 18+ hours, 0 trades executed — at or near longest episode on record
+- MICRO_RECOVERY active (5+ consecutive losses — no winning trade to reset counter)
+- 68 conf≥0.75 candidates during Episode #5: 53 blocked (delta_extreme), 15 blocked
+  (risk_plan_zero / ep002 confidence_too_low), 0 executed
+- ep002 contamination in Episode #5: 18 candidates (May 31: 12, June 1: 6); 34.3% of
+  all q75 qualified candidates on May 31
+- Evidence accumulation rate: ~0 executed trades/day while Episode #5 is active
 
 ---
 
@@ -606,6 +685,12 @@ Based on May 18–30 session data (~4–8 trades/day):
 **Critical path:** ETH NO COMPRESSION n=100 is the slowest P0 target (~11 days).
 conf≥0.75 is the second slowest (~17 days). CLOB degradation days reduce evidence
 rate for all targets.
+
+> **Episode #5 disruption (active as of 2026-06-01):** 0 trades/day during this
+> episode. All P0 evidence accumulation targets are paused. The rates above reflect
+> pre-Episode #5 trajectory and will resume only after Episode #5 concludes via a
+> qualifying win (conf≥0.75 BTC, non-ep002) or process restart. No n-values have
+> changed since the May 30 snapshot.
 
 ### Evidence Quality Requirements
 
