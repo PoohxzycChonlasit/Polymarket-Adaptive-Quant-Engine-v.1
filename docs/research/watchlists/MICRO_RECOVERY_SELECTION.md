@@ -218,6 +218,29 @@ STATUS: VERIFIED (mathematical proof + n=147, 100% uniformity, 0 executions,
         10+ calendar dates, May 08 – June 01)
 ```
 
+### OQ3 Resolution — 2026-06-02
+
+OQ3 (BTC COMPRESSION 0.65–0.70 root cause) is now RESOLVED. The 42pp win rate gap
+(BTC 13.8% vs ETH 55.9%) is explained by the intersection of findings documented in
+this watchlist and related documents:
+
+- **V2 (this watchlist):** MR gate selects BTC COMPRESSION via the conf≥0.75 threshold
+- **V7 (DISTANCE_SATURATION):** 98.2% of BTC COMP 6570 evaluations use clamped distance=±0.020
+- **V8 (ep002 / this watchlist):** liq_mult=1.00 (54.5% of BTC COMP 6570) pushes conf above 0.75
+- **V6 (LOCKOUT):** Execution happens only during MR conditions (3+ losses) → adverse selection
+
+Tier 3 confirmation (16/16 trade join): post-patch executed BTC COMP 6570 trades are
+100% liq_mult=1.00, 100% PMR-saturated, 83% conf≥0.75, all ACTIVE_INVENTORY phase,
+83% stop-loss exits, 16.7% win rate (consistent with watchlist's 13.8%).
+
+ETH escapes because it is 99.8% thin-book (liq_mult=0.75) → max conf≈0.57 → executes
+under NORMAL/DEFENSIVE with no adverse-condition selection bias.
+
+No action authorized from this resolution. This is a structural explanation of existing
+observed outcomes, not a mandate for change.
+
+---
+
 ### Active MICRO_RECOVERY Cascade (2026-05-30 session)
 
 Run `20260530T125144Z` demonstrated the feedback loop in real-time:

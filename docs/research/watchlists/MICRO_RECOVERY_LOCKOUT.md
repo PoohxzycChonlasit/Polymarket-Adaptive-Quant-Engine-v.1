@@ -23,6 +23,15 @@ The exit mechanism is architecturally **VERIFIED** by code trace. There is no
 time-based exit, no daily reset, and no decay function on the consecutive-loss
 counter (`utils/risk_manager.py`, `BankrollManager._consecutive_losses`).
 
+**V6 nuance confirmed by OQ2 analysis (2026-06-02):** Process restart resets
+`_consecutive_losses=0` but does NOT guarantee NORMAL mode at session start. The
+`evaluate_risk_mode()` function evaluates BOTH `consecutive_losses` AND `drawdown_pct`.
+If bankroll has declined ≥2% from the session-start baseline, the mode evaluates to
+DEFENSIVE (≥2%) or MICRO_RECOVERY (≥4%) regardless of the zero loss counter. Empirical
+evidence: 35.2% of 71 May–June sessions started in DEFENSIVE (15.5%) or MR (18.3%)
+despite process restart. Effective restart guarantee of NORMAL mode requires BOTH
+`_consecutive_losses=0` AND `drawdown_pct < 0.02`.
+
 ```python
 # Only two exit paths exist:
 # Path A — in-session win:
