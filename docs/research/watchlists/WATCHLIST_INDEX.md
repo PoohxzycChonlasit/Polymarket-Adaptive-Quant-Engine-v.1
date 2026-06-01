@@ -14,7 +14,7 @@ runtime_changed: No
 | Watchlist | Priority | Status | Current n | Required n | Last Snapshot |
 |---|---|---|---|---|---|
 | MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / VERIFIED (ep002 divergence) / OBSERVED (outcomes) | 40 executed; 147 ep002 q75 (decision log) | 100 executed | 2026-06-01 |
-| MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes | 10 episodes | 2026-05-31 |
+| MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes (5 completed) | 10 episodes | 2026-06-01 |
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | 2026-05-30 |
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 AI trades | 500 | 2026-05-30 |

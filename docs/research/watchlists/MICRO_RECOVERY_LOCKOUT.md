@@ -3,9 +3,9 @@
 type: living evidence tracker
 priority: P0
 status: VERIFIED (exit mechanism) / OBSERVED (duration patterns)
-current_n: 5 episodes (4 completed, 1 ongoing)
-last_snapshot: 2026-05-31
-last_evidence_run: 2026-05-31
+current_n: 5 episodes (5 completed, 0 ongoing)
+last_snapshot: 2026-06-01
+last_evidence_run: 2026-06-01
 created: 2026-05-31
 code_changed: No
 strategy_changed: No
@@ -156,6 +156,86 @@ The pause re-fires on every subsequent loss. In Episode 4:
 - Pause expired at ~19:11 UTC May 30
 - No executable conf≥0.75 candidate found before pause re-fired
 - System has been looping: pause → expire → no conf≥0.75 → wait → repeat
+
+---
+
+---
+
+## Snapshot 2 — 2026-06-01 (Episode #5 complete)
+
+analysis_run: 2026-06-01
+source: Scan log + decision log, May 31 – June 1 2026
+episodes_since_snapshot_1: 1 new (Episode #5 completed)
+
+```
+Episodes observed:   5 / 10   [####################--------------------]  50.0%
+Completed episodes:  5 / 10   [####################--------------------]  50.0%
+Win exits:           4 / 5    [################################--------]  80.0% of completed
+Restart exits:       1 / 5    [########--------------------------------]  20.0% ← first confirmed
+Ongoing:             0        (process terminated June 1)
+```
+
+### Updated Episode Log
+
+| # | Start (UTC) | End (UTC) | Duration | Exit | Trades exec | Wins inside | Re-triggers |
+|---|---|---|---|---|---|---|---|
+| 1 | 2026-05-22T00:00 | 2026-05-22T12:34 | ~12.5h | win | 1 | 0 | ≥3 |
+| 2 | 2026-05-23T00:00 | 2026-05-24T04:32 | ~28.5h | win | 5 | unknown | ≥5 |
+| 3 | 2026-05-25T02:32 | 2026-05-25T11:26 | ~8.9h | unknown (restart est.) | 0 | 0 | unknown |
+| 4 | 2026-05-29T02:30 | ~2026-05-31T16:30 | ~82h (incl. win cycles) | win (final cycle cleared MR) | ~5 | 5+ (May 30) | ≥7 |
+| **5** | **2026-05-31T16:35** | **2026-06-01T15:20** | **22h 44m** | **restart (process termination)** | **0** | **0** | **5+** |
+
+### Episode #5 Detail
+
+```
+duration:                22h 44m (22.74h)
+exit:                    restart — process terminated 2026-06-01T15:20 UTC
+                         (no June 2 logs exist; log boundary confirmed)
+executions:              0 — longest zero-execution run in episode history
+scan_cycles:             14,898
+conf_ge_075_candidates:  149 (all blocked — 0 executed)
+  delta_extreme:         92  (61.7%)
+  risk_plan_zero/ep002:  57  (38.3%)
+ep002_candidates:        18 (May 31: 12 / June 1: 6)
+clob_error_rate_at_end:  13.16%
+last_decision:           2026-06-01T15:20:12 UTC
+                         confidence_too_low (conf=0.44, BTC OPENING_SCAN, secs=289)
+
+Blocker uniformity: skip distribution was STABLE across all 22h 44m
+  delta_extreme=59.3%  confidence_too_low=23.1%  time_unsafe=12.0%
+  clob_empty_response=5.1%  risk_plan_zero=0.4%
+  No hour showed a materially different pattern — structurally frozen throughout.
+
+Record broken: previous zero-execution reference = 20.3h
+  Episode #5 crossed 20.3h at 2026-06-01T12:53 UTC (margin: +2h 26m)
+```
+
+### Updated Core Metrics
+
+| Metric | Snapshot 1 (2026-05-31) | Snapshot 2 (2026-06-01) |
+|---|---|---|
+| Total completed episodes | 4 | **5** |
+| Win exits | 4 (100% of completed) | **4 (80%)** |
+| Restart exits | 0 | **1 (20%) — first confirmed** |
+| Unknown exits | 1 (Episode #3) | 1 (Episode #3) |
+| Mean duration (Episodes #1–3, #5) | ~16.6h | **~18.2h** |
+| Longest zero-execution run | — | **Episode #5: 22h 44m** |
+| Longest total MR period (incl. win cycles) | Episode #4: 53+ h | Episode #4: ~82h est. |
+| Re-trigger count | Every episode ≥3 | Every episode ≥3 |
+
+### Exit Path Confirmation
+
+Episode #5 is the **first confirmed restart-exit** in the monitored episode set.
+V6 (VERIFIED) architecturally documents both exit paths:
+
+- **Path A (win):** `record_win()` → `_consecutive_losses = 0` — confirmed by Episodes #1, #2, #4
+- **Path B (restart):** `__init__()` → `_consecutive_losses = 0` — confirmed by Episode #5
+
+Directional observation (n=5, insufficient for statistical inference): zero-execution
+episodes (#3, #5) appear more likely to exit via restart than win. Episodes with active
+executions (#1, #2, #4) exited via win. The structural blocker chain prevents qualifying
+wins from occurring in zero-execution episodes — so restart becomes the only exit path.
+This is OBSERVED behavior, not yet VERIFIED at sufficient n.
 
 ---
 

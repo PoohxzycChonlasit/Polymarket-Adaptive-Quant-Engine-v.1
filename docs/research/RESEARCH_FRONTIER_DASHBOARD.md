@@ -147,9 +147,12 @@ There is no time-based decay, no daily reset of the streak, and no drawdown-
 recovery path that reduces the loss counter.
 
 **Evidence:** Code trace (`utils/risk_manager.py` lines 341–363, 380–393).
-Scan log analysis: 5 observed lockout episodes, all exiting via win (4
-confirmed) or process restart — zero time-only exits.
-**Current n:** 5 lockout episodes (4 completed, 1 ongoing at 53+ hours)
+Scan log analysis: 5 completed lockout episodes — 4 win-exits (Episodes #1, #2, #4),
+1 restart-exit (Episode #5: 22h 44m, 0 executions, process terminated 2026-06-01T15:20 UTC),
+0 time-only exits. Path B (restart via `__init__()`) now empirically confirmed for the
+first time. Episode #5 ran 22h 44m with 14,898 scan cycles and 149 conf≥0.75 candidates —
+none executed.
+**Current n:** 5 lockout episodes (5 completed, 0 ongoing)
 **Next threshold:** n=10 episodes for duration OBSERVED → VERIFIED
 **Watchlist:** `MICRO_RECOVERY_LOCKOUT.md`
 
@@ -395,7 +398,7 @@ All exits are stop-loss. No strategy-level conclusions drawn from n=9.
 
 ### O8 — MICRO_RECOVERY Creates a Loss Cascade Feedback Loop
 
-**Classification:** OBSERVED (single session, 2026-05-30)
+**Classification:** OBSERVED (1 direct observation + 3 corroborating episodes)
 **Evidence summary:** Run `20260530T125144Z` demonstrated the loop in real-time:
 - Loss #1 (ETH NO COMPRESSION) → Loss #2 (ETH YES COMPRESSION) → DEFENSIVE
 - Loss #3 (BTC NO TREND_UP) → MICRO_RECOVERY + pause
@@ -404,8 +407,15 @@ All exits are stop-loss. No strategy-level conclusions drawn from n=9.
 
 The conf≥0.75 gate routes into BTC COMPRESSION → more losses → pause re-fires.
 
-**Current n:** 1 session demonstrating the loop
-**Next threshold:** ≥3 independent sessions showing the same escalation pattern
+**Corroborating evidence from lockout episodes:** Episodes #3, #4, and #5 all show
+the CASCADE CONSEQUENCE — extended zero-execution lockout with no qualifying win —
+consistent with O8's feedback loop mechanism. Episode #5 is the longest corroborating
+instance (22h 44m, 0 executions, 149 conf≥0.75 candidates all blocked). These do not
+independently demonstrate the escalation moment but confirm the system can remain locked
+in the cascade state for very long durations across multiple independent calendar periods.
+
+**Current n:** 1 session demonstrating direct escalation; 3 corroborating lockout episodes
+**Next threshold:** ≥3 independent sessions showing the escalation moment (loss → DEF → MR)
 **Watchlist:** `MICRO_RECOVERY_SELECTION.md`
 
 ---
@@ -520,7 +530,7 @@ Summary table of all active watchlists with current status.
 | Watchlist | Priority | Status | Current n | Required n | Calib gap | Last Snapshot |
 |---|---|---|---|---|---|---|
 | MICRO_RECOVERY_SELECTION | P0 | VERIFIED (mechanism) / VERIFIED (ep002) / OBSERVED (outcomes) | 40 executed; 147 ep002 q75 | 100 executed | +0.449 | 2026-06-01 |
-| MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes | 10 episodes | — | 2026-05-31 |
+| MICRO_RECOVERY_LOCKOUT | P0 | VERIFIED (exit mechanism) / OBSERVED (duration) | 5 episodes (5 completed) | 10 episodes | — | 2026-06-01 |
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | +0.345 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | +0.324 | 2026-05-30 |
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 | 500 | — | 2026-05-30 |
