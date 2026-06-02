@@ -2,7 +2,7 @@
 
 type: index
 created: 2026-05-30
-last_updated: 2026-06-01
+last_updated: 2026-06-02
 code_changed: No
 strategy_changed: No
 runtime_changed: No
@@ -18,7 +18,7 @@ runtime_changed: No
 | ETH_NO_COMPRESSION | P0 | OBSERVED | 52 | 350 | 2026-05-30 |
 | BTC_COMPRESSION_OPENING_SCAN | P0 | OBSERVED | 59 | 150 | 2026-05-30 |
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 AI trades | 500 | 2026-05-30 |
-| ORDERBOOK_STATE_HEALTH | P1 | OBSERVED | 402 | 600 | 2026-05-30 |
+| ORDERBOOK_STATE_HEALTH | P1 | OBSERVED + OQ7 resolved (NOT SUPPORTED) | 402 executed; 95,488 decisions (OQ7) | 600 executed | 2026-06-02 |
 | DISTANCE_SATURATION | P1 | VERIFIED (clamp) / OBSERVED (win rate gap) | 24 sat / 5 norm | 45 sat | 2026-05-31 |
 
 ---

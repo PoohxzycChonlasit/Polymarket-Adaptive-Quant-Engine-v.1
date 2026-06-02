@@ -373,9 +373,15 @@ BTC COMPRESSION conf≥0.75 win rate: 22.2% (n=27), calib gap +0.449.
 | BTC | 20.7% | 41.9% | **−21.2pp** |
 | ETH | 36.6% | 43.8% | −7.2pp |
 
-BTC empty_book is 70.7% COMPRESSION; ETH is 23.1% COMPRESSION. The penalty
-follows COMPRESSION concentration, not asset identity per se. empty_book allows
+BTC empty_book is 70.7% COMPRESSION (executed trades — Snapshot 1). empty_book allows
 liq_mult=0.75 or 1.00 to stand even when binary prices are incomplete.
+
+**OQ7 resolution (2026-06-02) nuance:** The "70.7% COMPRESSION" was an execution
+selection artifact (V2 routes most BTC executions into COMPRESSION). At the decision
+level, only 26.6% of BTC empty\_book decisions occur in COMPRESSION. The BTC-ETH penalty
+gap is real but driven by BTC binary market microstructure in COMPRESSION (27.1% BTC vs
+9.5% ETH empty\_book rate), not by COMPRESSION causing higher empty\_book broadly. SIDEWAY
+is the highest empty\_book regime for both assets (~54%).
 
 **Current n:** 192 empty_book (BTC=58, ETH=134)
 **Next threshold:** n=250 per asset for VERIFIED
@@ -558,7 +564,7 @@ Review workflow: `docs/research/watchlists/WATCHLIST_REVIEW_WORKFLOW.md`
 
 ## 6. OPEN QUESTIONS
 
-Active questions (OQ1, OQ4, OQ5, OQ6, OQ7) and resolved questions (OQ2, OQ3, OQ8).
+Active questions (OQ1, OQ4, OQ5, OQ6) and resolved questions (OQ2, OQ3, OQ7, OQ8).
 
 ---
 
@@ -649,14 +655,34 @@ If coincidence: n=12 is easily noise at 45% base loss rate.
 
 ---
 
-### OQ7 — Does the CLOB empty_book Rate Correlate with Specific Market Regimes?
+### OQ7 — [RESOLVED 2026-06-02 / NOT SUPPORTED] CLOB empty\_book Regime Correlation
 
-BTC empty_book is 70.7% COMPRESSION (vs ETH 23.1%). Does the CLOB return
-empty responses specifically during COMPRESSION because market makers reduce
-their binary quotes when price is near the strike? This would explain why
-BTC COMPRESSION + empty_book is the dangerous combination.
-**Requires:** Correlation between `ob_state=empty_book` rate and market regime
-at the session level.
+**Method:** Decision log full-scan, 95,488 events, 17 days (May 8 – June 1).
+
+**Hypothesis falsified:** COMPRESSION does not cause high empty\_book. COMPRESSION has
+the *lowest* empty\_book rate of any regime for both assets.
+
+| Regime | BTC eb% | ETH eb% | Rank |
+|---|---|---|---|
+| SIDEWAY | **54.2%** | **53.4%** | Highest |
+| TREND\_DOWN | 49.6% | 47.4% | 2nd |
+| TREND\_UP | 47.9% | 44.8% | 3rd |
+| **COMPRESSION** | **27.1%** | **9.5%** | **Lowest** |
+
+**The "BTC empty\_book is 70.7% COMPRESSION" finding (Snapshot 1) was a valid but
+misleading statistic.** It described the EXECUTED-trade subset, not all decisions. At
+the decision level, only 26.6% of BTC empty\_book decisions occur in COMPRESSION. The
+executed-trade concentration reflected execution selection bias (V2: MR gate routes most
+BTC executions into COMPRESSION), not a COMPRESSION-driven orderbook failure.
+
+**Confirmed structural findings from this analysis:**
+1. SIDEWAY is the highest empty\_book regime for both assets (~54%)
+2. BTC-COMPRESSION empty\_book (27.1%) vs ETH-COMPRESSION (9.5%): 2.8× genuine asymmetry — reflects BTC binary microstructure, not COMPRESSION as a regime cause
+3. empty\_book suppresses execution (9.4× lower rate than ready) but NOT qualification (1.62% q75 rate vs ready's 1.07%). Valid signals are blocked at the execution gate, not the model gate.
+4. Orderbook quality improves in the terminal zone (0–50s): ready rate 15.0% vs 4.5–5.8% elsewhere — market makers quote completely near resolution.
+
+**Status: NOT SUPPORTED — hypothesis falsified. New structural findings documented in
+ORDERBOOK\_STATE\_HEALTH.md Snapshot 2. O5 interpretation updated.**
 
 ---
 
