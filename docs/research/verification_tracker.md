@@ -11,7 +11,7 @@
 
 | Metric | Current | Target | Status |
 |---|---|---|---|
-| **n** | **62** | 100 | ❌ −38 remaining |
+| **n** | **60** | 100 | ❌ −40 remaining |
 | **Win Rate** | **58.1%** | > 52% | ✅ passing |
 | **Profit Factor** | **2.055** | > 1.5 | ✅ passing |
 | **Net PnL** | **+$0.205** | > 0 | ✅ passing |
@@ -24,8 +24,8 @@
 ## Progress to n = 100
 
 ```
-n=62  ████████████████████████████░░░░░░░░░░░░░░  62 / 100  (62.0%)
-      ────────────────── 38 remaining ──────────────────→
+n=60  ████████████████████████████░░░░░░░░░░░░░░  60 / 100  (60.0%)
+      ────────────────── 40 remaining ──────────────────→
 ```
 
 ---
@@ -36,7 +36,7 @@ All five must be met simultaneously:
 
 | # | Criterion | Current | Status |
 |---|---|---|---|
-| 1 | n ≥ 100 | **62** | ❌ need 38 more |
+| 1 | n ≥ 100 | **60** | ❌ need 40 more |
 | 2 | WR > 52% | **58.1%** | ✅ |
 | 3 | PF > 1.5 | **2.055** | ✅ |
 | 4 | p-value < 0.05 | **0.126** | ❌ need n ≈ 105 |
@@ -83,15 +83,15 @@ All five must be met simultaneously:
 
 ## ETA to n = 100
 
-**Trades required:** 38
+**Trades required:** 40
 
 | Scenario | Rate | ETA | Calendar ETA (from 2026-06-06) |
 |---|---|---|---|
-| 🟢 Optimistic | 4.77 / trading day | ~8 trading days | ~2026-06-16 |
-| 🟡 Conservative | 3.0 / trading day | ~13 trading days | ~2026-06-23 |
-| 🔴 Pessimistic | 2.0 / trading day | ~19 trading days | ~2026-07-01 |
+| 🟢 Optimistic | 4.77 / trading day | ~9 trading days | ~2026-06-17 |
+| 🟡 Conservative | 3.0 / trading day | ~14 trading days | ~2026-06-24 |
+| 🔴 Pessimistic | 2.0 / trading day | ~20 trading days | ~2026-07-02 |
 
-**Rate source:** Pre-Episode #5 accumulation (May 18–31); 13 active days, 62 trades.
+**Rate source:** Pre-Episode #5 accumulation (May 18–31); 13 active days, canonical opportunities = 60 (raw execution rows = 62).
 **Rate risk factors:**
 - Zero-execution episodes (e.g., Episode #5: 22h 44m, 0 trades) can halt accumulation entirely
 - Non-COMPRESSION regime days produce fewer YES FC OS executions
@@ -107,9 +107,9 @@ All five must be met simultaneously:
 
 | Week | n added | WR | PF | Cumulative n | Notes |
 |---|---|---|---|---|---|
-| W21 (May 18–24) | 40 | 52% | 1.739 | 40 | First week |
-| W22 (May 25–31) | 22 | 68% | 2.947 | 62 | Second half stronger |
-| W23 (Jun 1–6) | 0 | — | — | 62 | Episode #5 + no COMPRESSION |
+| W21 (May 18–24) | 39 | 52% | 1.739 | 39 | First week; raw execution rows = 40 |
+| W22 (May 25–31) | 21 | 68% | 2.947 | 60 | Second half stronger; raw execution rows = 22 |
+| W23 (Jun 1–6) | 0 | — | — | 60 | Episode #5 + no COMPRESSION |
 | W24 onwards | — | — | — | TBD | Next accumulation window |
 
 ---
@@ -135,7 +135,7 @@ All five must be met simultaneously:
 
 > Governance rule: append snapshot when ≥ 10 new qualifying trades arrive.
 
-**Next snapshot at:** n = 72 (+10 from current 62)
+**Next snapshot at:** n = 70 (+10 from current 60)
 **Expected contents:** updated n, WR, PF, week count, path match rate
 
 ---
@@ -145,7 +145,7 @@ All five must be met simultaneously:
 ```
 SIGNAL:   ETH YES FC OS hold>15s
 STATUS:   VERIFICATION_IN_PROGRESS + POSITIVE_PATH_EVIDENCE
-n:        62 / 100  (62%)
+n:        60 / 100  (60%)
 WR:       58.1%
 PF:       2.055
 p-value:  0.126  (need < 0.05, requires n≈105)

@@ -3,7 +3,7 @@
 type: living evidence tracker
 priority: P1
 status: OBSERVED (VERIFICATION_IN_PROGRESS + POSITIVE_PATH_EVIDENCE — robustness 12/12, MFE/MAE positive)
-current_n: 62
+current_n: 60
 last_snapshot: 2026-06-06
 last_evidence_run: 2026-06-06
 created: 2026-06-02
@@ -24,13 +24,13 @@ temporal stability, bootstrap resampling (2,000 iterations), trade dependency
 analysis, and win concentration tests. It is the narrowest surviving positive
 subpopulation from the YES+FIRST\_CYCLE research series.
 
-**Core finding:** `PF=2.055, WR=58.1%, net=+$0.205` across n=62 qualifying
-trades spanning 13 active calendar dates (May 18–May 31, 2026). Bootstrap
+**Core finding:** `PF=2.055, WR=58.1%, net=+$0.205` across canonical opportunities = 60
+(raw execution rows = 62) spanning 13 active calendar dates (May 18–May 31, 2026). Bootstrap
 confirms PF > 1.0 in 99.5% of 2,000 resamples. Leave-one-date-out minimum
 PF = 1.909.
 
 **Not yet VERIFIED because:**
-- n=62 < threshold of 100
+- n=60 < threshold of 100
 - Binomial p-value = 0.126 (target: p<0.05, requires n≈105)
 - Only 2 calendar weeks observed (W21 + W22, target: ≥3)
 
@@ -71,7 +71,7 @@ This watchlist derives from a three-stage research sequence:
    at the OPENING\_SCAN all-asset level.
 
 2. **Asset × fast-close cross-tab (2026-06-02):** ETH YES FC OS excl. fast15
-   isolated as PF=2.055 (n=62). BTC YES FC OS (n=31) confirmed as
+   isolated as PF=2.055 (canonical opportunities = 60; raw execution rows = 62). BTC YES FC OS (n=31) confirmed as
    destructive (PF=0.430). The 12-test adversarial audit followed.
 
 3. **12-test robustness battery (2026-06-02):** All structural tests passed.
@@ -152,7 +152,7 @@ The signal is killed if ANY of these conditions are met on new data:
 
 | Limitation | Impact | Mitigation |
 |---|---|---|
-| n=62 below statistical threshold | p=0.126, not yet significant | LODO and bootstrap provide alternative confidence |
+| n=60 below statistical threshold | p=0.126, not yet significant | LODO and bootstrap provide alternative confidence |
 | 2 calendar weeks only | Temporal coverage narrow | Third week (W23+) will resolve |
 | BTC exclusion required | Signal is asset-conditional; not a universal YES edge | Explicitly documented in cell definition |
 | Fast-close filter | 48% of raw YES FC OS excluded — this is a scope restriction | The filter is structural, not cherry-picked: fast-closes are a separate execution pattern |
@@ -202,7 +202,7 @@ trades\_covered: May 18 – May 31, 2026 (13 active calendar dates)
 sessions\_covered: 13 calendar dates spanning 2 ISO weeks (W21, W22)
 
 ```
-n:          62 / 100  [########################░░░░░░░░░░░░░░░░░░░░]  62.0%
+n:          60 / 100  [########################░░░░░░░░░░░░░░░░░░░░]  60.0%
 WR:         58.1%  → target >52%  PASSING ✓
 PF:         2.055  → target >1.5  PASSING ✓
 Net PnL:   +$0.205
@@ -215,7 +215,7 @@ Cal weeks:  2 / 3   → target ≥3    PENDING
 
 | Metric | Value |
 |---|---|
-| Total n | 62 |
+| Total n | 60 canonical opportunities (raw execution rows = 62) |
 | Wins (W) | 36 |
 | Win rate | 58.1% |
 | Profit Factor | 2.055 |

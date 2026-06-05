@@ -21,7 +21,7 @@ new_watchlist_2026-06-02: ETH_YES_FC_OS (P1, VERIFICATION_IN_PROGRESS)
 | ACTIVE_INVENTORY_EV_INVERSION | P1 | OBSERVED | 384 AI trades | 500 | 2026-05-30 |
 | ORDERBOOK_STATE_HEALTH | P1 | OBSERVED + OQ7 resolved (NOT SUPPORTED) | 402 executed; 95,488 decisions (OQ7) | 600 executed | 2026-06-02 |
 | DISTANCE_SATURATION | P1 | VERIFIED (clamp) / OBSERVED (win rate gap) | 24 sat / 5 norm | 45 sat | 2026-05-31 |
-| ETH_YES_FC_OS | P1 | OBSERVED (VERIFICATION_IN_PROGRESS — robustness audit passed) | 62 | 100 | 2026-06-06 |
+| ETH_YES_FC_OS | P1 | OBSERVED (VERIFICATION_IN_PROGRESS — robustness audit passed) | 60 canonical opportunities (62 raw execution rows) | 100 | 2026-06-06 |
 
 ---
 
