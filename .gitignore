@@ -45,6 +45,7 @@ polytrade_bot.log*
 
 # Local virtual environments / dependency caches
 .venv/
+.venv_broken_*/
 venv/
 ENV/
 
