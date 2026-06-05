@@ -433,6 +433,8 @@ class PolymarketTrader:
         }
         self._recent_display_trades: deque[dict[str, object]] = deque(maxlen=12)
         self._cycle_count = 0
+        self._session_start_monotonic: float = time.monotonic()
+        self._loop_exception_count: int = 0
         self._cockpit_probe_counts: dict[str, int] = {"zero_size": 0, "cycle_selection": 0}
         self._cycle_started_monotonic = 0.0
         self._cycle_started_at_utc = ""
@@ -6023,6 +6025,42 @@ class PolymarketTrader:
         interval = int(self._setting("summary_interval_cycles", 5))
         if interval > 0 and self._cycle_count % interval == 0:
             self.log_quant_summary(force=True)
+        self._maybe_send_telegram_summary()
+
+    def _maybe_send_telegram_summary(self) -> None:
+        try:
+            run_id = str(getattr(self.quant_events, "run_id", "") or "") or "n/a"
+            uptime_s = int(time.monotonic() - self._session_start_monotonic)
+            uptime_h, rem = divmod(uptime_s, 3600)
+            uptime_m = rem // 60
+            uptime_str = f"{uptime_h}h{uptime_m:02d}m"
+            regime = "n/a"
+            for asset in ("ETH", "BTC"):
+                detail = (getattr(self, "last_quant_details", {}) or {}).get(asset) or {}
+                r = str(detail.get("market_regime") or "").strip()
+                if r and r.upper() not in ("", "UNKNOWN", "--"):
+                    regime = r
+                    break
+            cycle_mono = float(getattr(self, "_cycle_started_monotonic", 0.0) or 0.0)
+            heartbeat_age_s = int(time.monotonic() - cycle_mono) if cycle_mono > 0 else 0
+            heartbeat_age = f"{heartbeat_age_s}s" if heartbeat_age_s > 0 else "<1s"
+            self._notify_telegram(
+                "notify_summary",
+                "",
+                dedup_key="runtime_status",
+                run_id=run_id,
+                uptime=uptime_str,
+                cycles=self._cycle_count,
+                trade_opens=self.paper_stats.trades_simulated,
+                trade_closes=self.paper_stats.paper_exits,
+                exceptions=self._loop_exception_count,
+                mode=self._runtime_mode().upper(),
+                risk_mode=str(self._risk_mode_state.current_mode.value),
+                heartbeat_age=heartbeat_age,
+                regime=regime,
+            )
+        except Exception:
+            pass
 
     def _paper_update_drawdown(self) -> None:
         if not self._paper_enabled():
@@ -11943,6 +11981,7 @@ class PolymarketTrader:
                         outcome.receipt.order_id if outcome.receipt else "none",
                     )
             except Exception as exc:
+                self._loop_exception_count += 1
                 ticker = self._ticker_from_market_id(market.market_id)
                 context = {}
                 try:

@@ -438,6 +438,24 @@ def _operator_incident_message(kind: str, context: dict[str, Any]) -> str:
 
 
 def _operator_summary_message(context: dict[str, Any]) -> str:
+    if context.get("uptime") is not None:
+        run_id_raw = _safe_text(context.get("run_id"))
+        run_id_short = run_id_raw[:14] if len(run_id_raw) > 14 else run_id_raw
+        return "\n".join(
+            [
+                "📊 STATUS | P3",
+                "Runtime heartbeat",
+                "━━━━━━━━━━━━━━",
+                f"Mode: {_mode_label(context)}",
+                f"Run: {run_id_short}  Up: {_safe_text(context.get('uptime'))}",
+                f"Cycles: {_safe_text(context.get('cycles'))}  Opens: {_safe_text(context.get('trade_opens'))}  Closes: {_safe_text(context.get('trade_closes'))}  Exc: {_safe_text(context.get('exceptions'), '0')}",
+                f"Risk: {_safe_text(context.get('risk_mode'))}  Regime: {_safe_text(context.get('regime'))}",
+                f"Heartbeat: {_safe_text(context.get('heartbeat_age'))}",
+                "",
+                "Meaning: Periodic runtime status. No action required.",
+                _ref_line(context),
+            ]
+        )
     return "\n".join(
         [
             "📊 DAILY DIGEST | P3",
