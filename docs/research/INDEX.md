@@ -240,6 +240,32 @@ Primary docs:
 
 Warning: Performance docs describe visibility and operator experience. They do not alter strategy, risk, execution, or live behavior.
 
+## Signal Watchlists
+
+Purpose: track active cell verification campaigns and promotion criteria for specific signal cells.
+
+Current status: `VERIFICATION_IN_PROGRESS`
+
+| Doc | Status | Cell | n / Target | Notes |
+|---|---|---|---|---|
+| [watchlists/ETH_YES_FC_OS.md](watchlists/ETH_YES_FC_OS.md) | `VERIFICATION_IN_PROGRESS` | ETH × YES × FC × OS × hold>15s | 61 / 100 | W23 has 1 qualifying SIDEWAY TP; 39 remaining |
+| [verification_tracker.md](verification_tracker.md) | `ACTIVE` | ETH YES FC OS | 61 / 100 | Canonical tracker; append at n=70, 80, 90, 100 |
+| [evidence_velocity_dashboard.md](evidence_velocity_dashboard.md) | `ACTIVE` | ETH YES FC OS velocity | 61 / 100 | Rolling 7d/14d velocity and ETA monitor |
+
+Warning: Watchlist promotion criteria are evidence thresholds only. Crossing them does not authorize runtime, execution, or live behavior changes.
+
+## Research Frontiers
+
+Purpose: document unresolved hypotheses with enough evidence to warrant formal investigation but not enough to act on.
+
+Current status: `FRONTIER_HYPOTHESIS`
+
+| Doc | Status | Hypothesis | Priority |
+|---|---|---|---|
+| [frontiers/COMPRESSION_MARKET_ARCHETYPE.md](frontiers/COMPRESSION_MARKET_ARCHETYPE.md) | `FRONTIER_HYPOTHESIS` | COMPRESSION is a structurally distinct market archetype; W23 now has 1 non-COMPRESSION qualifying trade | HIGH |
+
+Warning: Frontier documents are research-only. No frontier hypothesis authorizes runtime, strategy, risk, or execution changes.
+
 ## Archive And Navigation
 
 Current archive status: `NOT_STARTED`
