@@ -3,6 +3,14 @@
 Source: canonical_regime_enriched_trades_v1.csv (market_regime column).
 Legacy fallback: completed_trades_v1_2.csv (regime column).
 
+Row qualification contract (mirrors canonical_regime_export._cell_qualifies):
+  1. asset = ETH
+  2. side = YES
+  3. OPENING_SCAN in canonical_entry_lifecycle_phase
+  4. hold_seconds > 15
+  5. canonical_retained_flag = true  (dedup guard; absent/None defaults to true)
+  6. trade_result in {TP, SL} OR pnl_usdc not empty  (outcome quality gate)
+
 Offline/reporting only — no runtime imports, no strategy/risk/execution changes.
 Run: py -3.11 tools/_drift_audit.py
 """
@@ -48,6 +56,47 @@ def _flt(v) -> Optional[float]:
         return float(v)
     except (TypeError, ValueError):
         return None
+
+
+def _row_qualifies(r: dict) -> bool:
+    """Full ETH YES FC OS row qualification predicate.
+
+    Mirrors canonical_regime_export._cell_qualifies() so the drift audit
+    counts exactly the same rows the canonical export does.
+
+    Filters:
+      1. asset = ETH
+      2. side = YES
+      3. OPENING_SCAN in canonical_entry_lifecycle_phase
+      4. hold_seconds > 15
+      5. canonical_retained_flag = true  -- dedup guard.
+         Absent or None value defaults to 'true' (legacy-CSV compatible:
+         rows from a CSV without this column are included, not dropped).
+      6. trade_result in {TP, SL}  OR  pnl_usdc not empty  -- outcome gate.
+         Excludes open/unresolved rows that the export also excludes.
+    """
+    # 1. asset
+    if r.get('asset', '') != 'ETH':
+        return False
+    # 2. side
+    if r.get('side', '') != 'YES':
+        return False
+    # 3. lifecycle phase  — (... or '') handles None values from test dicts safely
+    if 'OPENING_SCAN' not in (r.get('canonical_entry_lifecycle_phase') or ''):
+        return False
+    # 4. hold
+    hs = _flt(r.get('hold_seconds', ''))
+    if hs is None or hs <= 15:
+        return False
+    # 5. dedup guard — (... or 'true') so absent/None column defaults to include
+    if (r.get('canonical_retained_flag') or 'true').lower() != 'true':
+        return False
+    # 6. outcome quality gate
+    trade_result = r.get('trade_result', '')
+    pnl_raw = r.get('pnl_usdc', '')
+    if trade_result not in {'TP', 'SL'} and pnl_raw in {None, ''}:
+        return False
+    return True
 
 
 def _iso_week(entry_ts: str, exit_ts: str = '') -> str:
@@ -143,16 +192,8 @@ if __name__ == '__main__':
         reader = csv.DictReader(f)
         _validate_regime_column(reader.fieldnames or [])
         for r in reader:
-            if r.get('asset', '') != 'ETH':
-                continue
-            if r.get('side', '') != 'YES':
-                continue
-            if 'OPENING_SCAN' not in r.get('canonical_entry_lifecycle_phase', ''):
-                continue
-            hs = _flt(r.get('hold_seconds', ''))
-            if hs is None or hs <= 15:
-                continue
-            rows.append(r)
+            if _row_qualifies(r):
+                rows.append(r)
 
     rows.sort(key=lambda r: (r.get('entry_ts', ''), r.get('epoch_start_ts', '')))
 

@@ -164,3 +164,116 @@ def test_week_and_phase_correct_at_n70() -> None:
         f'Phase buckets cover {len(all_covered)} indices; '
         f'missing: {set(range(1, 71)) - all_covered}'
     )
+
+
+# ---------------------------------------------------------------------------
+# Shared fixture row for _row_qualifies tests (T6, T7, T8)
+# ---------------------------------------------------------------------------
+
+_GOOD_ROW: dict = {
+    'asset': 'ETH',
+    'side': 'YES',
+    'canonical_entry_lifecycle_phase': 'OPENING_SCAN',
+    'hold_seconds': '49',
+    'canonical_retained_flag': 'true',
+    'trade_result': 'TP',
+    'pnl_usdc': '0.005657',
+    'market_regime': 'TREND_DOWN',
+}
+
+
+# ---------------------------------------------------------------------------
+# T6 — canonical_retained_flag dedup guard
+# ---------------------------------------------------------------------------
+
+def test_row_qualifies_canonical_retained_flag() -> None:
+    """canonical_retained_flag=false rows are excluded; true/absent/None rows are included.
+
+    Dedup guard mirrors _mark_duplicates() in canonical_regime_export:
+    a logical opportunity fired by two bot runs produces two rows with the same
+    canonical_opportunity_key.  The export marks the later execution 'false'.
+    The drift audit must honour this to stay aligned with canonical n.
+    """
+    # Retained row passes
+    assert drift._row_qualifies({**_GOOD_ROW, 'canonical_retained_flag': 'true'})
+    # Excluded duplicate is rejected
+    assert not drift._row_qualifies({**_GOOD_ROW, 'canonical_retained_flag': 'false'})
+    # Missing column defaults to included (legacy-CSV safety — no dedup column in old CSVs)
+    no_flag = {k: v for k, v in _GOOD_ROW.items() if k != 'canonical_retained_flag'}
+    assert drift._row_qualifies(no_flag)
+    # None value also defaults to included (defensive — CSV DictReader always yields str)
+    assert drift._row_qualifies({**_GOOD_ROW, 'canonical_retained_flag': None})
+    # Case-insensitive: 'False' is also excluded
+    assert not drift._row_qualifies({**_GOOD_ROW, 'canonical_retained_flag': 'False'})
+
+
+# ---------------------------------------------------------------------------
+# T7 — outcome quality gate
+# ---------------------------------------------------------------------------
+
+def test_row_qualifies_outcome_gate() -> None:
+    """Rows without a resolved trade_result AND without pnl_usdc are excluded.
+
+    Gate mirrors canonical_regime_export._cell_qualifies():
+      trade_result in {TP, SL}  OR  pnl_usdc not empty  -> include
+      neither satisfied -> exclude (open or unresolved trade)
+    Either signal alone is sufficient.
+    """
+    # Both present: pass
+    assert drift._row_qualifies({**_GOOD_ROW, 'trade_result': 'TP', 'pnl_usdc': '0.01'})
+    assert drift._row_qualifies({**_GOOD_ROW, 'trade_result': 'SL', 'pnl_usdc': '-0.01'})
+    # trade_result alone suffices (empty pnl)
+    assert drift._row_qualifies({**_GOOD_ROW, 'trade_result': 'TP', 'pnl_usdc': ''})
+    # pnl_usdc alone suffices (no trade_result)
+    assert drift._row_qualifies({**_GOOD_ROW, 'trade_result': '', 'pnl_usdc': '0.01'})
+    # Neither: excluded
+    assert not drift._row_qualifies({**_GOOD_ROW, 'trade_result': '', 'pnl_usdc': ''})
+    assert not drift._row_qualifies({**_GOOD_ROW, 'trade_result': '', 'pnl_usdc': None})
+    # Other trade_result values are not treated as resolved
+    assert not drift._row_qualifies({**_GOOD_ROW, 'trade_result': 'OPEN', 'pnl_usdc': ''})
+
+
+# ---------------------------------------------------------------------------
+# T8 — count reproduction: fixture with duplicate pair + unresolved row
+# ---------------------------------------------------------------------------
+
+def test_count_reproduction_canonical_filter() -> None:
+    """_row_qualifies applied to a mixed fixture reproduces the 63->62 dedup mechanism.
+
+    Fixture design (mirrors the N62_N63_RECONCILIATION_AUDIT duplicate pair):
+      5 canonical qualifying rows                        -> all pass
+      1 duplicate row (canonical_retained_flag='false') -> excluded by filter 5
+      1 unresolved row (no trade_result, no pnl_usdc)   -> excluded by filter 6
+    Expected qualifying count: 5.
+
+    This test validates both new filters work together in a counting context,
+    matching requirement #5 of the Patch Drift Audit Canonical Retained Filter task.
+    """
+    def _row(**overrides: object) -> dict:
+        return {**_GOOD_ROW, **overrides}
+
+    fixture: list[dict] = [
+        # 5 canonical qualifying rows — varied result / pnl combinations
+        _row(hold_seconds='30', canonical_retained_flag='true',
+             trade_result='TP', pnl_usdc='0.005657'),
+        _row(hold_seconds='45', canonical_retained_flag='true',
+             trade_result='SL', pnl_usdc='-0.003000'),
+        _row(hold_seconds='60', canonical_retained_flag='true',
+             trade_result='TP', pnl_usdc=''),           # trade_result alone suffices
+        _row(hold_seconds='20', canonical_retained_flag='true',
+             trade_result='', pnl_usdc='0.004000'),     # pnl_usdc alone suffices
+        _row(hold_seconds='90', canonical_retained_flag='true',
+             trade_result='TP', pnl_usdc='0.010044'),
+        # 1 duplicate — second execution of same opportunity (2026-05-28 pattern)
+        _row(hold_seconds='55', canonical_retained_flag='false',
+             trade_result='TP', pnl_usdc='0.010044'),
+        # 1 unresolved — open trade; no outcome yet
+        _row(hold_seconds='25', canonical_retained_flag='true',
+             trade_result='', pnl_usdc=''),
+    ]
+
+    qualifying = [r for r in fixture if drift._row_qualifies(r)]
+    assert len(qualifying) == 5, (
+        f'Expected 5 qualifying rows; got {len(qualifying)}. '
+        'Both dedup guard (filter 5) and outcome gate (filter 6) must be active.'
+    )
