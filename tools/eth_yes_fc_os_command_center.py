@@ -16,6 +16,7 @@ DEFAULT_TRADE_JOURNAL_DIR = Path("runtime/quant_data/trade_journal")
 DEFAULT_OUTPUT_PATH = Path("docs/research/campaigns/ETH_YES_FC_OS_COMMAND_CENTER.md")
 DEFAULT_BASELINE_N = 61
 DEFAULT_BASELINE_DATE = "2026-06-06"
+DEFAULT_CANONICAL_EXPORT_PATH = Path("runtime/research_exports/canonical_regime_enriched_trades_v1.csv")
 NEXT_SNAPSHOT_N = 70
 TARGET_N = 100
 HISTORICAL_COMPRESSION_SHARE = 0.431
@@ -75,6 +76,10 @@ class CommandCenterMetrics:
     csv_staleness_hours: float | None
     generated_at: str
     decision_metrics: DecisionMetrics = field(default_factory=DecisionMetrics)
+    source_mode: str = "csv"
+    export_validation_status: str = "NOT_ATTEMPTED"
+    unknown_regime_rate: float | None = None
+    nc_pf_status: str = "DEGRADED"
 
 
 def _to_float(value: Any) -> float | None:
@@ -365,11 +370,44 @@ def _historical_rate(rows: list[dict[str, Any]], today: date) -> float:
     return len(rows) / span
 
 
+def _regime(row: dict[str, Any]) -> str:
+    """Return the normalised regime string, reading market_regime first then regime."""
+    value = str(row.get("market_regime") or row.get("regime") or "").strip().upper()
+    return value or "UNKNOWN"
+
+
+def _validate_canonical_export(
+    path: Path,
+) -> tuple[bool, str, list[dict[str, Any]] | None]:
+    """Validate and load canonical regime export in one read.
+
+    Returns (is_valid, status_str, rows_or_None).
+    Valid when: file exists, has market_regime column, qualifying rows all have non-empty market_regime.
+    """
+    if not path.exists():
+        return False, "INVALID:file_not_found", None
+    try:
+        rows = _read_csv_rows(path)
+    except Exception as exc:  # noqa: BLE001
+        return False, f"INVALID:read_error:{exc}", None
+    if not rows:
+        return False, "INVALID:empty_file", None
+    if "market_regime" not in rows[0]:
+        return False, "INVALID:missing_market_regime_column", None
+    qualifying = [r for r in rows if _qualifies(r, asset="ETH")]
+    if not qualifying:
+        return False, "INVALID:no_qualifying_rows", None
+    n_unknown = sum(1 for r in qualifying if not str(r.get("market_regime") or "").strip())
+    if n_unknown > 0:
+        return False, f"INVALID:unknown_market_regime_count:{n_unknown}", None
+    return True, "VALID", rows
+
+
 def _nc_pf_series(rows: list[dict[str, Any]], window_size: int = 20) -> list[tuple[int, float | None]]:
     series: list[tuple[int, float | None]] = []
     for index in range(len(rows)):
         window = rows[max(0, index - window_size + 1) : index + 1]
-        non_compression = [row for row in window if str(row.get("regime") or "UNKNOWN").strip().upper() != "COMPRESSION"]
+        non_compression = [row for row in window if _regime(row) != "COMPRESSION"]
         series.append((index + 1, _profit_factor(non_compression)))
     return series
 
@@ -522,6 +560,7 @@ def _compute_decision_metrics(decision_log_dir: Path | None, today: date, scan_d
 def compute_metrics(
     *,
     csv_path: Path,
+    canonical_export_path: Path | None = None,
     trade_journal_dir: Path | None = None,
     decision_log_dir: Path | None = None,
     baseline_n: int = DEFAULT_BASELINE_N,
@@ -530,12 +569,29 @@ def compute_metrics(
     today: str | date | datetime | None = None,
 ) -> CommandCenterMetrics:
     today_value = _today_date(today)
-    if trade_journal_dir is not None and trade_journal_dir.exists():
-        raw_rows = _trade_journal_rows(trade_journal_dir)
-        source_label = f"trade_journal:{trade_journal_dir.as_posix()}"
-    else:
-        raw_rows = _read_csv_rows(csv_path)
-        source_label = f"csv:{csv_path.as_posix()}"
+    source_mode = "csv"
+    export_validation_status = "NOT_ATTEMPTED"
+    freshness_path = csv_path
+    raw_rows: list[dict[str, Any]] = []
+    source_label = ""
+
+    if canonical_export_path is not None:
+        is_valid, export_validation_status, exported_rows = _validate_canonical_export(canonical_export_path)
+        if is_valid and exported_rows is not None:
+            raw_rows = exported_rows
+            source_label = f"canonical_export:{canonical_export_path.as_posix()}"
+            source_mode = "canonical_export"
+            freshness_path = canonical_export_path
+
+    if source_mode != "canonical_export":
+        if trade_journal_dir is not None and trade_journal_dir.exists():
+            raw_rows = _trade_journal_rows(trade_journal_dir)
+            source_label = f"trade_journal:{trade_journal_dir.as_posix()}"
+            source_mode = "trade_journal"
+        else:
+            raw_rows = _read_csv_rows(csv_path)
+            source_label = f"csv:{csv_path.as_posix()}"
+            source_mode = "csv"
     raw_filtered = [row for row in raw_rows if _qualifies(row, asset="ETH")]
     rows, duplicate_rows_removed = _dedupe_rows(raw_filtered)
     btc_rows, _ = _dedupe_rows(row for row in raw_rows if _qualifies(row, asset="BTC"))
@@ -552,8 +608,8 @@ def compute_metrics(
     rate_7d = _velocity(rows, today_value, 7)
     rate_14d = _velocity(rows, today_value, 14)
     rate_historical = _historical_rate(rows, today_value)
-    regime_counts = Counter(str(row.get("regime") or "UNKNOWN").strip().upper() or "UNKNOWN" for row in rows)
-    last_5_regimes = [str(row.get("regime") or "UNKNOWN").strip().upper() or "UNKNOWN" for row in rows[-5:]]
+    regime_counts = Counter(_regime(row) for row in rows)
+    last_5_regimes = [_regime(row) for row in rows[-5:]]
     nc_current, nc_consecutive, nc_trough_idx, nc_trough_value = _current_and_consecutive_nc_pf(_nc_pf_series(rows))
 
     baseline_day = date.fromisoformat(baseline_date)
@@ -568,9 +624,13 @@ def compute_metrics(
     k2_buffer = pf - 1.3 if pf is not None and not math.isinf(pf) else pf
     excl_top_5_pf = _profit_factor(sorted(rows, key=lambda row: _pnl(row) or 0.0, reverse=True)[5:]) if len(rows) > 5 else None
 
+    n_unknown_regime = regime_counts.get("UNKNOWN", 0)
+    unknown_regime_rate = n_unknown_regime / len(rows) if rows else None
+    nc_pf_status = "RELIABLE" if unknown_regime_rate == 0.0 else "DEGRADED"
+
     staleness_hours: float | None = None
     try:
-        modified = datetime.fromtimestamp(csv_path.stat().st_mtime, tz=timezone.utc)
+        modified = datetime.fromtimestamp(freshness_path.stat().st_mtime, tz=timezone.utc)
         staleness_hours = (datetime.now(timezone.utc) - modified).total_seconds() / 3600
     except OSError:
         pass
@@ -614,6 +674,10 @@ def compute_metrics(
         csv_staleness_hours=staleness_hours,
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
         decision_metrics=_compute_decision_metrics(decision_log_dir, today_value, decision_log_days),
+        source_mode=source_mode,
+        export_validation_status=export_validation_status,
+        unknown_regime_rate=unknown_regime_rate,
+        nc_pf_status=nc_pf_status,
     )
 
 
@@ -685,7 +749,10 @@ Non-authorization: this report does not change strategy, risk, execution, sizing
 | Check | Status |
 |---|---|
 | JSONL Writer | {jsonl_integrity_status} |
-| CSV freshness | {stale_status} ({_format_float(metrics.csv_staleness_hours, 1)} hours) |
+| Source mode | {metrics.source_mode} |
+| Export validation | {metrics.export_validation_status} |
+| Source freshness | {stale_status} ({_format_float(metrics.csv_staleness_hours, 1)} hours) |
+| Unknown regime rate | {_format_percent(metrics.unknown_regime_rate)} |
 
 ---
 
@@ -729,6 +796,7 @@ n = {metrics.n} / {TARGET_N}  [{_progress_bar(metrics.n)}]  {pct * 100:.1f}%
 | Consecutive below 1.0 | {metrics.nc_pf_consecutive_below_one} |
 | Trough index | {metrics.nc_pf_trough_idx or 'N/A'} |
 | Trough value | {_format_float(metrics.nc_pf_trough_value)} |
+| nc_PF data quality | {metrics.nc_pf_status} |
 | Tripwire status | {tripwire_status} |
 
 ### Market Structure
@@ -801,6 +869,7 @@ This command center is observational only. Use it to decide whether to continue 
 def generate_command_center_report(
     *,
     csv_path: Path = DEFAULT_CSV_PATH,
+    canonical_export_path: Path | None = None,
     trade_journal_dir: Path | None = None,
     output_path: Path = DEFAULT_OUTPUT_PATH,
     decision_log_dir: Path | None = None,
@@ -812,6 +881,7 @@ def generate_command_center_report(
 ) -> CommandCenterMetrics:
     metrics = compute_metrics(
         csv_path=csv_path,
+        canonical_export_path=canonical_export_path,
         trade_journal_dir=trade_journal_dir,
         decision_log_dir=decision_log_dir,
         baseline_n=baseline_n,
@@ -835,6 +905,16 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--baseline-n", type=int, default=DEFAULT_BASELINE_N)
     parser.add_argument("--baseline-date", default=DEFAULT_BASELINE_DATE)
     parser.add_argument("--decision-log-days", type=int, default=DEFAULT_DECISION_LOG_DAYS, help="Number of latest dated decision-log files to scan; use 0 to scan all. Default is 1 because decision logs can be multi-GB.")
+    parser.add_argument(
+        "--canonical-regime-export",
+        type=Path,
+        default=DEFAULT_CANONICAL_EXPORT_PATH,
+        help=(
+            "Canonical regime-enriched trade export (preferred source for regime-aware metrics). "
+            "Validated before use; falls back to --trade-journal-dir then --csv-path if invalid or absent. "
+            "Ignored when --csv-only is set."
+        ),
+    )
     parser.add_argument("--today", default=None, help="Optional YYYY-MM-DD override for deterministic reports.")
     return parser
 
@@ -843,6 +923,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     metrics = generate_command_center_report(
         csv_path=args.csv_path,
+        canonical_export_path=None if args.csv_only else args.canonical_regime_export,
         trade_journal_dir=None if args.csv_only else args.trade_journal_dir,
         output_path=args.output_path,
         decision_log_dir=args.decision_log_dir,

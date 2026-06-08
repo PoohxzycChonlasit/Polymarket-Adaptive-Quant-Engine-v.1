@@ -115,3 +115,196 @@ def test_csv_only_mode_marks_decision_metrics_manual(tmp_path: Path) -> None:
     assert metrics.decision_metrics.available is False
     report = output_path.read_text(encoding="utf-8")
     assert "[MANUAL REQUIRED]" in report
+
+
+# ---------------------------------------------------------------------------
+# Helpers for canonical-export tests
+# ---------------------------------------------------------------------------
+
+
+def _write_canonical_csv(path: Path, rows: list[dict[str, object]]) -> None:
+    """Write a CSV in canonical regime export schema (market_regime, not regime)."""
+    fieldnames = [
+        "condition_id",
+        "epoch_start_ts",
+        "candidate_id",
+        "asset",
+        "side",
+        "canonical_entry_lifecycle_phase",
+        "hold_seconds",
+        "pnl_usdc",
+        "outcome_win_loss",
+        "trade_result",
+        "entry_ts",
+        "market_regime",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def _canonical_row(**overrides: object) -> dict[str, object]:
+    """Minimal qualifying canonical export row (ETH YES OPENING_SCAN hold>15s)."""
+    row: dict[str, object] = {
+        "condition_id": "condition-a",
+        "epoch_start_ts": 1780000000,
+        "candidate_id": "candidate-a",
+        "asset": "ETH",
+        "side": "YES",
+        "canonical_entry_lifecycle_phase": "OPENING_SCAN",
+        "hold_seconds": 20,
+        "pnl_usdc": 0.01,
+        "outcome_win_loss": "WIN",
+        "trade_result": "TP",
+        "entry_ts": "2026-06-06T05:00:00Z",
+        "market_regime": "TREND_DOWN",
+    }
+    row.update(overrides)
+    return row
+
+
+# ---------------------------------------------------------------------------
+# Task 8 — Five canonical-export integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_canonical_export_flag_accepted_and_used_when_valid(tmp_path: Path) -> None:
+    """(a) Command center accepts canonical_export_path and uses it when valid."""
+    canonical_path = tmp_path / "canonical.csv"
+    csv_path = tmp_path / "completed_trades_v1_2.csv"
+    output_path = tmp_path / "cc.md"
+    _write_canonical_csv(
+        canonical_path,
+        [
+            _canonical_row(),
+            _canonical_row(
+                condition_id="condition-b",
+                candidate_id="candidate-b",
+                pnl_usdc=-0.004,
+                outcome_win_loss="LOSS",
+                trade_result="SL",
+                market_regime="COMPRESSION",
+            ),
+        ],
+    )
+    _write_csv(csv_path, [_row()])  # old-style CSV is the csv_path fallback
+
+    metrics = command_center.generate_command_center_report(
+        csv_path=csv_path,
+        canonical_export_path=canonical_path,
+        output_path=output_path,
+        today="2026-06-07",
+    )
+
+    assert metrics.source_mode == "canonical_export"
+    assert metrics.export_validation_status == "VALID"
+    assert metrics.n == 2
+
+
+def test_market_regime_column_maps_into_regime_metrics(tmp_path: Path) -> None:
+    """(b) market_regime field from canonical export is consumed by regime_counts and last_5_regimes."""
+    canonical_path = tmp_path / "canonical.csv"
+    csv_path = tmp_path / "completed_trades_v1_2.csv"
+    output_path = tmp_path / "cc.md"
+    _write_canonical_csv(
+        canonical_path,
+        [
+            _canonical_row(market_regime="TREND_DOWN"),
+            _canonical_row(
+                condition_id="condition-b",
+                candidate_id="candidate-b",
+                pnl_usdc=-0.003,
+                outcome_win_loss="LOSS",
+                trade_result="SL",
+                market_regime="COMPRESSION",
+            ),
+        ],
+    )
+    _write_csv(csv_path, [_row()])
+
+    metrics = command_center.generate_command_center_report(
+        csv_path=csv_path,
+        canonical_export_path=canonical_path,
+        output_path=output_path,
+        today="2026-06-07",
+    )
+
+    assert metrics.regime_counts.get("UNKNOWN", 0) == 0
+    assert metrics.regime_counts.get("TREND_DOWN", 0) == 1
+    assert metrics.regime_counts.get("COMPRESSION", 0) == 1
+    report = output_path.read_text(encoding="utf-8")
+    assert "TREND_DOWN" in report
+    assert "COMPRESSION" in report
+
+
+def test_unknown_regime_rate_zero_when_export_valid(tmp_path: Path) -> None:
+    """(c) unknown_regime_rate is 0.0 and nc_pf_status is RELIABLE when export has no UNKNOWN rows."""
+    canonical_path = tmp_path / "canonical.csv"
+    csv_path = tmp_path / "completed_trades_v1_2.csv"
+    output_path = tmp_path / "cc.md"
+    _write_canonical_csv(
+        canonical_path,
+        [
+            _canonical_row(market_regime="TREND_DOWN"),
+            _canonical_row(
+                condition_id="condition-b",
+                candidate_id="candidate-b",
+                pnl_usdc=-0.003,
+                outcome_win_loss="LOSS",
+                trade_result="SL",
+                market_regime="SIDEWAY",
+            ),
+        ],
+    )
+    _write_csv(csv_path, [_row()])
+
+    metrics = command_center.generate_command_center_report(
+        csv_path=csv_path,
+        canonical_export_path=canonical_path,
+        output_path=output_path,
+        today="2026-06-07",
+    )
+
+    assert metrics.unknown_regime_rate == pytest.approx(0.0)
+    assert metrics.nc_pf_status == "RELIABLE"
+    report = output_path.read_text(encoding="utf-8")
+    assert "0.0%" in report   # unknown regime rate shown in Runtime Integrity panel
+    assert "RELIABLE" in report  # nc_PF data quality shown in nc_PF Monitor panel
+
+
+def test_fallback_to_csv_when_canonical_export_missing(tmp_path: Path) -> None:
+    """(d) Falls back to csv source when canonical_export_path does not exist."""
+    nonexistent = tmp_path / "does_not_exist.csv"
+    csv_path = tmp_path / "completed_trades_v1_2.csv"
+    output_path = tmp_path / "cc.md"
+    _write_csv(csv_path, [_row()])
+
+    metrics = command_center.generate_command_center_report(
+        csv_path=csv_path,
+        canonical_export_path=nonexistent,
+        output_path=output_path,
+        today="2026-06-07",
+    )
+
+    assert metrics.export_validation_status == "INVALID:file_not_found"
+    assert metrics.source_mode == "csv"
+    assert metrics.n == 1
+
+
+def test_old_regime_csv_rejected_as_canonical_export(tmp_path: Path) -> None:
+    """(e) Old-style CSV with 'regime' column (no market_regime) fails canonical validation silently."""
+    stale_csv = tmp_path / "completed_trades_v1_2.csv"
+    output_path = tmp_path / "cc.md"
+    # _write_csv produces 'regime' field — no 'market_regime' column
+    _write_csv(stale_csv, [_row(regime="TREND_DOWN")])
+
+    metrics = command_center.generate_command_center_report(
+        csv_path=stale_csv,
+        canonical_export_path=stale_csv,  # pass old CSV as if it were the canonical export
+        output_path=output_path,
+        today="2026-06-07",
+    )
+
+    assert metrics.export_validation_status.startswith("INVALID")
+    assert metrics.source_mode != "canonical_export"
