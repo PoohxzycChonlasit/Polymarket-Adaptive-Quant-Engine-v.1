@@ -1,5 +1,28 @@
 # Evidence Velocity Dashboard v1
 
+## N70 Milestone Update - 2026-06-10
+
+| Metric | Value |
+|---|---:|
+| Current canonical n | 70 |
+| Remaining to n=100 | 30 |
+| New opportunities today | 3 |
+| Rolling 7-day rate | 1.43/day |
+| Rolling 14-day rate | 1.57/day |
+| Next formal trigger | n=80 |
+
+| Regime | Count | Share |
+|---|---:|---:|
+| COMPRESSION | 21 | 30.0% |
+| TREND_DOWN | 19 | 27.1% |
+| SIDEWAY | 18 | 25.7% |
+| TREND_UP | 12 | 17.1% |
+
+N70 is complete. N71 begins the forward validation block.
+
+This milestone update supersedes the pre-N70 current-state fields retained
+below for historical context.
+
 generated_at: 2026-06-06
 scope: ETH YES FC OS evidence velocity
 mode: docs-only research monitor

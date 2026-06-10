@@ -1,5 +1,34 @@
 # ETH_YES_FC_OS Watchlist
 
+## N70 Milestone Snapshot - 2026-06-10
+
+The canonical export reproduced the real N70 event with `71` raw qualifying
+rows, `1` duplicate removed, and `70` canonical opportunities.
+
+| Metric | N70 value |
+|---|---:|
+| Canonical n | 70 |
+| Remaining to n=100 | 30 |
+| Wins / losses | 40 / 30 |
+| WR | 57.1% |
+| PF | 2.006 |
+| Net PnL | +$0.215774 |
+| Median PnL | +$0.005783 |
+| p-value | 0.141 |
+| Calendar weeks | 4 |
+| nc_PF | 3.865 |
+| N62-N70 block | 5W / 4L, PF 1.803, +$0.018609 |
+
+N70 verdict: `CONTINUE_ACCUMULATION`.
+
+This milestone snapshot supersedes the pre-N70 current-state fields retained
+below for historical context.
+
+```text
+Rows 1-70   = discovery / retrospective selected-slice evidence
+Rows 71-100 = forward validation block
+```
+
 type: living evidence tracker
 priority: P1
 status: OBSERVED (VERIFICATION_IN_PROGRESS + POSITIVE_PATH_EVIDENCE — robustness 12/12, MFE/MAE positive)

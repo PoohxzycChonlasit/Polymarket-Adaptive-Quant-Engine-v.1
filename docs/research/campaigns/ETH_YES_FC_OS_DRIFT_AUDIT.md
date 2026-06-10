@@ -1,6 +1,33 @@
 # ETH YES FC OS — Regime Transition & Drift Audit
 
 type: drift_audit
+
+## N70 Drift Milestone Addendum - 2026-06-10
+
+Fresh source: `runtime/research_exports/canonical_regime_enriched_trades_v1.csv`
+
+| Metric | N70 value |
+|---|---:|
+| Canonical n | 70 |
+| WR | 57.1% |
+| PF | 2.006 |
+| Net PnL | +$0.215774 |
+| Final rolling WR, window=20 | 70.0% |
+| Final rolling PF, window=20 | 2.951 |
+| Final nc_PF, window=20 | 3.865 |
+| Final COMPRESSION share, window=20 | 25.0% |
+| Consecutive nc_PF below 1.0 | 0 |
+
+The n=62-70 block passed with WR 55.6%, PF 1.803, and net +$0.018609.
+It contained TREND_UP 5, SIDEWAY 3, TREND_DOWN 1, and COMPRESSION 0.
+
+N70 drift verdict: `CONTINUE_ACCUMULATION_WITH_REGIME_WATCH`.
+
+Rows 71-100 are the forward validation block.
+
+This addendum supersedes the pre-N70 current-state fields retained below for
+historical context.
+
 generated_at: 2026-06-06
 cell: ETH × YES × FIRST_CYCLE × OPENING_SCAN × hold > 15s
 source: runtime/research_exports/completed_trades_v1_2.csv

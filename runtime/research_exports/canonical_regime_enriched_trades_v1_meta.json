@@ -1,0 +1,28 @@
+{
+  "export_generated_at_utc": "2026-06-10T12:19:03Z",
+  "export_schema_version": "canonical_regime_enriched_v1",
+  "freshness": {
+    "latest_decision_ts_scanned": "2026-06-10T12:15:12.464230Z",
+    "latest_trade_close_ts": "2026-06-10T12:15:26.358222Z",
+    "source_lag_seconds": 0.0,
+    "status": "FRESH"
+  },
+  "source_files": {
+    "decision_log_count": 32,
+    "decision_log_latest_file": "runtime/quant_data/decision_log/2026-06-10.jsonl",
+    "decision_log_latest_mtime_utc": "2026-06-10T12:19:56Z",
+    "trade_journal_count": 30,
+    "trade_journal_latest_file": "runtime/quant_data/trade_journal/2026-06-10.jsonl",
+    "trade_journal_latest_mtime_utc": "2026-06-10T12:15:26Z"
+  },
+  "validation": {
+    "canonical_n": 70,
+    "direct_strong_rate": 1.0,
+    "duplicate_rows_removed": 1,
+    "raw_filtered_rows": 71,
+    "regime_join_rate": 1.0,
+    "status": "PASS",
+    "unknown_regime_count": 0,
+    "unknown_regime_rate": 0.0
+  }
+}

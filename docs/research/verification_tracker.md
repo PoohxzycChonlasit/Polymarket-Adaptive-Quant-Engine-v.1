@@ -2,6 +2,33 @@
 
 **Cell:** ETH × YES × FIRST\_CYCLE × OPENING\_SCAN × hold > 15s
 **Status:** `VERIFICATION_IN_PROGRESS + POSITIVE_PATH_EVIDENCE`
+
+## N70 Milestone Update - 2026-06-10
+
+| Metric | Current | Target | Status |
+|---|---:|---:|---|
+| Canonical n | 70 | 100 | 30 remaining |
+| Win Rate | 57.1% | >52% | PASS |
+| Profit Factor | 2.006 | >1.5 | PASS |
+| Net PnL | +$0.215774 | >0 | PASS |
+| Median PnL | +$0.005783 | >0 | PASS |
+| p-value | 0.141 | <0.05 | OPEN |
+| Calendar weeks | 4 | >=3 | PASS |
+| Formal kill criteria | 0 triggered | 0 | PASS |
+
+N62-N70 block: `n=9`, `5W/4L`, WR `55.6%`, PF `1.803`, net
+`+$0.018609`.
+
+Next snapshot trigger: `n=80`.
+
+This milestone update supersedes the pre-N70 current-state fields retained
+below for historical context.
+
+```text
+Rows 1-70   = discovery / retrospective selected-slice evidence
+Rows 71-100 = forward validation block
+```
+
 **Last updated:** 2026-06-06
 **Source:** `docs/research/watchlists/ETH_YES_FC_OS.md`
 

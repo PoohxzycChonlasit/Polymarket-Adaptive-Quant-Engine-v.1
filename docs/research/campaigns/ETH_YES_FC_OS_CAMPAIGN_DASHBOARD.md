@@ -1,6 +1,32 @@
 # ETH YES FC OS — Campaign Status Dashboard
 
 type: campaign_dashboard
+
+## N70 Milestone Update - 2026-06-10
+
+| Field | Value |
+|---|---:|
+| Canonical n | 70 / 100 |
+| Remaining | 30 |
+| WR | 57.1% |
+| PF | 2.006 |
+| nc_PF | 3.865 |
+| p-value | 0.141 |
+| N62-N70 block | 5W / 4L, PF 1.803, +$0.018609 |
+| N70 verdict | CONTINUE_ACCUMULATION |
+| Next formal snapshot | n=80 |
+
+The N70 milestone is complete. Promotion remains blocked by `n < 100` and
+`p-value > 0.05`.
+
+This milestone update supersedes the pre-N70 current-state fields retained
+below for historical context.
+
+```text
+Rows 1-70   = discovery / retrospective selected-slice evidence
+Rows 71-100 = forward validation block
+```
+
 generated_at: 2026-06-06
 campaign_phase: VERIFICATION_ACCUMULATION
 cell: ETH × YES × FIRST_CYCLE × OPENING_SCAN × hold > 15s
