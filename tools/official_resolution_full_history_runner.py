@@ -9,7 +9,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import sys
 import tempfile
 import time
@@ -22,6 +21,7 @@ from typing import Any, Callable
 SCHEMA_VERSION = "official_resolution_full_history_runner_v1"
 CHECKPOINT_NAME = "checkpoint.json"
 AGGREGATE_NAME = "aggregate_verification.json"
+LOCK_NAME = ".full_history_runner.lock"
 TRANSIENT_DELAYS_SECONDS = (5.0, 30.0, 120.0)
 
 
@@ -124,22 +124,35 @@ def _new_batch_checkpoint(batch: dict[str, Any]) -> dict[str, Any]:
 
 
 def _new_checkpoint(
-    manifest: dict[str, Any], batches: list[dict[str, Any]], batch_size: int
+    manifest: dict[str, Any],
+    batches: list[dict[str, Any]],
+    batch_size: int,
+    *,
+    now_fn: Callable[[], str] = utc_now,
+    rpc_endpoint_fingerprint: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    checkpoint = {
         "schema_version": SCHEMA_VERSION,
-        "created_at": utc_now(),
-        "updated_at": utc_now(),
+        "created_at": now_fn(),
+        "updated_at": now_fn(),
         "population_manifest_path": manifest["path"],
         "population_manifest_sha256": manifest["sha256"],
         "population_count": len(manifest["conditions"]),
         "batch_size": batch_size,
         "batches": [_new_batch_checkpoint(batch) for batch in batches],
     }
+    if rpc_endpoint_fingerprint:
+        checkpoint["rpc_endpoint_fingerprint"] = rpc_endpoint_fingerprint
+    return checkpoint
 
 
-def _write_checkpoint(output_dir: Path, checkpoint: dict[str, Any]) -> None:
-    checkpoint["updated_at"] = utc_now()
+def _write_checkpoint(
+    output_dir: Path,
+    checkpoint: dict[str, Any],
+    *,
+    now_fn: Callable[[], str] = utc_now,
+) -> None:
+    checkpoint["updated_at"] = now_fn()
     atomic_write_json(output_dir / CHECKPOINT_NAME, checkpoint)
 
 
@@ -149,10 +162,15 @@ def _transition(batch: dict[str, Any], status: str) -> None:
         batch["state_history"].append(status)
 
 
-def _mark_failed(batch: dict[str, Any], failure_class: str) -> None:
+def _mark_failed(
+    batch: dict[str, Any],
+    failure_class: str,
+    *,
+    now_fn: Callable[[], str] = utc_now,
+) -> None:
     _transition(batch, "FAILED")
     batch["failure_class"] = failure_class
-    batch["last_failure_at"] = utc_now()
+    batch["last_failure_at"] = now_fn()
     batch["verification_status"] = "FAIL"
 
 
@@ -268,7 +286,60 @@ def aggregate_verify(
     }
 
 
-def run_full_history(
+def _archive_components(
+    *,
+    rpc_client: Any | None,
+    archive_get_json: Callable[[str], object] | None,
+    rpc_log_chunk_size: int,
+) -> tuple[
+    Callable[..., dict[str, Any]],
+    Callable[[Path], dict[str, Any]],
+    str,
+]:
+    from tools.official_resolution_acquire_pilot import (
+        _default_get_json,
+        build_pilot_package,
+        verify_pilot_package,
+    )
+    from tools.official_resolution_rpc_client import ArchiveRpcClient
+
+    client = rpc_client or ArchiveRpcClient.from_env(log_chunk_size=rpc_log_chunk_size)
+    get_json = archive_get_json or _default_get_json
+
+    def acquire(*, selected: list[dict[str, Any]], output_dir: Path) -> dict[str, Any]:
+        normalized = []
+        for item in selected:
+            value = dict(item)
+            if "epoch_start_ts" not in value and "normalized_epoch_start_ts" in value:
+                value["epoch_start_ts"] = value["normalized_epoch_start_ts"]
+            normalized.append(value)
+        return build_pilot_package(
+            selected=normalized,
+            output_dir=output_dir,
+            get_json=get_json,
+            rpc_call=client.call,
+            rpc_endpoint_fingerprint=client.rpc_endpoint_fingerprint,
+            max_log_block_range=client.log_chunk_size,
+            enforce_pilot_size=False,
+        )
+
+    return acquire, verify_pilot_package, str(client.rpc_endpoint_fingerprint)
+
+
+def _acquire_output_lock(output_dir: Path) -> Path:
+    lock_path = output_dir / LOCK_NAME
+    try:
+        descriptor = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        raise IntegrityFailure("output directory is already in use") from None
+    try:
+        os.write(descriptor, b"offline full-history runner lock\n")
+    finally:
+        os.close(descriptor)
+    return lock_path
+
+
+def _run_full_history_locked(
     *,
     population_manifest: str | Path,
     output_dir: str | Path,
@@ -279,11 +350,15 @@ def run_full_history(
     runner_mode: str = "mock",
     acquire_package: Callable[..., dict[str, Any]] | None = None,
     verify_package: Callable[[Path], dict[str, Any]] | None = None,
+    rpc_client: Any | None = None,
+    archive_get_json: Callable[[str], object] | None = None,
+    rpc_log_chunk_size: int = 10_000,
     max_attempts: int = 4,
     sleep_fn: Callable[[float], None] = time.sleep,
+    now_fn: Callable[[], str] = utc_now,
 ) -> dict[str, Any]:
-    if runner_mode != "mock":
-        raise ValueError("only offline runner-mode mock is allowed")
+    if runner_mode not in {"mock", "archive"}:
+        raise ValueError("runner_mode must be mock or archive")
     if max_attempts <= 0:
         raise ValueError("max_attempts must be positive")
     output_dir = Path(output_dir)
@@ -291,8 +366,20 @@ def run_full_history(
     manifest = load_population_manifest(population_manifest)
     batches = deterministic_batches(manifest["conditions"], batch_size=batch_size)
     checkpoint_path = output_dir / CHECKPOINT_NAME
-    acquire = acquire_package or _mock_acquire_package
-    verifier = verify_package or _mock_verify_package
+    rpc_endpoint_fingerprint = None
+    if runner_mode == "archive" and (acquire_package is None or verify_package is None):
+        archive_acquire, archive_verify, rpc_endpoint_fingerprint = _archive_components(
+            rpc_client=rpc_client,
+            archive_get_json=archive_get_json,
+            rpc_log_chunk_size=rpc_log_chunk_size,
+        )
+        acquire = acquire_package or archive_acquire
+        verifier = verify_package or archive_verify
+    else:
+        acquire = acquire_package or _mock_acquire_package
+        verifier = verify_package or _mock_verify_package
+        if runner_mode == "archive" and rpc_client is not None:
+            rpc_endpoint_fingerprint = str(rpc_client.rpc_endpoint_fingerprint)
 
     if resume:
         if not checkpoint_path.exists():
@@ -301,8 +388,16 @@ def run_full_history(
         if checkpoint.get("population_manifest_sha256") != manifest["sha256"]:
             raise IntegrityFailure("population manifest hash mismatch")
     else:
-        checkpoint = _new_checkpoint(manifest, batches, batch_size)
-        _write_checkpoint(output_dir, checkpoint)
+        if checkpoint_path.exists():
+            raise IntegrityFailure("output directory already contains a run")
+        checkpoint = _new_checkpoint(
+            manifest,
+            batches,
+            batch_size,
+            now_fn=now_fn,
+            rpc_endpoint_fingerprint=rpc_endpoint_fingerprint,
+        )
+        _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
 
     if dry_run:
         aggregate = aggregate_verify(
@@ -326,8 +421,8 @@ def run_full_history(
             verified, root = _verify_committed_package(package_dir, verifier)
             if verified and root == batch.get("package_root_sha256"):
                 continue
-            _mark_failed(batch, "RESUME_VERIFICATION_FAILED")
-            _write_checkpoint(output_dir, checkpoint)
+            _mark_failed(batch, "RESUME_VERIFICATION_FAILED", now_fn=now_fn)
+            _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
             continue
         if batch["status"] == "FAILED":
             continue
@@ -336,12 +431,12 @@ def run_full_history(
         for attempt in range(batch["attempt_count"] + 1, max_attempts + 1):
             batch["attempt_count"] = attempt
             _transition(batch, "PENDING")
-            _write_checkpoint(output_dir, checkpoint)
+            _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
             attempt_dir = batch_root / "staging" / f"attempt-{attempt:04d}"
             try:
                 acquired = acquire(selected=selected, output_dir=attempt_dir)
                 _transition(batch, "ACQUIRED")
-                _write_checkpoint(output_dir, checkpoint)
+                _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 verification = verifier(attempt_dir)
                 if verification.get("status") != "PASS":
                     raise IntegrityFailure("package replay verification failed")
@@ -350,38 +445,38 @@ def run_full_history(
                     raise IntegrityFailure("package root hash mismatch")
                 _transition(batch, "VERIFIED")
                 batch["verification_status"] = "PASS"
-                _write_checkpoint(output_dir, checkpoint)
+                _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 package_dir.parent.mkdir(parents=True, exist_ok=True)
                 if package_dir.exists():
-                    shutil.rmtree(package_dir)
+                    raise IntegrityFailure("committed package overwrite is forbidden")
                 os.replace(attempt_dir, package_dir)
                 verified, committed_root = _verify_committed_package(package_dir, verifier)
                 if not verified or committed_root != root:
                     raise IntegrityFailure("committed package verification failed")
                 _transition(batch, "COMMITTED")
-                batch["package_path"] = str(package_dir.resolve())
+                batch["package_path"] = package_dir.relative_to(output_dir).as_posix()
                 batch["package_root_sha256"] = root
-                batch["last_success_at"] = utc_now()
+                batch["last_success_at"] = now_fn()
                 batch["failure_class"] = None
-                _write_checkpoint(output_dir, checkpoint)
+                _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 break
             except KeyboardInterrupt:
-                _write_checkpoint(output_dir, checkpoint)
+                _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 raise
             except IntegrityFailure:
-                _mark_failed(batch, "INTEGRITY_FAILURE")
-                _write_checkpoint(output_dir, checkpoint)
+                _mark_failed(batch, "INTEGRITY_FAILURE", now_fn=now_fn)
+                _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 break
             except (TransientAcquisitionError, TimeoutError, ConnectionError):
                 if attempt >= max_attempts:
-                    _mark_failed(batch, "TRANSIENT_RETRY_EXHAUSTED")
-                    _write_checkpoint(output_dir, checkpoint)
+                    _mark_failed(batch, "TRANSIENT_RETRY_EXHAUSTED", now_fn=now_fn)
+                    _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                     break
                 delay_index = min(attempt - 1, len(TRANSIENT_DELAYS_SECONDS) - 1)
                 sleep_fn(TRANSIENT_DELAYS_SECONDS[delay_index])
             except Exception:
-                _mark_failed(batch, "UNEXPECTED_FAILURE")
-                _write_checkpoint(output_dir, checkpoint)
+                _mark_failed(batch, "UNEXPECTED_FAILURE", now_fn=now_fn)
+                _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 break
 
     aggregate = aggregate_verify(
@@ -394,6 +489,49 @@ def run_full_history(
     return {"status": aggregate["status"], "checkpoint": checkpoint, "aggregate": aggregate}
 
 
+def run_full_history(
+    *,
+    population_manifest: str | Path,
+    output_dir: str | Path,
+    batch_size: int = 10,
+    max_batches: int | None = None,
+    resume: bool = False,
+    dry_run: bool = False,
+    runner_mode: str = "mock",
+    acquire_package: Callable[..., dict[str, Any]] | None = None,
+    verify_package: Callable[[Path], dict[str, Any]] | None = None,
+    rpc_client: Any | None = None,
+    archive_get_json: Callable[[str], object] | None = None,
+    rpc_log_chunk_size: int = 10_000,
+    max_attempts: int = 4,
+    sleep_fn: Callable[[float], None] = time.sleep,
+    now_fn: Callable[[], str] = utc_now,
+) -> dict[str, Any]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    lock_path = _acquire_output_lock(output_path)
+    try:
+        return _run_full_history_locked(
+            population_manifest=population_manifest,
+            output_dir=output_path,
+            batch_size=batch_size,
+            max_batches=max_batches,
+            resume=resume,
+            dry_run=dry_run,
+            runner_mode=runner_mode,
+            acquire_package=acquire_package,
+            verify_package=verify_package,
+            rpc_client=rpc_client,
+            archive_get_json=archive_get_json,
+            rpc_log_chunk_size=rpc_log_chunk_size,
+            max_attempts=max_attempts,
+            sleep_fn=sleep_fn,
+            now_fn=now_fn,
+        )
+    finally:
+        lock_path.unlink(missing_ok=True)
+
+
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--population-manifest", required=True, type=Path)
@@ -402,7 +540,8 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-batches", type=int)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
-    parser.add_argument("--runner-mode", choices=("mock",), default="mock")
+    parser.add_argument("--runner-mode", choices=("mock", "archive"), default="mock")
+    parser.add_argument("--rpc-log-chunk-size", type=int, default=10_000)
     return parser
 
 
@@ -417,6 +556,7 @@ def main() -> int:
             resume=args.resume,
             dry_run=args.dry_run,
             runner_mode=args.runner_mode,
+            rpc_log_chunk_size=args.rpc_log_chunk_size,
         )
     except (IntegrityFailure, ValueError, OSError, json.JSONDecodeError) as exc:
         print(f"full-history runner failed: {type(exc).__name__}", file=sys.stderr)
