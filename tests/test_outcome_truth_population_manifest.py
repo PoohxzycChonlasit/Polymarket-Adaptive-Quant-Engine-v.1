@@ -19,6 +19,7 @@ def _event(
     *,
     timestamp: str = "2026-06-01T00:00:00Z",
     model_ready: bool = True,
+    model_probability_yes: float | None = 0.55,
     aliases: dict | None = None,
 ) -> dict:
     payload = {
@@ -29,6 +30,8 @@ def _event(
         "model_output_ready": model_ready,
         "decision_timestamp": timestamp,
     }
+    if model_probability_yes is not None and model_ready:
+        payload["model_probability_yes"] = model_probability_yes
     payload.update(aliases or {})
     return {
         "timestamp_utc": timestamp,
@@ -193,13 +196,41 @@ def test_manifest_rows_contain_required_fields_and_stable_row_hash(tmp_path: Pat
         "source_file",
         "source_line",
         "decision_timestamp_utc",
+        "model_probability_yes",
+        "frozen_probability_bucket",
         "manifest_row_sha256",
     }
     unhashed = {key: value for key, value in row.items() if key != "manifest_row_sha256"}
     encoded = json.dumps(unhashed, sort_keys=True, separators=(",", ":")).encode("utf-8")
     assert row["condition_id"] == "0xaaa"
+    assert row["model_probability_yes"] == 0.55
+    assert row["frozen_probability_bucket"] == "[0.50,0.60)"
     assert row["manifest_row_sha256"] == hashlib.sha256(encoded).hexdigest()
     assert report["unique_conditions"] == 1
+
+
+def test_model_probability_and_bucket_are_preserved_deterministically(tmp_path: Path) -> None:
+    rows = [
+        _event("0xaaa", 1, model_probability_yes=0.0),
+        _event("0xbbb", 2, model_probability_yes=0.999),
+        _event("0xccc", 3, model_probability_yes=1.0),
+    ]
+
+    _, first_bytes, _ = _run(tmp_path / "first", rows)
+    _, second_bytes, _ = _run(tmp_path / "second", rows)
+    conditions = json.loads(first_bytes)["conditions"]
+
+    assert first_bytes == second_bytes
+    assert [(row["model_probability_yes"], row["frozen_probability_bucket"]) for row in conditions] == [
+        (0.0, "[0.00,0.10)"),
+        (0.999, "[0.90,1.00]"),
+        (1.0, "[0.90,1.00]"),
+    ]
+
+
+def test_model_ready_row_without_probability_fails_closed(tmp_path: Path) -> None:
+    with pytest.raises(PopulationManifestError, match="model_probability_yes"):
+        _run(tmp_path, [_event("0xaaa", 1, model_probability_yes=None)])
 
 
 def test_source_jsonl_is_streamed_without_whole_file_loading() -> None:

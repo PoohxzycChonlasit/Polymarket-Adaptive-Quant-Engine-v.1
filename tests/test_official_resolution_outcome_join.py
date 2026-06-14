@@ -16,6 +16,8 @@ def _population_row(condition_id: str, epoch: int) -> dict:
         "source_file": "2026-06-01.jsonl",
         "source_line": epoch,
         "decision_timestamp_utc": "2026-06-01T00:00:00Z",
+        "model_probability_yes": 0.55,
+        "frozen_probability_bucket": "[0.50,0.60)",
         "manifest_row_sha256": f"row-{epoch}",
     }
 
@@ -100,6 +102,8 @@ def test_exact_join_passes_and_reports_direct_coverage(tmp_path: Path) -> None:
     assert report["direct_join_coverage"] == 1.0
     assert joined[0]["join_status"] == "JOINED_OFFICIAL_RESOLVED"
     assert joined[0]["terminal_outcome"] == "Up"
+    assert joined[0]["model_probability_yes"] == 0.55
+    assert joined[0]["frozen_probability_bucket"] == "[0.50,0.60)"
 
 
 def test_deterministic_output_and_hash_across_repeated_runs(tmp_path: Path) -> None:

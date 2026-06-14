@@ -123,6 +123,8 @@ def _joined_row(population: dict[str, Any], outcome: dict[str, Any], join_status
         "asset": population.get("asset"),
         "market_slug": population.get("market_slug"),
         "decision_timestamp_utc": population.get("decision_timestamp_utc"),
+        "model_probability_yes": population.get("model_probability_yes"),
+        "frozen_probability_bucket": population.get("frozen_probability_bucket"),
         "population_manifest_row_sha256": population.get("manifest_row_sha256"),
         "join_status": join_status,
         "outcome_status": outcome.get("outcome_status"),

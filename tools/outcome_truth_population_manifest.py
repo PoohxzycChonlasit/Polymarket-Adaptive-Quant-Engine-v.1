@@ -12,6 +12,7 @@ import os
 import tempfile
 from collections import Counter
 from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 from pathlib import Path
 from typing import Any
 
@@ -124,6 +125,43 @@ def _normalized_timestamp(event: dict[str, Any], payload: dict[str, Any], source
     return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _model_probability_yes(payload: dict[str, Any], source: str) -> float:
+    envelope = payload.get("entry_model_truth_envelope_v1")
+    envelope = envelope if isinstance(envelope, dict) else {}
+    raw = next(
+        (
+            value
+            for value in (
+                *(payload.get(alias) for alias in MODEL_PROBABILITY_ALIASES),
+                envelope.get("model_probability_yes"),
+            )
+            if value not in (None, "")
+        ),
+        None,
+    )
+    if raw is None or isinstance(raw, bool):
+        raise PopulationManifestError(f"missing model_probability_yes: {source}")
+    try:
+        probability = Decimal(str(raw))
+    except (InvalidOperation, ValueError) as exc:
+        raise PopulationManifestError(f"invalid model_probability_yes: {source}") from exc
+    if not probability.is_finite() or probability < 0 or probability > 1:
+        raise PopulationManifestError(f"invalid model_probability_yes: {source}")
+    return float(probability)
+
+
+def _frozen_probability_bucket(model_probability_yes: float) -> str:
+    probability = Decimal(str(model_probability_yes))
+    bucket_index = min(
+        int((probability * Decimal("10")).to_integral_value(rounding=ROUND_FLOOR)),
+        9,
+    )
+    lower = Decimal(bucket_index) / Decimal("10")
+    upper = Decimal(bucket_index + 1) / Decimal("10")
+    close = "]" if bucket_index == 9 else ")"
+    return f"[{lower:.2f},{upper:.2f}{close}"
+
+
 def _quarantine_rows(payload: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     if isinstance(payload, list):
         return payload, {}
@@ -173,6 +211,7 @@ def _row_from_event(
     epoch = _normalized_epoch(payload, source)
     timestamp = _normalized_timestamp(event, payload, source)
     timestamp_order = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    model_probability_yes = _model_probability_yes(payload, source)
     row_without_hash = {
         "condition_id": condition_id,
         "normalized_epoch_start_ts": epoch,
@@ -181,6 +220,8 @@ def _row_from_event(
         "source_file": relative_source,
         "source_line": line_number,
         "decision_timestamp_utc": timestamp,
+        "model_probability_yes": model_probability_yes,
+        "frozen_probability_bucket": _frozen_probability_bucket(model_probability_yes),
     }
     row = dict(row_without_hash)
     row["manifest_row_sha256"] = _hash_canonical(row_without_hash)

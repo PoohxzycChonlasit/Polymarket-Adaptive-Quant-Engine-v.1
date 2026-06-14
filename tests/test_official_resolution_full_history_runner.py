@@ -210,6 +210,89 @@ def test_transient_retry_exhaustion_marks_batch_failed(tmp_path: Path) -> None:
     assert batch["failure_class"] == "TRANSIENT_RETRY_EXHAUSTED"
 
 
+def test_failed_batch_can_recover_on_resume_with_audit_history(tmp_path: Path) -> None:
+    population = _write_population(tmp_path / "population.json", 2)
+
+    def fail(*, selected: list[dict], output_dir: Path) -> dict:
+        raise TransientAcquisitionError("temporary")
+
+    first = run_full_history(
+        population_manifest=population,
+        output_dir=tmp_path / "run",
+        runner_mode="mock",
+        acquire_package=fail,
+        verify_package=_fake_verifier,
+        max_attempts=1,
+        sleep_fn=lambda _seconds: None,
+        now_fn=lambda: "2026-06-14T00:00:00Z",
+    )
+    recovered = run_full_history(
+        population_manifest=population,
+        output_dir=tmp_path / "run",
+        runner_mode="mock",
+        resume=True,
+        acquire_package=_fake_acquirer(),
+        verify_package=_fake_verifier,
+        max_attempts=1,
+        sleep_fn=lambda _seconds: None,
+        now_fn=lambda: "2026-06-14T00:01:00Z",
+    )
+    batch = recovered["checkpoint"]["batches"][0]
+
+    assert first["status"] == "FAIL"
+    assert recovered["status"] == "PASS"
+    assert batch["status"] == "COMMITTED"
+    assert batch["attempt_count"] == 2
+    assert batch["state_history"] == [
+        "PENDING",
+        "FAILED",
+        "RETRYABLE",
+        "PENDING",
+        "ACQUIRED",
+        "VERIFIED",
+        "COMMITTED",
+    ]
+    assert batch["failure_history"] == [
+        {
+            "attempt_count": 1,
+            "failed_at": "2026-06-14T00:00:00Z",
+            "failure_class": "TRANSIENT_RETRY_EXHAUSTED",
+        }
+    ]
+
+
+def test_repeated_failed_resume_tracks_each_failure(tmp_path: Path) -> None:
+    population = _write_population(tmp_path / "population.json", 1)
+
+    def fail(*, selected: list[dict], output_dir: Path) -> dict:
+        raise TransientAcquisitionError("temporary")
+
+    for resume, timestamp in (
+        (False, "2026-06-14T00:00:00Z"),
+        (True, "2026-06-14T00:01:00Z"),
+    ):
+        result = run_full_history(
+            population_manifest=population,
+            output_dir=tmp_path / "run",
+            runner_mode="mock",
+            resume=resume,
+            acquire_package=fail,
+            verify_package=_fake_verifier,
+            max_attempts=1,
+            sleep_fn=lambda _seconds: None,
+            now_fn=lambda timestamp=timestamp: timestamp,
+        )
+
+    batch = result["checkpoint"]["batches"][0]
+    assert batch["status"] == "FAILED"
+    assert batch["attempt_count"] == 2
+    assert [entry["failure_class"] for entry in batch["failure_history"]] == [
+        "TRANSIENT_RETRY_EXHAUSTED",
+        "TRANSIENT_RETRY_EXHAUSTED",
+    ]
+    assert batch["state_history"] == ["PENDING", "FAILED", "RETRYABLE", "PENDING", "FAILED"]
+
+
 def test_integrity_failure_marks_failed_without_retry(tmp_path: Path) -> None:
     attempts = 0
 

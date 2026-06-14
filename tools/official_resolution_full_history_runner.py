@@ -117,6 +117,7 @@ def _new_batch_checkpoint(batch: dict[str, Any]) -> dict[str, Any]:
         "last_success_at": None,
         "last_failure_at": None,
         "failure_class": None,
+        "failure_history": [],
         "package_path": None,
         "package_root_sha256": None,
         "verification_status": None,
@@ -168,10 +169,18 @@ def _mark_failed(
     *,
     now_fn: Callable[[], str] = utc_now,
 ) -> None:
+    failed_at = now_fn()
     _transition(batch, "FAILED")
     batch["failure_class"] = failure_class
-    batch["last_failure_at"] = now_fn()
+    batch["last_failure_at"] = failed_at
     batch["verification_status"] = "FAIL"
+    batch.setdefault("failure_history", []).append(
+        {
+            "attempt_count": batch["attempt_count"],
+            "failed_at": failed_at,
+            "failure_class": failure_class,
+        }
+    )
 
 
 def _mock_acquire_package(*, selected: list[dict[str, Any]], output_dir: Path) -> dict[str, Any]:
@@ -425,10 +434,15 @@ def _run_full_history_locked(
             _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
             continue
         if batch["status"] == "FAILED":
-            continue
+            if not resume or batch.get("failure_class") != "TRANSIENT_RETRY_EXHAUSTED":
+                continue
+            _transition(batch, "RETRYABLE")
+            batch["verification_status"] = None
+            _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
 
         selected = next(item["conditions"] for item in batches if item["batch_id"] == batch["batch_id"])
-        for attempt in range(batch["attempt_count"] + 1, max_attempts + 1):
+        last_attempt = batch["attempt_count"] + max_attempts
+        for attempt in range(batch["attempt_count"] + 1, last_attempt + 1):
             batch["attempt_count"] = attempt
             _transition(batch, "PENDING")
             _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
@@ -468,7 +482,7 @@ def _run_full_history_locked(
                 _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                 break
             except (TransientAcquisitionError, TimeoutError, ConnectionError):
-                if attempt >= max_attempts:
+                if attempt >= last_attempt:
                     _mark_failed(batch, "TRANSIENT_RETRY_EXHAUSTED", now_fn=now_fn)
                     _write_checkpoint(output_dir, checkpoint, now_fn=now_fn)
                     break
