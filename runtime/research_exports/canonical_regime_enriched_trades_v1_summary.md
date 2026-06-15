@@ -2,9 +2,9 @@
 
 - Export status: PASS
 - Freshness: FRESH
-- Raw ETH YES FC OS rows: 71
+- Raw ETH YES FC OS rows: 74
 - Duplicate rows removed: 1
-- Canonical n: 70
+- Canonical n: 73
 - Regime join rate: 100.0%
 - Direct+Strong join rate: 100.0%
 - UNKNOWN regime rate: 0.0%
