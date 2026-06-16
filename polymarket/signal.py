@@ -88,6 +88,8 @@ class SignalResult:
     rsi:                 float
     vol_ratio:           float
     skip_reason:         str
+    signal_name:         str = field(default="UNKNOWN_SIGNAL")
+    signal_reason:       str = field(default="unknown_reason")
     strategy:            str = field(default="")         # "sniper" | "reversion" | "trend"
     zscore:              float = field(default=0.0)
     adx:                 float = field(default=0.0)
@@ -226,6 +228,7 @@ def compute_realtime_signal(asset: str, imbalance: float = 0.0) -> SignalResult:
             asset=asset, side="SKIP", score=0.0, momentum_pct=0.0,
             rsi=50.0, vol_ratio=0.0, skip_reason="feed_not_ready",
             orderbook_imbalance=imbalance,
+            signal_name="NO_SIGNAL", signal_reason="feed_not_ready",
         )
 
     df    = feed.get_candles_df(asset, "5m")
@@ -236,6 +239,7 @@ def compute_realtime_signal(asset: str, imbalance: float = 0.0) -> SignalResult:
             asset=asset, side="SKIP", score=0.0, momentum_pct=0.0,
             rsi=50.0, vol_ratio=0.0, skip_reason=f"only_{len(df)}_candles",
             orderbook_imbalance=imbalance,
+            signal_name="NO_SIGNAL", signal_reason="insufficient_candles",
         )
 
     df  = _build_indicators(df)
@@ -247,6 +251,7 @@ def compute_realtime_signal(asset: str, imbalance: float = 0.0) -> SignalResult:
             asset=asset, side="SKIP", score=0.0, momentum_pct=0.0,
             rsi=50.0, vol_ratio=0.0, skip_reason="insufficient_after_indicators",
             orderbook_imbalance=imbalance,
+            signal_name="NO_SIGNAL", signal_reason="insufficient_after_indicators",
         )
 
     s = get_settings()
@@ -286,6 +291,7 @@ def compute_realtime_signal(asset: str, imbalance: float = 0.0) -> SignalResult:
         rsi=50.0, vol_ratio=0.0, skip_reason="no_strategy_met_threshold",
         orderbook_imbalance=imbalance,
         zscore=zscore_val, adx=adx_val,
+        signal_name="NO_SIGNAL", signal_reason="no_strategy_met_threshold",
     )
     
     for name, sig in strategies.items():
@@ -436,6 +442,7 @@ def _compute_reversion_signal(
             skip_reason="", orderbook_imbalance=imbalance,
             log_volatility=log_volatility, cvd_60s_norm=cvd_60s_norm, vpin_score=vpin_score,
             zscore=float(row.get("z_score", 0.0)), adx=float(row.get("adx", 0.0)),
+            signal_name="reversion", signal_reason="reversion_yes_threshold_met",
         )
     elif no_score >= _THRESHOLD and no_score > yes_score:
         return SignalResult(
@@ -444,6 +451,7 @@ def _compute_reversion_signal(
             skip_reason="", orderbook_imbalance=imbalance,
             log_volatility=log_volatility, cvd_60s_norm=cvd_60s_norm, vpin_score=vpin_score,
             zscore=float(row.get("z_score", 0.0)), adx=float(row.get("adx", 0.0)),
+            signal_name="reversion", signal_reason="reversion_no_threshold_met",
         )
 
     return SignalResult(
@@ -456,6 +464,7 @@ def _compute_reversion_signal(
         orderbook_imbalance=imbalance,
         log_volatility=log_volatility, cvd_60s_norm=cvd_60s_norm, vpin_score=vpin_score,
         zscore=float(row.get("z_score", 0.0)), adx=float(row.get("adx", 0.0)),
+        signal_name="NO_SIGNAL", signal_reason="reversion_threshold_not_met",
     )
 
 def _compute_sniper_signal(
@@ -499,6 +508,7 @@ def _compute_sniper_signal(
             skip_reason="", orderbook_imbalance=imbalance,
             zscore=zscore, adx=float(row.get("adx", 0.0)),
             strategy="sniper",
+            signal_name="sniper", signal_reason="sniper_yes_extreme_zscore",
         )
     if no_score >= threshold and no_score > yes_score:
         return SignalResult(
@@ -507,6 +517,7 @@ def _compute_sniper_signal(
             skip_reason="", orderbook_imbalance=imbalance,
             zscore=zscore, adx=float(row.get("adx", 0.0)),
             strategy="sniper",
+            signal_name="sniper", signal_reason="sniper_no_extreme_zscore",
         )
     return SignalResult(
         asset=asset, side="SKIP", score=max(yes_score, no_score),
@@ -514,6 +525,7 @@ def _compute_sniper_signal(
         skip_reason=f"sniper: zscore={zscore:.2f} yes={yes_score:.2f} no={no_score:.2f}",
         orderbook_imbalance=imbalance,
         zscore=zscore, adx=float(row.get("adx", 0.0)),
+        signal_name="NO_SIGNAL", signal_reason="sniper_threshold_not_met",
     )
 
 
@@ -561,6 +573,7 @@ def _compute_trend_signal(
             skip_reason="", orderbook_imbalance=imbalance,
             zscore=float(row.get("z_score", 0.0)), adx=adx_val,
             strategy="trend",
+            signal_name="trend", signal_reason="trend_yes_adx_ema_confirmed",
         )
     if no_score >= threshold and no_score > yes_score:
         return SignalResult(
@@ -569,6 +582,7 @@ def _compute_trend_signal(
             skip_reason="", orderbook_imbalance=imbalance,
             zscore=float(row.get("z_score", 0.0)), adx=adx_val,
             strategy="trend",
+            signal_name="trend", signal_reason="trend_no_adx_ema_confirmed",
         )
     return SignalResult(
         asset=asset, side="SKIP", score=max(yes_score, no_score),
@@ -576,6 +590,7 @@ def _compute_trend_signal(
         skip_reason=f"trend: adx={adx_val:.1f} ema_fast={ema_fast:.2f} ema_slow={ema_slow:.2f}",
         orderbook_imbalance=imbalance,
         zscore=float(row.get("z_score", 0.0)), adx=adx_val,
+        signal_name="NO_SIGNAL", signal_reason="trend_threshold_not_met",
     )
 
 
