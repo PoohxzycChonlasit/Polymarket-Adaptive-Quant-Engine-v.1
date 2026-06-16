@@ -777,8 +777,8 @@ def run_polymarket_realtime(
                     # ── Refresh portfolio after cycle ──────────────────────────
                     display.update_portfolio(trader.dashboard_portfolio_state())
                     display.update_session_summary(trader.dashboard_session_summary())
-                    # Research Cockpit v1: probe counts (in-memory only, no disk read)
-                    display.update_research_obs(**trader.dashboard_probe_counts())
+                    # Research Cockpit v2a: probe counts & post-patch/stop stats (lightweight bounded read)
+                    display.update_research_obs(**trader.dashboard_v2a_stats())
 
                     # ── Update per-market state and build cycle result list ────
                     cycle_results: list[dict] = []

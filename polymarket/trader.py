@@ -6237,6 +6237,141 @@ class PolymarketTrader:
             "observability_health": observability_health,
         }
 
+    def _compile_dashboard_v2a_stats(self) -> dict[str, object]:
+        import os
+        import json
+        from datetime import datetime, UTC
+
+        today_str = datetime.now(UTC).strftime("%Y-%m-%d")
+        journal_path = f"runtime/quant_data/trade_journal/{today_str}.jsonl"
+        shadow_path = f"runtime/quant_data/stop_loss_shadow/{today_str}.jsonl"
+        patch_time = datetime.fromisoformat("2026-06-16T07:34:29+00:00")
+
+        closes = []
+        if os.path.exists(journal_path):
+            try:
+                file_size = os.path.getsize(journal_path)
+                with open(journal_path, "r", encoding="utf-8") as f:
+                    if file_size > 10 * 1024 * 1024:
+                        f.seek(file_size - 10 * 1024 * 1024)
+                        f.readline()
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            evt = json.loads(line)
+                            if evt.get("mode") != "paper":
+                                continue
+                            if evt.get("event_type") != "trade_close":
+                                continue
+                            ts_str = evt.get("timestamp_utc")
+                            if not ts_str:
+                                continue
+                            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                            if ts >= patch_time:
+                                closes.append(evt)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+        yes_trades = 0
+        no_trades = 0
+        tp_exits = 0
+        sl_exits = 0
+        total_pnl = 0.0
+        wins = 0
+
+        for c in closes:
+            payload = c.get("payload") or {}
+            side = str(payload.get("side") or "").upper()
+            if side == "YES":
+                yes_trades += 1
+            elif side == "NO":
+                no_trades += 1
+
+            reason = payload.get("reason") or ""
+            reason_lower = str(reason).lower()
+            if reason == "take_profit_target_reached":
+                tp_exits += 1
+            elif "stop" in reason_lower:
+                sl_exits += 1
+
+            pnl = payload.get("pnl") or payload.get("pnl_usdc") or 0.0
+            try:
+                pnl_val = float(pnl)
+            except (TypeError, ValueError):
+                pnl_val = 0.0
+            total_pnl += pnl_val
+            if pnl_val > 0:
+                wins += 1
+
+        total_closed = len(closes)
+        win_rate = (wins / total_closed * 100) if total_closed > 0 else 0.0
+
+        shadow_events_count = 0
+        raw_stop_signals = 0
+        mid_3_stop_signals = 0
+        suppressed_raw_stops = 0
+        actual_paper_stops = 0
+
+        if os.path.exists(shadow_path):
+            try:
+                file_size = os.path.getsize(shadow_path)
+                with open(shadow_path, "r", encoding="utf-8") as f:
+                    if file_size > 5 * 1024 * 1024:
+                        f.seek(file_size - 5 * 1024 * 1024)
+                        f.readline()
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        try:
+                            evt = json.loads(line)
+                            ts_str = evt.get("timestamp_utc") or evt.get("timestamp")
+                            if not ts_str:
+                                continue
+                            ts = datetime.fromisoformat(ts_str.replace("Z", "+00:00"))
+                            if ts < patch_time:
+                                continue
+
+                            shadow_events_count += 1
+                            payload = evt.get("payload") or {}
+                            if payload.get("actual_raw_bid_stop"):
+                                raw_stop_signals += 1
+                            if payload.get("shadow_mid_3sample_stop"):
+                                mid_3_stop_signals += 1
+                            if payload.get("paper_stop_suppressed"):
+                                suppressed_raw_stops += 1
+                            if payload.get("actual_stop_triggered") or payload.get("paper_mid_confirmed_stop"):
+                                actual_paper_stops += 1
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
+        return {
+            "post_patch_trades_count": total_closed,
+            "yes_trades_count": yes_trades,
+            "no_trades_count": no_trades,
+            "tp_exits_count": tp_exits,
+            "sl_exits_count": sl_exits,
+            "win_rate": win_rate,
+            "pnl": total_pnl,
+            "shadow_events": shadow_events_count,
+            "raw_stop_signals": raw_stop_signals,
+            "mid_3_stop_signals": mid_3_stop_signals,
+            "suppressed_raw_stops": suppressed_raw_stops,
+            "actual_paper_stops": actual_paper_stops
+        }
+
+    def dashboard_v2a_stats(self) -> dict[str, object]:
+        try:
+            stats = self._compile_dashboard_v2a_stats()
+            stats.update(self.dashboard_probe_counts())
+            return stats
+        except Exception:
+            return self.dashboard_probe_counts()
+
     def dashboard_probe_counts(self) -> dict[str, int]:
         """Return in-memory session probe counters for Research Cockpit display.
 

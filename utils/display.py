@@ -2060,6 +2060,8 @@ class PolymarketRealtimeDisplay:
                 Layout(self._quote_age_panel(spec), name="quote_age"),
                 Layout(self._candidate_observability_panel(spec), name="candidate_obs"),
                 Layout(self._execution_reality_panel(spec), name="execution_reality"),
+                Layout(self._research_progress_panel(spec), name="research_progress"),
+                Layout(self._stop_monitor_panel(spec), name="stop_monitor"),
                 Layout(self._rolling_logs_panel(spec), name="logs"),
             )
         return layout
@@ -2809,6 +2811,55 @@ class PolymarketRealtimeDisplay:
             Text.assemble(*self._with_breaks(lines)),
             title="[bold bright_white]Execution Reality[/bold bright_white]",
             border_style="bright_blue",
+        )
+
+    def _research_progress_panel(self, spec: DashboardLayout) -> Panel:
+        obs = self._research_obs
+        post_patch_trades = obs.get("post_patch_trades_count", 0)
+        yes_trades = obs.get("yes_trades_count", 0)
+        no_trades = obs.get("no_trades_count", 0)
+        tp_exits = obs.get("tp_exits_count", 0)
+        sl_exits = obs.get("sl_exits_count", 0)
+        win_rate = obs.get("win_rate", 0.0)
+        pnl = obs.get("pnl", 0.0)
+
+        pnl_style = "bright_green" if pnl >= 0 else "bright_red"
+        pw = max(20, (spec.width // 6) - 4)
+
+        lines = [
+            self._line([("Post-Patch: ", "grey70"), (f"{post_patch_trades}/30", "bold bright_white")], pw),
+            self._line([("YES: ", "grey70"), (str(yes_trades), "bright_green"), ("  NO: ", "grey70"), (str(no_trades), "bright_red")], pw),
+            self._line([("TP:  ", "grey70"), (str(tp_exits), "bright_green"), ("  SL: ", "grey70"), (str(sl_exits), "bright_red")], pw),
+            self._line([("Win Rate: ", "grey70"), (f"{win_rate:.1f}%", "bold bright_yellow")], pw),
+            self._line([("PnL: ", "grey70"), (f"{pnl:+.4f}", f"bold {pnl_style}")], pw),
+        ]
+        return Panel(
+            Text.assemble(*self._with_breaks(lines)),
+            title="[bold bright_white]Res Progress[/bold bright_white]",
+            border_style="bright_blue",
+        )
+
+    def _stop_monitor_panel(self, spec: DashboardLayout) -> Panel:
+        obs = self._research_obs
+        shadow_events = obs.get("shadow_events", 0)
+        raw_stops = obs.get("raw_stop_signals", 0)
+        mid3_stops = obs.get("mid_3_stop_signals", 0)
+        suppressed = obs.get("suppressed_raw_stops", 0)
+        actual_stops = obs.get("actual_paper_stops", 0)
+
+        pw = max(20, (spec.width // 6) - 4)
+
+        lines = [
+            self._line([("Shadow Evts: ", "grey70"), (str(shadow_events), "bold bright_cyan")], pw),
+            self._line([("Raw Stops:   ", "grey70"), (str(raw_stops), "bright_yellow")], pw),
+            self._line([("Mid-3 Stops: ", "grey70"), (str(mid3_stops), "bright_green")], pw),
+            self._line([("Suppressed:  ", "grey70"), (str(suppressed), "bright_red")], pw),
+            self._line([("Paper Stops: ", "grey70"), (str(actual_stops), "bold bright_green" if actual_stops > 0 else "grey62")], pw),
+        ]
+        return Panel(
+            Text.assemble(*self._with_breaks(lines)),
+            title="[bold bright_white]Stop Policy[/bold bright_white]",
+            border_style="bright_magenta",
         )
 
     def _quote_age_panel(self, spec: DashboardLayout | None = None) -> Panel:

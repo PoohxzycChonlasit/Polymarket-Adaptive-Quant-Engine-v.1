@@ -1505,3 +1505,43 @@ def test_header_explicit_phase6_overrides_derivation() -> None:
     text = _render_text(display._header(display._resolve_layout()))
     assert "Phase6 ACCUMULATING" in text
     assert "Phase6 BLOCKED" not in text
+
+
+def test_research_progress_panel_renders_correctly() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        post_patch_trades_count=12,
+        yes_trades_count=7,
+        no_trades_count=5,
+        tp_exits_count=8,
+        sl_exits_count=4,
+        win_rate=66.7,
+        pnl=0.0123,
+    )
+    text = _render_text(display._research_progress_panel(display._standalone_layout()))
+    assert "Res Progress" in text
+    assert "12/30" in text
+    assert "YES: 7" in text
+    assert "NO: 5" in text
+    assert "TP:  8" in text
+    assert "SL: 4" in text
+    assert "66.7%" in text
+    assert "+0.0123" in text
+
+
+def test_stop_monitor_panel_renders_correctly() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_research_obs(
+        shadow_events=88,
+        raw_stop_signals=15,
+        mid_3_stop_signals=5,
+        suppressed_raw_stops=10,
+        actual_paper_stops=3,
+    )
+    text = _render_text(display._stop_monitor_panel(display._standalone_layout()))
+    assert "Stop Policy" in text
+    assert "Shadow Evts: 88" in text
+    assert "Raw Stops:   15" in text
+    assert "Mid-3 Stops: 5" in text
+    assert "Suppressed:  10" in text
+    assert "Paper Stops: 3" in text
