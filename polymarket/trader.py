@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import logging
 import time
@@ -338,10 +338,13 @@ class PolymarketTrader:
         # v3.1: Balance guard pause flag
         self._paused_insufficient_funds = False
         self._last_verified_balance: float = 0.0
-        # v3.1: Panic sell cooldown (epoch_ts â†’ skip next round)
+        # v3.1: Panic sell cooldown (epoch_ts → skip next round)
         self._panic_sold_epochs: dict[str, int] = {}
-        # v3.1: Partial TP tracking (position_id â†’ already took partial)
+        # v3.1: Partial TP tracking (position_id → already took partial)
         self._partial_tp_taken: set[str] = set()
+        # v3.5: Stop-loss shadow confirmation counters (position_id → ticks)
+        self._consecutive_raw_breach_seconds: dict[str, int] = {}
+        self._consecutive_mid_breach_seconds: dict[str, int] = {}
         self._last_reconciliation: ReconciliationReport | None = None
         self._balance_source: str = "paper_virtual" if self.settings.paper_trading else "unverified"
         self._balance_wallet_address: str = self.settings.polymarket_proxy_wallet or self.settings.polymarket_funder
@@ -3752,6 +3755,11 @@ class PolymarketTrader:
             "realized_volatility",
             "price_velocity",
             "distance_from_ptb_pct",
+            # Two-tier signal attribution (Patch 6B)
+            "signal_name",
+            "signal_reason",
+            "strategy_signal_name",
+            "strategy_signal_reason",
         ):
             value = display.get(field_name)
             if value is not None and value != "":
@@ -4503,6 +4511,10 @@ class PolymarketTrader:
         ticker: object,
         true_probability: object = None,
         fair_value: object = None,
+        signal_name: object = None,
+        signal_reason: object = None,
+        strategy_signal_name: object = None,
+        strategy_signal_reason: object = None,
     ) -> dict[str, object]:
         paper_trade_replay_key = self._build_paper_trade_replay_key(
             condition_id=condition_id,
@@ -4521,6 +4533,24 @@ class PolymarketTrader:
             computed_by="position_metadata",
             serialization_source="build_trade_position_metadata",
         ).get("entry_model_truth_envelope_v1")
+        ticker_key = str(ticker or "").upper()
+        quant_details = getattr(self, "last_quant_details", {}).get(ticker_key, {})
+        entry_attribution = {
+            "candidate_id": quant_details.get("candidate_id"),
+            "candidate_trace_id": quant_details.get("candidate_trace_id"),
+            "candidate_instance_id": quant_details.get("candidate_instance_id"),
+            "candidate_instance_trace_id": quant_details.get("candidate_instance_trace_id"),
+            "candidate_instance_created_at": quant_details.get("candidate_instance_created_at"),
+            "candidate_instance_identity_schema_version": quant_details.get("candidate_instance_identity_schema_version"),
+            "candidate_instance_identity_source": quant_details.get("candidate_instance_identity_source"),
+            "legacy_candidate_identity_source": quant_details.get("legacy_candidate_identity_source"),
+            "signal_name": quant_details.get("signal_name") or signal_name,
+            "signal_reason": quant_details.get("signal_reason") or signal_reason,
+            "paper_trade_replay_key": paper_trade_replay_key or None,
+            "entry_ev": float(entry_ev) if entry_ev is not None else (float(quant_details.get("entry_ev")) if quant_details.get("entry_ev") is not None else None),
+            "entry_probability": float(true_probability) if true_probability is not None else (float(quant_details.get("true_probability")) if quant_details.get("true_probability") is not None else None),
+            "selected_side": str(outcome or ""),
+        }
         return {
             "strategy": strategy,
             "signal_strategy": signal_strategy,
@@ -4535,6 +4565,11 @@ class PolymarketTrader:
             "lifecycle_phase": lifecycle_phase,
             "paper_trade_replay_key": paper_trade_replay_key or None,
             "entry_model_truth_envelope_v1": _envelope,
+            "signal_name": signal_name,
+            "signal_reason": signal_reason,
+            "strategy_signal_name": strategy_signal_name,
+            "strategy_signal_reason": strategy_signal_reason,
+            "entry_attribution": entry_attribution,
         }
 
     def _emit_trade_opened_event(
@@ -4555,6 +4590,8 @@ class PolymarketTrader:
         fair_value: float | None = None,
         ev_after_spread: float | None = None,
         confidence: float | None = None,
+        position_id: str | None = None,
+        entry_attribution: dict[str, object] | None = None,
     ) -> None:
         model_context = {}
         last_quant_details = getattr(self, "last_quant_details", {})
@@ -4562,6 +4599,8 @@ class PolymarketTrader:
             candidate_context = last_quant_details.get(str(ticker or "").upper(), {})
             if isinstance(candidate_context, dict):
                 model_context = candidate_context
+        if entry_attribution is None and isinstance(model_context, dict):
+            entry_attribution = model_context.get("entry_attribution")
 
         def first_available(*values: object) -> object:
             for value in values:
@@ -4661,9 +4700,7 @@ class PolymarketTrader:
             outcome=outcome,
             token_id=token_id,
         )
-        self._emit_quant_event(
-            "log_trade_open",
-            {
+        open_payload = {
                 "market_id": market_id,
                 "ticker": ticker,
                 "token_id": token_id,
@@ -4681,6 +4718,13 @@ class PolymarketTrader:
                 "paper_trade_replay_key": paper_trade_replay_key,
                 "candidate_peak_favorable": None,
                 "candidate_peak_adverse": None,
+                "signal_name": model_context.get("signal_name"),
+                "signal_reason": model_context.get("signal_reason"),
+                "strategy_signal_name": model_context.get("strategy_signal_name"),
+                "strategy_signal_reason": model_context.get("strategy_signal_reason"),
+                "position_id": position_id,
+                "entry_attribution": entry_attribution,
+                "entry_attribution_status": "success" if isinstance(entry_attribution, dict) else "missing",
                 **phase2_detail,
                 "true_probability": selected_probability,
                 "fair_value": selected_fair_value,
@@ -4706,8 +4750,12 @@ class PolymarketTrader:
                     computed_by="trade_open_context",
                     serialization_source="last_quant_details",
                 ),
-            },
-        )
+        }
+        if isinstance(entry_attribution, dict):
+            for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
+                if field in entry_attribution:
+                    open_payload[field] = entry_attribution[field]
+        self._emit_quant_event("log_trade_open", open_payload)
 
     def _emit_trade_closed_event(
         self,
@@ -4762,36 +4810,48 @@ class PolymarketTrader:
             _entry_price: float | None = float(getattr(position, "entry_price", None) or 0.0) or None
         except Exception:
             _entry_price = None
-        self._emit_quant_event(
-            "log_trade_close",
-            {
-                "position_id": getattr(position, "position_id", ""),
-                "market_id": getattr(position, "symbol", ""),
-                "ticker": ticker,
-                "token_id": token_id,
-                "outcome": outcome,
-                "reason": reason,
-                "exit_price": float(exit_price),
-                "exit_timestamp": exit_ts,
-                "hold_seconds": hold_seconds,
-                "size": float(size),
-                "pnl": float(pnl),
-                "pnl_usdc": float(pnl),
-                "trade_result": _trade_result,
-                "entry_price": _entry_price,
-                "partial": bool(partial),
-                "receipt": asdict(receipt) if receipt else {},
-                "mode": self._runtime_mode(),
-                "condition_id": condition_id,
-                "epoch_start_ts": epoch_start_ts,
-                "asset": ticker,
-                "paper_trade_replay_key": paper_trade_replay_key,
-                "candidate_peak_favorable": None,
-                "candidate_peak_adverse": None,
-                # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
-                **self._carry_entry_model_truth_from_metadata(metadata),
-            },
-        )
+        close_payload = {
+            "position_id": getattr(position, "position_id", ""),
+            "market_id": getattr(position, "symbol", ""),
+            "ticker": ticker,
+            "token_id": token_id,
+            "outcome": outcome,
+            "reason": reason,
+            "exit_price": float(exit_price),
+            "exit_timestamp": exit_ts,
+            "hold_seconds": hold_seconds,
+            "size": float(size),
+            "pnl": float(pnl),
+            "pnl_usdc": float(pnl),
+            "trade_result": _trade_result,
+            "entry_price": _entry_price,
+            "partial": bool(partial),
+            "receipt": asdict(receipt) if receipt else {},
+            "mode": self._runtime_mode(),
+            "condition_id": condition_id,
+            "epoch_start_ts": epoch_start_ts,
+            "asset": ticker,
+            "paper_trade_replay_key": paper_trade_replay_key,
+            "candidate_peak_favorable": None,
+            "candidate_peak_adverse": None,
+            "signal_name": metadata.get("signal_name"),
+            "signal_reason": metadata.get("signal_reason"),
+            "strategy_signal_name": metadata.get("strategy_signal_name"),
+            "strategy_signal_reason": metadata.get("strategy_signal_reason"),
+            # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
+            **self._carry_entry_model_truth_from_metadata(metadata),
+        }
+        attribution = metadata.get("entry_attribution")
+        if isinstance(attribution, dict):
+            close_payload["entry_attribution"] = attribution
+            close_payload["entry_attribution_status"] = "success"
+            for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
+                if field in attribution:
+                    close_payload[field] = attribution[field]
+        else:
+            close_payload["entry_attribution_status"] = "missing_legacy"
+
+        self._emit_quant_event("log_trade_close", close_payload)
 
     def _emit_risk_event(self, event: str, payload: dict[str, object] | None = None) -> None:
         data = {"event": event, "mode": self._runtime_mode()}
@@ -5421,6 +5481,10 @@ class PolymarketTrader:
             )
             detail.setdefault("model_output_source", "")
         detail["ticker"] = ticker
+        if not detail.get("candidate_trace_id"):
+            companion = QuantEventLogger._candidate_trace_identity_fields(detail, self._utc_timestamp())
+            if companion.get("candidate_trace_id"):
+                detail["candidate_trace_id"] = companion["candidate_trace_id"]
         self.last_quant_details[ticker] = detail
         LOGGER.debug(
             "[DASHBOARD_QUANT] ticker=%s model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s decision=%s reason=%s",
@@ -9015,12 +9079,27 @@ class PolymarketTrader:
             "signal_trend_strength": float(getattr(signal, "trend_strength", regime_detail.get("trend_strength", 0.0)) or 0.0),
             "signal_volatility_score": float(getattr(signal, "volatility_score", regime_detail.get("volatility_score", 0.0)) or 0.0),
             "indicator_evidence": str(getattr(signal, "indicator_evidence", "") or ""),
+            "signal_name": signal.signal_name,
+            "signal_reason": signal.signal_reason,
+            "candidate_instance_id": candidate.candidate_id,
+            "candidate_instance_trace_id": candidate.candidate_trace_id,
+            "candidate_instance_created_at": candidate.candidate_created_at,
+            "candidate_instance_identity_schema_version": candidate.candidate_identity_schema_version,
+            "candidate_instance_identity_source": "opportunity_candidate",
+            "legacy_candidate_identity_source": "phase2_market_side_epoch_hash",
             # Observability v1: probability model inputs (additive, read-only, no model change)
             "probability_model_reason": str(probability.model_reason),
             "prob_model_momentum_input": float(momentum_decimal),
             "prob_model_liquidity_usd": float(ob_liquidity_usd),
             **orderbook_refresh_detail,
         }
+        is_model_trade = model_side in ("YES", "NO") and ev_result is not None and ev_result.approved
+        clob_detail["strategy_signal_name"] = signal.signal_name
+        clob_detail["strategy_signal_reason"] = signal.signal_reason
+        if is_model_trade:
+            clob_detail["signal_name"] = "PROBABILITY_EV_EDGE"
+            clob_detail["signal_reason"] = f"{model_side.lower()}_ev_above_threshold"
+
         quant_detail = self._record_quant_detail(
             ticker,
             market_id=market.market_id,
@@ -9401,6 +9480,10 @@ class PolymarketTrader:
                     ticker=ticker,
                     true_probability=_true_prob,
                     fair_value=_true_prob,
+                    signal_name=clob_detail.get("signal_name"),
+                    signal_reason=clob_detail.get("signal_reason"),
+                    strategy_signal_name=clob_detail.get("strategy_signal_name"),
+                    strategy_signal_reason=clob_detail.get("strategy_signal_reason"),
                 ),
             )
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
@@ -9456,6 +9539,8 @@ class PolymarketTrader:
                 true_probability=_true_prob,
                 ev_after_spread=float(model_ev) if model_ev is not None else None,
                 confidence=float(confidence) if confidence is not None else None,
+                position_id=opened_pos.position_id,
+                entry_attribution=opened_pos.metadata.get("entry_attribution"),
             )
             self._notify_telegram(
                 "notify_entry",
@@ -9987,6 +10072,8 @@ class PolymarketTrader:
                         market_state={"current_mark_price": price},
                     )
                 closed = self.tracker.close_position(pos.position_id, price, reason=reason)
+                self._consecutive_raw_breach_seconds.pop(pos.position_id, None)
+                self._consecutive_mid_breach_seconds.pop(pos.position_id, None)
                 pnl = (price - pos.entry_price) * pos.size
                 self._risk_mgr.record_result(won=pnl >= 0, pnl=abs(pnl))
                 if self.settings.paper_trading:
@@ -10456,6 +10543,138 @@ class PolymarketTrader:
             mark_price = self._position_mark_price(pos)
             unrealized_pct = self._unrealized_pct(pos, mark_price)
             ticker = pos.symbol.replace("pm-5m-", "").upper()
+
+            # -------------------------------------------------------------
+            # STOP-LOSS SHADOW POLICY EVALUATION (PATCH_STOP_001)
+            # -------------------------------------------------------------
+            ob = None
+            orderbook_available = True
+            token_id = self._position_token_id(pos)
+            
+            try:
+                ob = self.client.get_orderbook(token_id)
+            except Exception as exc:
+                LOGGER.warning("[STOP_LOSS_SHADOW] failed to fetch orderbook for symbol=%s token_id=%s: %s", pos.symbol, token_id, exc)
+                orderbook_available = False
+
+            # Initialize all values
+            raw_bid = 0.0
+            raw_ask = 0.0
+            bid_size = 0.0
+            ask_size = 0.0
+            midpoint = 0.0
+            depth_ok = False
+            
+            unrealized_raw_bid_pct = 0.0
+            unrealized_mid_pct = 0.0
+            unrealized_mid_depth_pct = 0.0
+
+            actual_raw_bid_stop = False
+            shadow_mid_stop = False
+            shadow_mid_depth_stop = False
+            shadow_raw_2sample_stop = False
+            shadow_raw_3sample_stop = False
+            shadow_mid_3sample_stop = False
+
+            pos_id = pos.position_id
+
+            if orderbook_available and ob is not None:
+                raw_bid = float(ob.best_bid)
+                raw_ask = float(ob.best_ask)
+                bid_size = float(ob.bid_size)
+                ask_size = float(ob.ask_size)
+                
+                if raw_bid > 0 and raw_ask > 0:
+                    midpoint = (raw_bid + raw_ask) / 2.0
+                else:
+                    midpoint = raw_bid if raw_bid > 0 else float(pos.entry_price)
+                
+                # Check depth
+                depth_ok = (bid_size >= 10.0 and ask_size >= 10.0)
+
+                # Calculations
+                entry_price_val = float(pos.entry_price)
+                if entry_price_val > 0:
+                    if raw_bid > 0:
+                        unrealized_raw_bid_pct = (raw_bid - entry_price_val) / entry_price_val
+                    else:
+                        unrealized_raw_bid_pct = 0.0
+
+                    if midpoint > 0:
+                        unrealized_mid_pct = (midpoint - entry_price_val) / entry_price_val
+                    else:
+                        unrealized_mid_pct = 0.0
+
+                    if depth_ok:
+                        unrealized_mid_depth_pct = unrealized_mid_pct
+                    else:
+                        unrealized_mid_depth_pct = 0.0
+                
+                # Threshold check
+                actual_raw_bid_stop = (unrealized_raw_bid_pct <= -stop_loss_pct)
+                shadow_mid_stop = (unrealized_mid_pct <= -stop_loss_pct)
+                shadow_mid_depth_stop = (unrealized_mid_depth_pct <= -stop_loss_pct)
+                
+                # Raw bid counters
+                if actual_raw_bid_stop:
+                    self._consecutive_raw_breach_seconds[pos_id] = self._consecutive_raw_breach_seconds.get(pos_id, 0) + 1
+                else:
+                    self._consecutive_raw_breach_seconds[pos_id] = 0
+                
+                # Mid price counters
+                if shadow_mid_stop:
+                    self._consecutive_mid_breach_seconds[pos_id] = self._consecutive_mid_breach_seconds.get(pos_id, 0) + 1
+                else:
+                    self._consecutive_mid_breach_seconds[pos_id] = 0
+                
+                consecutive_raw_count = self._consecutive_raw_breach_seconds[pos_id]
+                consecutive_mid_count = self._consecutive_mid_breach_seconds[pos_id]
+
+                # Decisions
+                shadow_raw_2sample_stop = (consecutive_raw_count >= 2)
+                shadow_raw_3sample_stop = (consecutive_raw_count >= 3)
+                shadow_mid_3sample_stop = (consecutive_mid_count >= 3)
+            else:
+                # If orderbook unavailable, reset counters for safety
+                self._consecutive_raw_breach_seconds[pos_id] = 0
+                self._consecutive_mid_breach_seconds[pos_id] = 0
+                consecutive_raw_count = 0
+                consecutive_mid_count = 0
+
+            # Log shadow stop event (to stop_loss_shadow folder)
+            if self.quant_events is not None:
+                ts_utc = datetime.now(UTC).isoformat().replace("+00:00", "Z")
+                run_id_val = getattr(self.quant_events, "run_id", None)
+                payload = {
+                    "position_id": pos.position_id,
+                    "market": pos.symbol,
+                    "ticker": ticker,
+                    "side": self._position_outcome(pos),
+                    "entry_price": float(pos.entry_price),
+                    "raw_bid": raw_bid,
+                    "raw_ask": raw_ask,
+                    "midpoint": midpoint,
+                    "bid_size": bid_size,
+                    "ask_size": ask_size,
+                    "depth_ok": depth_ok,
+                    "unrealized_raw_bid_pct": unrealized_raw_bid_pct,
+                    "unrealized_mid_pct": unrealized_mid_pct,
+                    "unrealized_mid_depth_pct": unrealized_mid_depth_pct,
+                    "stop_threshold_pct": stop_loss_pct,
+                    "consecutive_raw_breach_count": consecutive_raw_count,
+                    "consecutive_mid_breach_count": consecutive_mid_count,
+                    "orderbook_available": orderbook_available,
+                    "actual_raw_bid_stop": actual_raw_bid_stop,
+                    "shadow_mid_stop": shadow_mid_stop,
+                    "shadow_mid_depth_stop": shadow_mid_depth_stop,
+                    "shadow_raw_2sample_stop": shadow_raw_2sample_stop,
+                    "shadow_raw_3sample_stop": shadow_raw_3sample_stop,
+                    "shadow_mid_3sample_stop": shadow_mid_3sample_stop,
+                    "timestamp_utc": ts_utc,
+                    "run_id": run_id_val,
+                }
+                self.quant_events.log_stop_loss_shadow(payload)
+
             if unrealized_pct <= -stop_loss_pct:
                 LOGGER.warning(
                     "[STOP_LOSS] market=%s position=%s ticker=%s unrealized=%.2f%% <= -%.2f%% exit_price=%.4f",
