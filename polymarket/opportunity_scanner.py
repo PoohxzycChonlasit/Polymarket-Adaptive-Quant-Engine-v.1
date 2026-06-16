@@ -1,12 +1,46 @@
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from enum import Enum
+from uuid import uuid4
 
 from polymarket.bankroll_tiers import BankrollTier
 from polymarket.delta_engine import DeltaRegime
 from polymarket.expected_value import ExpectedValueInput, ExpectedValueResult, ExpectedValueTier, evaluate_entry
 from polymarket.trade_frequency import TradeFrequencyInput, evaluate_trade_frequency
+
+
+CANDIDATE_IDENTITY_SCHEMA_VERSION = "1.0"
+
+
+def _new_candidate_id() -> str:
+    return f"candidate_{uuid4().hex}"
+
+
+def _candidate_trace_id(schema_version: str, candidate_id: str) -> str:
+    digest = hashlib.sha256(f"{schema_version}|{candidate_id}".encode("utf-8")).hexdigest()[:16]
+    return f"ct_{digest}"
+
+
+def _candidate_created_at() -> str:
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _initialize_candidate_identity(value: object) -> None:
+    schema_version = str(
+        getattr(value, "candidate_identity_schema_version", "") or CANDIDATE_IDENTITY_SCHEMA_VERSION
+    )
+    candidate_id = str(getattr(value, "candidate_id", "") or _new_candidate_id())
+    candidate_trace_id = str(
+        getattr(value, "candidate_trace_id", "") or _candidate_trace_id(schema_version, candidate_id)
+    )
+    candidate_created_at = str(getattr(value, "candidate_created_at", "") or _candidate_created_at())
+    object.__setattr__(value, "candidate_identity_schema_version", schema_version)
+    object.__setattr__(value, "candidate_id", candidate_id)
+    object.__setattr__(value, "candidate_trace_id", candidate_trace_id)
+    object.__setattr__(value, "candidate_created_at", candidate_created_at)
 
 
 class OpportunityDecision(str, Enum):
@@ -39,6 +73,17 @@ class OpportunityInput:
     min_ev: float = 0.02
     min_confidence: float = 0.54
     risk_off: bool = False
+    candidate_id: str = field(default="", compare=False, kw_only=True)
+    candidate_trace_id: str = field(default="", compare=False, kw_only=True)
+    candidate_created_at: str = field(default="", compare=False, kw_only=True)
+    candidate_identity_schema_version: str = field(
+        default=CANDIDATE_IDENTITY_SCHEMA_VERSION,
+        compare=False,
+        kw_only=True,
+    )
+
+    def __post_init__(self) -> None:
+        _initialize_candidate_identity(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,6 +118,17 @@ class OpportunityCandidate:
     drawdown_pct: float = 0.0
     trades_for_market: int = 0
     delta_multiplier: float = 1.0
+    candidate_id: str = field(default="", compare=False, kw_only=True)
+    candidate_trace_id: str = field(default="", compare=False, kw_only=True)
+    candidate_created_at: str = field(default="", compare=False, kw_only=True)
+    candidate_identity_schema_version: str = field(
+        default=CANDIDATE_IDENTITY_SCHEMA_VERSION,
+        compare=False,
+        kw_only=True,
+    )
+
+    def __post_init__(self) -> None:
+        _initialize_candidate_identity(self)
 
 
 @dataclass(frozen=True, slots=True)
@@ -209,6 +265,10 @@ def _candidate_from_input(opportunity: OpportunityInput) -> OpportunityCandidate
         orderbook_ask_size=opportunity.orderbook_ask_size,
         drawdown_pct=opportunity.drawdown_pct,
         trades_for_market=opportunity.trades_for_market,
+        candidate_id=opportunity.candidate_id,
+        candidate_trace_id=opportunity.candidate_trace_id,
+        candidate_created_at=opportunity.candidate_created_at,
+        candidate_identity_schema_version=opportunity.candidate_identity_schema_version,
     )
 
 
