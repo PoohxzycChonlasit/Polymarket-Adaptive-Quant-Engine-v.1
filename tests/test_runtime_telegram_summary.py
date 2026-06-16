@@ -38,9 +38,9 @@ def test_runtime_heartbeat_renders_status_header() -> None:
     )
     assert result.sent
     msg = notifier.messages[0]
-    assert "STATUS | P3" in msg
-    assert "Runtime heartbeat" in msg
-    assert "━━━━━━━━━━━━━━" in msg
+    assert "ALIVE" in msg
+    assert "PAPER" in msg
+    assert " | " in msg
 
 
 def test_runtime_heartbeat_includes_required_fields() -> None:
@@ -60,16 +60,11 @@ def test_runtime_heartbeat_includes_required_fields() -> None:
         regime="SIDEWAY",
     )
     msg = notifier.messages[0]
-    assert "Up: 1h30m" in msg
-    assert "Cycles: 42" in msg
-    assert "Opens: 7" in msg
-    assert "Closes: 5" in msg
-    assert "Exc: 2" in msg
-    assert "Risk: MICRO_RECOVERY" in msg
-    assert "Regime: SIDEWAY" in msg
-    assert "Heartbeat: 12s" in msg
-    assert "Periodic runtime status" in msg
-    assert "No action required" in msg
+    assert "Up:0h01m" not in msg  # verify correct uptime is used
+    assert "Up:1h30m" in msg
+    assert "Cycle:42" in msg
+    assert "Open:7" in msg
+    assert "Closed:5" in msg
 
 
 def test_runtime_heartbeat_excludes_forbidden_fields() -> None:
@@ -92,7 +87,7 @@ def test_runtime_heartbeat_excludes_forbidden_fields() -> None:
         assert forbidden.lower() not in msg.lower(), f"Forbidden field present: {forbidden!r}"
 
 
-def test_runtime_heartbeat_run_id_truncated_at_14_chars() -> None:
+def test_runtime_heartbeat_run_id_truncated_at_8_chars() -> None:
     layer, notifier = _make_layer()
     long_run_id = "abcdefghijklmnopqrstuvwxyz"
     layer.notify_summary(
@@ -110,11 +105,9 @@ def test_runtime_heartbeat_run_id_truncated_at_14_chars() -> None:
         regime="n/a",
     )
     msg = notifier.messages[0]
-    # The Run: display line must show truncated (14-char) run_id.
-    # _ref_line may still show the full id at the bottom — that's OK.
-    run_line = next(line for line in msg.splitlines() if line.startswith("Run:"))
-    assert long_run_id[:14] in run_line
-    assert long_run_id[14:] not in run_line
+    run_line = next(line for line in msg.splitlines() if "Run:" in line)
+    assert long_run_id[:8] in run_line
+    assert long_run_id[8:] not in run_line
 
 
 def test_cooldown_limits_runtime_summary_to_one_per_interval() -> None:
@@ -165,10 +158,10 @@ def test_legacy_daily_digest_unaffected_when_uptime_absent() -> None:
         mode="paper",
     )
     msg = notifier.messages[0]
-    assert "DAILY DIGEST | P3" in msg
-    assert "Evidence summary" in msg
-    assert "TP/SL" in msg
-    assert "STATUS | P3" not in msg
+    assert "DAY" in msg
+    assert "Trades:5" in msg
+    assert "W:3 L:2" in msg
+    assert "PnL" in msg
 
 
 def test_auto_redeem_and_runtime_cooldowns_are_independent() -> None:
@@ -185,6 +178,5 @@ def test_auto_redeem_and_runtime_cooldowns_are_independent() -> None:
 
     # Both sends must go through — independent cooldown buckets.
     assert len(notifier.messages) == 2
-    assert "STATUS | P3" in notifier.messages[0]
-    # auto_redeem_cycle has no `uptime` — renders DAILY DIGEST template.
-    assert "DAILY DIGEST | P3" in notifier.messages[1]
+    assert "ALIVE" in notifier.messages[0]
+    assert "DAY" in notifier.messages[1]

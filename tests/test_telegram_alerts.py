@@ -49,11 +49,11 @@ def test_entry_and_exit_alerts_send_without_cooldown() -> None:
     assert layer.notify_exit("exit one").sent
 
     assert len(notifier.messages) == 3
-    assert all("━━━━━━━━━━━━━━" in message for message in notifier.messages)
-    assert "ENTRY OPENED" in notifier.messages[0]
-    assert "entry one" in notifier.messages[0]
-    assert "EXIT CLOSED" in notifier.messages[2]
-    assert "exit one" in notifier.messages[2]
+    assert all(" | " in message for message in notifier.messages)
+    assert "OPEN" in notifier.messages[0]
+    assert "Msg:entry one" in notifier.messages[0]
+    assert "CLOSE" in notifier.messages[2]
+    assert "Msg:exit one" in notifier.messages[2]
 
 
 def test_risk_alerts_are_cooldown_limited() -> None:
@@ -69,8 +69,8 @@ def test_risk_alerts_are_cooldown_limited() -> None:
     now[0] += 301.0
     assert layer.notify_risk("risk", market="BTC", reason="drawdown").sent
     assert len(notifier.messages) == 2
-    assert all("RISK / PAUSE" in message for message in notifier.messages)
-    assert all("Reason: drawdown" in message for message in notifier.messages)
+    assert all("RISK" in message for message in notifier.messages)
+    assert all("drawdown" in message for message in notifier.messages)
 
 
 def test_critical_alerts_deduplicate_repeated_message_but_send_new_issue() -> None:
@@ -82,7 +82,7 @@ def test_critical_alerts_deduplicate_repeated_message_but_send_new_issue() -> No
     assert layer.notify_critical("reconcile mismatch").sent
 
     assert len(notifier.messages) == 2
-    assert "INCIDENT | P0" in notifier.messages[0]
+    assert "ERROR" in notifier.messages[0]
     assert "api failure" in notifier.messages[0]
     assert "reconcile mismatch" in notifier.messages[1]
 
@@ -240,18 +240,15 @@ def test_entry_blank_message_uses_operator_console_template() -> None:
     ).sent
 
     message = notifier.messages[0]
-    assert "ENTRY OPENED" in message
-    assert "Mode: PAPER / SIGNAL" in message
-    assert "Market: ETH 5M" in message
-    assert "Side: NO" in message
-    assert "Entry: 0.530" in message
-    assert "Size: 0.096" in message
-    assert "Session: 09h10h" in message
-    assert "Lifecycle: OPENING" in message
-    assert "Dust Zone" in message
-    assert "Executable: No" in message
-    assert "Research signal only." in message
-    assert "dedup_key" not in message
+    assert "OPEN" in message
+    assert "ETH 5M NO" in message
+    assert "Entry:0.530" in message
+    assert "Size:0.096" in message
+    assert "Session" not in message
+    assert "Lifecycle" not in message
+    assert "Dust Zone" not in message
+    assert "Executable" not in message
+    assert "Meaning" not in message
 
 
 def test_exit_blank_message_uses_tp_or_sl_operator_template() -> None:
@@ -272,14 +269,13 @@ def test_exit_blank_message_uses_tp_or_sl_operator_template() -> None:
     ).sent
 
     message = notifier.messages[0]
-    assert "STOP LOSS CLOSED" in message
-    assert "Mode: PAPER / SIGNAL" in message
-    assert "Market: BTC 5M" in message
-    assert "Side: YES" in message
-    assert "Price: 0.610 -> 0.560" in message
-    assert "Signal PnL: -0.0045" in message
-    assert "Reason: stop_loss" in message
-    assert "Dust Zone" in message
+    assert "CLOSE" in message
+    assert "BTC 5M YES" in message
+    assert "Entry:0.610" in message
+    assert "Exit:0.560" in message
+    assert "PnL:-0.0045" in message
+    assert "SL" in message
+    assert "Hold:12s" in message
 
 
 def test_risk_and_incident_blank_messages_use_operator_console_templates() -> None:
@@ -298,14 +294,11 @@ def test_risk_and_incident_blank_messages_use_operator_console_templates() -> No
     ).sent
 
     risk_message, incident_message = notifier.messages
-    assert "RISK / PAUSE" in risk_message
-    assert "Mode: PAPER" in risk_message
-    assert "Reason: cooldown" in risk_message
-    assert "Meaning: Trading attention required." in risk_message
-    assert "INCIDENT" in incident_message
-    assert "Subsystem: telegram" in incident_message
-    assert "Impact: operator visibility degraded" in incident_message
-    assert "Trading: unaffected unless stated" in incident_message
+    assert "RISK" in risk_message
+    assert "cooldown" in risk_message
+    assert "ERROR" in incident_message
+    assert "telegram" in incident_message
+    assert "Action:operator visibility degraded" in incident_message
 
 
 def test_reporter_startup_trade_exit_and_error_use_operator_console_copy() -> None:
@@ -353,12 +346,19 @@ def test_reporter_startup_trade_exit_and_error_use_operator_console_copy() -> No
     assert "$250.0000 USDC" in startup
     assert "NO LIVE ORDERS" in startup
     assert "0x1234567890abcdef" not in startup
-    assert "ENTRY OPENED" in entry
-    assert "Mode: PAPER / SIGNAL" in entry
-    assert "Evidence:" in entry
-    assert "Dust Zone" in entry
-    assert "STOP LOSS CLOSED" in exit_msg
-    assert "Signal PnL: -$0.0045" in exit_msg
-    assert "INCIDENT" in error
+    
+    assert "OPEN" in entry
+    assert "ETH 5M NO" in entry
+    assert "Entry:0.530" in entry
+    assert "Size:0.096" in entry
+    
+    assert "CLOSE" in exit_msg
+    assert "BTC 5M YES" in exit_msg
+    assert "PnL:-$0.0045" in exit_msg
+    assert "SL" in exit_msg
+    assert "Hold:2m" in exit_msg
+    
+    assert "ERROR" in error
+    assert "polymarket.trader" in error
     assert "secret" not in error.lower()
     assert "<payload>" not in error

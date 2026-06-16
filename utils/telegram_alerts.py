@@ -191,14 +191,27 @@ class TelegramAlertLayer:
 
     @staticmethod
     def _format_message(kind: str, message: str, context: dict[str, Any]) -> str:
+        ctx = dict(context)
         if message:
-            context = dict(context)
-            summary = _safe_message_summary(message)
-            context.setdefault("legacy_message", summary)
-            context.setdefault("reason", summary)
-            context.setdefault("headline", summary)
-            context.setdefault("impact", summary)
-        return _operator_console_message(kind, context)
+            # Check if message is already in compact pipe-separated format
+            lines = message.splitlines()
+            first_line = lines[0].strip() if lines else ""
+            if " | " in first_line:
+                return message
+
+            parsed = _parse_verbose_message(message)
+            ctx.update(parsed)
+
+            if "legacy_message" not in ctx:
+                summary = _safe_message_summary(message)
+                ctx["legacy_message"] = summary
+                ctx.setdefault("reason", summary)
+                ctx.setdefault("headline", summary)
+                ctx.setdefault("impact", summary)
+
+            if "event_type_detected" in ctx:
+                kind = ctx["event_type_detected"]
+        return _operator_console_message(kind, ctx)
 
     @staticmethod
     def _dedup_key(category: str, message: str, context: dict[str, Any]) -> str:
@@ -307,6 +320,190 @@ def _ref_line(context: dict[str, Any]) -> str:
     return f"Ref: {_safe_text(ref)}"
 
 
+def _map_display_shortcut(val: Any) -> str:
+    if val is None:
+        return ""
+    s = str(val).strip()
+    norm = s.lower().replace(" ", "_")
+    shortcuts = {
+        "probability_ev_edge": "EV_EDGE",
+        "no_signal": "NO_SIG",
+        "yes_ev_above_threshold": "YES_EV",
+        "no_ev_above_threshold": "NO_EV",
+        "no_strategy_met_threshold": "NO_STRAT_MET",
+        "stop_loss": "SL",
+        "take_profit": "TP",
+        "forced_exit": "FORCED",
+        "final_derisk": "DERISK",
+        "binary_settlement": "SETTLED",
+    }
+    if norm in shortcuts:
+        return shortcuts[norm]
+    return s
+
+
+def _parse_verbose_message(message: str) -> dict[str, Any]:
+    parsed = {}
+    if not message:
+        return parsed
+
+    import re
+    clean_msg = re.sub(r"<[^>]+>", "", message)
+    lines = [line.strip() for line in clean_msg.splitlines() if line.strip()]
+
+    first_few = " ".join(lines[:2]).upper()
+    if "STARTUP" in first_few or "STARTED" in first_few:
+        parsed["event_type_detected"] = "STARTUP"
+    elif "ENTRY OPENED" in first_few or "OPEN" in first_few:
+        parsed["event_type_detected"] = "ENTRY"
+    elif "CLOSED" in first_few or "CLOSE" in first_few or "SETTLED" in first_few:
+        parsed["event_type_detected"] = "EXIT"
+    elif "RISK" in first_few or "PAUSE" in first_few or "SUSPENDED" in first_few:
+        parsed["event_type_detected"] = "RISK"
+    elif "INCIDENT" in first_few or "ERROR" in first_few or "CRITICAL" in first_few:
+        parsed["event_type_detected"] = "INCIDENT"
+    elif "STATUS" in first_few or "HEARTBEAT" in first_few:
+        parsed["event_type_detected"] = "SUMMARY"
+    elif "DAILY" in first_few or "DIGEST" in first_few:
+        parsed["event_type_detected"] = "SUMMARY"
+
+    for line in lines:
+        line_clean = re.sub(r"^[•\-\*└\s\t\W]+", "", line).strip()
+        parts = []
+        if ":" in line_clean:
+            parts = line_clean.split(":", 1)
+        else:
+            split_spaces = re.split(r"\s{2,}", line_clean, maxsplit=1)
+            if len(split_spaces) == 2:
+                parts = split_spaces
+
+        if len(parts) == 2:
+            k = parts[0].strip().lower().replace("&amp;", "").replace("p&l", "pnl")
+            v = parts[1].strip()
+
+            if k in ("mode", "execution"):
+                parsed["mode"] = v
+            elif k in ("status", "state"):
+                parsed["status"] = v
+            elif k in ("scan loop", "interval"):
+                parsed["interval"] = v
+            elif k in ("bankroll", "capital", "wallet bankroll", "paper cash"):
+                parsed["bankroll"] = v
+            elif k in ("asset", "market", "ticker"):
+                parsed["market"] = v
+            elif k in ("side", "signal", "direction", "outcome"):
+                parsed["side"] = v
+            elif k in ("entry price", "entry", "price"):
+                if "->" in v:
+                    entry_exit = v.split("->")
+                    parsed["entry_price"] = entry_exit[0].strip()
+                    parsed["exit_price"] = entry_exit[1].strip()
+                else:
+                    parsed["entry_price"] = v
+            elif k == "exit price":
+                parsed["exit_price"] = v
+            elif k in ("size", "shares", "cost", "position_size"):
+                parsed["size"] = v
+            elif k in ("pnl", "signal pnl"):
+                parsed["pnl"] = v
+            elif k == "reason":
+                parsed["reason"] = v
+            elif k in ("hold", "hold time", "hold seconds", "countdown"):
+                parsed["hold_seconds"] = v
+            elif k in ("run", "run id", "ref", "order id"):
+                parsed["run_id"] = v
+            elif k == "cycles":
+                parsed["cycles"] = v
+            elif k == "opens":
+                parsed["trade_opens"] = v
+            elif k == "closes":
+                parsed["trade_closes"] = v
+            elif k == "exc":
+                parsed["exceptions"] = v
+            elif k == "risk":
+                parsed["risk_mode"] = v
+            elif k == "regime":
+                parsed["regime"] = v
+            elif k == "heartbeat":
+                parsed["heartbeat_age"] = v
+            elif k == "impact":
+                parsed["impact"] = v
+            elif k == "subsystem":
+                parsed["subsystem"] = v
+            elif k == "action":
+                parsed["action"] = v
+            elif k == "streak":
+                parsed["streak"] = v
+            elif k == "pause":
+                parsed["pause"] = v
+            elif k == "drawdown":
+                parsed["drawdown"] = v
+
+    return parsed
+
+
+def _get_val(context: dict[str, Any], keys: list[str] | str, default: str = "") -> str:
+    if isinstance(keys, str):
+        keys = [keys]
+    for key in keys:
+        val = context.get(key)
+        if val is not None:
+            s = str(val).strip()
+            import re
+            s = re.sub(r"<[^>]+>", "", s)
+            if s and s.lower() not in ("n/a", "none", "unknown"):
+                return _map_display_shortcut(s)
+    return default
+
+
+def _short_run_id(context: dict[str, Any]) -> str:
+    run_id = _get_val(context, ["run_id", "trade_id", "order_id", "position_id", "source_event_id"])
+    if run_id:
+        if "/" in run_id:
+            run_id = run_id.split("/")[-1]
+        if len(run_id) > 8:
+            return run_id[:8]
+        return run_id
+    return ""
+
+
+def _is_pnl_positive(pnl_str: str) -> bool:
+    if not pnl_str:
+        return False
+    if pnl_str.startswith("+"):
+        return True
+    if pnl_str.startswith("-"):
+        return False
+    try:
+        import re
+        nums = re.findall(r"[-+]?\d*\.\d+|\d+", pnl_str)
+        if nums:
+            return float(nums[0]) >= 0
+    except Exception:
+        pass
+    return False
+
+
+def _format_hold_time(hold_val: Any) -> str:
+    if hold_val is None:
+        return ""
+    s = str(hold_val).strip()
+    if not s or s.lower() in ("n/a", "none", "unknown"):
+        return ""
+    s_clean = s.rstrip("s")
+    try:
+        sec = int(float(s_clean))
+        if sec < 60:
+            return f"{sec}s"
+        m = sec // 60
+        sec_rem = sec % 60
+        if sec_rem == 0:
+            return f"{m}m"
+        return f"{m}m{sec_rem}s"
+    except Exception:
+        return s
+
+
 def _operator_console_message(kind: str, context: dict[str, Any]) -> str:
     kind = kind.upper()
     if kind == "STARTUP":
@@ -319,158 +516,212 @@ def _operator_console_message(kind: str, context: dict[str, Any]) -> str:
         return _operator_risk_message(context)
     if kind in {"CRITICAL", "INCIDENT"}:
         return _operator_incident_message(kind, context)
-    if kind == "SUMMARY":
+    if kind in {"SUMMARY", "SUMMARY_STATUS", "SUMMARY_DIGEST"}:
         return _operator_summary_message(context)
     return _operator_incident_message(kind, context)
 
 
 def _operator_startup_message(context: dict[str, Any]) -> str:
     mode = _mode_label(context)
-    status = _safe_text(context.get("status"), "started")
-    interval = _safe_text(context.get("interval") or context.get("scan_interval"), "n/a")
-    meaning = "Paper evidence collection active." if mode == "PAPER" else "Live mode requested; monitor readiness closely."
-    return "\n".join(
-        [
-            "🚀 STARTUP | P2",
-            "Operator console online",
-            "━━━━━━━━━━━━━━",
-            f"Mode: {mode}",
-            f"Status: {status}",
-            f"Scan Loop: {interval}s",
-            f"Evidence: {'SIGNAL_MODE' if mode == 'PAPER' else 'LIVE'}",
-            "",
-            "Meaning:",
-            meaning,
-            _ref_line(context),
-        ]
-    )
+    run_id = _short_run_id(context)
+    interval = _get_val(context, ["interval", "scan_interval"], "n/a")
+    
+    wallet = _get_val(context, ["wallet", "balance_source"], "paper")
+    if wallet.startswith("0x") and len(wallet) > 10:
+        wallet = f"{wallet[:6]}...{wallet[-4:]}"
+    elif "paper" in wallet.lower():
+        wallet = "paper"
+        
+    live_status = "ON" if mode == "LIVE" else "OFF"
+    
+    line1 = f"🚀 START | {mode}"
+    if run_id:
+        line1 += f" | Run:{run_id}"
+    if interval != "n/a":
+        line1 += f" | Interval:{interval}s"
+        
+    line2 = f"Wallet:{wallet} | Live:{live_status}"
+    return f"{line1}\n{line2}"
 
 
 def _operator_entry_message(context: dict[str, Any]) -> str:
-    return "\n".join(
-        [
-            "🟢 ENTRY OPENED",
-            "━━━━━━━━━━━━━━",
-            f"Mode: {_paper_signal_label(context)}",
-            f"Market: {_market_label(context)}",
-            f"Side: {_safe_text(context.get('side') or context.get('outcome'))}",
-            f"Entry: {_safe_text(context.get('entry_price') or context.get('price'))}",
-            f"Size: {_safe_text(context.get('size') or context.get('shares') or context.get('position_size'))}",
-            "",
-            "Context:",
-            f"Session: {_safe_text(context.get('session') or context.get('session_hour') or context.get('session_hour_utc'))}",
-            f"Lifecycle: {_compact_lifecycle(context.get('lifecycle_phase')) or 'n/a'}",
-            f"Price Bucket: {_safe_text(context.get('price_bucket'))}",
-            "",
-            *_evidence_lines(context),
-            "",
-            "Meaning:",
-            _safe_text(context.get("legacy_message"), "Research signal only." if _mode_label(context) == "PAPER" else "Live order path event."),
-            _ref_line(context),
-        ]
-    )
+    market = _get_val(context, ["market", "asset", "ticker"], "SYSTEM")
+    side = _get_val(context, ["side", "outcome"])
+    entry_price = _get_val(context, ["entry_price", "price"])
+    size = _get_val(context, ["size", "shares", "position_size"])
+    
+    signal = _get_val(context, ["signal", "event_type"])
+    strategy = _get_val(context, ["strategy"])
+    ev = _get_val(context, ["ev", "ev_after_spread"])
+    prob = _get_val(context, ["prob", "score", "confidence", "true_probability"])
+    run_id = _short_run_id(context)
+    
+    if "YES" in side.upper():
+        side = "YES"
+    elif "NO" in side.upper():
+        side = "NO"
+        
+    line1 = f"🟢 OPEN | {market} {side}".strip()
+    if entry_price:
+        line1 += f" | Entry:{entry_price}"
+    if size:
+        line1 += f" | Size:{size}"
+        
+    line2_parts = []
+    if signal:
+        line2_parts.append(f"Sig:{signal}")
+    if strategy:
+        line2_parts.append(f"Strat:{strategy}")
+    if ev:
+        line2_parts.append(f"EV:{ev}")
+    if prob:
+        line2_parts.append(f"P:{prob}")
+    legacy = _get_val(context, ["legacy_message"])
+    if legacy and legacy not in ("Research signal only.", "Live order path event.", "operator event", "exit", "startup"):
+        line2_parts.append(f"Msg:{legacy}")
+    if run_id:
+        line2_parts.append(f"Run:{run_id}")
+        
+    line2 = " | ".join(line2_parts)
+    return f"{line1}\n{line2}"
 
 
 def _operator_exit_message(context: dict[str, Any]) -> str:
-    reason = _safe_text(context.get("reason") or context.get("exit_reason"), "exit")
-    lower_reason = reason.lower()
-    pnl = _safe_text(context.get("pnl") or context.get("pnl_usdc"), "n/a")
-    is_tp = "take_profit" in lower_reason or lower_reason in {"tp", "profit"}
-    is_sl = "stop_loss" in lower_reason or lower_reason in {"sl", "loss"}
-    title = "✅ TAKE PROFIT CLOSED" if is_tp else "🔴 STOP LOSS CLOSED" if is_sl else "🟠 EXIT CLOSED"
-    pnl_label = "Signal PnL" if _mode_label(context) == "PAPER" else "PnL"
-    hold = _safe_text(context.get("hold_seconds") or context.get("hold"), "n/a")
-    return "\n".join(
-        [
-            title,
-            "━━━━━━━━━━━━━━",
-            f"Mode: {_paper_signal_label(context)}",
-            f"Market: {_market_label(context)}",
-            f"Side: {_safe_text(context.get('side') or context.get('outcome'))}",
-            f"Price: {_safe_text(context.get('entry_price'))} -> {_safe_text(context.get('exit_price') or context.get('price'))}",
-            f"Hold: {hold}s" if hold != "n/a" else "Hold: n/a",
-            f"{pnl_label}: {pnl}",
-            f"Reason: {reason}",
-            "",
-            *_evidence_lines(context),
-            "",
-            "Meaning:",
-            _safe_text(context.get("legacy_message"), "Research signal only." if _mode_label(context) == "PAPER" else "Live exit path event."),
-            _ref_line(context),
-        ]
-    )
+    market = _get_val(context, ["market", "asset", "ticker"], "SYSTEM")
+    side = _get_val(context, ["side", "outcome"])
+    pnl = _get_val(context, ["pnl", "pnl_usdc"])
+    reason = _get_val(context, ["reason", "exit_reason"])
+    
+    hold = _get_val(context, ["hold_seconds", "hold"])
+    hold_formatted = _format_hold_time(hold)
+    
+    entry_price = _get_val(context, ["entry_price"])
+    exit_price = _get_val(context, ["exit_price", "price"])
+    run_id = _short_run_id(context)
+    
+    if "YES" in side.upper():
+        side = "YES"
+    elif "NO" in side.upper():
+        side = "NO"
+        
+    icon = "🟢" if _is_pnl_positive(pnl) else "🔴"
+    
+    line1 = f"{icon} CLOSE | {market} {side}"
+    if pnl:
+        line1 += f" | PnL:{pnl}"
+    if reason:
+        line1 += f" | {reason}"
+        
+    line2_parts = []
+    if hold_formatted:
+        line2_parts.append(f"Hold:{hold_formatted}")
+    if entry_price:
+        line2_parts.append(f"Entry:{entry_price}")
+    if exit_price:
+        line2_parts.append(f"Exit:{exit_price}")
+    legacy = _get_val(context, ["legacy_message"])
+    if legacy and legacy not in ("Research signal only.", "Live order path event.", "operator event", "exit", "startup"):
+        line2_parts.append(f"Msg:{legacy}")
+    if run_id:
+        line2_parts.append(f"Run:{run_id}")
+        
+    line2 = " | ".join(line2_parts)
+    return f"{line1}\n{line2}"
 
 
 def _operator_risk_message(context: dict[str, Any]) -> str:
-    return "\n".join(
-        [
-            "🟡 RISK / PAUSE | P1",
-            "Trading attention required",
-            "━━━━━━━━━━━━━━",
-            f"Mode: {_mode_label(context)}",
-            f"Market: {_market_label(context)}",
-            f"Reason: {_safe_text(context.get('reason') or context.get('event_type'))}",
-            f"State: {_safe_text(context.get('risk_state') or context.get('state'), 'PAUSED')}",
-            "",
-            "Meaning: Trading attention required.",
-            _ref_line(context),
-        ]
-    )
+    reason = _get_val(context, ["reason", "event_type"])
+    run_id = _short_run_id(context)
+    state = _get_val(context, ["risk_state", "state"], "PAUSED")
+    impact = _get_val(context, ["impact"])
+    
+    line1 = f"🚨 RISK | {reason}"
+    if run_id:
+        line1 += f" | Run:{run_id}"
+        
+    line2 = f"State:{state}"
+    if impact:
+        line2 += f" | Impact:{impact}"
+    return f"{line1}\n{line2}"
 
 
 def _operator_incident_message(kind: str, context: dict[str, Any]) -> str:
-    priority = "P0" if kind == "CRITICAL" else "P1"
-    return "\n".join(
-        [
-            f"🚨 INCIDENT | {priority}",
-            _safe_text(context.get("headline") or context.get("reason") or context.get("event_type"), "Operator incident"),
-            "━━━━━━━━━━━━━━",
-            f"Mode: {_mode_label(context)}",
-            f"Subsystem: {_safe_text(context.get('subsystem') or context.get('module') or context.get('component'))}",
-            f"Market: {_market_label(context)}",
-            f"Impact: {_safe_text(context.get('impact'), 'review needed')}",
-            "Trading: unaffected unless stated",
-            "",
-            "Meaning: Inspect logs or dashboard before taking action.",
-            _ref_line(context),
-        ]
-    )
+    run_id = _short_run_id(context)
+    headline = _get_val(context, ["headline", "reason", "event_type"])
+    subsystem = _get_val(context, ["subsystem", "module", "component"])
+    impact = _get_val(context, ["impact"])
+    cycle = _get_val(context, ["cycles", "cycle"])
+    
+    is_attr_fail = "attr" in headline.lower() or "attribution" in headline.lower() or "missing" in headline.lower()
+    
+    if is_attr_fail:
+        failed_field = _get_val(context, ["failed_field", "field"], "candidate_trace_id")
+        market = _get_val(context, ["market", "asset"])
+        side = _get_val(context, ["side", "outcome"])
+        
+        line1 = f"🚨 ATTR_FAIL | {failed_field} missing"
+        if run_id:
+            line1 += f" | Run:{run_id}"
+            
+        line2 = f"Trade:{market} {side} | Action:stop/audit"
+        return f"{line1}\n{line2}"
+    else:
+        error_type = subsystem or headline or "runtime_exception"
+        action_hint = _get_val(context, ["action", "action_hint", "impact"], "check logs")
+        
+        line1 = f"🚨 ERROR | {error_type}"
+        if run_id:
+            line1 += f" | Run:{run_id}"
+            
+        line2 = ""
+        if cycle:
+            line2 += f"Cycle:{cycle} | "
+        line2 += f"Action:{action_hint}"
+        return f"{line1}\n{line2}"
 
 
 def _operator_summary_message(context: dict[str, Any]) -> str:
-    if context.get("uptime") is not None:
-        run_id_raw = _safe_text(context.get("run_id"))
-        run_id_short = run_id_raw[:14] if len(run_id_raw) > 14 else run_id_raw
-        return "\n".join(
-            [
-                "📊 STATUS | P3",
-                "Runtime heartbeat",
-                "━━━━━━━━━━━━━━",
-                f"Mode: {_mode_label(context)}",
-                f"Run: {run_id_short}  Up: {_safe_text(context.get('uptime'))}",
-                f"Cycles: {_safe_text(context.get('cycles'))}  Opens: {_safe_text(context.get('trade_opens'))}  Closes: {_safe_text(context.get('trade_closes'))}  Exc: {_safe_text(context.get('exceptions'), '0')}",
-                f"Risk: {_safe_text(context.get('risk_mode'))}  Regime: {_safe_text(context.get('regime'))}",
-                f"Heartbeat: {_safe_text(context.get('heartbeat_age'))}",
-                "",
-                "Meaning: Periodic runtime status. No action required.",
-                _ref_line(context),
-            ]
-        )
-    return "\n".join(
-        [
-            "📊 DAILY DIGEST | P3",
-            "Evidence summary",
-            "━━━━━━━━━━━━━━",
-            f"Mode: {_mode_label(context)}",
-            f"Trades: {_safe_text(context.get('trades') or context.get('trade_count'))}",
-            f"TP/SL: {_safe_text(context.get('tp'))}/{_safe_text(context.get('sl'))}",
-            f"Signal PnL: {_safe_text(context.get('signal_pnl') or context.get('pnl'))}",
-            f"Executable: {_safe_text(context.get('executable_trade_count') or context.get('executable'))}",
-            "",
-            "Meaning: Daily research snapshot.",
-            _ref_line(context),
-        ]
-    )
+    uptime = _get_val(context, ["uptime"])
+    mode = _mode_label(context)
+    run_id = _short_run_id(context)
+    
+    if uptime:
+        cycles = _get_val(context, ["cycles"])
+        open_count = _get_val(context, ["trade_opens", "opens", "open"], "0")
+        closed_count = _get_val(context, ["trade_closes", "closes", "closed"], "0")
+        pnl = _get_val(context, ["pnl", "pnl_usdc", "signal_pnl"], "+0.0000")
+        
+        line1 = f"🟢 ALIVE | {mode} | Up:{uptime}"
+        if run_id:
+            line1 += f" | Run:{run_id}"
+            
+        line2 = f"Cycle:{cycles} | Open:{open_count} | Closed:{closed_count} | PnL:{pnl}"
+        return f"{line1}\n{line2}"
+    else:
+        trades = _get_val(context, ["trades", "trade_count"])
+        wins = _get_val(context, ["wins", "w", "tp"])
+        losses = _get_val(context, ["losses", "l", "sl"])
+        
+        win_rate = _get_val(context, ["win_rate", "wr"])
+        if not win_rate and wins and losses:
+            try:
+                w_val = int(wins)
+                l_val = int(losses)
+                total = w_val + l_val
+                if total > 0:
+                    win_rate = f"{(w_val / total) * 100:.1f}"
+            except Exception:
+                pass
+        if not win_rate:
+            win_rate = "0.0"
+            
+        pnl = _get_val(context, ["pnl", "signal_pnl"])
+        edge_pnl = _get_val(context, ["edge_pnl", "ev_edge_pnl", "ev_edge", "ev_pnl"], "0.0000")
+        quarantine_count = _get_val(context, ["quarantine_count", "quar"], "0")
+        
+        line1 = f"📊 DAY | Trades:{trades} | W:{wins} L:{losses} | WR:{win_rate}%"
+        line2 = f"PnL:{pnl} | EV_EDGE:{edge_pnl} | Quar:{quarantine_count}"
+        return f"{line1}\n{line2}"
 
 
 def _telegram_timestamp() -> str:
