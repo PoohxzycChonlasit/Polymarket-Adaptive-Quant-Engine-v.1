@@ -345,6 +345,8 @@ class PolymarketTrader:
         # v3.5: Stop-loss shadow confirmation counters (position_id → ticks)
         self._consecutive_raw_breach_seconds: dict[str, int] = {}
         self._consecutive_mid_breach_seconds: dict[str, int] = {}
+        # PATCH_STOP_002 / PAPER_STOP_FAILSAFE: consecutive OB unavailable streak (position_id → ticks)
+        self._consecutive_ob_unavailable_seconds: dict[str, int] = {}
         self._last_reconciliation: ReconciliationReport | None = None
         self._balance_source: str = "paper_virtual" if self.settings.paper_trading else "unverified"
         self._balance_wallet_address: str = self.settings.polymarket_proxy_wallet or self.settings.polymarket_funder
@@ -10074,6 +10076,7 @@ class PolymarketTrader:
                 closed = self.tracker.close_position(pos.position_id, price, reason=reason)
                 self._consecutive_raw_breach_seconds.pop(pos.position_id, None)
                 self._consecutive_mid_breach_seconds.pop(pos.position_id, None)
+                self._consecutive_ob_unavailable_seconds.pop(pos.position_id, None)
                 pnl = (price - pos.entry_price) * pos.size
                 self._risk_mgr.record_result(won=pnl >= 0, pnl=abs(pnl))
                 if self.settings.paper_trading:
@@ -10634,12 +10637,50 @@ class PolymarketTrader:
                 shadow_raw_2sample_stop = (consecutive_raw_count >= 2)
                 shadow_raw_3sample_stop = (consecutive_raw_count >= 3)
                 shadow_mid_3sample_stop = (consecutive_mid_count >= 3)
+                # PATCH_STOP_002 / PAPER_STOP_FAILSAFE: reset OB unavailable counter on success
+                self._consecutive_ob_unavailable_seconds[pos_id] = 0
             else:
-                # If orderbook unavailable, reset counters for safety
+                # If orderbook unavailable, reset breach counters for safety
                 self._consecutive_raw_breach_seconds[pos_id] = 0
                 self._consecutive_mid_breach_seconds[pos_id] = 0
                 consecutive_raw_count = 0
                 consecutive_mid_count = 0
+                # PATCH_STOP_002 / PAPER_STOP_FAILSAFE: track consecutive OB failures
+                self._consecutive_ob_unavailable_seconds[pos_id] = (
+                    self._consecutive_ob_unavailable_seconds.get(pos_id, 0) + 1
+                )
+
+            ob_unavailable_consecutive = self._consecutive_ob_unavailable_seconds.get(pos_id, 0)
+            ob_freeze_active = ob_unavailable_consecutive > 0
+
+            # ------------------------------------------------------------------
+            # PATCH_STOP_002: Paper/Live Stop Trigger Decision
+            # Paper mode: requires mid-price + 3-sample confirmation to trigger.
+            # Live mode: unchanged — single-tick raw-bid trigger.
+            # ------------------------------------------------------------------
+            _raw_bid_would_stop = (unrealized_pct <= -stop_loss_pct)
+            if _raw_bid_would_stop:
+                if self.settings.paper_trading:
+                    _should_stop = shadow_mid_3sample_stop
+                    _close_reason = "stop_loss"
+                    _suppressed = not shadow_mid_3sample_stop
+                    if not shadow_mid_stop:
+                        _suppression_reason = "mid_not_breached"
+                    elif consecutive_mid_count < 3:
+                        _suppression_reason = "confirmation_count_below_3"
+                    else:
+                        _suppression_reason = ""
+                else:
+                    # Live mode: unchanged — raw-bid single-sample trigger
+                    _should_stop = True
+                    _close_reason = "stop_loss"
+                    _suppressed = False
+                    _suppression_reason = ""
+            else:
+                _should_stop = False
+                _close_reason = ""
+                _suppressed = False
+                _suppression_reason = ""
 
             # Log shadow stop event (to stop_loss_shadow folder)
             if self.quant_events is not None:
@@ -10670,23 +10711,77 @@ class PolymarketTrader:
                     "shadow_raw_2sample_stop": shadow_raw_2sample_stop,
                     "shadow_raw_3sample_stop": shadow_raw_3sample_stop,
                     "shadow_mid_3sample_stop": shadow_mid_3sample_stop,
+                    # PATCH_STOP_002: paper-gated stop telemetry
+                    "paper_stop_policy_active": bool(getattr(self.settings, "paper_trading", False)),
+                    "paper_mid_confirmed_stop": bool(_should_stop and getattr(self.settings, "paper_trading", False)),
+                    "paper_stop_suppressed": bool(_suppressed),
+                    "paper_stop_suppression_reason": _suppression_reason,
+                    "actual_stop_triggered": bool(_should_stop),
+                    # PAPER_STOP_FAILSAFE: OB unavailable tracking
+                    "orderbook_unavailable_consecutive_count": ob_unavailable_consecutive,
+                    "ob_unavailable_consecutive_count": ob_unavailable_consecutive,
+                    "ob_freeze_active": ob_freeze_active,
+                    "ob_freeze_hold_reason": "orderbook_unavailable" if ob_freeze_active else "",
                     "timestamp_utc": ts_utc,
                     "run_id": run_id_val,
                 }
                 self.quant_events.log_stop_loss_shadow(payload)
 
-            if unrealized_pct <= -stop_loss_pct:
-                LOGGER.warning(
-                    "[STOP_LOSS] market=%s position=%s ticker=%s unrealized=%.2f%% <= -%.2f%% exit_price=%.4f",
-                    pos.symbol, pos.position_id, ticker, unrealized_pct * 100,
-                    stop_loss_pct * 100, mark_price,
+            if _should_stop:
+                if self.settings.paper_trading:
+                    LOGGER.warning(
+                        "[STOP_LOSS_PAPER] market=%s position=%s ticker=%s "
+                        "raw_bid_pct=%.2f%% mid_pct=%.2f%% mid_count=%d/3 <= -%.2f%% exit_price=%.4f",
+                        pos.symbol, pos.position_id, ticker,
+                        unrealized_raw_bid_pct * 100, unrealized_mid_pct * 100,
+                        consecutive_mid_count, stop_loss_pct * 100, mark_price,
+                    )
+                else:
+                    LOGGER.warning(
+                        "[STOP_LOSS] market=%s position=%s ticker=%s unrealized=%.2f%% <= -%.2f%% exit_price=%.4f",
+                        pos.symbol, pos.position_id, ticker, unrealized_pct * 100,
+                        stop_loss_pct * 100, mark_price,
+                    )
+                self._close_position_with_retry(pos, reason=_close_reason, exit_price=mark_price)
+            elif _raw_bid_would_stop and _suppressed:
+                LOGGER.debug(
+                    "[STOP_LOSS_PAPER_HOLD] suppressed: position=%s raw_bid_pct=%.2f%% mid_pct=%.2f%% "
+                    "mid_count=%d/3 reason=%s",
+                    pos.position_id, unrealized_raw_bid_pct * 100, unrealized_mid_pct * 100,
+                    consecutive_mid_count, _suppression_reason,
                 )
-                self._close_position_with_retry(pos, reason="stop_loss", exit_price=mark_price)
             else:
                 LOGGER.debug(
                     "[STOP_LOSS] hold | market=%s position=%s unrealized=%.2f%% limit=-%.2f%%",
                     pos.symbol, pos.position_id, unrealized_pct * 100, stop_loss_pct * 100,
                 )
+
+            # PAPER_STOP_FAILSAFE: critical alert after 5 consecutive OB unavailable cycles
+            if ob_unavailable_consecutive >= 5:
+                LOGGER.critical(
+                    "[STOP_LOSS_OB_FREEZE] CRITICAL: position=%s market=%s ticker=%s "
+                    "has had no orderbook data for %d consecutive seconds. "
+                    "Paper stop evaluation frozen. Manual review recommended.",
+                    pos.position_id, pos.symbol, ticker, ob_unavailable_consecutive,
+                )
+                if ob_unavailable_consecutive == 5:
+                    self._emit_quant_event(
+                        "log_system_health",
+                        {
+                            "event": "stop_loss_orderbook_unavailable_critical",
+                            "severity": "critical",
+                            "position_id": pos.position_id,
+                            "market": pos.symbol,
+                            "ticker": ticker,
+                            "token_id": token_id,
+                            "mode": self._runtime_mode(),
+                            "paper_trading": bool(self.settings.paper_trading),
+                            "orderbook_unavailable_consecutive_count": ob_unavailable_consecutive,
+                            "action_taken": "none",
+                            "emergency_close_triggered": False,
+                            "last_valid_mid_cache_used": False,
+                        },
+                    )
         return
 
         current_balance = self.settings.account_balance

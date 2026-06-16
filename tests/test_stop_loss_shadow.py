@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import tempfile
@@ -33,9 +34,9 @@ def _settings(**overrides):
     return SimpleNamespace(**values)
 
 
-def _trader(temp_dir: str) -> PolymarketTrader:
+def _trader(temp_dir: str, **settings_overrides) -> PolymarketTrader:
     trader = PolymarketTrader()
-    trader.settings = _settings()
+    trader.settings = _settings(**settings_overrides)
     trader.tracker = PositionTracker(settings=trader.settings)
     trader.client = MagicMock()
     # Replace quant logger to write to a temp directory
@@ -46,6 +47,17 @@ def _trader(temp_dir: str) -> PolymarketTrader:
         run_id="test_run",
     )
     return trader
+
+
+def _read_events(temp_dir: str, category: str) -> list[dict]:
+    log_dir = os.path.join(temp_dir, category)
+    if not os.path.exists(log_dir):
+        return []
+    events: list[dict] = []
+    for log_name in os.listdir(log_dir):
+        with open(os.path.join(log_dir, log_name), "r") as handle:
+            events.extend(json.loads(line) for line in handle if line.strip())
+    return events
 
 
 def _open_position(trader: PolymarketTrader, position_id: str, symbol: str, entry_price: float, side: str = "BUY"):
@@ -92,11 +104,11 @@ class TestStopLossShadowPolicy(unittest.TestCase):
         # Run check_stop_loss (first tick)
         trader.check_stop_loss(countdown=10)
 
-        # 1. Verify that actual stop behaviour is unchanged (since the position tracker is in paper mode
-        # and actual unrealized_pct is based on raw best bid, which is 0.45 (<= 0.46), actual stop loss
-        # should trigger and close the position)
+        # PATCH_STOP_002: paper mode requires shadow_mid_3sample_stop to fire.
+        # Mid price (0.49) only shows 2% loss vs 8% threshold -> shadow_mid_stop=False.
+        # Paper policy suppresses the stop on tick 1.
         open_positions = trader.tracker.open_positions()
-        self.assertEqual(len(open_positions), 0)  # Position was closed by actual stop-loss
+        self.assertEqual(len(open_positions), 1)  # Position held by paper policy
 
         # 2. Check the logged shadow event
         log_dir = os.path.join(self.temp_dir, "stop_loss_shadow")
@@ -108,7 +120,6 @@ class TestStopLossShadowPolicy(unittest.TestCase):
         with open(log_file_path, "r") as f:
             lines = f.readlines()
             self.assertEqual(len(lines), 1)
-            import json
             event = json.loads(lines[0])
 
             self.assertEqual(event["event_type"], "stop_loss_shadow")
@@ -133,6 +144,16 @@ class TestStopLossShadowPolicy(unittest.TestCase):
             self.assertEqual(payload["shadow_raw_2sample_stop"], False)
             self.assertEqual(payload["shadow_raw_3sample_stop"], False)
             self.assertEqual(payload["shadow_mid_3sample_stop"], False)
+            # PATCH_STOP_002: paper-gated stop telemetry
+            self.assertEqual(payload["paper_stop_policy_active"], True)
+            self.assertEqual(payload["paper_mid_confirmed_stop"], False)
+            self.assertEqual(payload["paper_stop_suppressed"], True)
+            self.assertEqual(payload["paper_stop_suppression_reason"], "mid_not_breached")
+            self.assertEqual(payload["actual_stop_triggered"], False)
+            # PAPER_STOP_FAILSAFE: OB was available, no freeze
+            self.assertEqual(payload["orderbook_unavailable_consecutive_count"], 0)
+            self.assertEqual(payload["ob_freeze_active"], False)
+            self.assertEqual(payload["ob_freeze_hold_reason"], "")
 
     def test_temporal_confirmation_counters(self) -> None:
         trader = _trader(self.temp_dir)
@@ -183,6 +204,11 @@ class TestStopLossShadowPolicy(unittest.TestCase):
         # Event 1: no multi-sample stops true
         self.assertEqual(events[0]["payload"]["shadow_raw_2sample_stop"], False)
         self.assertEqual(events[0]["payload"]["shadow_raw_3sample_stop"], False)
+        # PATCH_STOP_002 fields present
+        self.assertIn("paper_stop_policy_active", events[0]["payload"])
+        self.assertIn("paper_stop_suppressed", events[0]["payload"])
+        self.assertIn("actual_stop_triggered", events[0]["payload"])
+        self.assertIn("orderbook_unavailable_consecutive_count", events[0]["payload"])
 
         # Event 2: 2-sample stop becomes true
         self.assertEqual(events[1]["payload"]["shadow_raw_2sample_stop"], True)
@@ -192,3 +218,83 @@ class TestStopLossShadowPolicy(unittest.TestCase):
         self.assertEqual(events[2]["payload"]["shadow_raw_2sample_stop"], True)
         self.assertEqual(events[2]["payload"]["shadow_raw_3sample_stop"], True)
         self.assertEqual(events[2]["payload"]["shadow_mid_3sample_stop"], True)
+        # PATCH_STOP_002: with paper mode and shadow_mid_3sample_stop=True, stop fires
+        self.assertEqual(events[2]["payload"]["actual_stop_triggered"], True)
+        self.assertEqual(events[2]["payload"]["paper_mid_confirmed_stop"], True)
+        self.assertEqual(events[2]["payload"]["paper_stop_suppressed"], False)
+        mock_close.assert_called_once()
+        self.assertEqual(mock_close.call_args.kwargs["reason"], "stop_loss")
+
+    def test_live_mode_raw_bid_stop_behavior_is_unchanged(self) -> None:
+        trader = _trader(self.temp_dir, paper_trading=False)
+        _open_position(trader, "pos-live", "pm-5m-btc", 0.50)
+        trader.client.get_orderbook.return_value = OrderbookSnapshot(
+            token_id="test-token",
+            best_bid=0.45,
+            best_ask=0.53,
+            spread=0.08,
+            bid_size=12.0,
+            ask_size=15.0,
+        )
+
+        with patch.object(trader, "_close_position_with_retry") as mock_close:
+            trader.check_stop_loss(countdown=10)
+
+        mock_close.assert_called_once()
+        self.assertEqual(mock_close.call_args.kwargs["reason"], "stop_loss")
+        payload = _read_events(self.temp_dir, "stop_loss_shadow")[0]["payload"]
+        self.assertEqual(payload["actual_raw_bid_stop"], True)
+        self.assertEqual(payload["shadow_mid_3sample_stop"], False)
+        self.assertEqual(payload["actual_stop_triggered"], True)
+        self.assertEqual(payload["paper_stop_policy_active"], False)
+
+    def test_orderbook_unavailable_counter_increments_and_resets(self) -> None:
+        trader = _trader(self.temp_dir)
+        pos = _open_position(trader, "pos-ob", "pm-5m-btc", 0.50)
+        recovery_ob = OrderbookSnapshot(
+            token_id="test-token",
+            best_bid=0.50,
+            best_ask=0.52,
+            spread=0.02,
+            bid_size=12.0,
+            ask_size=15.0,
+        )
+        trader.client.get_orderbook.side_effect = [
+            RuntimeError("orderbook down"),
+            RuntimeError("orderbook down"),
+            recovery_ob,
+            recovery_ob,
+        ]
+
+        trader.check_stop_loss(countdown=10)
+        self.assertEqual(trader._consecutive_ob_unavailable_seconds[pos.position_id], 1)
+
+        trader.check_stop_loss(countdown=10)
+        self.assertEqual(trader._consecutive_ob_unavailable_seconds[pos.position_id], 0)
+
+        payloads = [event["payload"] for event in _read_events(self.temp_dir, "stop_loss_shadow")]
+        self.assertEqual(payloads[0]["orderbook_unavailable_consecutive_count"], 1)
+        self.assertEqual(payloads[0]["ob_freeze_active"], True)
+        self.assertEqual(payloads[1]["orderbook_unavailable_consecutive_count"], 0)
+        self.assertEqual(payloads[1]["ob_freeze_active"], False)
+
+    def test_orderbook_unavailable_five_cycles_emits_critical_observability_event(self) -> None:
+        trader = _trader(self.temp_dir)
+        pos = _open_position(trader, "pos-critical", "pm-5m-btc", 0.50)
+        trader.client.get_orderbook.side_effect = RuntimeError("orderbook down")
+
+        for _ in range(5):
+            trader.check_stop_loss(countdown=10)
+
+        shadow_payload = _read_events(self.temp_dir, "stop_loss_shadow")[-1]["payload"]
+        self.assertEqual(shadow_payload["orderbook_unavailable_consecutive_count"], 5)
+        health_events = _read_events(self.temp_dir, "system_health")
+        critical_events = [
+            event["payload"]
+            for event in health_events
+            if event["payload"].get("event") == "stop_loss_orderbook_unavailable_critical"
+        ]
+        self.assertEqual(len(critical_events), 1)
+        self.assertEqual(critical_events[0]["position_id"], pos.position_id)
+        self.assertEqual(critical_events[0]["severity"], "critical")
+        self.assertEqual(critical_events[0]["orderbook_unavailable_consecutive_count"], 5)

@@ -196,10 +196,16 @@ class ExecutionRiskControlTests(unittest.TestCase):
         self.assertEqual(trader.tracker.open_positions(), [])
         self.assertEqual(trader.tracker.closed_positions()[0].exit_reason, "take_profit_full")
 
-    def test_stop_loss_closes_at_minus_eight_percent_unrealized_pnl(self) -> None:
+    def test_paper_stop_loss_closes_after_three_mid_breach_samples(self) -> None:
         trader = _trader()
         _open_position(trader)
-        trader.client.get_orderbook.return_value = OrderbookSnapshot("yes-token", 0.459, 0.47, 0.011, 10, 10)
+        trader.client.get_orderbook.return_value = OrderbookSnapshot("yes-token", 0.459, 0.459, 0.0, 10, 10)
+
+        trader.check_stop_loss(countdown=180)
+        self.assertEqual(len(trader.tracker.open_positions()), 1)
+
+        trader.check_stop_loss(countdown=180)
+        self.assertEqual(len(trader.tracker.open_positions()), 1)
 
         trader.check_stop_loss(countdown=180)
 
