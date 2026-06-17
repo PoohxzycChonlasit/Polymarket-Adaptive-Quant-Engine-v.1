@@ -2073,8 +2073,6 @@ class PolymarketRealtimeDisplay:
         data_status = self._data_status_tag()
         data_style = "bold bright_green" if data_status == "OK" else "bold bright_yellow"
         readiness_text, readiness_label, readiness_style = self._execution_readiness_label()
-        phase6 = self._phase6_label()
-        s3 = self._s3_label()
         git = self._git_status_label()
         run_id = self._run_id or "n/a"
         safety = "NO LIVE ORDERS" if self.paper_trading else "LIVE MODE"
@@ -2088,16 +2086,25 @@ class PolymarketRealtimeDisplay:
         line1.append(" | DATA ", style="grey70")
         line1.append(data_status, style=data_style)
         line1.append(f" | {git}", style="grey62")
+        
         line2 = Text()
         line2.append(f" STATUS {safety}", style=safety_style)
         line2.append(" | READINESS ", style="grey70")
         line2.append(f"{readiness_text} {readiness_label}", style=readiness_style)
-        line2.append(" | Phase6 ", style="grey70")
-        line2.append(self._clip(phase6, 18), style=self._traffic_label_style(phase6))
-        line2.append(" | S3 ", style="grey70")
-        line2.append(self._clip(s3, 12), style=self._traffic_label_style(s3))
         line2.append(f" | JSONL {self._footer_jsonl_compact_tag()}", style="grey70")
-        line3 = self._research_header_strip(spec)
+        
+        import os
+        pid = os.getpid()
+        uptime = datetime.now(tz=UTC) - self._started_at
+        uptime_s = int(uptime.total_seconds())
+        h = uptime_s // 3600
+        m = (uptime_s % 3600) // 60
+        s = uptime_s % 60
+        uptime_str = f"{h:d}:{m:02d}:{s:02d}" if h > 0 else f"{m:d}:{s:02d}"
+        
+        line3 = Text()
+        line3.append(f" PID {pid} | STARTED {self._started_at.strftime('%H:%M:%S UTC')} | UPTIME {uptime_str}", style="grey70")
+        
         if spec.warning:
             line3.append("\n " + self._clip(spec.warning, max(40, spec.width - 8)), style="bold bright_yellow")
         return Panel(Text.assemble(line1, "\n", line2, "\n", line3), border_style="bright_cyan", padding=(0, 1))
@@ -2325,6 +2332,31 @@ class PolymarketRealtimeDisplay:
         recovery_failed = bool(m.get("empty_book_recovery_failed", False))
         recovery_retries = int(self._as_float(m.get("empty_book_recovery_retry_count", 0)))
         price_style = "bright_green" if diff >= 0 else "bright_red"
+        
+        # Check if orderbook is missing for this market
+        ob_missing = False
+        ob_missing_reason = "NO ORDERBOOK"
+        skip_reason_str = str(m.get("skip_reason") or "").strip()
+        if skip_reason_str in ("clob_empty_response", "delta_extreme"):
+            ob_missing = True
+            ob_missing_reason = skip_reason_str.replace("_", " ").upper()
+        elif yes_bid == 0.0 and yes_ask == 0.0 and no_bid == 0.0 and no_ask == 0.0:
+            ob_missing = True
+            ob_missing_reason = "CLOB EMPTY"
+
+        if ob_missing:
+            lines = [
+                self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
+                self._line([("STATUS ", "grey70"), (ob_missing_reason, "bold bright_red")], spec.panel_width),
+                self._line([("Action ", "grey70"), ("waiting for valid CLOB book", "bright_yellow")], spec.panel_width),
+                self._line([("Token ", "grey70"), (self._clip(str(m.get("token_id", "") or "--"), 16), "grey62")], spec.panel_width),
+                self._line([("Regime ", "grey70"), (self._clip(regime, 16), "bold bright_cyan")], spec.panel_width),
+                self._line([("Decision ", "grey70"), (decision, self._decision_style(decision))], spec.panel_width),
+            ]
+            if mapping_warning:
+                lines.append(self._line([("Token mapping ", "bold bright_yellow"), (self._clip(mapping_warning, max(12, spec.panel_width - 16)), "bold bright_yellow")], spec.panel_width))
+            return Panel(Text.assemble(*self._with_breaks(lines)), title=f"[bold bright_white]{ticker} Market[/bold bright_white]", border_style="bright_blue")
+
         lines = [
             self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
             self._line([("YES Bid ", "grey70"), (self._fmt_prob(yes_bid), "bold bright_green"), (" | YES Ask ", "grey70"), (self._fmt_prob(yes_ask), "bold bright_red")], spec.panel_width),
@@ -2499,7 +2531,59 @@ class PolymarketRealtimeDisplay:
 
     def _candidate_observability_panel(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
+        
+        # 1. Check if orderbook is missing
+        is_ob_missing = False
+        ob_reason = "clob_empty_response"
+        
+        if self._orderbook_status() != "OK":
+            is_ob_missing = True
+            reasons = [self._safe_text(m.get("skip_reason"), "").strip() for m in self._markets.values()]
+            reasons = [r for r in reasons if r in ("clob_empty_response", "delta_extreme")]
+            if reasons:
+                ob_reason = reasons[0]
+        else:
+            all_empty = True
+            for m in self._markets.values():
+                yes_bid = self._as_float(m.get('yes_bid', m.get('bid', 0.0)))
+                yes_ask = self._as_float(m.get('yes_ask', m.get('ask', 0.0)))
+                no_bid = self._as_float(m.get('no_bid', 0.0))
+                no_ask = self._as_float(m.get('no_ask', 0.0))
+                if yes_bid > 0.0 or yes_ask > 0.0 or no_bid > 0.0 or no_ask > 0.0:
+                    all_empty = False
+                    break
+            if all_empty:
+                is_ob_missing = True
+                ob_reason = "clob_empty_response"
+
+        if is_ob_missing:
+            lines = [
+                self._line([("Blocked: ", "grey70"), ("no_orderbook", "bold bright_red")], spec.panel_width),
+                self._line([("Reason:  ", "grey70"), (ob_reason, "bright_yellow")], spec.panel_width),
+                self._line([("Action:  ", "grey70"), ("waiting for valid CLOB book", "bright_green")], spec.panel_width),
+            ]
+            return Panel(
+                Text.assemble(*self._with_breaks(lines)),
+                title="[bold bright_white]Decision Diagnostics[/bold bright_white]",
+                border_style="bright_magenta",
+            )
+
         source = self._candidate_observability_source()
+        trace_id = self._safe_text(source.get("candidate_trace_id"), "")
+        
+        # 2. Check if no active candidate
+        if not source or trace_id == "n/a" or not trace_id:
+            lines = [
+                self._line([("No active candidate", "grey50")], spec.panel_width),
+                self._line([("Waiting for edge / threshold trigger", "grey70")], spec.panel_width),
+            ]
+            return Panel(
+                Text.assemble(*self._with_breaks(lines)),
+                title="[bold bright_white]Decision Diagnostics[/bold bright_white]",
+                border_style="bright_magenta",
+            )
+
+        # 3. Standard diagnostic rendering
         token_id = self._present_status(source, "token_id")
         probability_visible = self._visibility_status(source, "probability_visible", "true_probability", "p_yes", "model_p_yes")
         ev_visible = self._visibility_status(source, "ev_visible", "ev_after_spread", "ev")
@@ -2509,7 +2593,6 @@ class PolymarketRealtimeDisplay:
         main_blocker = self._main_blocker_label(source)
         remaining = self._first_text_value(source, "seconds_remaining", "seconds_until_close", "time_remaining_seconds") or "--"
         executable_age = self._first_text_value(source, "executable_age_seconds", "executable_book_age_seconds", "orderbook_age_seconds") or "--"
-        revisit_delay = self._first_text_value(source, "revisit_delay_seconds", "decision_cycle_gap_seconds", "candidate_to_decision_delay_seconds") or "--"
         cutoff_remaining = self._cutoff_remaining_label(source)
         orderbook_ready = self._orderbook_readiness_label(source)
         liquidity = self._first_text_value(source, "liquidity_state") or "--"
@@ -2537,9 +2620,7 @@ class PolymarketRealtimeDisplay:
             ], spec.panel_width),
         ]
         if spec.active_mode == "fullscreen":
-            trace_id = self._present_status(source, "candidate_trace_id")
             condition_id = self._present_status(source, "condition_id")
-            readiness = self._identity_readiness(source)
             chain_confidence = self._candidate_chain_trace_confidence(source)
             trace_status = self._trace_enrichment_status(source)
             lines.append(self._line([
@@ -2774,38 +2855,57 @@ class PolymarketRealtimeDisplay:
 
     def _execution_reality_panel(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
+        
+        # Dynamically compute execution reality from self._recent_trades
+        closed_trades = [t for t in self._recent_trades if t.get("exit_price") is not None]
+        if closed_trades:
+            self._execution_reality["paired"] = len(closed_trades)
+            self._execution_reality["btc"] = sum(1 for t in closed_trades if "BTC" in str(t.get("market", "")).upper())
+            self._execution_reality["eth"] = sum(1 for t in closed_trades if "ETH" in str(t.get("market", "")).upper())
+            self._execution_reality["tp"] = sum(1 for t in closed_trades if "TP" in str(t.get("reason", "")).upper() or "TAKE" in str(t.get("reason", "")).upper())
+            self._execution_reality["sl"] = sum(1 for t in closed_trades if "SL" in str(t.get("reason", "")).upper() or "STOP" in str(t.get("reason", "")).upper())
+            self._execution_reality["win"] = sum(1 for t in closed_trades if float(t.get("realized_pnl") or 0.0) > 0.0)
+            self._execution_reality["loss"] = sum(1 for t in closed_trades if float(t.get("realized_pnl") or 0.0) < 0.0)
+
         er = self._execution_reality
-        lines = [
-            self._execution_gate_line("Paired", er.get("paired"), er.get("paired_target"), spec.panel_width),
-            self._execution_gate_line("BTC", er.get("btc"), er.get("btc_target"), spec.panel_width),
-            self._execution_gate_line("ETH", er.get("eth"), er.get("eth_target"), spec.panel_width),
-            self._execution_gate_line("TP", er.get("tp"), er.get("tp_target"), spec.panel_width),
-            self._execution_gate_line("SL", er.get("sl"), er.get("sl_target"), spec.panel_width),
-            self._execution_gate_line("60s+", er.get("sixty_plus"), er.get("sixty_plus_target"), spec.panel_width),
-        ]
 
-        win = self._optional_int(er.get("win"))
-        loss = self._optional_int(er.get("loss"))
-        if win is None and loss is None:
-            lines.append(self._line([("WIN/LOSS n/a", "grey50")], spec.panel_width))
+        if not self._has_execution_reality_counts():
+            lines = [
+                self._line([("No closed trades in current session", "grey50")], spec.panel_width),
+                self._line([("Post-patch totals shown in Research Progress", "grey70")], spec.panel_width),
+            ]
         else:
+            lines = [
+                self._execution_gate_line("Paired", er.get("paired"), er.get("paired_target"), spec.panel_width),
+                self._execution_gate_line("BTC", er.get("btc"), er.get("btc_target"), spec.panel_width),
+                self._execution_gate_line("ETH", er.get("eth"), er.get("eth_target"), spec.panel_width),
+                self._execution_gate_line("TP", er.get("tp"), er.get("tp_target"), spec.panel_width),
+                self._execution_gate_line("SL", er.get("sl"), er.get("sl_target"), spec.panel_width),
+                self._execution_gate_line("60s+", er.get("sixty_plus"), er.get("sixty_plus_target"), spec.panel_width),
+            ]
+
+            win = self._optional_int(er.get("win"))
+            loss = self._optional_int(er.get("loss"))
+            if win is None and loss is None:
+                lines.append(self._line([("WIN/LOSS n/a", "grey50")], spec.panel_width))
+            else:
+                lines.append(self._line([
+                    ("WIN ", "grey70"), (str(win) if win is not None else "n/a", "bright_green" if win else "grey50"),
+                    (" | LOSS ", "grey70"), (str(loss) if loss is not None else "n/a", "bright_red" if loss else "grey50"),
+                ], spec.panel_width))
+
+            gates = er.get("blocking_gates")
+            if isinstance(gates, (list, tuple, set)):
+                gate_text = ",".join(str(g) for g in gates if str(g).strip()) or "none"
+            else:
+                gate_text = self._safe_text(gates, "evidence unavailable")
+            if not self._has_execution_reality_counts() and gate_text == "none":
+                gate_text = "evidence unavailable"
+            gate_style = "bright_green" if gate_text == "none" else "bright_yellow"
             lines.append(self._line([
-                ("WIN ", "grey70"), (str(win) if win is not None else "n/a", "bright_green" if win else "grey50"),
-                (" | LOSS ", "grey70"), (str(loss) if loss is not None else "n/a", "bright_red" if loss else "grey50"),
+                ("Blocking gates ", "grey70"),
+                (self._clip(gate_text, max(10, spec.panel_width - 15)), gate_style),
             ], spec.panel_width))
-
-        gates = er.get("blocking_gates")
-        if isinstance(gates, (list, tuple, set)):
-            gate_text = ",".join(str(g) for g in gates if str(g).strip()) or "none"
-        else:
-            gate_text = self._safe_text(gates, "evidence unavailable")
-        if not self._has_execution_reality_counts() and gate_text == "none":
-            gate_text = "evidence unavailable"
-        gate_style = "bright_green" if gate_text == "none" else "bright_yellow"
-        lines.append(self._line([
-            ("Blocking gates ", "grey70"),
-            (self._clip(gate_text, max(10, spec.panel_width - 15)), gate_style),
-        ], spec.panel_width))
 
         return Panel(
             Text.assemble(*self._with_breaks(lines)),
@@ -2847,6 +2947,13 @@ class PolymarketRealtimeDisplay:
         suppressed = obs.get("suppressed_raw_stops", 0)
         actual_stops = obs.get("actual_paper_stops", 0)
 
+        # Shadow filter telemetry
+        shadow_would_reject = obs.get("shadow_would_reject", 0)
+        ev_cap_shadow_rejects = obs.get("ev_cap_shadow_rejects", 0)
+        yes_floor_shadow_rejects = obs.get("yes_floor_shadow_rejects", 0)
+        shadow_baseline_accepted = obs.get("shadow_baseline_accepted", 0)
+        reject_rate = (shadow_would_reject / shadow_baseline_accepted * 100) if shadow_baseline_accepted > 0 else 0.0
+
         pw = max(20, (spec.width // 6) - 4)
 
         lines = [
@@ -2855,6 +2962,11 @@ class PolymarketRealtimeDisplay:
             self._line([("Mid-3 Stops: ", "grey70"), (str(mid3_stops), "bright_green")], pw),
             self._line([("Suppressed:  ", "grey70"), (str(suppressed), "bright_red")], pw),
             self._line([("Paper Stops: ", "grey70"), (str(actual_stops), "bold bright_green" if actual_stops > 0 else "grey62")], pw),
+            self._line([("- - - - - - - - -", "grey50")], pw),
+            self._line([("Shadow Rejs: ", "grey70"), (str(shadow_would_reject), "bold bright_yellow")], pw),
+            self._line([("  EV Cap:    ", "grey70"), (str(ev_cap_shadow_rejects), "bright_red")], pw),
+            self._line([("  YES Floor: ", "grey70"), (str(yes_floor_shadow_rejects), "bright_red")], pw),
+            self._line([("  Rej Rate:  ", "grey70"), (f"{reject_rate:.1f}%", "bold bright_green")], pw),
         ]
         return Panel(
             Text.assemble(*self._with_breaks(lines)),
@@ -2880,7 +2992,7 @@ class PolymarketRealtimeDisplay:
 
         if total is None and mean_sub is None:
             return Panel(
-                Text(" No quote-age data yet this session.", style="grey50"),
+                Text(" No quote-age samples yet", style="grey50"),
                 title="[bold bright_white]Quote Age[/bold bright_white]",
                 border_style="bright_blue",
             )
@@ -3005,20 +3117,48 @@ class PolymarketRealtimeDisplay:
         if decision in {"", "--"}:
             decision = "SKIP" if self._main_blocker_label(m) != "none" else "--"
         blocker = self._main_blocker_label(m)
-        line = (
-            f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} "
-            f"{self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
-            f"{self._fmt_prob(self._as_float(m.get('yes_bid', m.get('bid', 0.0)))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('yes_ask', m.get('ask', 0.0)))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('no_bid', 0.0))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('no_ask', 0.0))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('spread', 0.0))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('model_p_yes', m.get('p_yes', 0.0)))):>7} "
-            f"{self._fmt_prob(self._as_float(m.get('model_p_no', m.get('p_no', 0.0)))):>7} "
-            f"{self._as_float(m.get('ev', 0.0)):+.3f} "
-            f"{decision:<8} "
-            f"{blocker}"
-        )
+        
+        yes_bid = self._as_float(m.get('yes_bid', m.get('bid', 0.0)))
+        yes_ask = self._as_float(m.get('yes_ask', m.get('ask', 0.0)))
+        no_bid = self._as_float(m.get('no_bid', 0.0))
+        no_ask = self._as_float(m.get('no_ask', 0.0))
+        
+        ob_missing = False
+        ob_reason = "NO ORDERBOOK"
+        skip_reason_str = str(m.get("skip_reason") or "").strip()
+        if skip_reason_str in ("clob_empty_response", "delta_extreme"):
+            ob_missing = True
+            ob_reason = skip_reason_str.replace("_", " ").upper()
+        elif yes_bid == 0.0 and yes_ask == 0.0 and no_bid == 0.0 and no_ask == 0.0:
+            ob_missing = True
+            ob_reason = "CLOB EMPTY"
+
+        if ob_missing:
+            prefix = f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} {self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
+            ob_segment = f"  {ob_reason:<37} "
+            suffix = (
+                f"{self._fmt_prob(self._as_float(m.get('model_p_yes', m.get('p_yes', 0.0)))):>7} "
+                f"{self._fmt_prob(self._as_float(m.get('model_p_no', m.get('p_no', 0.0)))):>7} "
+                f"{self._as_float(m.get('ev', 0.0)):+.3f} "
+                f"{decision:<8} "
+                f"{blocker}"
+            )
+            line = prefix + ob_segment + suffix
+        else:
+            line = (
+                f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} "
+                f"{self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
+                f"{self._fmt_prob(yes_bid):>7} "
+                f"{self._fmt_prob(yes_ask):>7} "
+                f"{self._fmt_prob(no_bid):>7} "
+                f"{self._fmt_prob(no_ask):>7} "
+                f"{self._fmt_prob(self._as_float(m.get('spread', 0.0))):>7} "
+                f"{self._fmt_prob(self._as_float(m.get('model_p_yes', m.get('p_yes', 0.0)))):>7} "
+                f"{self._fmt_prob(self._as_float(m.get('model_p_no', m.get('p_no', 0.0)))):>7} "
+                f"{self._as_float(m.get('ev', 0.0)):+.3f} "
+                f"{decision:<8} "
+                f"{blocker}"
+            )
         return Text(self._clip(line, width), style=self._decision_style(decision))
 
     def _decision_label(self, market: Mapping[str, object]) -> str:

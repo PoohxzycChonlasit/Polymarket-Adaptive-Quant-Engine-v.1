@@ -71,6 +71,7 @@ class QuantEventLogger:
         "system_health": "system_health",
         "research_snapshot": "research_log",
         "stop_loss_shadow": "stop_loss_shadow",
+        "signal_filter_shadow": "signal_filter_shadow",
     }
 
     def __init__(
@@ -140,6 +141,9 @@ class QuantEventLogger:
 
     def log_stop_loss_shadow(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("stop_loss_shadow", payload)
+
+    def log_signal_filter_shadow(self, payload: dict[str, Any] | None = None) -> bool:
+        return self._write_event("signal_filter_shadow", payload)
 
     def _write_event(self, event_type: str, payload: dict[str, Any] | None) -> bool:
         category = self._CATEGORY_BY_METHOD[event_type]

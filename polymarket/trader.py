@@ -464,6 +464,12 @@ class PolymarketTrader:
         self._path_truth_max_writes_per_trade = 5
         self._path_truth_emitted_checkpoints_by_trade: dict[str, set[str]] = {}
 
+        # PATCH_SIGNAL_001 Shadow Mode Counters
+        self._baseline_accepted = 0
+        self._shadow_would_reject = 0
+        self._ev_cap_shadow_rejects = 0
+        self._yes_floor_shadow_rejects = 0
+
     def _call_shutdown_hook(self, hook, *, join_timeout: float | None = None) -> None:
         if not callable(hook):
             return
@@ -6361,7 +6367,12 @@ class PolymarketTrader:
             "raw_stop_signals": raw_stop_signals,
             "mid_3_stop_signals": mid_3_stop_signals,
             "suppressed_raw_stops": suppressed_raw_stops,
-            "actual_paper_stops": actual_paper_stops
+            "actual_paper_stops": actual_paper_stops,
+            # PATCH_SIGNAL_001 Shadow Filter counters
+            "shadow_baseline_accepted": self._baseline_accepted,
+            "shadow_would_reject": self._shadow_would_reject,
+            "ev_cap_shadow_rejects": self._ev_cap_shadow_rejects,
+            "yes_floor_shadow_rejects": self._yes_floor_shadow_rejects,
         }
 
     def dashboard_v2a_stats(self) -> dict[str, object]:
@@ -9236,6 +9247,72 @@ class PolymarketTrader:
         if is_model_trade:
             clob_detail["signal_name"] = "PROBABILITY_EV_EDGE"
             clob_detail["signal_reason"] = f"{model_side.lower()}_ev_above_threshold"
+
+            # Evaluate shadow filters in paper mode only
+            if self._runtime_mode() == "paper":
+                self._baseline_accepted += 1
+                shadow_filter_reasons = []
+                ev_cap_shadow_reject = False
+                yes_floor_shadow_reject = False
+                
+                if model_ev >= 0.15:
+                    ev_cap_shadow_reject = True
+                    shadow_filter_reasons.append("ev_cap_toxicity")
+                    self._ev_cap_shadow_rejects += 1
+                    
+                entry_prob = probability.p_yes if model_side == "YES" else probability.p_no
+                if model_side == "YES" and entry_prob < 0.60:
+                    yes_floor_shadow_reject = True
+                    shadow_filter_reasons.append("yes_probability_floor")
+                    self._yes_floor_shadow_rejects += 1
+                    
+                shadow_would_reject = ev_cap_shadow_reject or yes_floor_shadow_reject
+                if shadow_would_reject:
+                    self._shadow_would_reject += 1
+                    
+                if self.quant_events:
+                    import uuid
+                    shadow_decision_id = f"sd_{uuid.uuid4().hex[:16]}"
+                    candidate_trace_id = candidate.candidate_trace_id
+                    run_fragment = self.quant_events.run_id[:8] if self.quant_events.run_id else "norund"
+                    replay_chain_id = f"rc_{run_fragment}_{candidate_trace_id[3:]}" if candidate_trace_id else "rc_missing"
+                    
+                    selected_token_id = yes_token_id if model_side == "YES" else no_token_id
+                    paper_trade_replay_key = f"{meta.get('condition_id', '')}|{ptb_info.epoch_start_ts}|{ticker}|{model_side}|{selected_token_id}"
+                    timestamp_utc = self.quant_events._timestamp()
+                    
+                    shadow_payload = {
+                        "filter_version": "signal_filter_v1_shadow",
+                        "run_id": self.quant_events.run_id,
+                        "candidate_trace_id": candidate_trace_id,
+                        "candidate_instance_id": candidate.candidate_id,
+                        "shadow_decision_id": shadow_decision_id,
+                        "market": market.market_id,
+                        "ticker": ticker,
+                        "selected_side": model_side,
+                        "signal_reason": f"{model_side.lower()}_ev_above_threshold",
+                        "entry_ev": float(model_ev),
+                        "entry_probability": float(entry_prob),
+                        "ev_cap_threshold": 0.15,
+                        "yes_prob_floor": 0.60,
+                        "baseline_approved": True,
+                        "shadow_would_reject": shadow_would_reject,
+                        "shadow_filter_reasons": shadow_filter_reasons,
+                        "shadow_outcome": None,
+                        "shadow_outcome_pnl": None,
+                        "replay_chain_id": replay_chain_id,
+                        "paper_trade_replay_key": paper_trade_replay_key,
+                        "position_id": None,
+                        "timestamp_utc": timestamp_utc,
+                        
+                        # companion mapping fields for logger digest
+                        "market_key": market.market_id,
+                        "condition_id": meta.get("condition_id", ""),
+                        "token_id": selected_token_id,
+                        "epoch_start_ts": ptb_info.epoch_start_ts,
+                        "side": model_side,
+                    }
+                    self.quant_events.log_signal_filter_shadow(shadow_payload)
 
         quant_detail = self._record_quant_detail(
             ticker,

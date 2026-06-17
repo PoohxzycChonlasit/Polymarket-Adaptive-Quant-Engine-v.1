@@ -260,6 +260,8 @@ def test_cycle_panel_shows_compact_cutoff_micro_liquidity_context() -> None:
 
 def test_decision_diagnostics_panel_shows_operator_state_without_debug_noise() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (118, 30))
+    display.update_market("BTC", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
+    display.update_market("ETH", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
     display.update_cycle([
         {
             "ticker": "BTC",
@@ -303,6 +305,9 @@ def test_decision_diagnostics_panel_shows_operator_state_without_debug_noise() -
 
 def test_candidate_observability_panel_preserves_unknowns_when_fields_missing() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (118, 30))
+    display.update_market("BTC", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
+    display.update_market("ETH", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
+    display.update_observability_health(candidate_trace_id="ct_abc")
 
     text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
 
@@ -340,7 +345,10 @@ def test_observability_footer_shows_jsonl_trace_condition_producer_and_schema() 
 
 def test_candidate_observability_panel_consumes_dedicated_health_state() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
+    display.update_market("BTC", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
+    display.update_market("ETH", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
     display.update_observability_health(
+        candidate_trace_id="ct_abc",
         jsonl_status="OK",
         latest_producer="execution_log",
         latest_schema_version="1.0",
@@ -453,8 +461,6 @@ def test_execution_reality_header_renders_phase_a_status_fields() -> None:
     assert "RUN 20260522T130017Z_21712_035b3af7" in text
     assert "STATUS NO LIVE ORDERS" in text
     assert "READINESS 65.0% ACCUMULATING" in text
-    assert "Phase6 BLOCKED" in text
-    assert "S3 CAUTION" in text
     assert "git dirty" in text
 
 
@@ -470,7 +476,7 @@ def test_header_research_strip_renders_available_fields() -> None:
         path_truth_status="FAST_CLOSE_HEAVY",
     )
 
-    text = _render_text(display._header(display._resolve_layout()))
+    text = _render_text(display._research_header_strip(display._resolve_layout()))
 
     assert "PHASE PATH_TRUTH" in text
     assert "GATE 1/3" in text
@@ -482,7 +488,7 @@ def test_header_research_strip_renders_available_fields() -> None:
 def test_header_research_strip_fails_soft_when_fields_missing() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
 
-    text = _render_text(display._header(display._resolve_layout()))
+    text = _render_text(display._research_header_strip(display._resolve_layout()))
 
     assert "PHASE n/a" in text
     assert "GATE n/a" in text
@@ -506,7 +512,7 @@ def test_header_research_strip_clips_long_compact_labels() -> None:
         path_truth_status=very_long_path,
     )
 
-    text = _render_text(display._header(display._resolve_layout()))
+    text = _render_text(display._research_header_strip(display._resolve_layout()))
 
     assert "PHASE PATH_TRUTH_EVIDENCE_FARMING_WITH_EXTRA_CONTEXT" not in text
     assert very_long_session not in text
@@ -546,10 +552,8 @@ def test_execution_reality_panel_renders_gate_bars_and_missing_fields() -> None:
     missing = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (190, 48))
     missing_text = _render_text(missing._execution_reality_panel(missing._resolve_layout()))
 
-    assert "Paired n/a [n/a] N/A" in missing_text
-    assert "BTC    n/a [n/a] N/A" in missing_text
-    assert "TP     n/a [n/a] N/A" in missing_text
-    assert "Blocking gates evidence unavailable" in missing_text
+    assert "No closed trades in current session" in missing_text
+    assert "Post-patch totals shown in Research Progress" in missing_text
 
 
 def test_dashboard_long_log_message_is_clipped_inside_rolling_window() -> None:
@@ -746,6 +750,7 @@ def test_market_card_v2_shows_lifecycle_phase_and_executable_state() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (120, 40))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.51,
         lifecycle_phase="ACTIVE_INVENTORY_TRADING",
         active_window_alignment_reason="inside_window",
         executable_book_state="TRADABLE",
@@ -776,6 +781,7 @@ def test_market_card_v2_shows_depth_state_and_sizes() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (120, 40))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.51,
         liquidity_depth_state="THIN",
         best_bid_size=12.5,
         best_ask_size=8.0,
@@ -801,6 +807,7 @@ def test_market_card_v2_shows_readiness_confidence_and_blocker() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
     display.update_market(
         "ETH",
+        yes_bid=0.5, yes_ask=0.51,
         readiness_confidence=0.6,
         executable_book_state="BOOK_SEEN",
         executable_spread_state="WIDE",
@@ -824,6 +831,7 @@ def test_market_card_v2_shows_timing_milestones() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.51,
         token_ready_seconds_remaining=240,
         first_nonzero_bidask_seconds_remaining=180,
         first_tradable_seconds_remaining=120,
@@ -845,6 +853,7 @@ def test_market_card_v2_shows_preload_state_in_wide_mode() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.51,
         preload_success=True,
         preload_orderbook_warmed=True,
         preload_seconds_before_epoch=45,
@@ -866,6 +875,7 @@ def test_market_card_v2_shows_preload_failure_in_wide_mode() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
     display.update_market(
         "ETH",
+        yes_bid=0.5, yes_ask=0.51,
         preload_success=False,
         preload_orderbook_warmed=False,
         preload_seconds_before_epoch=0,
@@ -885,6 +895,7 @@ def test_market_card_v2_shows_research_fields_in_wide_mode() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (180, 48))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.51,
         replay_chain_id="chain_abc123def456",
         lifecycle_instance_id="inst_xyz",
         lineage_confidence=0.91,
@@ -908,6 +919,7 @@ def test_market_card_v2_handles_all_missing_v2_fields_safely() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.52,
         bid=0.5,
         ask=0.52,
         spread=0.02,
@@ -1022,6 +1034,7 @@ def test_market_card_v2_shows_latency_line_when_values_present() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (120, 40))
     display.update_market(
         "BTC",
+        yes_bid=0.5, yes_ask=0.51,
         discovery_to_token_ready_ms=120,
         token_ready_to_book_ms=350,
         normalized_to_executable_ms=800,
@@ -1068,6 +1081,7 @@ def test_market_card_v2_latency_classification_critical_renders() -> None:
         display = PolymarketRealtimeDisplay(terminal_size_provider=lambda w=width: (w, 40))
         display.update_market(
             "ETH",
+            yes_bid=0.5, yes_ask=0.51,
             discovery_to_token_ready_ms=1200,
             token_ready_to_book_ms=8000,
             normalized_to_executable_ms=6000,
@@ -1430,7 +1444,7 @@ def test_quote_age_panel_shows_no_data_when_empty() -> None:
     display = PolymarketRealtimeDisplay()
     text = _render_text(display._quote_age_panel())
     assert "Quote Age" in text
-    assert "No quote-age data" in text
+    assert "No quote-age samples yet" in text
 
 
 def test_quote_age_panel_renders_mean_and_buckets() -> None:
@@ -1467,44 +1481,50 @@ def test_quote_age_panel_highlights_stale_bucket() -> None:
 # ── Header auto-derivation tests ───────────────────────────────────────────
 
 
-def test_header_derives_phase6_blocked_from_gate_counts() -> None:
-    """Header shows Phase6 BLOCKED when paired/btc/tp gates are below target."""
-    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
-    display.update_execution_reality(
-        paired=9, paired_target=20,
-        btc=1, btc_target=5,
-        tp=3, tp_target=5,
-    )
-    text = _render_text(display._header(display._resolve_layout()))
-    assert "Phase6 BLOCKED" in text
-
-
-def test_header_derives_s3_caution_from_gate_counts() -> None:
-    """Header shows S3 CAUTION when gate data is present but no explicit s3_status."""
-    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
-    display.update_execution_reality(paired=9, paired_target=20)
-    text = _render_text(display._header(display._resolve_layout()))
-    assert "S3 CAUTION" in text
-
-
-def test_header_shows_na_when_no_gate_data() -> None:
-    """Header shows n/a for Phase6 and S3 when no gate data is set."""
+def test_header_displays_pid_uptime_and_no_phase6_s3() -> None:
     display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
     text = _render_text(display._header(display._resolve_layout()))
-    assert "Phase6 n/a" in text
-    assert "S3 n/a" in text
+    assert "PID " in text
+    assert "STARTED " in text
+    assert "UPTIME " in text
+    assert "Phase6" not in text
+    assert "S3" not in text
 
 
-def test_header_explicit_phase6_overrides_derivation() -> None:
-    """Explicit phase6_status takes priority over derived gate-based label."""
-    display = PolymarketRealtimeDisplay(terminal_size_provider=lambda: (150, 38))
-    display.update_execution_reality(
-        paired=9, paired_target=20,
-        phase6_status="ACCUMULATING",
-    )
-    text = _render_text(display._header(display._resolve_layout()))
-    assert "Phase6 ACCUMULATING" in text
-    assert "Phase6 BLOCKED" not in text
+def test_no_orderbook_diagnostics_shows_clear_blocker_action() -> None:
+    display = PolymarketRealtimeDisplay()
+    # Mock clob_empty_response skip reason to trigger orderbook missing check
+    display.update_market("BTC", skip_reason="clob_empty_response")
+    text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
+    assert "Blocked: no_orderbook" in text
+    assert "Reason:  clob_empty_response" in text
+    assert "Action:  waiting for valid CLOB book" in text
+
+
+def test_no_candidate_diagnostics_shows_placeholder() -> None:
+    display = PolymarketRealtimeDisplay()
+    # Mock valid orderbooks to bypass the orderbook missing check
+    display.update_market("BTC", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
+    display.update_market("ETH", bid=0.5, ask=0.51, yes_bid=0.5, yes_ask=0.51)
+    text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
+    assert "No active candidate" in text
+    assert "Waiting for edge / threshold trigger" in text
+
+
+def test_execution_reality_empty_state_shows_placeholders() -> None:
+    display = PolymarketRealtimeDisplay()
+    text = _render_text(display._execution_reality_panel(display._resolve_layout()))
+    assert "No closed trades in current session" in text
+    assert "Post-patch totals shown in Research Progress" in text
+
+
+def test_market_missing_orderbook_shows_clean_status() -> None:
+    display = PolymarketRealtimeDisplay()
+    # Outcome is set to empty bids/asks
+    display.update_market("BTC", yes_bid=0.0, yes_ask=0.0, no_bid=0.0, no_ask=0.0)
+    text = _render_text(display._market_card("BTC", display._resolve_layout()))
+    assert "STATUS CLOB EMPTY" in text
+    assert "Action waiting for valid CLOB book" in text
 
 
 def test_research_progress_panel_renders_correctly() -> None:
@@ -1537,6 +1557,10 @@ def test_stop_monitor_panel_renders_correctly() -> None:
         mid_3_stop_signals=5,
         suppressed_raw_stops=10,
         actual_paper_stops=3,
+        shadow_would_reject=12,
+        ev_cap_shadow_rejects=8,
+        yes_floor_shadow_rejects=4,
+        shadow_baseline_accepted=20,
     )
     text = _render_text(display._stop_monitor_panel(display._standalone_layout()))
     assert "Stop Policy" in text
@@ -1545,3 +1569,7 @@ def test_stop_monitor_panel_renders_correctly() -> None:
     assert "Mid-3 Stops: 5" in text
     assert "Suppressed:  10" in text
     assert "Paper Stops: 3" in text
+    assert "Shadow Rejs: 12" in text
+    assert "EV Cap:    8" in text
+    assert "YES Floor: 4" in text
+    assert "Rej Rate:  60.0%" in text
