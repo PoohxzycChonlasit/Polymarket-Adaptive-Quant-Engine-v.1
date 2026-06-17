@@ -180,3 +180,112 @@ def test_auto_redeem_and_runtime_cooldowns_are_independent() -> None:
     assert len(notifier.messages) == 2
     assert "ALIVE" in notifier.messages[0]
     assert "DAY" in notifier.messages[1]
+
+
+# ---------------------------------------------------------------------------
+# PATCH_TG_HEARTBEAT_V2 — startup bypass tests
+# ---------------------------------------------------------------------------
+
+def _runtime_status_kwargs() -> dict:
+    return dict(
+        dedup_key="runtime_status",
+        run_id="test-run-hb",
+        uptime="0h00m",
+        cycles=1,
+        trade_opens=0,
+        trade_closes=0,
+        exceptions=0,
+        mode="PAPER",
+        risk_mode="NORMAL",
+        heartbeat_age="1s",
+        regime="n/a",
+    )
+
+
+def test_startup_heartbeat_bypasses_cooldown_on_first_call() -> None:
+    """First notify_summary(dedup_key='runtime_status') must send even if cooldown
+    is artificially pre-seeded, guaranteeing one heartbeat per run."""
+    now = [0.0]
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=3600, now=lambda: now[0])
+    # Pre-seed last_sent to simulate "cooldown already active" (e.g. from a prior send
+    # that populated _last_sent 10 seconds ago in the same instance).
+    layer._last_sent["summary:runtime_status"] = now[0] - 10.0
+
+    result = layer.notify_summary("", **_runtime_status_kwargs())
+
+    assert result.sent, "Startup heartbeat must bypass the cooldown on first call"
+    assert len(notifier.messages) == 1
+    assert layer._startup_heartbeat_sent is True
+    assert "ALIVE" in notifier.messages[0]
+
+
+def test_second_runtime_status_is_cooldown_gated_after_startup_heartbeat() -> None:
+    """After the startup bypass fires once, all subsequent runtime_status calls
+    must use the normal hourly cooldown — no second immediate send."""
+    now = [0.0]
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=3600, now=lambda: now[0])
+
+    def _send() -> None:
+        layer.notify_summary("", **_runtime_status_kwargs())
+
+    _send()  # first call — startup bypass fires
+    assert len(notifier.messages) == 1, "Startup send must succeed"
+
+    # Many calls within the cooldown window must all be suppressed
+    for _ in range(20):
+        now[0] += 60
+        _send()
+    assert len(notifier.messages) == 1, "All calls within cooldown must be suppressed"
+
+
+def test_runtime_status_sends_after_cooldown_expires() -> None:
+    """After startup bypass + cooldown expiry, the hourly heartbeat fires normally."""
+    now = [0.0]
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=3600, now=lambda: now[0])
+
+    def _send() -> None:
+        layer.notify_summary("", **_runtime_status_kwargs())
+
+    _send()  # startup bypass
+    assert len(notifier.messages) == 1
+
+    now[0] += 3601  # advance past the 1-hour cooldown
+    _send()  # hourly heartbeat
+    assert len(notifier.messages) == 2, "Hourly heartbeat must fire after cooldown expires"
+
+
+def test_non_runtime_summary_unchanged_by_startup_bypass() -> None:
+    """Non-runtime_status summaries (e.g. auto_redeem_cycle) must not be affected
+    by the startup bypass flag at all — they still use the standard cooldown."""
+    now = [0.0]
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=3600, now=lambda: now[0])
+
+    # Non-runtime_status summary — no bypass should apply
+    r1 = layer.notify_summary("Auto-Redeem claimed $1.00", dedup_key="auto_redeem_cycle", mode="paper")
+    assert r1.sent
+
+    # Second call for the same non-runtime key must be cooldown-gated
+    r2 = layer.notify_summary("Auto-Redeem claimed $1.00", dedup_key="auto_redeem_cycle", mode="paper")
+    assert r2.suppressed, "Non-runtime summary must remain cooldown-gated"
+    assert len(notifier.messages) == 1
+
+    # Startup bypass flag must remain False — non-runtime call must not prime it
+    assert layer._startup_heartbeat_sent is False
+
+
+def test_startup_heartbeat_message_is_compact() -> None:
+    """The startup heartbeat message must be compact (≤ 2 non-empty lines)."""
+    notifier = FakeNotifier()
+    layer = TelegramAlertLayer(notifier, cooldown_seconds=3600, now=lambda: 0.0)
+
+    layer.notify_summary("", **_runtime_status_kwargs())
+
+    msg = notifier.messages[0]
+    non_empty_lines = [ln for ln in msg.splitlines() if ln.strip()]
+    assert len(non_empty_lines) <= 2, (
+        f"Heartbeat message must be ≤ 2 lines, got {len(non_empty_lines)}: {msg!r}"
+    )

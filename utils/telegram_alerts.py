@@ -50,6 +50,8 @@ class TelegramAlertLayer:
         self._last_sent: dict[str, float] = {}
         self._telemetry_emit = telemetry_emit
         self.run_id = run_id
+        # Guarantees one startup heartbeat per instance before the hourly cooldown activates.
+        self._startup_heartbeat_sent: bool = False
 
     def notify_startup(self, message: str = "", **context: Any) -> AlertResult:
         return self._send("startup", self._format_message("STARTUP", message, context), context)
@@ -70,6 +72,18 @@ class TelegramAlertLayer:
 
     def notify_summary(self, message: str = "", **context: Any) -> AlertResult:
         key = self._dedup_key("summary", message, context)
+        # Startup heartbeat bypass: the very first runtime_status summary per instance
+        # is sent unconditionally, bypassing the hourly cooldown gate. This guarantees
+        # at least one heartbeat per runtime run regardless of session duration.
+        # All subsequent runtime_status calls and all non-runtime_status summaries
+        # continue to use the normal cooldown path unchanged.
+        if context.get("dedup_key") == "runtime_status" and not self._startup_heartbeat_sent:
+            self._startup_heartbeat_sent = True
+            formatted = self._format_message("SUMMARY", message, context)
+            result = self._send("summary", formatted, context, cooldown_key=key)
+            if result.sent:
+                self._last_sent[key] = self._now()
+            return result
         return self._send_with_cooldown(
             "summary",
             key,
