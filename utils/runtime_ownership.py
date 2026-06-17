@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
+import subprocess
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -63,6 +66,36 @@ def _default_process_checker(pid: int) -> bool:
         return True
 
 
+def _get_process_cmdline(pid: int) -> str | None:
+    try:
+        import psutil
+        proc = psutil.Process(pid)
+        return " ".join(proc.cmdline())
+    except Exception:
+        # Fallback for Windows
+        if os.name == "nt":
+            try:
+                out = subprocess.check_output(
+                    ["wmic", "process", "where", f"ProcessId={pid}", "get", "CommandLine"],
+                    stderr=subprocess.DEVNULL,
+                    text=True
+                )
+                lines = [l.strip() for l in out.splitlines() if l.strip()]
+                if len(lines) > 1:
+                    return lines[1]
+            except Exception:
+                pass
+        # Fallback for Linux /proc
+        else:
+            try:
+                cmdline_file = Path(f"/proc/{pid}/cmdline")
+                if cmdline_file.exists():
+                    return cmdline_file.read_text(encoding="utf-8").replace("\x00", " ")
+            except Exception:
+                pass
+    return None
+
+
 def _atomic_json_replace(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(
@@ -120,12 +153,14 @@ class RuntimeOwnerManager:
         run_id: str = "",
         repo_root: str | Path | None = None,
         process_checker: Callable[[int], bool] | None = None,
+        telemetry_emit: Callable[[str, dict[str, Any]], Any] | None = None,
     ) -> None:
         self.owner_dir = Path(owner_dir)
         self.pid = int(pid if pid is not None else os.getpid())
         self.run_id = str(run_id or "")
         self.repo_root = str(Path(repo_root or Path.cwd()).resolve())
         self.process_checker = process_checker or _default_process_checker
+        self.telemetry_emit = telemetry_emit
 
     def owner_path(self, mode: str) -> Path:
         if str(mode).lower() == "paper":
@@ -135,10 +170,75 @@ class RuntimeOwnerManager:
     def _lock_path(self, mode: str) -> Path:
         return self.owner_path(mode).with_suffix(".startup.lock")
 
+    def _recover_stale_lock(self, lock_path: Path) -> None:
+        if not lock_path.exists():
+            return
+        try:
+            content = lock_path.read_text(encoding="utf-8").strip().split("\n")
+            if len(content) >= 3:
+                lock_pid = int(content[0])
+                lock_run_id = content[1]
+                lock_time_str = content[2]
+                
+                try:
+                    lock_time = datetime.fromisoformat(lock_time_str.replace("Z", "+00:00"))
+                    age = (datetime.now(timezone.utc) - lock_time).total_seconds()
+                except Exception:
+                    age = 9999.0
+                
+                pid_alive = self.process_checker(lock_pid)
+                cmdline_valid = True
+                if pid_alive:
+                    cmdline = _get_process_cmdline(lock_pid)
+                    if cmdline:
+                        is_python = "python" in cmdline.lower() or "py" in cmdline.lower()
+                        is_main = "main.py" in cmdline.lower()
+                        is_same_dir = str(self.repo_root).lower() in cmdline.lower() or "polymarket-adaptive-quant-engine" in cmdline.lower()
+                        if not (is_python and is_main and is_same_dir):
+                            cmdline_valid = False
+                    else:
+                        cmdline_valid = False
+                
+                is_stale = not pid_alive or not cmdline_valid or age > 10.0
+                if is_stale:
+                    lock_path.unlink(missing_ok=True)
+                    if self.telemetry_emit:
+                        try:
+                            self.telemetry_emit("log_system_health", {
+                                "event_type": "startup_lock_recovered",
+                                "pid": lock_pid,
+                                "lock_run_id": lock_run_id,
+                                "lock_age": age,
+                            })
+                        except Exception:
+                            pass
+        except Exception:
+            try:
+                lock_path.unlink(missing_ok=True)
+            except OSError:
+                pass
+
+    def _archive_stale_owner(self, mode: str) -> None:
+        path = self.owner_path(mode)
+        if not path.exists():
+            return
+        archive_dir = self.owner_dir / "archive"
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        dest = archive_dir / f"{mode}_runtime_owner_{ts}_backup.json"
+        try:
+            shutil.copy2(path, dest)
+        except Exception:
+            pass
+
     def acquire(self, *, mode: str = "paper", override: bool = False) -> RuntimeOwner:
         normalized_mode = str(mode or "paper").lower()
         lock_path = self._lock_path(normalized_mode)
         self.owner_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Recover stale lock if present
+        self._recover_stale_lock(lock_path)
+        
         lock_fd: int | None = None
         try:
             lock_fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_RDWR)
@@ -153,32 +253,126 @@ class RuntimeOwnerManager:
             existing = self._read_owner(normalized_mode)
             previous_owner: dict[str, Any] | None = None
             recovered = False
+            recovery_reason = ""
+            
             if existing is None:
                 pass
             elif existing.get("_unreadable"):
-                if not override:
-                    raise DuplicateRuntimeError(
-                        "Runtime owner file is unreadable; refusing to risk evidence contamination.",
-                        reason="owner_file_unreadable",
-                        existing_owner=existing,
-                    )
-                previous_owner = existing
+                self._archive_stale_owner(normalized_mode)
+                try:
+                    self.owner_path(normalized_mode).unlink(missing_ok=True)
+                except OSError:
+                    pass
+                recovered = True
+                recovery_reason = "owner_file_unreadable"
             else:
                 existing_pid = self._int_or_zero(existing.get("pid"))
-                same_owner = existing_pid == self.pid and str(existing.get("run_id") or "") == self.run_id
-                if same_owner:
-                    previous_owner = existing
-                elif self.process_checker(existing_pid):
-                    if not override:
-                        raise DuplicateRuntimeError(
-                            "Active paper runtime owner already exists.",
-                            reason="active_owner",
-                            existing_owner=existing,
-                        )
-                    previous_owner = existing
+                status = str(existing.get("status") or "").strip().lower()
+                heartbeat_utc_str = existing.get("heartbeat_utc")
+                repo_root = existing.get("repo_root")
+                
+                same_repo = str(repo_root) == str(self.repo_root)
+                
+                heartbeat_stale = False
+                if heartbeat_utc_str:
+                    try:
+                        hb_time = datetime.fromisoformat(heartbeat_utc_str.replace("Z", "+00:00"))
+                        age = (datetime.now(timezone.utc) - hb_time).total_seconds()
+                        if age > 60.0:
+                            heartbeat_stale = True
+                    except Exception:
+                        heartbeat_stale = True
                 else:
+                    heartbeat_stale = True
+                
+                pid_alive = self.process_checker(existing_pid)
+                cmdline_valid = True
+                if pid_alive:
+                    cmdline = _get_process_cmdline(existing_pid)
+                    if cmdline:
+                        is_python = "python" in cmdline.lower() or "py" in cmdline.lower()
+                        is_main = "main.py" in cmdline.lower()
+                        is_same_dir = str(self.repo_root).lower() in cmdline.lower() or "polymarket-adaptive-quant-engine" in cmdline.lower()
+                        if not (is_python and is_main and is_same_dir):
+                            cmdline_valid = False
+                    else:
+                        cmdline_valid = False
+                
+                should_recover = False
+                if not same_repo:
+                    pass
+                elif not pid_alive:
+                    should_recover = True
+                    recovery_reason = "dead_pid"
+                elif not cmdline_valid:
+                    should_recover = True
+                    recovery_reason = "pid_reused_or_non_runtime"
+                elif heartbeat_stale and status == "active":
+                    should_recover = True
+                    recovery_reason = "stale_heartbeat"
+                elif status == "stopping":
+                    if not pid_alive:
+                        should_recover = True
+                        recovery_reason = "stopping_process_dead"
+                    else:
+                        # Wait up to 5s grace period
+                        for _ in range(5):
+                            time.sleep(1.0)
+                            if not self.process_checker(existing_pid):
+                                pid_alive = False
+                                break
+                        
+                        if not pid_alive:
+                            should_recover = True
+                            recovery_reason = "stopping_process_exited"
+                        else:
+                            if heartbeat_stale or not cmdline_valid:
+                                should_recover = True
+                                recovery_reason = "stopping_process_hung_stale_heartbeat"
+                
+                if should_recover:
+                    if self.telemetry_emit:
+                        try:
+                            self.telemetry_emit("log_system_health", {
+                                "event_type": "stale_owner_detected",
+                                "existing_pid": existing_pid,
+                                "existing_run_id": existing.get("run_id"),
+                                "recovery_reason": recovery_reason,
+                            })
+                        except Exception:
+                            pass
+                    
+                    self._archive_stale_owner(normalized_mode)
+                    try:
+                        self.owner_path(normalized_mode).unlink(missing_ok=True)
+                    except OSError:
+                        pass
+                    
                     previous_owner = existing
                     recovered = True
+                    
+                    if self.telemetry_emit:
+                        try:
+                            self.telemetry_emit("log_system_health", {
+                                "event_type": "stale_owner_recovered",
+                                "existing_pid": existing_pid,
+                                "existing_run_id": existing.get("run_id"),
+                                "recovery_reason": recovery_reason,
+                            })
+                        except Exception:
+                            pass
+                else:
+                    same_owner = existing_pid == self.pid and str(existing.get("run_id") or "") == self.run_id
+                    if same_owner:
+                        previous_owner = existing
+                    elif pid_alive:
+                        if not override:
+                            raise DuplicateRuntimeError(
+                                "Active paper paper runtime owner already exists." if normalized_mode == "paper" else f"Active {normalized_mode} runtime owner already exists.",
+                                reason="active_owner",
+                                existing_owner=existing,
+                            )
+                        previous_owner = existing
 
             payload = self._owner_payload(
                 mode=normalized_mode,

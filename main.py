@@ -94,8 +94,13 @@ def _acquire_paper_runtime_owner(
     from utils.runtime_ownership import DuplicateRuntimeError, RuntimeOwnerManager
 
     run_id = _runtime_run_id_from_trader(trader)
+    telemetry_emit = getattr(trader, "_emit_quant_event", None)
     try:
-        return RuntimeOwnerManager(owner_dir=owner_dir, run_id=run_id).acquire(
+        return RuntimeOwnerManager(
+            owner_dir=owner_dir,
+            run_id=run_id,
+            telemetry_emit=telemetry_emit,
+        ).acquire(
             mode="paper",
             override=allow_duplicate_paper_runtime,
         )
