@@ -513,6 +513,7 @@ def run_polymarket_realtime(
         ui_mode        = ui_mode,
         fps_mode       = fps_mode,
     )
+    display.update_run_id(_runtime_run_id_from_trader(trader))
 
     stop       = threading.Event()
     cycle_num  = 0
