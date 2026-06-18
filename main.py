@@ -715,6 +715,9 @@ def run_polymarket_realtime(
                                 "liquidity_state":        metrics.liquidity_state,
                                 "market_regime":          sig.market_regime if sig else "UNKNOWN",
                                 "signal_volatility_score": sig.volatility_score if sig else 0.0,
+                                "clob_backoff_active": metrics.clob_backoff_active,
+                                "clob_cooldown_seconds_remaining": metrics.clob_cooldown_seconds_remaining,
+                                "orderbook_error": metrics.orderbook_error,
                             })
                             LOGGER.debug(
                                 "[DASHBOARD_PAYLOAD] ticker=%s yes_bid=%.4f yes_ask=%.4f no_bid=%.4f no_ask=%.4f spread=%.4f model_p_yes=%s model_p_no=%s ev=%s min_ev=%s delta=%s x%s age_ms=%s reason=%s",
@@ -864,6 +867,9 @@ def run_polymarket_realtime(
                             liquidity_state        = metrics.liquidity_state,
                             market_regime          = sig.market_regime if sig else "UNKNOWN",
                             signal_volatility_score = sig.volatility_score if sig else 0.0,
+                            clob_backoff_active = metrics.clob_backoff_active,
+                            clob_cooldown_seconds_remaining = metrics.clob_cooldown_seconds_remaining,
+                            orderbook_error = metrics.orderbook_error,
                         )
 
                         # Record trade in display if order was placed

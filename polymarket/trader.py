@@ -7989,6 +7989,7 @@ class PolymarketTrader:
                 error_detail.get("retry_count", 0),
                 exc,
             )
+            metrics.has_orderbook = False
         detail = self.last_quant_details.get(ticker, {})
         for key in ("p_yes", "p_no", "ev", "min_ev", "delta_regime", "delta_multiplier", "score", "frequency_multiplier", "final_size", "ask_price"):
             if key in detail:
@@ -8012,7 +8013,40 @@ class PolymarketTrader:
             metrics.orderbook_age_ms,
             metrics.skip_reason,
         )
+        # Check and alert on TRUE EMPTY state
+        is_true_empty = not metrics.has_orderbook
+        self._check_and_alert_true_empty(ticker, token_id, is_true_empty)
         return metrics
+
+    def _check_and_alert_true_empty(self, ticker: str, token_id: str, is_true_empty: bool) -> None:
+        now = time.time()
+        if not hasattr(self, "_true_empty_start_times"):
+            self._true_empty_start_times = {}
+        if not hasattr(self, "_last_true_empty_alert_times"):
+            self._last_true_empty_alert_times = {}
+
+        if is_true_empty:
+            if ticker not in self._true_empty_start_times:
+                self._true_empty_start_times[ticker] = now
+            else:
+                elapsed = now - self._true_empty_start_times[ticker]
+                if elapsed >= 600:  # 10 minutes threshold
+                    last_alert = self._last_true_empty_alert_times.get(ticker, 0.0)
+                    # Alert every 10 minutes while TRUE_EMPTY persists
+                    if now - last_alert >= 600:
+                        self._last_true_empty_alert_times[ticker] = now
+                        mins = int(elapsed // 60)
+                        message = (
+                            f"ORDERBOOK TRUE EMPTY > 10m\n"
+                            f"Asset: {ticker.upper()}\n"
+                            f"Token: {token_id}\n"
+                            f"Cached Book: NO\n"
+                            f"Duration: {mins}m"
+                        )
+                        self._notify_telegram("critical", message, dedup_key=f"true_empty_{ticker}")
+        else:
+            self._true_empty_start_times.pop(ticker, None)
+            self._last_true_empty_alert_times.pop(ticker, None)
 
     def verify_account_readiness(self) -> dict[str, object]:
         """Run read-only connectivity, wallet, balance, market, and model checks."""

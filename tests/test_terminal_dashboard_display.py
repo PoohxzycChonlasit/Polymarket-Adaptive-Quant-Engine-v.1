@@ -1497,7 +1497,7 @@ def test_no_orderbook_diagnostics_shows_clear_blocker_action() -> None:
     display.update_market("BTC", skip_reason="clob_empty_response")
     text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
     assert "Blocked: no_orderbook" in text
-    assert "Reason:  clob_empty_response" in text
+    assert "Reason:  TRUE EMPTY" in text
     assert "Action:  waiting for valid CLOB book" in text
 
 
@@ -1523,8 +1523,8 @@ def test_market_missing_orderbook_shows_clean_status() -> None:
     # Outcome is set to empty bids/asks
     display.update_market("BTC", yes_bid=0.0, yes_ask=0.0, no_bid=0.0, no_ask=0.0)
     text = _render_text(display._market_card("BTC", display._resolve_layout()))
-    assert "STATUS CLOB EMPTY" in text
-    assert "Action waiting for valid CLOB book" in text
+    assert "STATUS TRUE EMPTY" in text
+    assert "Action waiting for first valid book" in text
 
 
 def test_research_progress_panel_renders_correctly() -> None:
@@ -1573,3 +1573,79 @@ def test_stop_monitor_panel_renders_correctly() -> None:
     assert "EV Cap:    8" in text
     assert "YES Floor: 4" in text
     assert "Rej Rate:  60.0%" in text
+
+
+# ── PATCH_OBSERVABILITY_002_CLOB_CLARITY test cases ─────────────────────────
+
+def test_market_card_renders_cooldown_with_cached_book() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_market(
+        "BTC",
+        yes_bid=0.52,
+        yes_ask=0.54,
+        no_bid=0.46,
+        no_ask=0.48,
+        clob_backoff_active=True,
+        clob_cooldown_seconds_remaining=8.22,
+    )
+    text = _render_text(display._market_card("BTC", display._resolve_layout()))
+    assert "STATUS CLOB COOLDOWN" in text
+    assert "Cached Book: YES" in text
+    assert "Cooldown: 8.2s" in text
+
+
+def test_market_card_renders_true_empty() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_market(
+        "BTC",
+        yes_bid=0.0,
+        yes_ask=0.0,
+        no_bid=0.0,
+        no_ask=0.0,
+    )
+    text = _render_text(display._market_card("BTC", display._resolve_layout()))
+    assert "STATUS TRUE EMPTY" in text
+    assert "Cached Book: NO" in text
+
+
+def test_market_card_renders_ready() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_market(
+        "BTC",
+        yes_bid=0.52,
+        yes_ask=0.54,
+        no_bid=0.46,
+        no_ask=0.48,
+        clob_backoff_active=False,
+        orderbook_age_ms=1200,
+    )
+    text = _render_text(display._market_card("BTC", display._resolve_layout()))
+    assert "STATUS READY" in text
+    assert "Age: 1.2s" in text
+
+
+def test_diagnostics_cooldown_with_cached_book() -> None:
+    display = PolymarketRealtimeDisplay()
+    display.update_market(
+        "BTC",
+        yes_bid=0.52,
+        yes_ask=0.54,
+        no_bid=0.46,
+        no_ask=0.48,
+        clob_backoff_active=True,
+        clob_cooldown_seconds_remaining=8.22,
+    )
+    display.update_market(
+        "ETH",
+        yes_bid=0.52,
+        yes_ask=0.54,
+        no_bid=0.46,
+        no_ask=0.48,
+        clob_backoff_active=True,
+        clob_cooldown_seconds_remaining=8.22,
+    )
+    text = _render_text(display._candidate_observability_panel(display._resolve_layout()))
+    assert "Blocked: orderbook_refresh_cooldown" in text
+    assert "Reason:  clob_orderbook_cooldown_active" in text
+    assert "Cached Book: available" in text
+    assert "Cooldown Remaining: 8.2s" in text

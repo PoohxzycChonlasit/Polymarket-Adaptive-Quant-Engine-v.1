@@ -2287,6 +2287,38 @@ class PolymarketRealtimeDisplay:
             rows += [self._market_line(ticker, spec.panel_width * max(1, spec.columns)), "\n"]
         return Panel(Text.assemble(*rows), title="[bold bright_white]Market Scan[/bold bright_white]", border_style="bright_blue")
 
+    def _classify_clob_state(self, m: dict[str, object]) -> tuple[str, str, str, str]:
+        """
+        Returns:
+            status_label: String ('READY', 'CLOB COOLDOWN', 'CACHED BOOK AVAILABLE', 'TRUE EMPTY')
+            cached_book_str: 'YES', 'NO', or 'n/a'
+            bid_ask_str: 'AVAILABLE' or 'MISSING'
+            time_val_str: e.g. 'Cooldown: 8.2s', 'Age: 1.2s', or ''
+        """
+        clob_backoff_active = bool(m.get("clob_backoff_active", False))
+        cooldown_remaining = float(m.get("clob_cooldown_seconds_remaining", 0.0) or 0.0)
+        age_ms = float(m.get("orderbook_age_ms", 0.0) or 0.0)
+        ob_error = m.get("orderbook_error")
+        skip_reason_str = str(m.get("skip_reason") or "").strip()
+
+        yes_bid = float(m.get("yes_bid", 0.0) or 0.0)
+        yes_ask = float(m.get("yes_ask", 0.0) or 0.0)
+        no_bid = float(m.get("no_bid", 0.0) or 0.0)
+        no_ask = float(m.get("no_ask", 0.0) or 0.0)
+        has_cached_book = (yes_bid > 0.0 and yes_ask > 0.0) or (no_bid > 0.0 and no_ask > 0.0)
+
+        if not has_cached_book:
+            return "TRUE EMPTY", "NO", "MISSING", f"Cooldown: {cooldown_remaining:.1f}s" if clob_backoff_active else ""
+
+        if clob_backoff_active:
+            return "CLOB COOLDOWN", "YES", "AVAILABLE", f"Cooldown: {cooldown_remaining:.1f}s"
+
+        if ob_error or skip_reason_str in ("clob_empty_response", "delta_extreme"):
+            return "CACHED BOOK AVAILABLE", "YES", "AVAILABLE", f"Age: {age_ms/1000.0:.1f}s"
+
+        age_seconds = age_ms / 1000.0
+        return "READY", "n/a", "AVAILABLE", f"Age: {age_seconds:.1f}s"
+
     def _market_card(self, ticker: str, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
         m = self._markets.get(ticker, {})
@@ -2333,32 +2365,44 @@ class PolymarketRealtimeDisplay:
         recovery_retries = int(self._as_float(m.get("empty_book_recovery_retry_count", 0)))
         price_style = "bright_green" if diff >= 0 else "bright_red"
         
-        # Check if orderbook is missing for this market
-        ob_missing = False
-        ob_missing_reason = "NO ORDERBOOK"
-        skip_reason_str = str(m.get("skip_reason") or "").strip()
-        if skip_reason_str in ("clob_empty_response", "delta_extreme"):
-            ob_missing = True
-            ob_missing_reason = skip_reason_str.replace("_", " ").upper()
-        elif yes_bid == 0.0 and yes_ask == 0.0 and no_bid == 0.0 and no_ask == 0.0:
-            ob_missing = True
-            ob_missing_reason = "CLOB EMPTY"
+        status_label, cached_book, bid_ask, time_val = self._classify_clob_state(m)
 
-        if ob_missing:
-            lines = [
-                self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
-                self._line([("STATUS ", "grey70"), (ob_missing_reason, "bold bright_red")], spec.panel_width),
-                self._line([("Action ", "grey70"), ("waiting for valid CLOB book", "bright_yellow")], spec.panel_width),
+        lines = [
+            self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
+        ]
+
+        if status_label == "TRUE EMPTY":
+            lines.extend([
+                self._line([("STATUS ", "grey70"), ("TRUE EMPTY", "bold bright_red")], spec.panel_width),
+                self._line([("Cached Book: ", "grey70"), ("NO", "bold bright_red"), (" | Bid/Ask: ", "grey70"), ("MISSING", "bright_red")], spec.panel_width),
+                self._line([("Action ", "grey70"), ("waiting for first valid book", "bright_yellow")], spec.panel_width),
                 self._line([("Token ", "grey70"), (self._clip(str(m.get("token_id", "") or "--"), 16), "grey62")], spec.panel_width),
                 self._line([("Regime ", "grey70"), (self._clip(regime, 16), "bold bright_cyan")], spec.panel_width),
                 self._line([("Decision ", "grey70"), (decision, self._decision_style(decision))], spec.panel_width),
-            ]
+            ])
             if mapping_warning:
                 lines.append(self._line([("Token mapping ", "bold bright_yellow"), (self._clip(mapping_warning, max(12, spec.panel_width - 16)), "bold bright_yellow")], spec.panel_width))
             return Panel(Text.assemble(*self._with_breaks(lines)), title=f"[bold bright_white]{ticker} Market[/bold bright_white]", border_style="bright_blue")
 
-        lines = [
-            self._line([("Oracle ", "grey70"), (self._fmt_price(price), f"bold {price_style}"), (" | PTB ", "grey70"), (self._fmt_price(ptb), "bold white")], spec.panel_width),
+        elif status_label == "CLOB COOLDOWN":
+            lines.extend([
+                self._line([("STATUS ", "grey70"), ("CLOB COOLDOWN", "bold bright_yellow")], spec.panel_width),
+                self._line([("Cached Book: ", "grey70"), ("YES", "bold bright_green"), (" | Bid/Ask: ", "grey70"), ("AVAILABLE", "bright_green"), (" | Cooldown: ", "grey70"), (time_val.replace("Cooldown: ", ""), "bright_cyan")], spec.panel_width),
+                self._line([("Action ", "grey70"), ("waiting for live refresh", "bright_yellow")], spec.panel_width),
+            ])
+        elif status_label == "CACHED BOOK AVAILABLE":
+            lines.extend([
+                self._line([("STATUS ", "grey70"), ("CACHED BOOK AVAILABLE", "bold bright_yellow")], spec.panel_width),
+                self._line([("Cached Book: ", "grey70"), ("YES", "bold bright_green"), (" | Bid/Ask: ", "grey70"), ("AVAILABLE", "bright_green"), (" | ", "grey70"), (time_val, "bright_green")], spec.panel_width),
+                self._line([("Action ", "grey70"), ("using cached orderbook", "bright_yellow")], spec.panel_width),
+            ])
+        else:
+            lines.extend([
+                self._line([("STATUS ", "grey70"), ("READY", "bold bright_green")], spec.panel_width),
+                self._line([("Cached Book: ", "grey70"), ("n/a", "grey50"), (" | Bid/Ask: ", "grey70"), ("AVAILABLE", "bright_green"), (" | ", "grey70"), (time_val, "bright_green")], spec.panel_width),
+            ])
+
+        lines.extend([
             self._line([("YES Bid ", "grey70"), (self._fmt_prob(yes_bid), "bold bright_green"), (" | YES Ask ", "grey70"), (self._fmt_prob(yes_ask), "bold bright_red")], spec.panel_width),
             self._line([("NO Bid ", "grey70"), (self._fmt_prob(no_bid), "bold bright_green"), (" | NO Ask ", "grey70"), (self._fmt_prob(no_ask), "bold bright_red"), (" | Spread ", "grey70"), (self._fmt_prob(spread), "grey70")], spec.panel_width),
             self._line([("YES Mid ", "grey70"), (self._fmt_prob(yes_mid), "bright_green"), (" | NO Mid ", "grey70"), (self._fmt_prob(no_mid), "bright_red"), (" | Age ", "grey70"), (f"{age_ms}ms" if age_ms else "--", "bright_green" if age_ms and age_ms <= 1500 else "bright_yellow")], spec.panel_width),
@@ -2383,7 +2427,7 @@ class PolymarketRealtimeDisplay:
                 ("Liquidity ", "grey70"), (self._clip(liquidity_state, 12), self._liquidity_style(liquidity_state)),
                 (" | Recovery ", "grey70"), (f"a={self._on_off(recovery_attempted)} s={self._on_off(recovery_success)} f={self._on_off(recovery_failed)} r={recovery_retries}", "bright_green" if recovery_success else "bright_red" if recovery_failed else "grey62"),
             ], spec.panel_width),
-        ]
+        ])
         if mapping_warning:
             lines.append(self._line([("Token mapping ", "bold bright_yellow"), (self._clip(mapping_warning, max(12, spec.panel_width - 16)), "bold bright_yellow")], spec.panel_width))
 
@@ -2532,6 +2576,29 @@ class PolymarketRealtimeDisplay:
     def _candidate_observability_panel(self, spec: DashboardLayout | None = None) -> Panel:
         spec = spec or self._standalone_layout()
         
+        # Check if cooldown is active and cached book exists
+        is_cooldown_active = any(bool(m.get("clob_backoff_active", False)) for m in self._markets.values())
+        max_cooldown = max([float(m.get("clob_cooldown_seconds_remaining", 0.0) or 0.0) for m in self._markets.values()] + [0.0])
+
+        all_cached_available = all(
+            (self._as_float(m.get('yes_bid', 0.0)) > 0.0 and self._as_float(m.get('yes_ask', 0.0)) > 0.0) or
+            (self._as_float(m.get('no_bid', 0.0)) > 0.0 and self._as_float(m.get('no_ask', 0.0)) > 0.0)
+            for m in self._markets.values()
+        )
+
+        if is_cooldown_active and all_cached_available:
+            lines = [
+                self._line([("Blocked: ", "grey70"), ("orderbook_refresh_cooldown", "bold bright_yellow")], spec.panel_width),
+                self._line([("Reason:  ", "grey70"), ("clob_orderbook_cooldown_active", "bright_yellow")], spec.panel_width),
+                self._line([("Cached Book: ", "grey70"), ("available", "bright_green")], spec.panel_width),
+                self._line([("Cooldown Remaining: ", "grey70"), (f"{max_cooldown:.1f}s", "bright_cyan")], spec.panel_width),
+            ]
+            return Panel(
+                Text.assemble(*self._with_breaks(lines)),
+                title="[bold bright_white]Decision Diagnostics[/bold bright_white]",
+                border_style="bright_magenta",
+            )
+
         # 1. Check if orderbook is missing
         is_ob_missing = False
         ob_reason = "clob_empty_response"
@@ -2557,9 +2624,18 @@ class PolymarketRealtimeDisplay:
                 ob_reason = "clob_empty_response"
 
         if is_ob_missing:
+            # Determine if we have any cached book available or if it's truly empty
+            status_labels = [self._classify_clob_state(m)[0] for m in self._markets.values()]
+            if "TRUE EMPTY" in status_labels:
+                diag_reason = "TRUE EMPTY"
+                diag_style = "bold bright_red"
+            else:
+                diag_reason = "CACHED BOOK AVAILABLE"
+                diag_style = "bold bright_yellow"
+
             lines = [
                 self._line([("Blocked: ", "grey70"), ("no_orderbook", "bold bright_red")], spec.panel_width),
-                self._line([("Reason:  ", "grey70"), (ob_reason, "bright_yellow")], spec.panel_width),
+                self._line([("Reason:  ", "grey70"), (diag_reason, diag_style)], spec.panel_width),
                 self._line([("Action:  ", "grey70"), ("waiting for valid CLOB book", "bright_green")], spec.panel_width),
             ]
             return Panel(
@@ -3123,19 +3199,11 @@ class PolymarketRealtimeDisplay:
         no_bid = self._as_float(m.get('no_bid', 0.0))
         no_ask = self._as_float(m.get('no_ask', 0.0))
         
-        ob_missing = False
-        ob_reason = "NO ORDERBOOK"
-        skip_reason_str = str(m.get("skip_reason") or "").strip()
-        if skip_reason_str in ("clob_empty_response", "delta_extreme"):
-            ob_missing = True
-            ob_reason = skip_reason_str.replace("_", " ").upper()
-        elif yes_bid == 0.0 and yes_ask == 0.0 and no_bid == 0.0 and no_ask == 0.0:
-            ob_missing = True
-            ob_reason = "CLOB EMPTY"
+        status_label, cached_book, bid_ask, time_val = self._classify_clob_state(m)
 
-        if ob_missing:
+        if status_label == "TRUE EMPTY":
             prefix = f" {ticker:<4} {self._fmt_price(self._as_float(m.get('ref_price', 0.0))):>10} {self._fmt_price(self._as_float(m.get('current_price', 0.0))):>10} "
-            ob_segment = f"  {ob_reason:<37} "
+            ob_segment = f"  {status_label:<37} "
             suffix = (
                 f"{self._fmt_prob(self._as_float(m.get('model_p_yes', m.get('p_yes', 0.0)))):>7} "
                 f"{self._fmt_prob(self._as_float(m.get('model_p_no', m.get('p_no', 0.0)))):>7} "
