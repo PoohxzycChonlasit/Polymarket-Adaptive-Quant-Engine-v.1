@@ -218,6 +218,13 @@ class PaperSessionStats:
     risk_mode_transitions: Counter[str] = field(default_factory=Counter)
     critical_warnings: list[str] = field(default_factory=list)
     trade_timestamps: list[float] = field(default_factory=list)
+    funnel_candidates: int = 0
+    funnel_orderbook_ready: int = 0
+    funnel_confidence_pass: int = 0
+    funnel_ev_pass: int = 0
+    funnel_delta_pass: int = 0
+    funnel_risk_size_pass: int = 0
+    funnel_trade_open: int = 0
 
     def __post_init__(self) -> None:
         pass
@@ -362,6 +369,9 @@ class PolymarketTrader:
         self.paper_stats = PaperSessionStats()
         self._risk_mode_state = RiskModeState()
         self._last_risk_mode_log = ""
+        self._last_risk_mode_decision = None
+        self._last_funnel_stage = "candidates"
+        self.runtime_owner = None
         initial_bankroll = float(self.settings.account_balance)
         self.bankroll_state = BankrollState(
             starting_bankroll=initial_bankroll,
@@ -5632,6 +5642,7 @@ class PolymarketTrader:
             drawdown_pct=drawdown,
             hard_drawdown_reached=self._risk_off(drawdown),
         )
+        self._last_risk_mode_decision = decision
         body = (
             f"mode={decision.mode.value} previous={decision.previous_mode.value} "
             f"reason={decision.reason} consecutive_losses={decision.consecutive_losses} "

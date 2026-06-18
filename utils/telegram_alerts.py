@@ -46,8 +46,10 @@ class TelegramAlertLayer:
         self.notifier = notifier
         self.cooldown_seconds = int(cooldown_seconds)
         self.summary_interval_seconds = int(summary_interval_minutes) * 60
+        self.heartbeat_retry_cooldown_seconds = 60
         self._now = now or time.monotonic
         self._last_sent: dict[str, float] = {}
+        self._heartbeat_retry_until: dict[str, float] = {}
         self._telemetry_emit = telemetry_emit
         self.run_id = run_id
         # Guarantees one startup heartbeat per instance before the hourly cooldown activates.
@@ -77,12 +79,16 @@ class TelegramAlertLayer:
         # at least one heartbeat per runtime run regardless of session duration.
         # All subsequent runtime_status calls and all non-runtime_status summaries
         # continue to use the normal cooldown path unchanged.
+        if context.get("dedup_key") == "runtime_status":
+            self._emit_heartbeat_event("heartbeat_generated", cooldown_key=key)
         if context.get("dedup_key") == "runtime_status" and not self._startup_heartbeat_sent:
             self._startup_heartbeat_sent = True
             formatted = self._format_message("SUMMARY", message, context)
             result = self._send("summary", formatted, context, cooldown_key=key)
             if result.sent:
-                self._last_sent[key] = self._now()
+                self._record_summary_send_queued(key)
+            else:
+                self._record_runtime_status_failure(key, reason=result.reason or "send_failed")
             return result
         return self._send_with_cooldown(
             "summary",
@@ -124,11 +130,45 @@ class TelegramAlertLayer:
                 cooldown_seconds=int(cooldown_seconds),
                 seconds_remaining=seconds_remaining,
             )
+            if self._is_runtime_status_summary(route, key):
+                self._emit_heartbeat_event(
+                    "heartbeat_suppressed",
+                    cooldown_key=key,
+                    suppression_reason="cooldown",
+                    cooldown_seconds=int(cooldown_seconds),
+                    seconds_remaining=seconds_remaining,
+                )
             return AlertResult(sent=False, suppressed=True, reason="cooldown")
+
+        retry_until = self._heartbeat_retry_until.get(key)
+        if self._is_runtime_status_summary(route, key) and retry_until is not None and now < retry_until:
+            seconds_remaining = max(0, int(retry_until - now))
+            self._emit_telemetry(
+                "telegram_suppressed_cooldown",
+                route=route,
+                source_event_id=source_event_id,
+                cooldown_key=key,
+                suppression_reason="heartbeat_retry_backoff",
+                cooldown_seconds=int(self.heartbeat_retry_cooldown_seconds),
+                seconds_remaining=seconds_remaining,
+            )
+            self._emit_heartbeat_event(
+                "heartbeat_suppressed",
+                cooldown_key=key,
+                suppression_reason="heartbeat_retry_backoff",
+                retry_cooldown_seconds=int(self.heartbeat_retry_cooldown_seconds),
+                seconds_remaining=seconds_remaining,
+            )
+            return AlertResult(sent=False, suppressed=True, reason="heartbeat_retry_backoff")
 
         result = self._send(route, message, context, cooldown_key=key, emit_attempt=False)
         if result.sent:
-            self._last_sent[key] = now
+            if self._is_runtime_status_summary(route, key):
+                self._record_summary_send_queued(key)
+            else:
+                self._last_sent[key] = now
+        elif self._is_runtime_status_summary(route, key):
+            self._record_runtime_status_failure(key, reason=result.reason or "send_failed")
         return result
 
     def _send(
@@ -193,15 +233,81 @@ class TelegramAlertLayer:
 
     def _emit_telemetry(self, event_type: str | dict[str, Any], **fields: Any) -> None:
         emit = self._telemetry_emit
+        event: dict[str, Any] | None = None
+        if isinstance(event_type, dict):
+            event = dict(event_type)
+        else:
+            event = _telegram_telemetry_event(event_type, run_id=self.run_id, **fields)
+        self._handle_runtime_status_delivery_event(event)
         if emit is None:
             return
         try:
-            if isinstance(event_type, dict):
-                emit(event_type)
-            else:
-                emit(_telegram_telemetry_event(event_type, run_id=self.run_id, **fields))
+            emit(event)
         except Exception:
             LOGGER.debug("telegram telemetry emit failed", exc_info=True)
+
+    @staticmethod
+    def _is_runtime_status_summary(route: str, key: str | None) -> bool:
+        return route == "summary" and key == "summary:runtime_status"
+
+    def _notifier_uses_async_delivery_telemetry(self) -> bool:
+        notifier = self.notifier or _get_project_notifier()
+        return bool(getattr(notifier, "supports_async_telegram_telemetry", False))
+
+    def _record_summary_send_queued(self, key: str) -> None:
+        if key in self._last_sent and key not in self._heartbeat_retry_until:
+            return
+        if self._notifier_uses_async_delivery_telemetry():
+            self._heartbeat_retry_until[key] = self._now() + self.heartbeat_retry_cooldown_seconds
+            return
+        now = self._now()
+        self._last_sent[key] = now
+        self._heartbeat_retry_until.pop(key, None)
+        self._emit_heartbeat_event(
+            "heartbeat_delivered",
+            cooldown_key=key,
+            cooldown_seconds=int(self.summary_interval_seconds),
+        )
+
+    def _record_runtime_status_failure(self, key: str, *, reason: str) -> None:
+        self._last_sent.pop(key, None)
+        self._heartbeat_retry_until[key] = self._now() + self.heartbeat_retry_cooldown_seconds
+        self._emit_heartbeat_event(
+            "heartbeat_send_failed",
+            cooldown_key=key,
+            reason=reason,
+        )
+        self._emit_heartbeat_event(
+            "heartbeat_retry_scheduled",
+            cooldown_key=key,
+            retry_cooldown_seconds=int(self.heartbeat_retry_cooldown_seconds),
+        )
+
+    def _handle_runtime_status_delivery_event(self, event: dict[str, Any]) -> None:
+        route = str(event.get("route") or "")
+        key = str(event.get("cooldown_key") or "")
+        if not self._is_runtime_status_summary(route, key):
+            return
+        event_type = str(event.get("event_type") or "")
+        if event_type == "telegram_send_success":
+            self._last_sent[key] = self._now()
+            self._heartbeat_retry_until.pop(key, None)
+            self._emit_heartbeat_event(
+                "heartbeat_delivered",
+                cooldown_key=key,
+                cooldown_seconds=int(self.summary_interval_seconds),
+            )
+        elif event_type == "telegram_send_failure":
+            self._record_runtime_status_failure(key, reason=str(event.get("exception_class") or "send_failed"))
+
+    def _emit_heartbeat_event(self, event_type: str, **fields: Any) -> None:
+        emit = self._telemetry_emit
+        if emit is None:
+            return
+        try:
+            emit(_telegram_telemetry_event(event_type, run_id=self.run_id, route="summary", **fields))
+        except Exception:
+            LOGGER.debug("heartbeat telemetry emit failed", exc_info=True)
 
     @staticmethod
     def _format_message(kind: str, message: str, context: dict[str, Any]) -> str:

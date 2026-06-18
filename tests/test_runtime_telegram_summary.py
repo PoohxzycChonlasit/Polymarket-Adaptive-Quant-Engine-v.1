@@ -14,6 +14,50 @@ class FakeNotifier:
         self.messages.append(message)
 
 
+class AsyncFailureNotifier:
+    supports_async_telegram_telemetry = True
+
+    def __init__(self) -> None:
+        self.messages: list[str] = []
+
+    def send_message(self, message: str, **metadata) -> None:
+        self.messages.append(message)
+        metadata["telemetry_emit"](
+            {
+                "timestamp": "2026-06-17T00:00:00Z",
+                "event_type": "telegram_send_failure",
+                "route": metadata["route"],
+                "run_id": metadata["run_id"],
+                "source_event_id": metadata["source_event_id"],
+                "cooldown_key": metadata["cooldown_key"],
+                "exception_class": "ConnectionError",
+                "failure_stage": "http_post",
+            }
+        )
+
+
+class AsyncSuccessNotifier:
+    supports_async_telegram_telemetry = True
+
+    def __init__(self) -> None:
+        self.messages: list[str] = []
+
+    def send_message(self, message: str, **metadata) -> None:
+        self.messages.append(message)
+        metadata["telemetry_emit"](
+            {
+                "timestamp": "2026-06-17T00:00:00Z",
+                "event_type": "telegram_send_success",
+                "route": metadata["route"],
+                "run_id": metadata["run_id"],
+                "source_event_id": metadata["source_event_id"],
+                "cooldown_key": metadata["cooldown_key"],
+                "http_status": 200,
+                "telegram_ok": True,
+            }
+        )
+
+
 def _make_layer(now_val: float = 0.0) -> tuple[TelegramAlertLayer, FakeNotifier]:
     notifier = FakeNotifier()
     layer = TelegramAlertLayer(notifier, cooldown_seconds=300, now=lambda: now_val)
@@ -41,6 +85,69 @@ def test_runtime_heartbeat_renders_status_header() -> None:
     assert "ALIVE" in msg
     assert "PAPER" in msg
     assert " | " in msg
+
+
+def test_runtime_status_delivery_failure_uses_short_retry_not_hourly_cooldown() -> None:
+    now = [0.0]
+    events: list[dict[str, object]] = []
+    notifier = AsyncFailureNotifier()
+    layer = TelegramAlertLayer(
+        notifier,
+        cooldown_seconds=300,
+        summary_interval_minutes=60,
+        now=lambda: now[0],
+        telemetry_emit=events.append,
+        run_id="run-heartbeat-retry",
+    )
+
+    first = layer.notify_summary("", **_runtime_status_kwargs())
+    assert first.sent
+    assert len(notifier.messages) == 1
+
+    now[0] += 30
+    suppressed = layer.notify_summary("", **_runtime_status_kwargs())
+    assert suppressed.suppressed
+    assert suppressed.reason == "heartbeat_retry_backoff"
+    assert len(notifier.messages) == 1
+
+    now[0] += 31
+    retry = layer.notify_summary("", **_runtime_status_kwargs())
+    assert retry.sent
+    assert len(notifier.messages) == 2
+
+    event_types = [event["event_type"] for event in events]
+    assert "heartbeat_generated" in event_types
+    assert "heartbeat_send_failed" in event_types
+    assert "heartbeat_retry_scheduled" in event_types
+    assert "heartbeat_suppressed" in event_types
+    retry_event = next(event for event in events if event["event_type"] == "heartbeat_retry_scheduled")
+    assert retry_event["retry_cooldown_seconds"] == 60
+
+
+def test_runtime_status_delivery_success_sets_hourly_cooldown() -> None:
+    now = [0.0]
+    events: list[dict[str, object]] = []
+    notifier = AsyncSuccessNotifier()
+    layer = TelegramAlertLayer(
+        notifier,
+        cooldown_seconds=300,
+        summary_interval_minutes=60,
+        now=lambda: now[0],
+        telemetry_emit=events.append,
+        run_id="run-heartbeat-success",
+    )
+
+    first = layer.notify_summary("", **_runtime_status_kwargs())
+    assert first.sent
+    assert len(notifier.messages) == 1
+
+    now[0] += 120
+    suppressed = layer.notify_summary("", **_runtime_status_kwargs())
+    assert suppressed.suppressed
+    assert suppressed.reason == "cooldown"
+    assert len(notifier.messages) == 1
+
+    assert any(event["event_type"] == "heartbeat_delivered" for event in events)
 
 
 def test_runtime_heartbeat_includes_required_fields() -> None:
