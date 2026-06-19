@@ -11039,6 +11039,46 @@ class PolymarketTrader:
                             "last_valid_mid_cache_used": False,
                         },
                     )
+
+            # --- OPTION D SHADOW TELEMETRY HOOK (PATCH_001) ---
+            if getattr(self.settings, "option_d_shadow_enabled", False):
+                try:
+                    # Update metadata with actual stop info for evaluation
+                    pos_metadata = getattr(pos, "metadata", None)
+                    if not isinstance(pos_metadata, dict):
+                        pos_metadata = {}
+                        try:
+                            pos.metadata = pos_metadata
+                        except Exception:
+                            pass
+                    if isinstance(pos_metadata, dict):
+                        pos_metadata["actual_stop_triggered"] = bool(_should_stop)
+                        pos_metadata["actual_exit_reason"] = _close_reason if _should_stop else ""
+
+                    shadow_payload = evaluate_option_d_shadow(
+                        pos,
+                        ob,
+                        datetime.now(UTC),
+                        self.settings
+                    )
+                    if self.quant_events is not None:
+                        self.quant_events.log_stop_loss_shadow(shadow_payload)
+                except Exception as exc:
+                    LOGGER.error("[STOP_LOSS_SHADOW] Option D Shadow evaluator error for symbol=%s: %s", pos.symbol, exc)
+                    try:
+                        self._emit_quant_event(
+                            "log_system_health",
+                            {
+                                "event": "option_d_shadow_evaluator_error",
+                                "severity": "error",
+                                "position_id": pos.position_id,
+                                "market": pos.symbol,
+                                "error": str(exc),
+                                "mode": self._runtime_mode(),
+                            }
+                        )
+                    except Exception:
+                        pass
         return
 
         current_balance = self.settings.account_balance
@@ -12606,3 +12646,144 @@ class PolymarketTrader:
                 json.dump(status, f, indent=2)
         except Exception as e:
             LOGGER.debug("[DASHBOARD] Failed to update status: %s", e)
+
+
+def evaluate_option_d_shadow(
+    position,
+    orderbook,
+    now_ts: datetime,
+    config
+) -> dict:
+    # Safely parse entry time
+    entry_ts_raw = getattr(position, "entry_time", None)
+    entry_dt = None
+    if entry_ts_raw:
+        try:
+            ts_str = str(entry_ts_raw)
+            if ts_str.endswith("Z"):
+                ts_str = ts_str[:-1] + "+00:00"
+            entry_dt = datetime.fromisoformat(ts_str)
+            if entry_dt.tzinfo is None:
+                entry_dt = entry_dt.replace(tzinfo=UTC)
+        except Exception:
+            entry_dt = None
+    if entry_dt is None:
+        entry_dt = now_ts
+
+    # Ensure now_ts has tzinfo
+    if now_ts.tzinfo is None:
+        now_ts = now_ts.replace(tzinfo=UTC)
+
+    hold_seconds = max(0.0, (now_ts - entry_dt).total_seconds())
+
+    # Settings
+    delay_seconds = float(getattr(config, "sl_activation_delay_seconds", 30.0))
+    stop_loss_pct = float(getattr(config, "execution_stop_loss_pct", 0.08))
+    emergency_pct = float(getattr(config, "sl_emergency_stop_pct", 0.30))
+
+    # Helper for orderbook values
+    def get_val(obj, key, default=0.0):
+        try:
+            val = getattr(obj, key, None)
+            if val is None and isinstance(obj, dict):
+                val = obj.get(key)
+            if val is None:
+                return default
+            return float(val)
+        except Exception:
+            return default
+
+    raw_bid = get_val(orderbook, "best_bid", 0.0)
+    raw_ask = get_val(orderbook, "best_ask", 0.0)
+    bid_size = get_val(orderbook, "bid_size", 0.0)
+    ask_size = get_val(orderbook, "ask_size", 0.0)
+
+    entry_price = float(getattr(position, "entry_price", 0.0) or 0.0)
+
+    # Mid-price and spread
+    if raw_bid > 0.0 and raw_ask > 0.0:
+        mid_price = (raw_bid + raw_ask) / 2.0
+    elif raw_bid > 0.0:
+        mid_price = raw_bid
+    else:
+        mid_price = entry_price
+
+    spread = max(0.0, raw_ask - raw_bid)
+
+    delay_active = hold_seconds < delay_seconds
+    delay_remaining = max(0.0, delay_seconds - hold_seconds)
+    depth_gate_pass = (bid_size >= 10.0 and ask_size >= 10.0)
+
+    unrealized_mid_pct = 0.0
+    if entry_price > 0.0:
+        unrealized_mid_pct = (mid_price - entry_price) / entry_price
+
+    mid_breached = unrealized_mid_pct <= -stop_loss_pct
+
+    # Counter tracking in metadata
+    metadata = getattr(position, "metadata", None)
+    if not isinstance(metadata, dict):
+        metadata = {}
+        try:
+            position.metadata = metadata
+        except Exception:
+            pass
+
+    if delay_active:
+        three_sample_count = 0
+        three_sample_pass = False
+        if isinstance(metadata, dict):
+            metadata["option_d_consecutive_breaches"] = 0
+    else:
+        prev_count = metadata.get("option_d_consecutive_breaches", 0) if isinstance(metadata, dict) else 0
+        if mid_breached and depth_gate_pass:
+            three_sample_count = prev_count + 1
+        else:
+            three_sample_count = 0
+        if isinstance(metadata, dict):
+            metadata["option_d_consecutive_breaches"] = three_sample_count
+        three_sample_pass = three_sample_count >= 3
+
+    emergency_stop_trigger = unrealized_mid_pct <= -emergency_pct
+    option_d_would_stop = emergency_stop_trigger or (three_sample_pass and not delay_active)
+    option_d_would_hold = not option_d_would_stop
+
+    # Side determination
+    outcome = str(metadata.get("outcome", "")).upper()
+    if outcome in {"YES", "NO"}:
+        side = outcome
+    else:
+        side = "YES" if getattr(position, "side", "") == "BUY" else "NO"
+
+    actual_stop_triggered = False
+    actual_exit_reason = ""
+    if isinstance(metadata, dict):
+        actual_stop_triggered = bool(metadata.get("actual_stop_triggered", False))
+        actual_exit_reason = str(metadata.get("actual_exit_reason", ""))
+
+    return {
+        "event_type": "stop_loss_shadow",
+        "timestamp_utc": now_ts.isoformat().replace("+00:00", "Z"),
+        "position_id": getattr(position, "position_id", ""),
+        "symbol": getattr(position, "symbol", ""),
+        "side": side,
+        "entry_ts": str(getattr(position, "entry_time", "")),
+        "hold_seconds": hold_seconds,
+        "entry_price": entry_price,
+        "raw_bid": raw_bid,
+        "raw_ask": raw_ask,
+        "mid_price": mid_price,
+        "spread": spread,
+        "bid_size": bid_size,
+        "ask_size": ask_size,
+        "delay_active": delay_active,
+        "delay_remaining": delay_remaining,
+        "depth_gate_pass": depth_gate_pass,
+        "three_sample_count": three_sample_count,
+        "three_sample_pass": three_sample_pass,
+        "emergency_stop_trigger": emergency_stop_trigger,
+        "option_d_would_stop": option_d_would_stop,
+        "option_d_would_hold": option_d_would_hold,
+        "actual_stop_triggered": actual_stop_triggered,
+        "actual_exit_reason": actual_exit_reason,
+    }

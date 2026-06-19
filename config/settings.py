@@ -85,6 +85,10 @@ class Settings(BaseSettings):
     telegram_enabled: str = "true"
     live_trading_enabled: str = "false"
 
+    option_d_shadow_enabled: bool = False
+    sl_activation_delay_seconds: float = 30.0
+    sl_emergency_stop_pct: float = 0.30
+
     telegram_bot_token: SecretStr = Field(default=SecretStr(""))
     telegram_chat_id: SecretStr = Field(default=SecretStr(""))
     telegram_alert_cooldown_seconds: int = 300
