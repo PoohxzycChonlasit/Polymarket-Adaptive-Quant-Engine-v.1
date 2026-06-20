@@ -294,6 +294,71 @@ class BankrollState:
             self.bankroll_risk_profile = config.risk_profile
 
 
+def evaluate_delta_extreme_shadow_candidate(
+    *,
+    price: float,
+    spread: float,
+    quote_age_ms: int,
+    oracle_age_ms: int,
+    ask_size: float,
+    seconds_remaining: float,
+) -> dict[str, object]:
+    """Pure helper evaluating shadow executability gates and sizing tracks.
+    Returns a dictionary of overlay parameters and gate flags.
+    """
+    import math
+
+    price_ok = (price > 0.0 and price < 1.0)
+    spread_ok = (spread <= 0.06)
+    quote_fresh = (quote_age_ms <= 1000)
+    oracle_fresh = (oracle_age_ms <= 5000)
+
+    # Standard: max($1.00 entry cost, 5 shares)
+    std_shares = max(5.0, math.ceil(1.00 / max(price, 1e-9)))
+    # Micro: max($0.05 entry cost, 5 shares)
+    micro_shares = max(5.0, math.ceil(0.05 / max(price, 1e-9)))
+
+    depth_ok = (ask_size >= std_shares)
+    cutoff_ok = (seconds_remaining > 90)
+    sizer_feasible = price_ok and (price * std_shares <= 1000.0)
+
+    executable_pass = bool(
+        price_ok
+        and spread_ok
+        and quote_fresh
+        and oracle_fresh
+        and depth_ok
+        and cutoff_ok
+        and sizer_feasible
+    )
+
+    reject_reason = None
+    if not executable_pass:
+        if not price_ok:
+            reject_reason = "price_unavailable"
+        elif not spread_ok:
+            reject_reason = "spread_too_wide"
+        elif not quote_fresh:
+            reject_reason = "quote_stale"
+        elif not oracle_fresh:
+            reject_reason = "oracle_stale"
+        elif not cutoff_ok:
+            reject_reason = "time_unsafe"
+        elif not depth_ok:
+            reject_reason = "liquidity_too_small"
+        else:
+            reject_reason = "sizer_infeasible"
+
+    return {
+        "executable_pass": executable_pass,
+        "executable_reject_reason": reject_reason,
+        "standard_shares": float(std_shares) if executable_pass else 0.0,
+        "standard_size_usd": float(std_shares * price) if executable_pass else 0.0,
+        "micro_shares": float(micro_shares) if executable_pass else 0.0,
+        "micro_size_usd": float(micro_shares * price) if executable_pass else 0.0,
+    }
+
+
 class PolymarketTrader:
     """Coordinate one full Polymarket trading cycle.
 
@@ -5518,6 +5583,88 @@ class PolymarketTrader:
         )
         return detail
 
+    def _evaluate_and_log_delta_extreme_shadow(
+        self,
+        *,
+        market: GammaMarket,
+        ticker: str,
+        ptb_info: Any,
+        model_side: str,
+        confidence: float,
+        model_ev: float,
+        delta: Any,
+        ob_spread: float,
+        ob_liquidity_usd: float,
+        yes_token_id: str,
+        no_token_id: str,
+        yes_bid: float,
+        yes_ask: float,
+        yes_bid_size: float,
+        yes_ask_size: float,
+        no_bid: float,
+        no_ask: float,
+        no_bid_size: float,
+        no_ask_size: float,
+        yes_orderbook_age_ms: int,
+        no_orderbook_age_ms: int,
+        feed_age: float | None,
+        current_balance: float,
+        timing_detail: dict,
+    ) -> None:
+        """Passive shadow evaluation and event logging."""
+        side = model_side if model_side in ("YES", "NO") else "YES"
+        token_id = yes_token_id if side == "YES" else no_token_id
+        price = yes_ask if side == "YES" else no_ask
+        ask_size = yes_ask_size if side == "YES" else no_ask_size
+        raw_bid = yes_bid if side == "YES" else no_bid
+        raw_ask = yes_ask if side == "YES" else no_ask
+
+        quote_age_ms = max(yes_orderbook_age_ms, no_orderbook_age_ms)
+        oracle_age_ms = int(max(0.0, feed_age or 0.0) * 1000)
+        seconds_remaining = float(getattr(ptb_info, "seconds_remaining", 0.0) or 0.0)
+
+        eval_result = evaluate_delta_extreme_shadow_candidate(
+            price=price,
+            spread=ob_spread,
+            quote_age_ms=quote_age_ms,
+            oracle_age_ms=oracle_age_ms,
+            ask_size=ask_size,
+            seconds_remaining=seconds_remaining,
+        )
+
+        payload = {
+            "market": market.market_id,
+            "side": side,
+            "token_id": token_id,
+            "price": float(price),
+            "raw_bid": float(raw_bid),
+            "raw_ask": float(raw_ask),
+            "spread": float(ob_spread),
+            "bid_size": float(yes_bid_size if side == "YES" else no_bid_size),
+            "ask_size": float(ask_size),
+            "quote_age_ms": int(quote_age_ms),
+            "oracle_age_ms": int(oracle_age_ms),
+            "confidence": float(confidence),
+            "ev": float(model_ev),
+            "delta_value": float(getattr(delta, "delta_score", 0.0) or 0.0),
+            "delta_reason": str(getattr(delta, "reason", "Mechanism_B") or "Mechanism_B"),
+            "executable_pass": eval_result["executable_pass"],
+            "executable_reject_reason": eval_result["executable_reject_reason"],
+            "shadow_size_usd": eval_result["standard_size_usd"],
+            "shadow_shares": eval_result["standard_shares"],
+            "shadow_entry_price": float(price),
+            "eventual_outcome": "PENDING",
+            "shadow_pnl": 0.0,
+            "settlement_source": "pending_expiry",
+            "epoch_start_ts": int(getattr(ptb_info, "epoch_start_ts", 0) or 0),
+            "seconds_remaining": seconds_remaining,
+            "micro_shadow_size_usd": eval_result["micro_size_usd"],
+            "micro_shadow_shares": eval_result["micro_shares"],
+        }
+
+        if hasattr(self, "quant_logger") and self.quant_logger:
+            self.quant_logger.log_delta_shadow(payload)
+
     def _display_skip_reason(self, reason: str) -> str:
         clean = (reason or "").lower()
         if "stale" in clean:
@@ -9459,6 +9606,37 @@ class PolymarketTrader:
             skip_reason = scored.skip_reason if scored and scored.skip_reason else "scanner_no_best_trade"
 
         if skip_reason:
+            if skip_reason == "delta_extreme" and getattr(self.settings, "delta_shadow_enabled", False):
+                try:
+                    self._evaluate_and_log_delta_extreme_shadow(
+                        market=market,
+                        ticker=ticker,
+                        ptb_info=ptb_info,
+                        model_side=model_side,
+                        confidence=confidence,
+                        model_ev=model_ev,
+                        delta=delta,
+                        ob_spread=ob_spread,
+                        ob_liquidity_usd=ob_liquidity_usd,
+                        yes_token_id=yes_token_id,
+                        no_token_id=no_token_id,
+                        yes_bid=yes_bid,
+                        yes_ask=yes_ask,
+                        yes_bid_size=yes_bid_size,
+                        yes_ask_size=yes_ask_size,
+                        no_bid=no_bid,
+                        no_ask=no_ask,
+                        no_bid_size=no_bid_size,
+                        no_ask_size=no_ask_size,
+                        yes_orderbook_age_ms=yes_orderbook_age_ms,
+                        no_orderbook_age_ms=no_orderbook_age_ms,
+                        feed_age=feed_age,
+                        current_balance=current_balance,
+                        timing_detail=timing_detail,
+                    )
+                except Exception as exc:
+                    LOGGER.exception("Error in delta shadow overlay: %s", exc)
+
             self._log_risk_section(
                 bankroll=current_balance,
                 tier=tier.value,
