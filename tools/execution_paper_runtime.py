@@ -377,7 +377,7 @@ def _runtime_event(event_type: str, execution_run_id: str, **fields: Any) -> dic
     }
 
 
-def run_dry_run(*, source_root: Path, output_root: Path, max_events: int) -> dict[str, Any]:
+def run_dry_run(*, source_root: Path, output_root: Path, max_events: int, compat_mode: str = "strict") -> dict[str, Any]:
     return run_replay(
         source_root=source_root,
         output_root=output_root,
@@ -385,6 +385,7 @@ def run_dry_run(*, source_root: Path, output_root: Path, max_events: int) -> dic
         track="5_share",
         starting_bankroll=250.0,
         dry_run=True,
+        compat_mode=compat_mode,
     )
 
 
@@ -396,6 +397,7 @@ def run_replay(
     track: str = "5_share",
     starting_bankroll: float = 250.0,
     dry_run: bool = False,
+    compat_mode: str = "strict",
 ) -> dict[str, Any]:
     root = _ensure_output_root(output_root)
 
@@ -599,13 +601,24 @@ def run_replay(
 
                     condition_id = payload.get("condition_id")
                     asset = payload.get("asset") or payload.get("ticker")
-                    side = payload.get("side") or payload.get("outcome")
-                    position_id = payload.get("position_id") or payload.get("execution_position_id")
+
+                    # Position ID Resolver
+                    if compat_mode == "historical":
+                        pid_val = payload.get("position_id")
+                        epid_val = payload.get("execution_position_id")
+                        receipt_oid = payload.get("receipt", {}).get("order_id") if isinstance(payload.get("receipt"), dict) else None
+                        oid_val = payload.get("order_id")
+
+                        resolved_pid = pid_val or epid_val or receipt_oid or oid_val
+                    else:
+                        resolved_pid = payload.get("position_id") or payload.get("execution_position_id")
 
                     execution_position_id = None
-                    if position_id is not None:
-                        pos_id_str = str(position_id)
+                    if resolved_pid is not None:
+                        pos_id_str = str(resolved_pid)
                         execution_position_id = pos_id_str if pos_id_str.startswith("ep_") else f"ep_{pos_id_str}"
+
+                    matched_key = None
 
                     def trigger_reject(reason: str, stage: str = "validation"):
                         nonlocal emitted_event_count, rejected_event_count
@@ -637,7 +650,7 @@ def run_replay(
                         }
                         append_jsonl_event(root, "trade", reject_event)
                         emitted_event_count += 1
-                        save_checkpoint(source_file, line_idx, line_hash)
+                        save_checkpoint(source_file, line_idx, line_hash, matched_key)
 
                     if is_open:
                         entry_price = payload.get("entry_price")
@@ -646,15 +659,44 @@ def run_replay(
                         if entry_price is None:
                             entry_price = payload.get("receipt", {}).get("price") if isinstance(payload.get("receipt"), dict) else None
 
-                        if not position_id:
-                            trigger_reject("missing_position_id")
-                            continue
+                        if compat_mode == "historical":
+                            pid_val = payload.get("position_id")
+                            epid_val = payload.get("execution_position_id")
+                            receipt_oid = payload.get("receipt", {}).get("order_id") if isinstance(payload.get("receipt"), dict) else None
+                            oid_val = payload.get("order_id")
+
+                            if not (pid_val or epid_val) and not (receipt_oid or oid_val):
+                                trigger_reject("missing_order_id_for_legacy_open")
+                                continue
+                            if not resolved_pid:
+                                trigger_reject("position_id_unresolvable")
+                                continue
+                        else:
+                            if not resolved_pid:
+                                trigger_reject("missing_position_id")
+                                continue
+
                         if not condition_id:
                             trigger_reject("missing_condition_id")
                             continue
-                        if not side or side not in ("YES", "NO"):
-                            trigger_reject("invalid_side")
-                            continue
+
+                        # Side Resolver
+                        if compat_mode == "historical":
+                            outcome_val = payload.get("outcome")
+                            side_val = payload.get("side")
+                            if outcome_val in ("YES", "NO"):
+                                resolved_side = outcome_val
+                            elif side_val in ("YES", "NO"):
+                                resolved_side = side_val
+                            else:
+                                trigger_reject("side_unresolvable")
+                                continue
+                        else:
+                            resolved_side = payload.get("side") or payload.get("outcome")
+                            if not resolved_side or resolved_side not in ("YES", "NO"):
+                                trigger_reject("side_unresolvable")
+                                continue
+
                         if entry_price is None:
                             trigger_reject("missing_entry_price")
                             continue
@@ -667,6 +709,7 @@ def run_replay(
                         if execution_position_id in open_positions or execution_position_id in closed_positions:
                             raise ReconciliationError("duplicate_open")
 
+                        matched_key = execution_position_id
                         source_replay_key = _sha256_text(f"{Path(source_file).as_posix()}|{line_idx}|{line_hash}")
                         execution_shares = 5.0 if track == "5_share" else float(payload.get("shares") or payload.get("size") or 5.0)
                         execution_notional = entry_price * execution_shares
@@ -685,7 +728,7 @@ def run_replay(
                             "source_replay_key": source_replay_key,
                             "condition_id": condition_id,
                             "asset": asset,
-                            "side": side,
+                            "side": resolved_side,
                             "execution_track": track,
                             "execution_bankroll_start": starting_bankroll,
                             "execution_entry_price": entry_price,
@@ -706,23 +749,82 @@ def run_replay(
                         if exit_reason is None:
                             exit_reason = payload.get("reason")
 
-                        if not position_id:
-                            trigger_reject("missing_position_id")
-                            continue
-                        if execution_position_id in closed_positions:
-                            raise ReconciliationError("duplicate_close")
-                        if execution_position_id not in open_positions:
-                            raise ReconciliationError("orphan_close")
+                        if compat_mode == "historical":
+                            if not resolved_pid:
+                                trigger_reject("position_id_unresolvable")
+                                continue
+                            if execution_position_id in closed_positions:
+                                trigger_reject("historical_link_collision")
+                                continue
+                        else:
+                            if not resolved_pid:
+                                trigger_reject("missing_position_id")
+                                continue
+                            if execution_position_id in closed_positions:
+                                raise ReconciliationError("duplicate_close")
 
-                        open_pos = open_positions[execution_position_id]
-                        curr_condition_id = condition_id or open_pos.get("condition_id")
+                        # Open/Close Linking
+                        open_pos = None
+                        matched_key = None
+
+                        if compat_mode == "historical":
+                            if execution_position_id in open_positions:
+                                open_pos = open_positions[execution_position_id]
+                                matched_key = execution_position_id
+                            if not open_pos:
+                                close_order_id = payload.get("order_id") or (payload.get("receipt", {}).get("order_id") if isinstance(payload.get("receipt"), dict) else None)
+                                if close_order_id:
+                                    close_order_pos_id = str(close_order_id) if str(close_order_id).startswith("ep_") else f"ep_{close_order_id}"
+                                    if close_order_pos_id in open_positions:
+                                        open_pos = open_positions[close_order_pos_id]
+                                        matched_key = close_order_pos_id
+                        else:
+                            if execution_position_id not in open_positions:
+                                raise ReconciliationError("orphan_close")
+                            open_pos = open_positions[execution_position_id]
+                            matched_key = execution_position_id
+
+                        # Now resolve condition_id
+                        curr_condition_id = condition_id or (open_pos.get("condition_id") if open_pos else None)
                         if not curr_condition_id:
                             trigger_reject("missing_condition_id")
                             continue
-                        curr_side = side or open_pos.get("side")
-                        if not curr_side or curr_side not in ("YES", "NO"):
-                            trigger_reject("invalid_side")
-                            continue
+
+                        # Resolve side
+                        if compat_mode == "historical":
+                            outcome_val = payload.get("outcome")
+                            side_val = payload.get("side")
+                            if outcome_val in ("YES", "NO"):
+                                resolved_side = outcome_val
+                            elif side_val in ("YES", "NO"):
+                                resolved_side = side_val
+                            else:
+                                resolved_side = open_pos.get("side") if open_pos else None
+                            if not resolved_side:
+                                trigger_reject("side_unresolvable")
+                                continue
+                        else:
+                            resolved_side = payload.get("side") or payload.get("outcome") or (open_pos.get("side") if open_pos else None)
+                            if not resolved_side or resolved_side not in ("YES", "NO"):
+                                trigger_reject("side_unresolvable")
+                                continue
+
+                        # Priority C fallback for historical mode
+                        if compat_mode == "historical" and not open_pos:
+                            candidates = []
+                            for k, op in open_positions.items():
+                                if op.get("condition_id") == curr_condition_id and op.get("side") == resolved_side:
+                                    candidates.append((k, op))
+                            if len(candidates) == 1:
+                                matched_key, open_pos = candidates[0]
+                            elif len(candidates) > 1:
+                                trigger_reject("ambiguous_position_match")
+                                continue
+                            else:
+                                raise ReconciliationError("orphan_close")
+
+                        if not open_pos:
+                            raise ReconciliationError("orphan_close")
 
                         execution_entry_price = open_pos.get("execution_entry_price")
                         if execution_entry_price is None:
@@ -795,11 +897,11 @@ def run_replay(
                             "source_file": str(source_file),
                             "source_line": line_idx,
                             "source_event_sha256": line_hash,
-                            "execution_position_id": execution_position_id,
+                            "execution_position_id": matched_key,
                             "source_replay_key": source_replay_key,
                             "condition_id": curr_condition_id,
                             "asset": asset or open_pos.get("asset"),
-                            "side": curr_side,
+                            "side": resolved_side,
                             "execution_track": track,
                             "execution_entry_price": execution_entry_price,
                             "execution_exit_price": exit_price,
@@ -822,17 +924,17 @@ def run_replay(
 
                     if dedupe_status == "duplicate":
                         skipped_duplicate_count += 1
-                        save_checkpoint(source_file, line_idx, line_hash, execution_position_id)
+                        save_checkpoint(source_file, line_idx, line_hash, matched_key)
                         continue
 
                     append_jsonl_event(root, "trade", emitted_event)
                     emitted_event_count += 1
 
                     if is_open:
-                        open_positions[execution_position_id] = emitted_event
+                        open_positions[matched_key] = emitted_event
                     elif is_close:
-                        closed_positions.append(execution_position_id)
-                        del open_positions[execution_position_id]
+                        closed_positions.append(matched_key)
+                        del open_positions[matched_key]
 
                         # Emit execution_paper_equity_snapshot
                         snapshot_event = {
@@ -852,7 +954,7 @@ def run_replay(
                         append_jsonl_event(root, "trade", snapshot_event)
                         emitted_event_count += 1
 
-                    save_checkpoint(source_file, line_idx, line_hash, execution_position_id)
+                    save_checkpoint(source_file, line_idx, line_hash, matched_key)
 
         except (IOError, OSError):
             raise
@@ -951,6 +1053,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
     parser.add_argument("--track", type=str, default="5_share")
     parser.add_argument("--starting-bankroll", type=float, default=250.0)
+    parser.add_argument("--compat-mode", type=str, choices=["strict", "historical"], default="strict")
     return parser
 
 
@@ -967,6 +1070,7 @@ def main(argv: list[str] | None = None) -> int:
         track=args.track,
         starting_bankroll=args.starting_bankroll,
         dry_run=args.dry_run,
+        compat_mode=args.compat_mode,
     )
     return 0
 

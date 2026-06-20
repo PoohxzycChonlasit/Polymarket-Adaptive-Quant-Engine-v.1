@@ -806,3 +806,182 @@ def test_phase_c_equity_consistency_check_failure(tmp_path: Path) -> None:
             max_events=10,
             starting_bankroll=250.0,
         )
+
+
+def test_strict_mode_unchanged_rejects_buy_sell(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # In default (strict) mode, outcome/side as BUY/SELL should be rejected as side_unresolvable
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "side": "BUY", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+    assert report["rejected_events"] == 1
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rejects = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines() if json.loads(line)["event_type"] == "execution_paper_reject"]
+    assert rejects[0]["reject_reason"] == "side_unresolvable"
+
+
+def test_historical_mode_side_resolver(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # In historical mode:
+    # A. outcome YES/NO takes priority
+    # B. side YES/NO as fallback
+    # C. BUY/SELL side without YES/NO outcome is rejected as side_unresolvable
+    events = [
+        # Outcome is YES, side is BUY -> Should resolve to YES
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "side": "BUY", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        # Outcome is absent, side is NO -> Should resolve to NO
+        {"event_type": "trade_open", "payload": {"condition_id": "0x2", "ticker": "BTC", "side": "NO", "entry_price": 0.50, "position_id": "p2"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        # Outcome is BUY, side is SELL -> Should be rejected as side_unresolvable
+        {"event_type": "trade_open", "payload": {"condition_id": "0x3", "ticker": "BTC", "outcome": "BUY", "side": "SELL", "entry_price": 0.50, "position_id": "p3"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 1
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rows = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines()]
+    opens = [r for r in rows if r["event_type"] == "execution_paper_open"]
+    rejects = [r for r in rows if r["event_type"] == "execution_paper_reject"]
+
+    assert len(opens) == 2
+    assert opens[0]["execution_position_id"] == "ep_p1"
+    assert opens[0]["side"] == "YES"
+    assert opens[1]["execution_position_id"] == "ep_p2"
+    assert opens[1]["side"] == "NO"
+
+    assert len(rejects) == 1
+    assert rejects[0]["reject_reason"] == "side_unresolvable"
+
+
+def test_historical_mode_position_resolver_fallbacks(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Resolution order:
+    # 1. position_id
+    # 2. execution_position_id
+    # 3. receipt.order_id
+    # 4. order_id
+    events = [
+        # 1. uses position_id
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "pos_a", "execution_position_id": "pos_b"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        # 2. uses execution_position_id
+        {"event_type": "trade_open", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "execution_position_id": "pos_c"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        # 3. uses receipt.order_id
+        {"event_type": "trade_open", "payload": {"condition_id": "0x3", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "receipt": {"order_id": "ord_a"}, "order_id": "ord_b"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+        # 4. uses order_id
+        {"event_type": "trade_open", "payload": {"condition_id": "0x4", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "ord_c"}, "timestamp_utc": "2026-06-20T00:03:00Z"},
+        # Unresolved position id -> missing_order_id_for_legacy_open
+        {"event_type": "trade_open", "payload": {"condition_id": "0x5", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50}, "timestamp_utc": "2026-06-20T00:04:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 1
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rows = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines()]
+    opens = [r for r in rows if r["event_type"] == "execution_paper_open"]
+    rejects = [r for r in rows if r["event_type"] == "execution_paper_reject"]
+
+    assert len(opens) == 4
+    assert opens[0]["execution_position_id"] == "ep_pos_a"
+    assert opens[1]["execution_position_id"] == "ep_pos_c"
+    assert opens[2]["execution_position_id"] == "ep_ord_a"
+    assert opens[3]["execution_position_id"] == "ep_ord_c"
+
+    assert rejects[0]["reject_reason"] == "missing_order_id_for_legacy_open"
+
+
+def test_historical_mode_position_id_unresolvable_on_close(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Close lacks position_id / execution_position_id / order_id
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 1
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rejects = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines() if json.loads(line)["event_type"] == "execution_paper_reject"]
+    assert rejects[0]["reject_reason"] == "position_id_unresolvable"
+
+
+def test_historical_mode_legacy_linking_and_ambiguity(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # 1. Test single candidate (FIFO matches correctly)
+    events1 = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "ord_open"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60, "order_id": "ord_close"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events1)
+
+    from tools.execution_paper_runtime import run_replay
+    report1 = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report1["rejected_events"] == 0
+    assert report1["execution_closed_trade_count"] == 1
+
+    # 2. Test multiple candidates (ambiguous matching fails)
+    events2 = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "ord_open_1"}, "timestamp_utc": "2026-06-21T00:00:00Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.40, "order_id": "ord_open_2"}, "timestamp_utc": "2026-06-21T00:01:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60, "order_id": "ord_close"}, "timestamp_utc": "2026-06-21T00:02:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-21.jsonl", events2)
+
+    import shutil
+    shutil.rmtree(output_root, ignore_errors=True)
+    report2 = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report2["rejected_events"] == 1
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rejects = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines() if json.loads(line)["event_type"] == "execution_paper_reject"]
+    assert rejects[0]["reject_reason"] == "ambiguous_position_match"
+
+
+def test_historical_mode_link_collision(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # If position is already closed, another close with same position ID triggers historical_link_collision
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        # Another close for "p1"
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.70, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 1
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rejects = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines() if json.loads(line)["event_type"] == "execution_paper_reject"]
+    assert rejects[0]["reject_reason"] == "historical_link_collision"
