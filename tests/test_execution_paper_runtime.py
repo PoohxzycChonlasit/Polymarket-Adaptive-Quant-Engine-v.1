@@ -263,6 +263,7 @@ def test_trade_open_emits_execution_paper_open(tmp_path: Path) -> None:
     assert rows[0]["event_type"] == "execution_paper_open"
     assert rows[0]["execution_position_id"] == "ep_pos_1"
     assert rows[0]["execution_shares"] == 5.0
+    assert rows[0]["execution_notional"] == 2.6
     assert rows[0]["execution_bankroll_start"] == 250.0
 
 
@@ -283,6 +284,7 @@ def test_trade_close_emits_execution_paper_close(tmp_path: Path) -> None:
         "run_id": "run_1",
         "timestamp_utc": "2026-06-20T00:00:00Z"
     }
+    # Set dummy source pnl = 99.99 to verify it is NOT used.
     close_event = {
         "event_type": "trade_close",
         "mode": "paper",
@@ -293,7 +295,7 @@ def test_trade_close_emits_execution_paper_close(tmp_path: Path) -> None:
             "exit_price": 0.60,
             "position_id": "pos_1",
             "reason": "take_profit",
-            "pnl": 0.40,
+            "pnl": 99.99,
         },
         "run_id": "run_1",
         "timestamp_utc": "2026-06-20T00:05:00Z"
@@ -314,22 +316,28 @@ def test_trade_close_emits_execution_paper_close(tmp_path: Path) -> None:
     trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
     rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
 
-    assert len(rows) == 2
+    # open, close, equity snapshot = 3 rows
+    assert len(rows) == 3
     assert rows[0]["event_type"] == "execution_paper_open"
     assert rows[1]["event_type"] == "execution_paper_close"
+    assert rows[2]["event_type"] == "execution_paper_equity_snapshot"
     assert rows[1]["execution_position_id"] == "ep_pos_1"
-    assert rows[1]["execution_pnl"] == 0.40
+    assert abs(rows[1]["execution_pnl"] - 0.40) < 1e-6
+    assert rows[1]["execution_equity_before"] == 250.0
+    assert abs(rows[1]["execution_equity_after"] - 250.40) < 1e-6
+    assert abs(rows[1]["cumulative_execution_pnl"] - 0.40) < 1e-6
 
 
 def test_missing_required_field_emits_reject(tmp_path: Path) -> None:
     source_root = tmp_path / "source"
     output_root = tmp_path / DEFAULT_OUTPUT_ROOT
 
+    # condition_id missing -> reject
     open_event = {
         "event_type": "trade_open",
         "mode": "paper",
         "payload": {
-            "condition_id": "0xabc",
+            "ticker": "ETH",
             "outcome": "YES",
             "entry_price": 0.52,
             "position_id": "pos_1",
@@ -355,6 +363,7 @@ def test_missing_required_field_emits_reject(tmp_path: Path) -> None:
 
     assert len(rows) == 1
     assert rows[0]["event_type"] == "execution_paper_reject"
+    assert rows[0]["reject_reason"] == "missing_condition_id"
 
 
 def test_checkpoint_after_source_processing(tmp_path: Path) -> None:
@@ -455,11 +464,11 @@ def test_reject_does_not_create_position(tmp_path: Path) -> None:
     source_root = tmp_path / "source"
     output_root = tmp_path / DEFAULT_OUTPUT_ROOT
 
+    # condition_id missing -> open rejects
     reject_event = {
         "event_type": "trade_open",
         "mode": "paper",
         "payload": {
-            "condition_id": "0xabc",
             "outcome": "YES",
             "entry_price": 0.52,
             "position_id": "pos_1",
@@ -545,8 +554,255 @@ def test_validation_report_counts(tmp_path: Path) -> None:
     )
 
     assert report["processed_source_events"] == 3
-    assert report["emitted_events"] == 4  # 1 started, 1 open, 1 reject, 1 stopped
+    assert report["emitted_events"] == 4  # started, open, reject, stopped
     assert report["rejected_events"] == 1
     assert report["malformed_source_rows"] == 1
     assert report["skipped_duplicates"] == 0
-    assert report["pnl_label"] == "signal_pnl_placeholder"
+    assert report["pnl_label"] == "execution_pnl_5_share_model"
+
+
+def test_phase_c_price_rejects(tmp_path: Path) -> None:
+    import shutil
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # 1. Invalid entry price on open
+    open_invalid_entry = {
+        "event_type": "trade_open",
+        "payload": {"condition_id": "0xabc", "ticker": "ETH", "outcome": "YES", "entry_price": "invalid", "position_id": "pos_1"},
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    # 2. Missing entry price on open
+    open_missing_entry = {
+        "event_type": "trade_open",
+        "payload": {"condition_id": "0xabc", "ticker": "ETH", "outcome": "YES", "position_id": "pos_2"},
+        "timestamp_utc": "2026-06-20T00:01:00Z"
+    }
+    # 3. Valid open for close tests
+    open_valid = {
+        "event_type": "trade_open",
+        "payload": {"condition_id": "0xabc", "ticker": "ETH", "outcome": "YES", "entry_price": 0.50, "position_id": "pos_3"},
+        "timestamp_utc": "2026-06-20T00:02:00Z"
+    }
+    # 4. Missing exit price on close
+    close_missing_exit = {
+        "event_type": "trade_close",
+        "payload": {"condition_id": "0xabc", "ticker": "ETH", "outcome": "YES", "position_id": "pos_3", "reason": "tp"},
+        "timestamp_utc": "2026-06-20T00:03:00Z"
+    }
+    # 5. Invalid exit price on close
+    close_invalid_exit = {
+        "event_type": "trade_close",
+        "payload": {"condition_id": "0xabc", "ticker": "ETH", "outcome": "YES", "exit_price": "invalid", "position_id": "pos_3", "reason": "tp"},
+        "timestamp_utc": "2026-06-20T00:04:00Z"
+    }
+
+    from tools.execution_paper_runtime import run_replay
+
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_invalid_entry])
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+    assert report["rejected_events"] == 1
+    shutil.rmtree(output_root)
+
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_missing_entry])
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+    assert report["rejected_events"] == 1
+    shutil.rmtree(output_root)
+
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_valid, close_missing_exit])
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+    assert report["rejected_events"] == 1
+    shutil.rmtree(output_root)
+
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_valid, close_invalid_exit])
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+    assert report["rejected_events"] == 1
+
+
+def test_phase_c_equity_and_drawdown_tracking(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # 3 trades:
+    # Win 1: pnl = 0.50
+    # Loss 2: pnl = -1.00
+    # Win 3: pnl = 0.25
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60, "position_id": "p1", "reason": "tp"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p2"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "exit_price": 0.30, "position_id": "p2", "reason": "sl"}, "timestamp_utc": "2026-06-20T00:03:00Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0x3", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p3"}, "timestamp_utc": "2026-06-20T00:04:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x3", "ticker": "BTC", "outcome": "YES", "exit_price": 0.55, "position_id": "p3", "reason": "tp"}, "timestamp_utc": "2026-06-20T00:05:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, starting_bankroll=250.0)
+
+    assert abs(report["execution_net_pnl"] - (-0.25)) < 1e-6
+    assert abs(report["execution_gross_profit"] - 0.75) < 1e-6
+    assert abs(report["execution_gross_loss"] - 1.00) < 1e-6
+    assert report["execution_win_count"] == 2
+    assert report["execution_loss_count"] == 1
+    assert report["execution_flat_count"] == 0
+    assert report["execution_closed_trade_count"] == 3
+    assert abs(report["execution_wr"] - 2.0/3.0) < 1e-6
+    assert abs(report["execution_pf"] - 0.75) < 1e-6
+    assert abs(report["execution_max_dd"] - 1.00) < 1e-6
+    assert abs(report["execution_max_dd_pct"] - (1.00 / 250.50) * 100.0) < 1e-6
+    assert report["risk_of_ruin"] is False
+
+    # Check snapshots & files
+    journal_files = list((output_root / "journals").rglob("*.jsonl"))
+    trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
+    rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+
+    # 3 opens, 3 closes, 3 snapshots = 9 events
+    assert len(rows) == 9
+
+    closes = [r for r in rows if r["event_type"] == "execution_paper_close"]
+    assert len(closes) == 3
+    assert closes[0]["execution_equity_before"] == 250.0
+    assert closes[0]["execution_equity_after"] == 250.50
+    assert closes[0]["execution_drawdown"] == 0.0
+
+    assert closes[1]["execution_equity_before"] == 250.50
+    assert closes[1]["execution_equity_after"] == 249.50
+    assert closes[1]["execution_drawdown"] == 1.00
+    assert closes[1]["execution_max_drawdown"] == 1.00
+
+    snaps = [r for r in rows if r["event_type"] == "execution_paper_equity_snapshot"]
+    assert len(snaps) == 3
+    assert snaps[1]["execution_equity"] == 249.50
+    assert snaps[1]["execution_dd"] == 1.00
+    assert snaps[1]["execution_max_dd"] == 1.00
+
+
+def test_phase_c_risk_of_ruin_sticky(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # bankroll = 5.0, threshold = 0.50
+    # Trade 1: loses 4.75 -> ruined! (equity becomes 0.25 <= 0.50)
+    # Trade 2: wins 2.00 -> stays ruined!
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.95, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.0, "position_id": "p1", "reason": "sl"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "entry_price": 0.10, "position_id": "p2"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "exit_price": 0.50, "position_id": "p2", "reason": "tp"}, "timestamp_utc": "2026-06-20T00:03:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, starting_bankroll=5.0)
+
+    assert report["risk_of_ruin"] is True
+
+
+def test_phase_c_pf_undefined_when_no_losses(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # 1 win, 1 flat, 0 losses -> PF should be None
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60, "position_id": "p1", "reason": "tp"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p2"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x2", "ticker": "BTC", "outcome": "YES", "exit_price": 0.50, "position_id": "p2", "reason": "flat"}, "timestamp_utc": "2026-06-20T00:03:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+
+    assert report["execution_pf"] is None
+    assert report["execution_win_count"] == 1
+    assert report["execution_flat_count"] == 1
+    assert report["execution_loss_count"] == 0
+    assert report["execution_wr"] == 1.0
+
+
+def test_phase_c_rejects_do_not_affect_equity(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # 1 win, 1 reject
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60, "position_id": "p1", "reason": "tp"}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        # Reject on open (missing condition_id)
+        {"event_type": "trade_open", "payload": {"ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p2"}, "timestamp_utc": "2026-06-20T00:02:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10)
+
+    assert report["rejected_events"] == 1
+    assert abs(report["execution_net_pnl"] - 0.50) < 1e-6
+
+    # Verify reject event contains correct running equity (250.50)
+    journal_files = list((output_root / "journals").rglob("*.jsonl"))
+    trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
+    rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+
+    reject = next(r for r in rows if r["event_type"] == "execution_paper_reject")
+    assert reject["execution_equity"] == 250.50
+
+
+def test_phase_c_equity_consistency_check_failure(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # 1. Create a dummy source file
+    source_file = source_root / "trade_journal" / "2026-06-20.jsonl"
+    _write_jsonl(source_file, [{"dummy": "row"}])
+
+    # 2. Get hash of the first line
+    for item in stream_source_journal(source_file):
+        line_hash = item.source_event_sha256
+        break
+
+    # 3. Write a corrupted checkpoint
+    checkpoint = {
+        "execution_run_id": "corrupt_run",
+        "checkpointed_at": "2026-06-20T00:00:00Z",
+        "last_processed_trade": "t1",
+        "last_processed_timestamp": "2026-06-20T00:00:00Z",
+        "last_processed_source_file": str(source_file),
+        "last_processed_source_line": 1,
+        "last_processed_source_sha256": line_hash,
+        "processed_event_count": 1,
+        "emitted_event_count": 2,
+        "rejected_event_count": 0,
+        "skipped_duplicate_count": 0,
+        "malformed_source_count": 0,
+        "open_positions": {},
+        "closed_positions": [],
+        "seen_keys": [],
+        "execution_equity": 100.0,  # Corrupted: should be equal to starting_bankroll (250.0)
+        "cumulative_pnl": 0.0,
+        "peak_equity": 250.0,
+        "current_dd": 0.0,
+        "max_dd": 0.0,
+        "max_dd_pct": 0.0,
+        "risk_of_ruin": False,
+        "win_count": 0,
+        "loss_count": 0,
+        "flat_count": 0,
+        "gross_profit": 0.0,
+        "gross_loss": 0.0,
+    }
+
+    # Write checkpoint file
+    write_checkpoint(output_root, "corrupt_run", checkpoint)
+
+    from tools.execution_paper_runtime import run_replay
+    with pytest.raises(ReconciliationError, match="equity replay consistency check failed"):
+        run_replay(
+            source_root=source_root,
+            output_root=output_root,
+            max_events=10,
+            starting_bankroll=250.0,
+        )

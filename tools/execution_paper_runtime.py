@@ -77,6 +77,13 @@ EVENT_REQUIRED: dict[str, tuple[str, ...]] = {
         "execution_shares",
         "execution_pnl",
         "execution_exit_reason",
+        "execution_equity_before",
+        "execution_equity_after",
+        "cumulative_execution_pnl",
+        "execution_drawdown",
+        "execution_max_drawdown",
+        "execution_max_drawdown_pct",
+        "execution_result_class",
     ),
     "execution_paper_reject": SOURCE_REQUIRED
     + (
@@ -92,18 +99,11 @@ EVENT_REQUIRED: dict[str, tuple[str, ...]] = {
         "execution_track",
         "execution_bankroll_start",
         "execution_equity",
-        "execution_realized_pnl",
-        "execution_unrealized_pnl",
-        "execution_net_pnl",
-        "execution_gross_profit",
-        "execution_gross_loss",
-        "execution_trade_count",
-        "execution_win_count",
-        "execution_loss_count",
+        "cumulative_execution_pnl",
         "execution_dd",
         "execution_max_dd",
-        "execution_open_exposure",
-        "execution_risk_mode",
+        "execution_max_dd_pct",
+        "risk_of_ruin",
     ),
     "execution_paper_position_snapshot": SOURCE_REQUIRED
     + (
@@ -433,6 +433,19 @@ def run_replay(
         last_processed_file = latest_checkpoint.get("last_processed_source_file")
         last_processed_line = latest_checkpoint.get("last_processed_source_line", 0)
         last_line_hash = latest_checkpoint.get("last_processed_source_sha256", "")
+
+        execution_equity = latest_checkpoint.get("execution_equity", starting_bankroll)
+        cumulative_pnl = latest_checkpoint.get("cumulative_pnl", 0.0)
+        peak_equity = latest_checkpoint.get("peak_equity", starting_bankroll)
+        current_dd = latest_checkpoint.get("current_dd", 0.0)
+        max_dd = latest_checkpoint.get("max_dd", 0.0)
+        max_dd_pct = latest_checkpoint.get("max_dd_pct", 0.0)
+        risk_of_ruin = latest_checkpoint.get("risk_of_ruin", False)
+        win_count = latest_checkpoint.get("win_count", 0)
+        loss_count = latest_checkpoint.get("loss_count", 0)
+        flat_count = latest_checkpoint.get("flat_count", 0)
+        gross_profit = latest_checkpoint.get("gross_profit", 0.0)
+        gross_loss = latest_checkpoint.get("gross_loss", 0.0)
     else:
         execution_run_id = new_execution_run_id()
         processed_event_count = 0
@@ -446,6 +459,19 @@ def run_replay(
         last_processed_file = None
         last_processed_line = 0
         last_line_hash = ""
+
+        execution_equity = starting_bankroll
+        cumulative_pnl = 0.0
+        peak_equity = starting_bankroll
+        current_dd = 0.0
+        max_dd = 0.0
+        max_dd_pct = 0.0
+        risk_of_ruin = False
+        win_count = 0
+        loss_count = 0
+        flat_count = 0
+        gross_profit = 0.0
+        gross_loss = 0.0
 
         started = _runtime_event(
             "execution_paper_runtime_started",
@@ -486,7 +512,19 @@ def run_replay(
                 "execution_bankroll_start": starting_bankroll,
                 "open_positions": open_positions,
                 "closed_positions": closed_positions,
-                "seen_keys": [[list(k), v] for k, v in dedupe_index._seen.items()]
+                "seen_keys": [[list(k), v] for k, v in dedupe_index._seen.items()],
+                "execution_equity": execution_equity,
+                "cumulative_pnl": cumulative_pnl,
+                "peak_equity": peak_equity,
+                "current_dd": current_dd,
+                "max_dd": max_dd,
+                "max_dd_pct": max_dd_pct,
+                "risk_of_ruin": risk_of_ruin,
+                "win_count": win_count,
+                "loss_count": loss_count,
+                "flat_count": flat_count,
+                "gross_profit": gross_profit,
+                "gross_loss": gross_loss,
             }
         )
 
@@ -593,7 +631,7 @@ def run_replay(
                             "reject_stage": stage,
                             "reject_reason": reason,
                             "required_shares": req_shares,
-                            "execution_equity": starting_bankroll,
+                            "execution_equity": execution_equity,
                             "execution_risk_mode": "NORMAL",
                             "inventory_state": json.dumps(open_positions),
                         }
@@ -602,17 +640,28 @@ def run_replay(
                         save_checkpoint(source_file, line_idx, line_hash)
 
                     if is_open:
-                        entry_price = payload.get("entry_price") or payload.get("price") or payload.get("receipt", {}).get("price")
-                        if not condition_id or not asset or not side or entry_price is None or not position_id:
-                            trigger_reject("missing_required_fields_for_open")
+                        entry_price = payload.get("entry_price")
+                        if entry_price is None:
+                            entry_price = payload.get("price")
+                        if entry_price is None:
+                            entry_price = payload.get("receipt", {}).get("price") if isinstance(payload.get("receipt"), dict) else None
+
+                        if not position_id:
+                            trigger_reject("missing_position_id")
+                            continue
+                        if not condition_id:
+                            trigger_reject("missing_condition_id")
+                            continue
+                        if not side or side not in ("YES", "NO"):
+                            trigger_reject("invalid_side")
+                            continue
+                        if entry_price is None:
+                            trigger_reject("missing_entry_price")
                             continue
                         try:
                             entry_price = float(entry_price)
                         except (TypeError, ValueError):
                             trigger_reject("invalid_entry_price")
-                            continue
-                        if side not in ("YES", "NO"):
-                            trigger_reject("invalid_side")
                             continue
 
                         if execution_position_id in open_positions or execution_position_id in closed_positions:
@@ -647,11 +696,17 @@ def run_replay(
                         }
 
                     elif is_close:
-                        exit_price = payload.get("exit_price") or payload.get("price") or payload.get("receipt", {}).get("price")
-                        exit_reason = payload.get("exit_reason") or payload.get("reason")
-                        pnl = payload.get("pnl")
+                        exit_price = payload.get("exit_price")
+                        if exit_price is None:
+                            exit_price = payload.get("price")
+                        if exit_price is None:
+                            exit_price = payload.get("receipt", {}).get("price") if isinstance(payload.get("receipt"), dict) else None
 
-                        if not execution_position_id:
+                        exit_reason = payload.get("exit_reason")
+                        if exit_reason is None:
+                            exit_reason = payload.get("reason")
+
+                        if not position_id:
                             trigger_reject("missing_position_id")
                             continue
                         if execution_position_id in closed_positions:
@@ -660,29 +715,74 @@ def run_replay(
                             raise ReconciliationError("orphan_close")
 
                         open_pos = open_positions[execution_position_id]
-                        if not condition_id:
-                            condition_id = open_pos.get("condition_id")
-                        if not asset:
-                            asset = open_pos.get("asset")
-                        if not side:
-                            side = open_pos.get("side")
-
-                        if not condition_id or not asset or not side or exit_price is None or not exit_reason or pnl is None:
-                            trigger_reject("missing_required_fields_for_close")
+                        curr_condition_id = condition_id or open_pos.get("condition_id")
+                        if not curr_condition_id:
+                            trigger_reject("missing_condition_id")
                             continue
-                        try:
-                            exit_price = float(exit_price)
-                            pnl = float(pnl)
-                        except (TypeError, ValueError):
-                            trigger_reject("invalid_exit_price_or_pnl")
-                            continue
-                        if side not in ("YES", "NO"):
+                        curr_side = side or open_pos.get("side")
+                        if not curr_side or curr_side not in ("YES", "NO"):
                             trigger_reject("invalid_side")
                             continue
 
+                        execution_entry_price = open_pos.get("execution_entry_price")
+                        if execution_entry_price is None:
+                            trigger_reject("missing_entry_price")
+                            continue
+                        try:
+                            execution_entry_price = float(execution_entry_price)
+                        except (TypeError, ValueError):
+                            trigger_reject("invalid_entry_price")
+                            continue
+
+                        if exit_price is None:
+                            trigger_reject("missing_exit_price")
+                            continue
+                        try:
+                            exit_price = float(exit_price)
+                        except (TypeError, ValueError):
+                            trigger_reject("invalid_exit_price")
+                            continue
+
+                        exit_reason = exit_reason or "unknown"
                         source_replay_key = _sha256_text(f"{Path(source_file).as_posix()}|{line_idx}|{line_hash}")
-                        execution_entry_price = open_pos["execution_entry_price"]
                         execution_shares = open_pos["execution_shares"]
+
+                        # Phase C core equity and drawdown calculations
+                        execution_pnl = (exit_price - execution_entry_price) * execution_shares
+
+                        execution_equity_before = execution_equity
+                        execution_equity_after = execution_equity_before + execution_pnl
+
+                        execution_equity = execution_equity_after
+                        cumulative_pnl += execution_pnl
+
+                        if execution_equity_after > peak_equity:
+                            peak_equity = execution_equity_after
+
+                        execution_drawdown = peak_equity - execution_equity_after
+                        current_dd = execution_drawdown
+                        if execution_drawdown > max_dd:
+                            max_dd = execution_drawdown
+
+                        if peak_equity > 0:
+                            max_dd_pct = (max_dd / peak_equity) * 100.0
+                        else:
+                            max_dd_pct = 0.0
+
+                        if execution_equity_after <= starting_bankroll * 0.10:
+                            risk_of_ruin = True
+
+                        if execution_pnl > 0:
+                            execution_result_class = "win"
+                            win_count += 1
+                            gross_profit += execution_pnl
+                        elif execution_pnl < 0:
+                            execution_result_class = "loss"
+                            loss_count += 1
+                            gross_loss += abs(execution_pnl)
+                        else:
+                            execution_result_class = "flat"
+                            flat_count += 1
 
                         emitted_event = {
                             "schema_version": SCHEMA_VERSION,
@@ -697,15 +797,22 @@ def run_replay(
                             "source_event_sha256": line_hash,
                             "execution_position_id": execution_position_id,
                             "source_replay_key": source_replay_key,
-                            "condition_id": condition_id,
-                            "asset": asset,
-                            "side": side,
+                            "condition_id": curr_condition_id,
+                            "asset": asset or open_pos.get("asset"),
+                            "side": curr_side,
                             "execution_track": track,
                             "execution_entry_price": execution_entry_price,
                             "execution_exit_price": exit_price,
                             "execution_shares": execution_shares,
-                            "execution_pnl": pnl,
+                            "execution_pnl": execution_pnl,
                             "execution_exit_reason": exit_reason,
+                            "execution_equity_before": execution_equity_before,
+                            "execution_equity_after": execution_equity_after,
+                            "cumulative_execution_pnl": cumulative_pnl,
+                            "execution_drawdown": execution_drawdown,
+                            "execution_max_drawdown": max_dd,
+                            "execution_max_drawdown_pct": max_dd_pct,
+                            "execution_result_class": execution_result_class,
                         }
 
                     try:
@@ -727,6 +834,24 @@ def run_replay(
                         closed_positions.append(execution_position_id)
                         del open_positions[execution_position_id]
 
+                        # Emit execution_paper_equity_snapshot
+                        snapshot_event = {
+                            "schema_version": SCHEMA_VERSION,
+                            "event_type": "execution_paper_equity_snapshot",
+                            "timestamp_utc": utc_now(),
+                            "execution_run_id": execution_run_id,
+                            "execution_track": track,
+                            "execution_bankroll_start": starting_bankroll,
+                            "execution_equity": execution_equity,
+                            "cumulative_execution_pnl": cumulative_pnl,
+                            "execution_dd": execution_drawdown,
+                            "execution_max_dd": max_dd,
+                            "execution_max_dd_pct": max_dd_pct,
+                            "risk_of_ruin": risk_of_ruin,
+                        }
+                        append_jsonl_event(root, "trade", snapshot_event)
+                        emitted_event_count += 1
+
                     save_checkpoint(source_file, line_idx, line_hash, execution_position_id)
 
         except (IOError, OSError):
@@ -736,6 +861,10 @@ def run_replay(
         reconciliation_status = "PARTIAL_OPEN_ALLOWED"
     else:
         reconciliation_status = "PASS"
+
+    # 8. Reconciliation: Add equity replay consistency check
+    if abs(execution_equity - (starting_bankroll + cumulative_pnl)) > 1e-6:
+        raise ReconciliationError("equity replay consistency check failed: final_equity != starting_bankroll + cumulative_pnl")
 
     last_trade_id = None
     if open_positions:
@@ -760,6 +889,20 @@ def run_replay(
     append_jsonl_event(root, "runtime", stopped)
     emitted_event_count += 1
 
+    # Calculate metrics
+    execution_net_pnl = cumulative_pnl
+    execution_closed_trade_count = len(closed_positions)
+
+    # WR calculations (excluding flats)
+    denom = win_count + loss_count
+    execution_wr = (win_count / denom) if denom > 0 else 0.0
+
+    # PF calculations (gross profit / gross loss, undefined if gross loss is 0)
+    if gross_loss == 0:
+        execution_pf = None  # serializes to null in JSON
+    else:
+        execution_pf = gross_profit / gross_loss
+
     report = {
         "schema_version": "execution_paper.validation.v1",
         "generated_at": utc_now(),
@@ -773,7 +916,19 @@ def run_replay(
         "reconciliation_status": reconciliation_status,
         "execution_track": track,
         "execution_bankroll_start": starting_bankroll,
-        "pnl_label": "signal_pnl_placeholder",
+        "execution_net_pnl": execution_net_pnl,
+        "execution_gross_profit": gross_profit,
+        "execution_gross_loss": gross_loss,
+        "execution_pf": execution_pf,
+        "execution_wr": execution_wr,
+        "execution_win_count": win_count,
+        "execution_loss_count": loss_count,
+        "execution_flat_count": flat_count,
+        "execution_closed_trade_count": execution_closed_trade_count,
+        "execution_max_dd": max_dd,
+        "execution_max_dd_pct": max_dd_pct,
+        "risk_of_ruin": risk_of_ruin,
+        "pnl_label": "execution_pnl_5_share_model",
         "checkpoint_path": str(checkpoint_path) if checkpoint_path else "",
         "guardrails": {
             "signal_runtime_modified": False,
