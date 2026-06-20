@@ -325,7 +325,7 @@ class DedupeIndex:
         raise DuplicateConflictError(f"conflicting duplicate for key={key}")
 
 
-def reconcile_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
+def reconcile_events(events: Iterable[dict[str, Any]], allow_partial_open: bool = True) -> dict[str, Any]:
     open_positions: dict[str, dict[str, Any]] = {}
     closed_positions: set[str] = set()
     rejected = 0
@@ -353,9 +353,13 @@ def reconcile_events(events: Iterable[dict[str, Any]]) -> dict[str, Any]:
             del open_positions[position_id]
             closes += 1
     if open_positions:
-        raise ReconciliationError("open_without_close")
+        if not allow_partial_open:
+            raise ReconciliationError("open_without_close")
+        status = "PARTIAL_OPEN_ALLOWED"
+    else:
+        status = "PASS"
     return {
-        "status": "PASS",
+        "status": status,
         "open_count": opens,
         "close_count": closes,
         "reject_count": rejected,
@@ -374,51 +378,403 @@ def _runtime_event(event_type: str, execution_run_id: str, **fields: Any) -> dic
 
 
 def run_dry_run(*, source_root: Path, output_root: Path, max_events: int) -> dict[str, Any]:
-    root = _ensure_output_root(output_root)
-    execution_run_id = new_execution_run_id()
-    emitted = 0
-    started = _runtime_event(
-        "execution_paper_runtime_started",
-        execution_run_id,
-        source_root=str(source_root),
-        output_root=str(root),
-        dry_run=True,
+    return run_replay(
+        source_root=source_root,
+        output_root=output_root,
         max_events=max_events,
+        track="5_share",
+        starting_bankroll=250.0,
+        dry_run=True,
     )
-    append_jsonl_event(root, "runtime", started)
-    emitted += 1
+
+
+def run_replay(
+    *,
+    source_root: Path,
+    output_root: Path,
+    max_events: int,
+    track: str = "5_share",
+    starting_bankroll: float = 250.0,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    root = _ensure_output_root(output_root)
+
+    # Discover checkpoints to resume
+    checkpoint_dir = root / "checkpoints"
+    checkpoints = []
+    if checkpoint_dir.exists():
+        for p in checkpoint_dir.rglob("*.json"):
+            try:
+                checkpoints.append(read_checkpoint(p))
+            except Exception:
+                pass
+
+    latest_checkpoint = None
+    if checkpoints:
+        checkpoints.sort(key=lambda c: c.get("checkpointed_at", ""))
+        latest_checkpoint = checkpoints[-1]
+
+    if latest_checkpoint:
+        validate_checkpoint_source_hash(latest_checkpoint)
+        execution_run_id = latest_checkpoint["execution_run_id"]
+        processed_event_count = latest_checkpoint.get("processed_event_count", 0)
+        emitted_event_count = latest_checkpoint.get("emitted_event_count", 0)
+        rejected_event_count = latest_checkpoint.get("rejected_event_count", 0)
+        skipped_duplicate_count = latest_checkpoint.get("skipped_duplicate_count", 0)
+        malformed_source_count = latest_checkpoint.get("malformed_source_count", 0)
+        open_positions = latest_checkpoint.get("open_positions", {})
+        closed_positions = latest_checkpoint.get("closed_positions", [])
+
+        dedupe_index = DedupeIndex()
+        seen_keys_list = latest_checkpoint.get("seen_keys", [])
+        for k_list, digest in seen_keys_list:
+            dedupe_index._seen[tuple(k_list)] = digest
+
+        last_processed_file = latest_checkpoint.get("last_processed_source_file")
+        last_processed_line = latest_checkpoint.get("last_processed_source_line", 0)
+        last_line_hash = latest_checkpoint.get("last_processed_source_sha256", "")
+    else:
+        execution_run_id = new_execution_run_id()
+        processed_event_count = 0
+        emitted_event_count = 0
+        rejected_event_count = 0
+        skipped_duplicate_count = 0
+        malformed_source_count = 0
+        open_positions = {}
+        closed_positions = []
+        dedupe_index = DedupeIndex()
+        last_processed_file = None
+        last_processed_line = 0
+        last_line_hash = ""
+
+        started = _runtime_event(
+            "execution_paper_runtime_started",
+            execution_run_id,
+            source_root=str(source_root),
+            output_root=str(root),
+            dry_run=dry_run,
+            max_events=max_events,
+        )
+        append_jsonl_event(root, "runtime", started)
+        emitted_event_count += 1
+
+    journal_dir = source_root / "trade_journal"
+    source_files = []
+    if journal_dir.exists() and journal_dir.is_dir():
+        source_files = sorted(list(journal_dir.glob("*.jsonl")), key=lambda p: p.name)
+
+    last_processed_file_abs = Path(last_processed_file).resolve() if last_processed_file else None
+    checkpoint_path = None
+
+    def save_checkpoint(src_file: Path | None, line_no: int, line_h: str, last_trade_id: str | None = None):
+        nonlocal checkpoint_path
+        checkpoint_path = write_checkpoint(
+            root,
+            execution_run_id,
+            {
+                "last_processed_trade": last_trade_id,
+                "last_processed_timestamp": utc_now(),
+                "last_processed_source_file": str(src_file) if src_file else None,
+                "last_processed_source_line": line_no,
+                "last_processed_source_sha256": line_h,
+                "processed_event_count": processed_event_count,
+                "emitted_event_count": emitted_event_count,
+                "rejected_event_count": rejected_event_count,
+                "skipped_duplicate_count": skipped_duplicate_count,
+                "malformed_source_count": malformed_source_count,
+                "execution_track": track,
+                "execution_bankroll_start": starting_bankroll,
+                "open_positions": open_positions,
+                "closed_positions": closed_positions,
+                "seen_keys": [[list(k), v] for k, v in dedupe_index._seen.items()]
+            }
+        )
+
+    for source_file in source_files:
+        source_file_abs = source_file.resolve()
+
+        if last_processed_file_abs:
+            if source_file_abs.name < last_processed_file_abs.name:
+                continue
+
+        try:
+            with source_file.open("r", encoding="utf-8") as handle:
+                for line_idx, line in enumerate(handle, start=1):
+                    if last_processed_file_abs and source_file_abs.name == last_processed_file_abs.name:
+                        if line_idx <= last_processed_line:
+                            continue
+
+                    if processed_event_count >= max_events:
+                        break
+
+                    line_hash = _sha256_line(line)
+                    last_processed_file = source_file
+                    last_processed_line = line_idx
+                    last_line_hash = line_hash
+
+                    try:
+                        parsed = json.loads(line)
+                        if not isinstance(parsed, dict):
+                            raise ValueError("Not a dictionary")
+                    except (json.JSONDecodeError, ValueError):
+                        malformed_source_count += 1
+                        processed_event_count += 1
+                        save_checkpoint(source_file, line_idx, line_hash)
+                        continue
+
+                    processed_event_count += 1
+
+                    event_type = parsed.get("event_type")
+                    is_open = event_type in ("trade_open", "open", "paper_trade_open")
+                    is_close = event_type in ("trade_close", "close", "paper_trade_close")
+
+                    if not (is_open or is_close):
+                        save_checkpoint(source_file, line_idx, line_hash)
+                        continue
+
+                    payload = parsed.get("payload")
+                    if not isinstance(payload, dict):
+                        rejected_event_count += 1
+                        reject_event = {
+                            "schema_version": SCHEMA_VERSION,
+                            "event_type": "execution_paper_reject",
+                            "timestamp_utc": utc_now(),
+                            "execution_run_id": execution_run_id,
+                            "source_runtime_mode": parsed.get("mode") or parsed.get("source_runtime_mode") or "SIGNAL_MODE",
+                            "source_run_id": parsed.get("run_id") or parsed.get("source_run_id") or "",
+                            "source_event_type": event_type,
+                            "source_file": str(source_file),
+                            "source_line": line_idx,
+                            "source_event_sha256": line_hash,
+                            "execution_track": track,
+                            "reject_stage": "validation",
+                            "reject_reason": "payload_is_not_dict",
+                            "required_shares": 5.0,
+                            "execution_equity": starting_bankroll,
+                            "execution_risk_mode": "NORMAL",
+                            "inventory_state": json.dumps(open_positions),
+                        }
+                        append_jsonl_event(root, "trade", reject_event)
+                        emitted_event_count += 1
+                        save_checkpoint(source_file, line_idx, line_hash)
+                        continue
+
+                    condition_id = payload.get("condition_id")
+                    asset = payload.get("asset") or payload.get("ticker")
+                    side = payload.get("side") or payload.get("outcome")
+                    position_id = payload.get("position_id") or payload.get("execution_position_id")
+
+                    execution_position_id = None
+                    if position_id is not None:
+                        pos_id_str = str(position_id)
+                        execution_position_id = pos_id_str if pos_id_str.startswith("ep_") else f"ep_{pos_id_str}"
+
+                    def trigger_reject(reason: str, stage: str = "validation"):
+                        nonlocal emitted_event_count, rejected_event_count
+                        rejected_event_count += 1
+                        req_shares = 5.0
+                        if track != "5_share":
+                            try:
+                                req_shares = float(payload.get("shares") or payload.get("size") or 5.0)
+                            except (TypeError, ValueError):
+                                pass
+                        reject_event = {
+                            "schema_version": SCHEMA_VERSION,
+                            "event_type": "execution_paper_reject",
+                            "timestamp_utc": utc_now(),
+                            "execution_run_id": execution_run_id,
+                            "source_runtime_mode": parsed.get("mode") or parsed.get("source_runtime_mode") or "SIGNAL_MODE",
+                            "source_run_id": parsed.get("run_id") or parsed.get("source_run_id") or "",
+                            "source_event_type": event_type,
+                            "source_file": str(source_file),
+                            "source_line": line_idx,
+                            "source_event_sha256": line_hash,
+                            "execution_track": track,
+                            "reject_stage": stage,
+                            "reject_reason": reason,
+                            "required_shares": req_shares,
+                            "execution_equity": starting_bankroll,
+                            "execution_risk_mode": "NORMAL",
+                            "inventory_state": json.dumps(open_positions),
+                        }
+                        append_jsonl_event(root, "trade", reject_event)
+                        emitted_event_count += 1
+                        save_checkpoint(source_file, line_idx, line_hash)
+
+                    if is_open:
+                        entry_price = payload.get("entry_price") or payload.get("price") or payload.get("receipt", {}).get("price")
+                        if not condition_id or not asset or not side or entry_price is None or not position_id:
+                            trigger_reject("missing_required_fields_for_open")
+                            continue
+                        try:
+                            entry_price = float(entry_price)
+                        except (TypeError, ValueError):
+                            trigger_reject("invalid_entry_price")
+                            continue
+                        if side not in ("YES", "NO"):
+                            trigger_reject("invalid_side")
+                            continue
+
+                        if execution_position_id in open_positions or execution_position_id in closed_positions:
+                            raise ReconciliationError("duplicate_open")
+
+                        source_replay_key = _sha256_text(f"{Path(source_file).as_posix()}|{line_idx}|{line_hash}")
+                        execution_shares = 5.0 if track == "5_share" else float(payload.get("shares") or payload.get("size") or 5.0)
+                        execution_notional = entry_price * execution_shares
+
+                        emitted_event = {
+                            "schema_version": SCHEMA_VERSION,
+                            "event_type": "execution_paper_open",
+                            "timestamp_utc": utc_now(),
+                            "execution_run_id": execution_run_id,
+                            "source_runtime_mode": parsed.get("mode") or parsed.get("source_runtime_mode") or "SIGNAL_MODE",
+                            "source_run_id": parsed.get("run_id") or parsed.get("source_run_id") or "",
+                            "source_event_type": event_type,
+                            "source_file": str(source_file),
+                            "source_line": line_idx,
+                            "source_event_sha256": line_hash,
+                            "source_replay_key": source_replay_key,
+                            "condition_id": condition_id,
+                            "asset": asset,
+                            "side": side,
+                            "execution_track": track,
+                            "execution_bankroll_start": starting_bankroll,
+                            "execution_entry_price": entry_price,
+                            "execution_shares": execution_shares,
+                            "execution_notional": execution_notional,
+                            "execution_liquidity_pass": True,
+                            "execution_position_id": execution_position_id,
+                        }
+
+                    elif is_close:
+                        exit_price = payload.get("exit_price") or payload.get("price") or payload.get("receipt", {}).get("price")
+                        exit_reason = payload.get("exit_reason") or payload.get("reason")
+                        pnl = payload.get("pnl")
+
+                        if not execution_position_id:
+                            trigger_reject("missing_position_id")
+                            continue
+                        if execution_position_id in closed_positions:
+                            raise ReconciliationError("duplicate_close")
+                        if execution_position_id not in open_positions:
+                            raise ReconciliationError("orphan_close")
+
+                        open_pos = open_positions[execution_position_id]
+                        if not condition_id:
+                            condition_id = open_pos.get("condition_id")
+                        if not asset:
+                            asset = open_pos.get("asset")
+                        if not side:
+                            side = open_pos.get("side")
+
+                        if not condition_id or not asset or not side or exit_price is None or not exit_reason or pnl is None:
+                            trigger_reject("missing_required_fields_for_close")
+                            continue
+                        try:
+                            exit_price = float(exit_price)
+                            pnl = float(pnl)
+                        except (TypeError, ValueError):
+                            trigger_reject("invalid_exit_price_or_pnl")
+                            continue
+                        if side not in ("YES", "NO"):
+                            trigger_reject("invalid_side")
+                            continue
+
+                        source_replay_key = _sha256_text(f"{Path(source_file).as_posix()}|{line_idx}|{line_hash}")
+                        execution_entry_price = open_pos["execution_entry_price"]
+                        execution_shares = open_pos["execution_shares"]
+
+                        emitted_event = {
+                            "schema_version": SCHEMA_VERSION,
+                            "event_type": "execution_paper_close",
+                            "timestamp_utc": utc_now(),
+                            "execution_run_id": execution_run_id,
+                            "source_runtime_mode": parsed.get("mode") or parsed.get("source_runtime_mode") or "SIGNAL_MODE",
+                            "source_run_id": parsed.get("run_id") or parsed.get("source_run_id") or "",
+                            "source_event_type": event_type,
+                            "source_file": str(source_file),
+                            "source_line": line_idx,
+                            "source_event_sha256": line_hash,
+                            "execution_position_id": execution_position_id,
+                            "source_replay_key": source_replay_key,
+                            "condition_id": condition_id,
+                            "asset": asset,
+                            "side": side,
+                            "execution_track": track,
+                            "execution_entry_price": execution_entry_price,
+                            "execution_exit_price": exit_price,
+                            "execution_shares": execution_shares,
+                            "execution_pnl": pnl,
+                            "execution_exit_reason": exit_reason,
+                        }
+
+                    try:
+                        dedupe_status = dedupe_index.register(emitted_event)
+                    except DuplicateConflictError:
+                        raise
+
+                    if dedupe_status == "duplicate":
+                        skipped_duplicate_count += 1
+                        save_checkpoint(source_file, line_idx, line_hash, execution_position_id)
+                        continue
+
+                    append_jsonl_event(root, "trade", emitted_event)
+                    emitted_event_count += 1
+
+                    if is_open:
+                        open_positions[execution_position_id] = emitted_event
+                    elif is_close:
+                        closed_positions.append(execution_position_id)
+                        del open_positions[execution_position_id]
+
+                    save_checkpoint(source_file, line_idx, line_hash, execution_position_id)
+
+        except (IOError, OSError):
+            raise
+
+    if open_positions:
+        reconciliation_status = "PARTIAL_OPEN_ALLOWED"
+    else:
+        reconciliation_status = "PASS"
+
+    last_trade_id = None
+    if open_positions:
+        last_trade_id = next(iter(open_positions.keys()))
+    elif closed_positions:
+        last_trade_id = closed_positions[-1]
+
+    save_checkpoint(
+        Path(last_processed_file) if last_processed_file else None,
+        last_processed_line,
+        last_line_hash,
+        last_trade_id
+    )
+
     stopped = _runtime_event(
         "execution_paper_runtime_stopped",
         execution_run_id,
-        status="DRY_RUN_COMPLETE",
-        processed_event_count=0,
-        emitted_event_count=emitted + 1,
+        status="COMPLETE",
+        processed_event_count=processed_event_count,
+        emitted_event_count=emitted_event_count + 1,
     )
     append_jsonl_event(root, "runtime", stopped)
-    emitted += 1
-    checkpoint_path = write_checkpoint(
-        root,
-        execution_run_id,
-        {
-            "last_processed_trade": None,
-            "last_processed_timestamp": None,
-            "last_processed_source_file": None,
-            "last_processed_source_line": None,
-            "last_processed_source_sha256": None,
-            "processed_event_count": 0,
-            "emitted_event_count": emitted,
-            "status": "DRY_RUN_COMPLETE",
-        },
-    )
+    emitted_event_count += 1
+
     report = {
         "schema_version": "execution_paper.validation.v1",
         "generated_at": utc_now(),
         "execution_run_id": execution_run_id,
-        "status": "PASS",
-        "dry_run": True,
-        "processed_event_count": 0,
-        "emitted_event_count": emitted,
-        "checkpoint_path": str(checkpoint_path),
+        "status": "PASS" if reconciliation_status in ("PASS", "PARTIAL_OPEN_ALLOWED") else "FAIL",
+        "processed_source_events": processed_event_count,
+        "emitted_events": emitted_event_count,
+        "rejected_events": rejected_event_count,
+        "skipped_duplicates": skipped_duplicate_count,
+        "malformed_source_rows": malformed_source_count,
+        "reconciliation_status": reconciliation_status,
+        "execution_track": track,
+        "execution_bankroll_start": starting_bankroll,
+        "pnl_label": "signal_pnl_placeholder",
+        "checkpoint_path": str(checkpoint_path) if checkpoint_path else "",
         "guardrails": {
             "signal_runtime_modified": False,
             "runtime_behavior_changed": False,
@@ -428,6 +784,7 @@ def run_dry_run(*, source_root: Path, output_root: Path, max_events: int) -> dic
     report_path = root / "reports" / utc_now()[:10] / f"{execution_run_id}_validation.json"
     _ensure_inside(report_path, root)
     _atomic_write_json(report_path, report)
+
     return report
 
 
@@ -437,21 +794,28 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-events", type=int, default=10)
     parser.add_argument("--source-root", type=Path, default=DEFAULT_SOURCE_ROOT)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT_ROOT)
+    parser.add_argument("--track", type=str, default="5_share")
+    parser.add_argument("--starting-bankroll", type=float, default=250.0)
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
-    if not args.dry_run:
-        raise SystemExit("--dry-run is required in Phase A skeleton")
-    run_dry_run(
+    output_root = args.output_root
+    if args.dry_run and output_root == DEFAULT_OUTPUT_ROOT:
+        import tempfile
+        output_root = Path(tempfile.gettempdir()) / DEFAULT_OUTPUT_ROOT
+    run_replay(
         source_root=args.source_root,
-        output_root=args.output_root,
+        output_root=output_root,
         max_events=args.max_events,
+        track=args.track,
+        starting_bankroll=args.starting_bankroll,
+        dry_run=args.dry_run,
     )
     return 0
 
 
+
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -219,3 +219,334 @@ def test_no_forbidden_imports() -> None:
         "polymarket.position_sizing",
     )
     assert all(item not in source for item in forbidden)
+
+
+def test_trade_open_emits_execution_paper_open(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    open_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_event])
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=10,
+        track="5_share",
+        starting_bankroll=250.0,
+    )
+
+    assert report["status"] == "PASS"
+    assert report["processed_source_events"] == 1
+    assert report["rejected_events"] == 0
+
+    journal_files = list((output_root / "journals").rglob("*.jsonl"))
+    assert len(journal_files) >= 1
+
+    trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
+    rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+
+    assert len(rows) == 1
+    assert rows[0]["event_type"] == "execution_paper_open"
+    assert rows[0]["execution_position_id"] == "ep_pos_1"
+    assert rows[0]["execution_shares"] == 5.0
+    assert rows[0]["execution_bankroll_start"] == 250.0
+
+
+def test_trade_close_emits_execution_paper_close(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    open_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    close_event = {
+        "event_type": "trade_close",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "exit_price": 0.60,
+            "position_id": "pos_1",
+            "reason": "take_profit",
+            "pnl": 0.40,
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:05:00Z"
+    }
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_event, close_event])
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=10,
+    )
+
+    assert report["status"] == "PASS"
+    assert report["processed_source_events"] == 2
+
+    journal_files = list((output_root / "journals").rglob("*.jsonl"))
+    trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
+    rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+
+    assert len(rows) == 2
+    assert rows[0]["event_type"] == "execution_paper_open"
+    assert rows[1]["event_type"] == "execution_paper_close"
+    assert rows[1]["execution_position_id"] == "ep_pos_1"
+    assert rows[1]["execution_pnl"] == 0.40
+
+
+def test_missing_required_field_emits_reject(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    open_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_event])
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=10,
+    )
+
+    assert report["processed_source_events"] == 1
+    assert report["rejected_events"] == 1
+
+    journal_files = list((output_root / "journals").rglob("*.jsonl"))
+    trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
+    rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+
+    assert len(rows) == 1
+    assert rows[0]["event_type"] == "execution_paper_reject"
+
+
+def test_checkpoint_after_source_processing(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    open_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [open_event])
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=10,
+    )
+
+    checkpoint_path = Path(report["checkpoint_path"])
+    assert checkpoint_path.exists()
+
+    checkpoint = read_checkpoint(checkpoint_path)
+    assert checkpoint["processed_event_count"] == 1
+    assert checkpoint["last_processed_source_line"] == 1
+
+
+def test_resume_skips_already_processed_event(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    event1 = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    event2 = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xdef",
+            "ticker": "BTC",
+            "outcome": "NO",
+            "entry_price": 0.60,
+            "position_id": "pos_2",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:05:00Z"
+    }
+    source_file = source_root / "trade_journal" / "2026-06-20.jsonl"
+    _write_jsonl(source_file, [event1, event2])
+
+    from tools.execution_paper_runtime import run_replay
+    report1 = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=1,
+    )
+    assert report1["processed_source_events"] == 1
+
+    journal_files = list((output_root / "journals").rglob("*.jsonl"))
+    trade_journal = next(f for f in journal_files if f.parent.name != "runtime")
+    rows = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+    assert len(rows) == 1
+    assert rows[0]["execution_position_id"] == "ep_pos_1"
+
+    report2 = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=10,
+    )
+    assert report2["processed_source_events"] == 2
+
+    rows_after = [json.loads(line) for line in trade_journal.read_text(encoding="utf-8").splitlines()]
+    assert len(rows_after) == 2
+    assert rows_after[0]["execution_position_id"] == "ep_pos_1"
+    assert rows_after[1]["execution_position_id"] == "ep_pos_2"
+
+
+def test_reject_does_not_create_position(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    reject_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    close_event = {
+        "event_type": "trade_close",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "exit_price": 0.60,
+            "position_id": "pos_1",
+            "reason": "take_profit",
+            "pnl": 0.40,
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:05:00Z"
+    }
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", [reject_event, close_event])
+
+    from tools.execution_paper_runtime import run_replay
+    with pytest.raises(ReconciliationError, match="orphan_close"):
+        run_replay(
+            source_root=source_root,
+            output_root=output_root,
+            max_events=10,
+        )
+
+
+def test_cli_defaults_track_and_bankroll() -> None:
+    from tools.execution_paper_runtime import _build_parser
+    parser = _build_parser()
+    args = parser.parse_args([])
+    assert args.track == "5_share"
+    assert args.starting_bankroll == 250.0
+
+
+def test_validation_report_counts(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    open_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "condition_id": "0xabc",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_1",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:00:00Z"
+    }
+    reject_event = {
+        "event_type": "trade_open",
+        "mode": "paper",
+        "payload": {
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.52,
+            "position_id": "pos_2",
+        },
+        "run_id": "run_1",
+        "timestamp_utc": "2026-06-20T00:05:00Z"
+    }
+    source_file = source_root / "trade_journal" / "2026-06-20.jsonl"
+    source_file.parent.mkdir(parents=True, exist_ok=True)
+    with source_file.open("w", encoding="utf-8") as handle:
+        handle.write(json.dumps(open_event) + "\n")
+        handle.write("invalid_json_row\n")
+        handle.write(json.dumps(reject_event) + "\n")
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(
+        source_root=source_root,
+        output_root=output_root,
+        max_events=10,
+    )
+
+    assert report["processed_source_events"] == 3
+    assert report["emitted_events"] == 4  # 1 started, 1 open, 1 reject, 1 stopped
+    assert report["rejected_events"] == 1
+    assert report["malformed_source_rows"] == 1
+    assert report["skipped_duplicates"] == 0
+    assert report["pnl_label"] == "signal_pnl_placeholder"
