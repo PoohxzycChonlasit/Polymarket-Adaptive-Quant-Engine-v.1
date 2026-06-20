@@ -486,6 +486,49 @@ def run_replay(
         append_jsonl_event(root, "runtime", started)
         emitted_event_count += 1
 
+    # Initialize historical mode index queues
+    historical_order_queue = {}
+    historical_fifo_queue = {}
+
+    if compat_mode == "historical" and open_positions:
+        # Reconstruct queues from loaded open_positions in chronological order
+        sorted_opens = sorted(
+            open_positions.items(),
+            key=lambda x: x[1].get("timestamp_utc") or x[1].get("payload", {}).get("timestamp_utc") or ""
+        )
+        for uid, op in sorted_opens:
+            op_payload = op.get("payload") or {}
+            op_run_id = op.get("source_run_id") or op_payload.get("run_id") or ""
+
+            op_pid_val = op_payload.get("position_id")
+            op_epid_val = op_payload.get("execution_position_id")
+            op_receipt_oid = op_payload.get("receipt", {}).get("order_id") if isinstance(op_payload.get("receipt"), dict) else None
+            op_oid_val = op_payload.get("order_id")
+            op_resolved_pid = op_pid_val or op_epid_val or op_receipt_oid or op_oid_val
+
+            resolved_order_id = None
+            if isinstance(op_payload.get("receipt"), dict):
+                resolved_order_id = op_payload["receipt"].get("order_id")
+            if not resolved_order_id:
+                resolved_order_id = op_payload.get("order_id")
+            if not resolved_order_id:
+                resolved_order_id = op_resolved_pid
+
+            op_condition_id = op.get("condition_id") or op_payload.get("condition_id")
+            op_asset = op.get("asset") or op_payload.get("asset") or op_payload.get("ticker")
+            op_outcome = op.get("side") or op_payload.get("outcome")
+
+            if resolved_order_id:
+                key = (op_run_id, str(resolved_order_id))
+                if key not in historical_order_queue:
+                    historical_order_queue[key] = []
+                historical_order_queue[key].append(uid)
+            if op_condition_id and op_asset and op_outcome:
+                fifo_key = (op_run_id, op_condition_id, op_asset, op_outcome)
+                if fifo_key not in historical_fifo_queue:
+                    historical_fifo_queue[fifo_key] = []
+                historical_fifo_queue[fifo_key].append(uid)
+
     journal_dir = source_root / "trade_journal"
     source_files = []
     if journal_dir.exists() and journal_dir.is_dir():
@@ -610,8 +653,17 @@ def run_replay(
                         oid_val = payload.get("order_id")
 
                         resolved_pid = pid_val or epid_val or receipt_oid or oid_val
+
+                        resolved_order_id = None
+                        if isinstance(payload.get("receipt"), dict):
+                            resolved_order_id = payload["receipt"].get("order_id")
+                        if not resolved_order_id:
+                            resolved_order_id = payload.get("order_id")
+                        if not resolved_order_id:
+                            resolved_order_id = resolved_pid
                     else:
                         resolved_pid = payload.get("position_id") or payload.get("execution_position_id")
+                        resolved_order_id = None
 
                     execution_position_id = None
                     if resolved_pid is not None:
@@ -706,10 +758,32 @@ def run_replay(
                             trigger_reject("invalid_entry_price")
                             continue
 
-                        if execution_position_id in open_positions or execution_position_id in closed_positions:
-                            raise ReconciliationError("duplicate_open")
+                        historical_position_uid = None
+                        if compat_mode == "historical":
+                            run_id_val = parsed.get("run_id") or parsed.get("source_run_id") or ""
+                            resolved_order_id_str = str(resolved_order_id or "")
+                            condition_id_str = str(condition_id or "")
+                            asset_str = str(asset or "")
+                            outcome_str = str(resolved_side or "")
+                            open_timestamp_utc = parsed.get("timestamp_utc") or parsed.get("timestamp") or ""
 
-                        matched_key = execution_position_id
+                            uid_input = f"{run_id_val}{resolved_order_id_str}{condition_id_str}{asset_str}{outcome_str}{open_timestamp_utc}"
+                            historical_position_uid = hashlib.sha256(uid_input.encode("utf-8")).hexdigest()
+
+                        if compat_mode == "historical":
+                            if historical_position_uid in open_positions or historical_position_uid in closed_positions:
+                                raise ReconciliationError("duplicate_open")
+                            if resolved_order_id:
+                                run_id_val = parsed.get("run_id") or parsed.get("source_run_id") or ""
+                                key = (run_id_val, str(resolved_order_id))
+                                if key in historical_order_queue and len(historical_order_queue[key]) > 0:
+                                    raise ReconciliationError("duplicate_open")
+                            matched_key = historical_position_uid
+                        else:
+                            if execution_position_id in open_positions or execution_position_id in closed_positions:
+                                raise ReconciliationError("duplicate_open")
+                            matched_key = execution_position_id
+
                         source_replay_key = _sha256_text(f"{Path(source_file).as_posix()}|{line_idx}|{line_hash}")
                         execution_shares = 5.0 if track == "5_share" else float(payload.get("shares") or payload.get("size") or 5.0)
                         execution_notional = entry_price * execution_shares
@@ -735,8 +809,13 @@ def run_replay(
                             "execution_shares": execution_shares,
                             "execution_notional": execution_notional,
                             "execution_liquidity_pass": True,
-                            "execution_position_id": execution_position_id,
+                            "execution_position_id": execution_position_id if compat_mode == "historical" else matched_key,
                         }
+                        if compat_mode == "historical":
+                            emitted_event["historical_position_uid"] = historical_position_uid
+                            emitted_event["identity_source"] = "historical_run_order_uid"
+                        else:
+                            emitted_event["identity_source"] = "canonical_position_id"
 
                     elif is_close:
                         exit_price = payload.get("exit_price")
@@ -749,13 +828,25 @@ def run_replay(
                         if exit_reason is None:
                             exit_reason = payload.get("reason")
 
+                        # Resolve side (needed for FIFO matching)
+                        if compat_mode == "historical":
+                            outcome_val = payload.get("outcome")
+                            side_val = payload.get("side")
+                            if outcome_val in ("YES", "NO"):
+                                resolved_side = outcome_val
+                            elif side_val in ("YES", "NO"):
+                                resolved_side = side_val
+                            else:
+                                resolved_side = None
+                        else:
+                            resolved_side = payload.get("side") or payload.get("outcome")
+
                         if compat_mode == "historical":
                             if not resolved_pid:
-                                trigger_reject("position_id_unresolvable")
-                                continue
-                            if execution_position_id in closed_positions:
-                                trigger_reject("historical_link_collision")
-                                continue
+                                # FIFO matching needs resolved_side, condition_id, asset
+                                if not (condition_id and asset and resolved_side):
+                                    trigger_reject("position_id_unresolvable")
+                                    continue
                         else:
                             if not resolved_pid:
                                 trigger_reject("missing_position_id")
@@ -768,63 +859,71 @@ def run_replay(
                         matched_key = None
 
                         if compat_mode == "historical":
-                            if execution_position_id in open_positions:
-                                open_pos = open_positions[execution_position_id]
-                                matched_key = execution_position_id
-                            if not open_pos:
-                                close_order_id = payload.get("order_id") or (payload.get("receipt", {}).get("order_id") if isinstance(payload.get("receipt"), dict) else None)
-                                if close_order_id:
-                                    close_order_pos_id = str(close_order_id) if str(close_order_id).startswith("ep_") else f"ep_{close_order_id}"
-                                    if close_order_pos_id in open_positions:
-                                        open_pos = open_positions[close_order_pos_id]
-                                        matched_key = close_order_pos_id
+                            close_receipt_oid = payload.get("receipt", {}).get("order_id") if isinstance(payload.get("receipt"), dict) else None
+                            close_oid_val = payload.get("order_id")
+                            close_resolved_order_id = close_receipt_oid or close_oid_val or resolved_pid
+
+                            close_run_id = parsed.get("run_id") or parsed.get("source_run_id") or ""
+
+                            matched_uid = None
+
+                            # 1. Try order ID matching
+                            if close_resolved_order_id:
+                                key = (close_run_id, str(close_resolved_order_id))
+                                candidates = historical_order_queue.get(key, [])
+                                active_candidates = [uid for uid in candidates if uid in open_positions]
+                                closed_candidates = [uid for uid in candidates if uid in closed_positions]
+
+                                if len(active_candidates) == 1:
+                                    matched_uid = active_candidates[0]
+                                elif len(active_candidates) > 1:
+                                    raise ReconciliationError("ambiguous_position_match")
+                                elif len(closed_candidates) > 0:
+                                    trigger_reject("historical_link_collision")
+                                    continue
+
+                            # 2. Try FIFO matching
+                            if not matched_uid:
+                                close_cond_id = condition_id
+                                close_asset = asset or payload.get("ticker")
+                                if close_cond_id and close_asset and resolved_side:
+                                    fifo_key = (close_run_id, close_cond_id, close_asset, resolved_side)
+                                    candidates = historical_fifo_queue.get(fifo_key, [])
+                                    active_candidates = [uid for uid in candidates if uid in open_positions]
+                                    closed_candidates = [uid for uid in candidates if uid in closed_positions]
+
+                                    if len(active_candidates) == 1:
+                                        matched_uid = active_candidates[0]
+                                    elif len(active_candidates) > 1:
+                                        raise ReconciliationError("ambiguous_position_match")
+                                    elif len(closed_candidates) > 0:
+                                        trigger_reject("historical_link_collision")
+                                        continue
+
+                            if matched_uid:
+                                open_pos = open_positions.get(matched_uid)
+                                matched_key = matched_uid
                         else:
                             if execution_position_id not in open_positions:
                                 raise ReconciliationError("orphan_close")
                             open_pos = open_positions[execution_position_id]
                             matched_key = execution_position_id
 
+                        if not open_pos:
+                            raise ReconciliationError("orphan_close")
+
                         # Now resolve condition_id
-                        curr_condition_id = condition_id or (open_pos.get("condition_id") if open_pos else None)
+                        curr_condition_id = condition_id or open_pos.get("condition_id")
                         if not curr_condition_id:
                             trigger_reject("missing_condition_id")
                             continue
 
-                        # Resolve side
-                        if compat_mode == "historical":
-                            outcome_val = payload.get("outcome")
-                            side_val = payload.get("side")
-                            if outcome_val in ("YES", "NO"):
-                                resolved_side = outcome_val
-                            elif side_val in ("YES", "NO"):
-                                resolved_side = side_val
-                            else:
-                                resolved_side = open_pos.get("side") if open_pos else None
-                            if not resolved_side:
-                                trigger_reject("side_unresolvable")
-                                continue
-                        else:
-                            resolved_side = payload.get("side") or payload.get("outcome") or (open_pos.get("side") if open_pos else None)
-                            if not resolved_side or resolved_side not in ("YES", "NO"):
-                                trigger_reject("side_unresolvable")
-                                continue
-
-                        # Priority C fallback for historical mode
-                        if compat_mode == "historical" and not open_pos:
-                            candidates = []
-                            for k, op in open_positions.items():
-                                if op.get("condition_id") == curr_condition_id and op.get("side") == resolved_side:
-                                    candidates.append((k, op))
-                            if len(candidates) == 1:
-                                matched_key, open_pos = candidates[0]
-                            elif len(candidates) > 1:
-                                trigger_reject("ambiguous_position_match")
-                                continue
-                            else:
-                                raise ReconciliationError("orphan_close")
-
-                        if not open_pos:
-                            raise ReconciliationError("orphan_close")
+                        # Resolve side fallback if still None
+                        if resolved_side is None:
+                            resolved_side = open_pos.get("side")
+                        if not resolved_side or resolved_side not in ("YES", "NO"):
+                            trigger_reject("side_unresolvable")
+                            continue
 
                         execution_entry_price = open_pos.get("execution_entry_price")
                         if execution_entry_price is None:
@@ -886,6 +985,7 @@ def run_replay(
                             execution_result_class = "flat"
                             flat_count += 1
 
+                        curr_exec_position_id = execution_position_id or open_pos.get("execution_position_id")
                         emitted_event = {
                             "schema_version": SCHEMA_VERSION,
                             "event_type": "execution_paper_close",
@@ -897,7 +997,7 @@ def run_replay(
                             "source_file": str(source_file),
                             "source_line": line_idx,
                             "source_event_sha256": line_hash,
-                            "execution_position_id": matched_key,
+                            "execution_position_id": curr_exec_position_id if compat_mode == "historical" else matched_key,
                             "source_replay_key": source_replay_key,
                             "condition_id": curr_condition_id,
                             "asset": asset or open_pos.get("asset"),
@@ -916,6 +1016,11 @@ def run_replay(
                             "execution_max_drawdown_pct": max_dd_pct,
                             "execution_result_class": execution_result_class,
                         }
+                        if compat_mode == "historical":
+                            emitted_event["historical_position_uid"] = open_pos.get("historical_position_uid")
+                            emitted_event["identity_source"] = "historical_run_order_uid"
+                        else:
+                            emitted_event["identity_source"] = "canonical_position_id"
 
                     try:
                         dedupe_status = dedupe_index.register(emitted_event)
@@ -932,6 +1037,18 @@ def run_replay(
 
                     if is_open:
                         open_positions[matched_key] = emitted_event
+                        if compat_mode == "historical":
+                            run_id_val = parsed.get("run_id") or parsed.get("source_run_id") or ""
+                            if resolved_order_id:
+                                key = (run_id_val, str(resolved_order_id))
+                                if key not in historical_order_queue:
+                                    historical_order_queue[key] = []
+                                historical_order_queue[key].append(historical_position_uid)
+                            if condition_id and asset and resolved_side:
+                                fifo_key = (run_id_val, condition_id, asset, resolved_side)
+                                if fifo_key not in historical_fifo_queue:
+                                    historical_fifo_queue[fifo_key] = []
+                                historical_fifo_queue[fifo_key].append(historical_position_uid)
                     elif is_close:
                         closed_positions.append(matched_key)
                         del open_positions[matched_key]

@@ -912,10 +912,10 @@ def test_historical_mode_position_id_unresolvable_on_close(tmp_path: Path) -> No
     source_root = tmp_path / "source"
     output_root = tmp_path / DEFAULT_OUTPUT_ROOT
 
-    # Close lacks position_id / execution_position_id / order_id
+    # Close lacks position_id / execution_position_id / order_id, AND condition_id is omitted (so FIFO cannot match)
     events = [
         {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"}, "timestamp_utc": "2026-06-20T00:00:00Z"},
-        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60}, "timestamp_utc": "2026-06-20T00:01:00Z"},
+        {"event_type": "trade_close", "payload": {"ticker": "BTC", "outcome": "YES", "exit_price": 0.60}, "timestamp_utc": "2026-06-20T00:01:00Z"},
     ]
     _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
 
@@ -945,7 +945,7 @@ def test_historical_mode_legacy_linking_and_ambiguity(tmp_path: Path) -> None:
     assert report1["rejected_events"] == 0
     assert report1["execution_closed_trade_count"] == 1
 
-    # 2. Test multiple candidates (ambiguous matching fails)
+    # 2. Test multiple candidates (ambiguous matching fails closed)
     events2 = [
         {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "ord_open_1"}, "timestamp_utc": "2026-06-21T00:00:00Z"},
         {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.40, "order_id": "ord_open_2"}, "timestamp_utc": "2026-06-21T00:01:00Z"},
@@ -955,13 +955,8 @@ def test_historical_mode_legacy_linking_and_ambiguity(tmp_path: Path) -> None:
 
     import shutil
     shutil.rmtree(output_root, ignore_errors=True)
-    report2 = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
-    assert report2["rejected_events"] == 1
-
-    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
-    assert len(trade_files) == 1
-    rejects = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines() if json.loads(line)["event_type"] == "execution_paper_reject"]
-    assert rejects[0]["reject_reason"] == "ambiguous_position_match"
+    with pytest.raises(ReconciliationError, match="ambiguous_position_match"):
+        run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
 
 
 def test_historical_mode_link_collision(tmp_path: Path) -> None:
@@ -985,3 +980,220 @@ def test_historical_mode_link_collision(tmp_path: Path) -> None:
     assert len(trade_files) == 1
     rejects = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines() if json.loads(line)["event_type"] == "execution_paper_reject"]
     assert rejects[0]["reject_reason"] == "historical_link_collision"
+
+
+def test_two_opens_same_order_id_different_run_id_do_not_collide(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Historical mode: different run_ids can open same order_id concurrently
+    events = [
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "paper-1"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:00:00Z"
+        },
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.60, "order_id": "paper-1"},
+            "run_id": "run_2",
+            "timestamp_utc": "2026-06-20T00:01:00Z"
+        }
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["emitted_events"] >= 3  # startup + 2 opens
+    assert report["rejected_events"] == 0
+
+
+def test_open_close_same_run_id_order_id_match(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    events = [
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "paper-1"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:00:00Z"
+        },
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.60, "order_id": "paper-1"},
+            "run_id": "run_2",
+            "timestamp_utc": "2026-06-20T00:01:00Z"
+        },
+        # Close matches Open A by run_id
+        {
+            "event_type": "trade_close",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.55, "order_id": "paper-1", "reason": "stop_loss"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:02:00Z"
+        }
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 0
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rows = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines()]
+    opens = [r for r in rows if r["event_type"] == "execution_paper_open"]
+    closes = [r for r in rows if r["event_type"] == "execution_paper_close"]
+
+    assert len(opens) == 2
+    assert len(closes) == 1
+
+    # Verify close maps to correct open
+    assert closes[0]["historical_position_uid"] == opens[0]["historical_position_uid"]
+    assert closes[0]["execution_position_id"] == opens[0]["execution_position_id"]
+
+
+def test_same_order_id_same_run_id_duplicate_fails(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Historical mode: same run_id cannot open same order_id twice concurrently
+    events = [
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "paper-1"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:00:00Z"
+        },
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.60, "order_id": "paper-1"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:01:00Z"
+        }
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    with pytest.raises(ReconciliationError, match="duplicate_open"):
+        run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+
+
+def test_missing_order_id_fallback_fifo_works(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    events = [
+        # Open A
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "paper-1"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:00:00Z"
+        },
+        # Open B (different outcome to separate queue, same run_id)
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "NO", "entry_price": 0.40, "order_id": "paper-2"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:01:00Z"
+        },
+        # Close A has no order ID, should match Open A via FIFO (outcome YES matches YES queue)
+        {
+            "event_type": "trade_close",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.55, "reason": "stop_loss"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:02:00Z"
+        }
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 0
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rows = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines()]
+    opens = [r for r in rows if r["event_type"] == "execution_paper_open"]
+    closes = [r for r in rows if r["event_type"] == "execution_paper_close"]
+
+    assert len(opens) == 2
+    assert len(closes) == 1
+    # Check that close matched Open A (outcome YES)
+    assert closes[0]["historical_position_uid"] == opens[0]["historical_position_uid"]
+
+
+def test_ambiguity_fails_closed(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Two active opens, close has matching criteria that fits both (so it is ambiguous)
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "order_id": "ord_open_1"}, "run_id": "run_1", "timestamp_utc": "2026-06-20T00:00:00Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.40, "order_id": "ord_open_2"}, "run_id": "run_1", "timestamp_utc": "2026-06-20T00:01:00Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "exit_price": 0.60}, "run_id": "run_1", "timestamp_utc": "2026-06-20T00:02:00Z"},
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    with pytest.raises(ReconciliationError, match="ambiguous_position_match"):
+        run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+
+
+def test_modern_position_id_path_unchanged(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Strict mode: duplicate position_id raises ReconciliationError
+    events = [
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.50, "position_id": "p1"},
+            "run_id": "run_1",
+            "timestamp_utc": "2026-06-20T00:00:00Z"
+        },
+        {
+            "event_type": "trade_open",
+            "payload": {"condition_id": "0x1", "ticker": "BTC", "outcome": "YES", "entry_price": 0.60, "position_id": "p1"},
+            "run_id": "run_2",
+            "timestamp_utc": "2026-06-20T00:01:00Z"
+        }
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-06-20.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    with pytest.raises(ReconciliationError, match="duplicate_open"):
+        run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="strict")
+
+
+def test_full_eligible_failure_fixture_replays_two_distinct_trades(tmp_path: Path) -> None:
+    source_root = tmp_path / "source"
+    output_root = tmp_path / DEFAULT_OUTPUT_ROOT
+
+    # Exact replica of 2026-05-22 lines 1-4
+    events = [
+        {"event_type": "trade_open", "payload": {"condition_id": "0xe96b70608ff35b54aa6d59ae4cd3fe6661b94cf458db9dc7d04dd99df3ddf146", "ticker": "BTC", "outcome": "YES", "entry_price": 0.63, "receipt": {"order_id": "paper-71824750", "side": "BUY", "size": 0.034277, "price": 0.63, "filled_size": 0.034277}}, "run_id": "run_A", "timestamp_utc": "2026-05-22T02:35:25.555854Z"},
+        {"event_type": "trade_open", "payload": {"condition_id": "0xe96b70608ff35b54aa6d59ae4cd3fe6661b94cf458db9dc7d04dd99df3ddf146", "ticker": "BTC", "outcome": "YES", "entry_price": 0.61, "receipt": {"order_id": "paper-71824750", "side": "BUY", "size": 0.052241, "price": 0.61, "filled_size": 0.052241}}, "run_id": "run_B", "timestamp_utc": "2026-05-22T02:35:28.667052Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0xe96b70608ff35b54aa6d59ae4cd3fe6661b94cf458db9dc7d04dd99df3ddf146", "ticker": "BTC", "outcome": "YES", "exit_price": 0.51, "receipt": {"order_id": "paper-71824750", "side": "SELL", "size": 0.034277, "price": 0.51, "filled_size": 0.034277}, "reason": "stop_loss"}, "run_id": "run_A", "timestamp_utc": "2026-05-22T02:35:31.962414Z"},
+        {"event_type": "trade_close", "payload": {"condition_id": "0xe96b70608ff35b54aa6d59ae4cd3fe6661b94cf458db9dc7d04dd99df3ddf146", "ticker": "BTC", "outcome": "YES", "exit_price": 0.51, "receipt": {"order_id": "paper-71824750", "side": "SELL", "size": 0.052241, "price": 0.51, "filled_size": 0.052241}, "reason": "stop_loss"}, "run_id": "run_B", "timestamp_utc": "2026-05-22T02:35:34.307585Z"}
+    ]
+    _write_jsonl(source_root / "trade_journal" / "2026-05-22.jsonl", events)
+
+    from tools.execution_paper_runtime import run_replay
+    report = run_replay(source_root=source_root, output_root=output_root, max_events=10, compat_mode="historical")
+    assert report["rejected_events"] == 0
+    assert report["emitted_events"] >= 5  # startup + 2 opens + 2 closes
+
+    trade_files = list((output_root / "journals" / "trade").glob("*.jsonl"))
+    assert len(trade_files) == 1
+    rows = [json.loads(line) for line in trade_files[0].read_text(encoding="utf-8").splitlines()]
+    opens = [r for r in rows if r["event_type"] == "execution_paper_open"]
+    closes = [r for r in rows if r["event_type"] == "execution_paper_close"]
+
+    assert len(opens) == 2
+    assert len(closes) == 2
+    assert opens[0]["historical_position_uid"] != opens[1]["historical_position_uid"]
+    assert closes[0]["historical_position_uid"] == opens[0]["historical_position_uid"]
+    assert closes[1]["historical_position_uid"] == opens[1]["historical_position_uid"]
