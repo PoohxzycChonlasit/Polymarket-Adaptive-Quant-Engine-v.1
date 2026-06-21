@@ -59,6 +59,41 @@ def _line_hash(line: str) -> str:
     return hashlib.sha256(line.encode("utf-8")).hexdigest()
 
 
+def extract_json_string_field(line: str, field_name: str) -> str | None:
+    needle = f'"{field_name}"'
+    start = line.find(needle)
+    if start < 0:
+        return None
+    colon = line.find(":", start + len(needle))
+    if colon < 0:
+        return None
+    pos = colon + 1
+    while pos < len(line) and line[pos].isspace():
+        pos += 1
+    if pos >= len(line) or line[pos] != '"':
+        return None
+    pos += 1
+    value_chars: list[str] = []
+    escaped = False
+    while pos < len(line):
+        char = line[pos]
+        if escaped:
+            value_chars.append("\\" + char)
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == '"':
+            raw_value = "".join(value_chars)
+            try:
+                return json.loads(f'"{raw_value}"')
+            except json.JSONDecodeError:
+                return raw_value
+        else:
+            value_chars.append(char)
+        pos += 1
+    return None
+
+
 def _read_jsonl(path: Path):
     with path.open("r", encoding="utf-8") as handle:
         for line_no, line in enumerate(handle, start=1):
@@ -242,6 +277,30 @@ def _project_decision_row(row: dict[str, Any], path: Path, line_no: int) -> dict
     }
 
 
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _write_progress_sidecar(progress_path: Path | None, payload: dict[str, Any]) -> None:
+    if progress_path is None:
+        return
+    progress_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = progress_path.with_suffix(progress_path.suffix + ".tmp")
+    with tmp_path.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True, default=str)
+        handle.write("\n")
+    os.replace(tmp_path, progress_path)
+
+
+def _decision_line_keys(line: str) -> tuple[str | None, str | None, str | None, str | None]:
+    return (
+        extract_json_string_field(line, "run_id"),
+        extract_json_string_field(line, "signal_id"),
+        extract_json_string_field(line, "candidate_id"),
+        extract_json_string_field(line, "condition_id"),
+    )
+
+
 def _load_decision_indexes(
     decision_root: Path,
     required_run_ids: set[str],
@@ -250,6 +309,8 @@ def _load_decision_indexes(
     required_condition_ids: set[tuple[str, str]],
     max_decision_rows_loaded: int,
     progress_every_files: int,
+    progress_every_rows: int,
+    progress_path: Path | None,
 ) -> dict[str, Any]:
     by_signal: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     by_candidate: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
@@ -267,12 +328,35 @@ def _load_decision_indexes(
         "memory_guard_status": "OK",
     }
 
-    run_id_tokens = tuple(json.dumps(run_id, separators=(",", ":")) for run_id in sorted(required_run_ids) if run_id)
-    signal_tokens = tuple(json.dumps(value, separators=(",", ":")) for value in sorted(_stringify_required(required_signal_ids)) if value)
-    candidate_tokens = tuple(json.dumps(value, separators=(",", ":")) for value in sorted(_stringify_required(required_candidate_ids)) if value)
-    condition_tokens = tuple(json.dumps(value, separators=(",", ":")) for value in sorted(_stringify_required(required_condition_ids)) if value)
+    progress_payload = {
+        "phase": "decision_scan_started",
+        "files_processed": 0,
+        "current_file": None,
+        "decision_rows_seen": stats["decision_rows_seen"],
+        "decision_rows_parsed": stats["decision_rows_parsed"],
+        "decision_rows_retained": stats["decision_rows_retained"],
+        "last_updated_utc": _utc_now_iso(),
+    }
+    _write_progress_sidecar(progress_path, progress_payload)
 
-    for file_index, path in enumerate(sorted(decision_root.glob("*.jsonl")), start=1):
+    def maybe_write_row_progress(file_index: int, path: Path) -> None:
+        if not progress_every_rows or stats["decision_rows_seen"] % progress_every_rows != 0:
+            return
+        _write_progress_sidecar(
+            progress_path,
+            {
+                "phase": "decision_scan",
+                "files_processed": file_index,
+                "current_file": str(path),
+                "decision_rows_seen": stats["decision_rows_seen"],
+                "decision_rows_parsed": stats["decision_rows_parsed"],
+                "decision_rows_retained": stats["decision_rows_retained"],
+                "last_updated_utc": _utc_now_iso(),
+            },
+        )
+
+    decision_files = sorted(decision_root.glob("*.jsonl"))
+    for file_index, path in enumerate(decision_files, start=1):
         if progress_every_files and file_index % progress_every_files == 0:
             print(
                 _json_dumps(
@@ -284,26 +368,33 @@ def _load_decision_indexes(
                     }
                 )
             )
+            progress_payload = {
+                "phase": "decision_scan",
+                "files_processed": file_index,
+                "current_file": str(path),
+                "decision_rows_seen": stats["decision_rows_seen"],
+                "decision_rows_parsed": stats["decision_rows_parsed"],
+                "decision_rows_retained": stats["decision_rows_retained"],
+                "last_updated_utc": _utc_now_iso(),
+            }
+            _write_progress_sidecar(progress_path, progress_payload)
         with path.open("r", encoding="utf-8") as handle:
             for line_no, line in enumerate(handle, start=1):
                 if not line.strip():
                     continue
                 stats["decision_rows_seen"] += 1
+                maybe_write_row_progress(file_index, path)
                 if not required_run_ids or not (required_signal_ids or required_candidate_ids or required_condition_ids):
                     stats["decision_rows_skipped_key"] += 1
                     continue
-                if run_id_tokens and not any(token in line for token in run_id_tokens):
+                raw_run_id, raw_signal_id, raw_candidate_id, raw_condition_id = _decision_line_keys(line)
+                if raw_run_id not in required_run_ids:
                     stats["decision_rows_skipped_run_id"] += 1
                     continue
-                if (
-                    signal_tokens
-                    or candidate_tokens
-                    or condition_tokens
-                ) and not (
-                    any(token in line for token in signal_tokens)
-                    or any(token in line for token in candidate_tokens)
-                    or any(token in line for token in condition_tokens)
-                ):
+                raw_matches_signal = bool(raw_signal_id and (raw_run_id, raw_signal_id) in required_signal_ids)
+                raw_matches_candidate = bool(raw_candidate_id and (raw_run_id, raw_candidate_id) in required_candidate_ids)
+                raw_matches_condition = bool(raw_condition_id and (raw_run_id, raw_condition_id) in required_condition_ids)
+                if not (raw_matches_signal or raw_matches_candidate or raw_matches_condition):
                     stats["decision_rows_skipped_key"] += 1
                     continue
                 try:
@@ -354,6 +445,16 @@ def _load_decision_indexes(
         values.sort(key=lambda item: item[0])
     parsed = stats["decision_rows_parsed"]
     stats["decision_retention_rate"] = stats["decision_rows_retained"] / parsed if parsed else 0.0
+    progress_payload = {
+        "phase": "decision_scan_complete",
+        "files_processed": len(decision_files),
+        "current_file": None,
+        "decision_rows_seen": stats["decision_rows_seen"],
+        "decision_rows_parsed": stats["decision_rows_parsed"],
+        "decision_rows_retained": stats["decision_rows_retained"],
+        "last_updated_utc": _utc_now_iso(),
+    }
+    _write_progress_sidecar(progress_path, progress_payload)
     return {"by_signal": by_signal, "by_candidate": by_candidate, "by_condition": by_condition, "stats": stats}
 
 
@@ -571,12 +672,18 @@ def _build_record(
 
 def _write_outputs(output_dir: Path, records: list[dict[str, Any]], report: dict[str, Any]) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
-    with (output_dir / "joined_records.jsonl").open("w", encoding="utf-8", newline="\n") as handle:
+    records_path = output_dir / "joined_records.jsonl"
+    records_tmp = output_dir / "joined_records.jsonl.tmp"
+    report_path = output_dir / "joined_records_report.json"
+    report_tmp = output_dir / "joined_records_report.json.tmp"
+    with records_tmp.open("w", encoding="utf-8", newline="\n") as handle:
         for record in records:
             handle.write(_json_dumps(record) + "\n")
-    with (output_dir / "joined_records_report.json").open("w", encoding="utf-8", newline="\n") as handle:
+    os.replace(records_tmp, records_path)
+    with report_tmp.open("w", encoding="utf-8", newline="\n") as handle:
         json.dump(report, handle, indent=2, sort_keys=True, default=str)
         handle.write("\n")
+    os.replace(report_tmp, report_path)
 
 
 def _report(
@@ -619,6 +726,7 @@ def build_joined_records(
     max_records: int = 0,
     max_decision_rows_loaded: int = 250000,
     progress_every_files: int = 5,
+    progress_every_rows: int = 250000,
 ) -> dict[str, Any]:
     output_path = Path(output_dir)
     if not is_safe_scratch_path(output_path):
@@ -635,6 +743,8 @@ def build_joined_records(
         requirements["condition_ids"],
         max_decision_rows_loaded,
         progress_every_files,
+        progress_every_rows,
+        output_path / "joined_records_progress.json",
     )
 
     records: list[dict[str, Any]] = []
@@ -675,6 +785,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-records", type=int, default=0)
     parser.add_argument("--max-decision-rows-loaded", type=int, default=250000)
     parser.add_argument("--progress-every-files", type=int, default=5)
+    parser.add_argument("--progress-every-rows", type=int, default=250000)
     return parser
 
 
@@ -690,6 +801,7 @@ def main(argv: list[str] | None = None) -> int:
         max_records=args.max_records,
         max_decision_rows_loaded=args.max_decision_rows_loaded,
         progress_every_files=args.progress_every_files,
+        progress_every_rows=args.progress_every_rows,
     )
     print(_json_dumps(report))
     return 0

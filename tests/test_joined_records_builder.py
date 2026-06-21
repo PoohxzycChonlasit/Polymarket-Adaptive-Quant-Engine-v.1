@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 from tools import shadow_filter_evaluator
-from tools.joined_records_builder import build_joined_records, is_safe_scratch_path, main
+from tools.joined_records_builder import build_joined_records, extract_json_string_field, is_safe_scratch_path, main
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> list[str]:
@@ -136,6 +136,22 @@ def test_join_by_signal_id(tmp_path: Path) -> None:
     assert rows[0]["edge"] == 0.07
     assert rows[0]["execution_pnl_5_share_model"] == 0.30
     assert disk_report["joined_closes"] == 1
+
+
+def test_raw_field_extractor_extracts_run_id_from_compact_json() -> None:
+    line = '{"run_id":"run_1","payload":{"signal_id":"signal_1"}}'
+
+    assert extract_json_string_field(line, "run_id") == "run_1"
+
+
+def test_raw_field_extractor_extracts_run_id_from_spaced_json() -> None:
+    line = '{ "event_type": "decision", "run_id" : "run spaced" , "payload": {} }'
+
+    assert extract_json_string_field(line, "run_id") == "run spaced"
+
+
+def test_raw_field_extractor_returns_none_for_missing_field() -> None:
+    assert extract_json_string_field('{"payload":{"signal_id":"signal_1"}}', "run_id") is None
 
 
 def test_join_by_candidate_id_when_signal_missing(tmp_path: Path) -> None:
@@ -361,6 +377,27 @@ def test_unmatched_run_id_lines_are_not_parsed(tmp_path: Path) -> None:
     assert report["decision_rows_retained"] == 1
 
 
+def test_progress_sidecar_is_written_under_scratch_output(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+
+    build_joined_records(
+        execution_root,
+        trade_root,
+        decision_root,
+        output_dir,
+        progress_every_rows=1,
+    )
+
+    progress_path = output_dir / "joined_records_progress.json"
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    assert progress_path.exists()
+    assert output_dir in progress_path.parents
+    assert progress["phase"] == "decision_scan_complete"
+    assert progress["files_processed"] == 1
+    assert progress["decision_rows_seen"] == 1
+    assert progress["decision_rows_retained"] == 1
+
+
 def test_decision_index_matches_required_condition_when_signal_and_candidate_missing(tmp_path: Path) -> None:
     decision = _decision_row(signal_id=None, candidate_id=None, timestamp="2026-06-21T00:01:00Z")
     execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(
@@ -469,6 +506,8 @@ def test_cli_writes_expected_outputs(tmp_path: Path) -> None:
     assert result == 0
     assert (output_dir / "joined_records.jsonl").exists()
     assert (output_dir / "joined_records_report.json").exists()
+    assert not (output_dir / "joined_records.jsonl.tmp").exists()
+    assert not (output_dir / "joined_records_report.json.tmp").exists()
 
 
 def test_no_forbidden_imports() -> None:
