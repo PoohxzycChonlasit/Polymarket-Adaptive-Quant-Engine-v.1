@@ -1021,7 +1021,7 @@ class PolymarketTrader:
                         "token_id": selected_token_id,
                         "epoch_start_ts": getattr(ptb_info, "epoch_start_ts", 0),
                     }
-                    self.quant_events.log_signal_filter_shadow(payload)
+                    self.quant_events.log_signal_filter_shadow_phase_b(payload)
                 except Exception as inner_e:
                     LOGGER.error("[SHADOW] Error evaluating shadow filter %s: %s", filter_name, inner_e)
         except Exception as e:

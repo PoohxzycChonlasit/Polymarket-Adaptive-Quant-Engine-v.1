@@ -81,6 +81,10 @@ class _CollectingQuantLogger:
         self.events.append(("signal_filter_shadow", payload))
         return True
 
+    def log_signal_filter_shadow_phase_b(self, payload: dict) -> bool:
+        self.events.append(("signal_filter_shadow_phase_b", payload))
+        return True
+
 
 def _settings(paper_trading=True) -> MockSettings:
     return MockSettings(paper_trading)
@@ -320,8 +324,20 @@ def test_phase_b_telemetry_logs_when_on() -> None:
 
     _run_evaluation(trader, p_yes=0.65, p_no=0.35, ev_yes=0.16, ev_no=0.01, side="YES")
 
-    shadow_events = [p for name, p in trader.quant_events.events if "filter_name" in p]
+    shadow_events = [
+        p
+        for name, p in trader.quant_events.events
+        if name == "signal_filter_shadow_phase_b"
+    ]
+    legacy_events = [
+        p
+        for name, p in trader.quant_events.events
+        if name == "signal_filter_shadow"
+    ]
     assert len(shadow_events) == 4
+    assert len(legacy_events) == 1
+    assert legacy_events[0]["filter_version"] == "signal_filter_v1_shadow"
+    assert "filter_name" not in legacy_events[0]
 
     filter_names = {p["filter_name"] for p in shadow_events}
     assert filter_names == {
@@ -330,6 +346,10 @@ def test_phase_b_telemetry_logs_when_on() -> None:
         "combined_broad_shadow",
         "combined_conservative_shadow"
     }
+    for payload in shadow_events:
+        assert payload["filter_version"] == "1.0.0"
+        assert "shadow_would_reject" not in payload
+        assert "shadow_filter_reasons" not in payload
 
 
 def test_phase_b_telemetry_fail_soft() -> None:
@@ -348,7 +368,11 @@ def test_phase_b_telemetry_schema_completeness() -> None:
 
     _run_evaluation(trader, p_yes=0.65, p_no=0.35, ev_yes=0.06, ev_no=0.01, side="YES")
 
-    shadow_events = [p for name, p in trader.quant_events.events if "filter_name" in p]
+    shadow_events = [
+        p
+        for name, p in trader.quant_events.events
+        if name == "signal_filter_shadow_phase_b"
+    ]
     assert len(shadow_events) > 0
 
     payload = shadow_events[0]

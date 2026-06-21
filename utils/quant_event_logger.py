@@ -72,6 +72,7 @@ class QuantEventLogger:
         "research_snapshot": "research_log",
         "stop_loss_shadow": "stop_loss_shadow",
         "signal_filter_shadow": "signal_filter_shadow",
+        "signal_filter_shadow_phase_b": "signal_filter_shadow_phase_b",
         "delta_shadow": "delta_shadow",
     }
 
@@ -145,6 +146,9 @@ class QuantEventLogger:
 
     def log_signal_filter_shadow(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("signal_filter_shadow", payload)
+
+    def log_signal_filter_shadow_phase_b(self, payload: dict[str, Any] | None = None) -> bool:
+        return self._write_event("signal_filter_shadow_phase_b", payload)
 
     def log_delta_shadow(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("delta_shadow", payload)
