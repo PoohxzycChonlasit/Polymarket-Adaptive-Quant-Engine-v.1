@@ -345,3 +345,77 @@ def test_watchlist_status():
     low_pf = base_metrics.copy()
     low_pf["profit_factor"] = 0.99
     assert get_governance_status(low_pf, days_observed=3) == "NOT_READY"
+
+
+def test_worst_case_status_logic():
+    """Verify worst-case governance status determination."""
+    from tools.phase_b_daily_report import determine_worst_case_status
+    assert determine_worst_case_status(["WATCHLIST", "CANDIDATE", "PROMOTION_REVIEW"]) == "WATCHLIST"
+    assert determine_worst_case_status(["PROMOTION_REVIEW", "PROMOTION_REVIEW"]) == "PROMOTION_REVIEW"
+    assert determine_worst_case_status(["NOT_READY", "PROMOTION_REVIEW"]) == "NOT_READY"
+    assert determine_worst_case_status([]) == "NOT_READY"
+
+
+def test_snapshot_archiver_and_summary(tmp_path, monkeypatch):
+    """Test the archiver and summary helper tools using temporary directories."""
+    # Setup source directory
+    source_dir = tmp_path / "scratch" / "phase_b_daily_reports"
+    source_dir.mkdir(parents=True)
+
+    dashboard_content = {
+        "report_date": "2026-06-21",
+        "overall_system_status": "WATCHLIST",
+        "global_metrics": {
+            "exception_count": 0,
+            "telemetry_exception_count": 0,
+            "heartbeat_age_seconds": 12.5,
+            "heartbeat_fresh": True,
+            "total_closed_trades": 50
+        },
+        "filters": {
+            "block_btc_shadow": {
+                "joined_trades": 10,
+                "join_coverage_pct": 98.0
+            },
+            "block_normal_vol_shadow": {
+                "joined_trades": 15,
+                "join_coverage_pct": 96.0
+            }
+        }
+    }
+
+    with open(source_dir / "phase_b_dashboard.json", "w", encoding="utf-8") as f:
+        json.dump(dashboard_content, f)
+
+    with open(source_dir / "phase_b_dashboard.md", "w", encoding="utf-8") as f:
+        f.write("# Mock Dashboard")
+
+    # Change working directory to tmp_path
+    monkeypatch.chdir(tmp_path)
+
+    # Import and run archiver
+    from tools.phase_b_snapshot_archiver import run_snapshot_archiver
+    run_snapshot_archiver()
+
+    # Verify snapshot files were created
+    dest_dir = tmp_path / "runtime" / "quant_data" / "reports" / "phase_b_daily_snapshots" / "2026-06-21"
+    assert (dest_dir / "phase_b_dashboard.json").exists()
+    assert (dest_dir / "phase_b_dashboard.md").exists()
+
+    # Verify index was created
+    index_path = tmp_path / "runtime" / "quant_data" / "reports" / "phase_b_daily_snapshots" / "phase_b_snapshot_index.json"
+    assert index_path.exists()
+
+    with open(index_path, "r", encoding="utf-8") as f:
+        index_data = json.load(f)
+    assert "2026-06-21" in index_data
+    assert index_data["2026-06-21"]["overall_status"] == "WATCHLIST"
+    assert index_data["2026-06-21"]["joined_trades"] == 25
+    assert index_data["2026-06-21"]["join_coverage_pct"] == 97.0
+
+    # Test summary generator
+    from tools.phase_b_snapshot_summary import generate_7day_summary
+    generate_7day_summary()
+
+    summary_md_path = tmp_path / "scratch" / "phase_b_7day_snapshot_summary.md"
+    assert summary_md_path.exists()
