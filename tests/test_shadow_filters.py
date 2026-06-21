@@ -40,6 +40,13 @@ class MockSettings:
         self.max_feed_age_seconds = 10.0
         self.micro_adaptive_timing_enabled = False
         self.hybrid_phase_v1_enabled = False
+        self.shadow_telemetry_enabled = False
+        self.shadow_filters_active = [
+            "block_btc_shadow",
+            "block_normal_vol_shadow",
+            "combined_broad_shadow",
+            "combined_conservative_shadow"
+        ]
         self.verbose_scan_logs = False
         self.verbose_model_logs = False
         self.execution_stop_loss_pct = 0.08
@@ -107,14 +114,14 @@ def _setup_mocked_trader(paper_trading=True) -> PolymarketTrader:
     settings_obj = _settings(paper_trading)
     trader = PolymarketTrader(settings=settings_obj)
     trader.quant_events = _CollectingQuantLogger()
-    
+
     def mock_get_orderbook(token_id):
         from polymarket.client import OrderbookSnapshot
         if token_id == "yes-token":
             return OrderbookSnapshot("yes-token", 0.50, 0.51, 0.01, 10000.0, 10000.0, age_seconds=0.05)
         else:
             return OrderbookSnapshot("no-token", 0.49, 0.50, 0.01, 10000.0, 10000.0, age_seconds=0.05)
-            
+
     trader.client.get_orderbook = MagicMock(side_effect=mock_get_orderbook)
     trader._real_token_ids["BTC"] = ("yes-token", "no-token")
     trader._market_token_meta["BTC"] = {
@@ -168,7 +175,7 @@ def _run_evaluation(trader, p_yes, p_no, ev_yes, ev_no, side="YES", approved=Tru
          patch("polymarket.trader.estimate_micro_delta", return_value=delta_result), \
          patch("polymarket.trader.scan_opportunities", return_value=scan_result), \
          patch("polymarket.trader.trade_quality_allowed", return_value=(True, "")):
-        
+
         return trader._analyze_market_quant(_market(), "BTC", _ptb_info())
 
 
@@ -281,10 +288,114 @@ def test_required_attribution_fields_exist() -> None:
     ]
     for key in required_keys:
         assert key in payload
-    
+
     assert payload["filter_version"] == "signal_filter_v1_shadow"
     assert payload["run_id"] == "test_run_123"
     assert payload["shadow_outcome"] is None
     assert payload["shadow_outcome_pnl"] is None
     assert payload["position_id"] is None
     assert "condition-btc" in payload["paper_trade_replay_key"]
+
+
+def test_phase_b_telemetry_default_off() -> None:
+    trader = _setup_mocked_trader(paper_trading=True)
+    trader.settings.shadow_telemetry_enabled = False
+
+    _run_evaluation(trader, p_yes=0.61, p_no=0.39, ev_yes=0.16, ev_no=0.01, side="YES")
+
+    for event_name, payload in trader.quant_events.events:
+        assert payload.get("filter_version") == "signal_filter_v1_shadow"
+        assert "filter_name" not in payload
+
+
+def test_phase_b_telemetry_logs_when_on() -> None:
+    trader = _setup_mocked_trader(paper_trading=True)
+    trader.settings.shadow_telemetry_enabled = True
+    trader.settings.shadow_filters_active = [
+        "block_btc_shadow",
+        "block_normal_vol_shadow",
+        "combined_broad_shadow",
+        "combined_conservative_shadow"
+    ]
+
+    _run_evaluation(trader, p_yes=0.65, p_no=0.35, ev_yes=0.16, ev_no=0.01, side="YES")
+
+    shadow_events = [p for name, p in trader.quant_events.events if "filter_name" in p]
+    assert len(shadow_events) == 4
+
+    filter_names = {p["filter_name"] for p in shadow_events}
+    assert filter_names == {
+        "block_btc_shadow",
+        "block_normal_vol_shadow",
+        "combined_broad_shadow",
+        "combined_conservative_shadow"
+    }
+
+
+def test_phase_b_telemetry_fail_soft() -> None:
+    trader = _setup_mocked_trader(paper_trading=True)
+    trader.settings.shadow_telemetry_enabled = True
+
+    with patch("polymarket.shadow_telemetry.evaluate_shadow_filter", side_effect=RuntimeError("Test crash")):
+        outcome = _run_evaluation(trader, p_yes=0.65, p_no=0.35, ev_yes=0.16, ev_no=0.01, side="YES")
+        assert outcome.skipped is False
+        assert outcome.decision == "buy"
+
+
+def test_phase_b_telemetry_schema_completeness() -> None:
+    trader = _setup_mocked_trader(paper_trading=True)
+    trader.settings.shadow_telemetry_enabled = True
+
+    _run_evaluation(trader, p_yes=0.65, p_no=0.35, ev_yes=0.06, ev_no=0.01, side="YES")
+
+    shadow_events = [p for name, p in trader.quant_events.events if "filter_name" in p]
+    assert len(shadow_events) > 0
+
+    payload = shadow_events[0]
+    required_keys = [
+        "run_id",
+        "signal_id",
+        "candidate_instance_id",
+        "paper_trade_replay_key",
+        "asset",
+        "side",
+        "edge",
+        "ev",
+        "probability",
+        "volatility_regime",
+        "entry_price",
+        "proposed_size_usd",
+        "filter_name",
+        "filter_version",
+        "filter_params",
+        "shadow_pass",
+        "shadow_reason",
+        "would_trade",
+        "schema_version"
+    ]
+    for key in required_keys:
+        assert key in payload
+
+
+def test_phase_b_telemetry_parity_with_offline_evaluator() -> None:
+    import polymarket.shadow_telemetry as st
+
+    rec_btc = {"asset": "BTC", "edge": 0.06, "volatility_regime": "NORMAL_VOL"}
+    res_btc = st.evaluate_shadow_filter(rec_btc, "block_btc_shadow")
+    assert res_btc["shadow_pass"] is False
+    assert res_btc["shadow_reason"] == "REJECT_BTC_ASSET"
+
+    rec_eth = {"asset": "ETH", "edge": 0.06, "volatility_regime": "NORMAL_VOL"}
+    res_eth = st.evaluate_shadow_filter(rec_eth, "block_btc_shadow")
+    assert res_eth["shadow_pass"] is True
+    assert res_eth["shadow_reason"] is None
+
+    rec_low_edge = {"asset": "ETH", "edge": 0.04, "volatility_regime": "NORMAL_VOL"}
+    res_low_edge = st.evaluate_shadow_filter(rec_low_edge, "block_edge_lt_005_shadow")
+    assert res_low_edge["shadow_pass"] is False
+    assert res_low_edge["shadow_reason"] == "REJECT_EDGE_LT_005"
+
+    rec_normal_vol = {"asset": "ETH", "edge": 0.06, "volatility_regime": "NORMAL_VOL"}
+    res_normal_vol = st.evaluate_shadow_filter(rec_normal_vol, "block_normal_vol_shadow")
+    assert res_normal_vol["shadow_pass"] is False
+    assert res_normal_vol["shadow_reason"] == "REJECT_NORMAL_VOL"

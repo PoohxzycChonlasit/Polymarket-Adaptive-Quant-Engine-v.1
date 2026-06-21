@@ -87,6 +87,13 @@ class Settings(BaseSettings):
 
     option_d_shadow_enabled: bool = False
     delta_shadow_enabled: bool = False
+    shadow_telemetry_enabled: bool = False
+    shadow_filters_active: list[str] = [
+        "block_btc_shadow",
+        "block_normal_vol_shadow",
+        "combined_broad_shadow",
+        "combined_conservative_shadow"
+    ]
     sl_activation_delay_seconds: float = 30.0
     sl_emergency_stop_pct: float = 0.30
 

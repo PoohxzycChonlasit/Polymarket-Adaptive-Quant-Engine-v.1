@@ -58,6 +58,7 @@ from utils.risk_manager import (
 from utils.quant_event_logger import QuantEventLogger
 from utils.telegram_alerts import TelegramAlertLayer, emit_startup_config_telemetry
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
+import polymarket.shadow_telemetry as shadow_telemetry
 
 
 LOGGER = logging.getLogger(__name__)
@@ -907,6 +908,124 @@ class PolymarketTrader:
             "risk_serialization_status": risk_serialization,
             "risk_serialization_visibility": risk_serialization,
         }
+
+    def _evaluate_passive_shadow_telemetry(
+        self,
+        *,
+        ticker: str,
+        candidate: Any,
+        probability: Any,
+        model_side: str,
+        model_ev: float,
+        regime_detail: dict[str, Any],
+        ptb_info: Any,
+        meta: dict[str, Any],
+        yes_token_id: str,
+        no_token_id: str,
+        ob_spread: float,
+        ob_liquidity_usd: float,
+        trades_last_hour: int,
+        daily_drawdown_pct: float,
+        risk_off: bool,
+    ) -> None:
+        try:
+            if not self.quant_events or not getattr(self.quant_events, "enabled", True):
+                return
+
+            run_id = self.quant_events.run_id
+            signal_id = getattr(candidate, "candidate_trace_id", "")
+            candidate_instance_id = getattr(candidate, "candidate_id", "")
+
+            selected_token_id = yes_token_id if model_side == "YES" else no_token_id
+            paper_trade_replay_key = f"{meta.get('condition_id', '')}|{getattr(ptb_info, 'epoch_start_ts', 0)}|{ticker}|{model_side}|{selected_token_id}"
+
+            # Reconstruct record for the filters
+            volatility_regime = regime_detail.get("volatility_regime")
+            record = {
+                "asset": ticker,
+                "edge": model_ev,
+                "volatility_regime": volatility_regime,
+            }
+
+            # Passively calculate proposed size in USD
+            proposed_size_usd = 0.0
+            try:
+                current_balance = float(self.bankroll_state.current_cash_balance)
+                entry_price = float(candidate.yes_ask if model_side == "YES" else candidate.no_ask)
+                min_position_size_usd = self._entry_min_position_size_usd(
+                    bankroll=current_balance,
+                    entry_price=entry_price,
+                )
+                order_request = OrderRequest(
+                    market_id=getattr(candidate, "market_id", ""),
+                    side=model_side,
+                    entry_price=entry_price,
+                    win_rate=probability.p_yes if model_side == "YES" else probability.p_no,
+                    reward_risk_ratio=2.0,
+                    edge=model_ev,
+                    price_to_beat=ptb_info.price_to_beat,
+                    spread=ob_spread,
+                    liquidity_usd=ob_liquidity_usd,
+                    delta=getattr(candidate, "delta_score", 0.0),
+                    delta_multiplier=getattr(candidate, "delta_multiplier", 1.0),
+                    time_remaining_seconds=ptb_info.seconds_remaining,
+                    trades_last_hour=trades_last_hour,
+                    drawdown_pct=daily_drawdown_pct,
+                    min_position_size_usd=min_position_size_usd,
+                    daily_loss_limit_reached=risk_off,
+                    hard_drawdown_reached=daily_drawdown_pct >= 0.15
+                )
+                self.order_manager.account_balance = current_balance
+                risk_plan = self.order_manager.build_order_plan(order_request)
+                risk_plan = self._maybe_apply_micro_survival_plan(
+                    risk_plan,
+                    current_balance=current_balance,
+                    entry_price=entry_price,
+                )
+                proposed_size_usd = float(risk_plan.notional_size)
+            except Exception:
+                proposed_size_usd = 0.0
+
+            active_filters = getattr(self.settings, "shadow_filters_active", [])
+            for filter_name in active_filters:
+                try:
+                    eval_result = shadow_telemetry.evaluate_shadow_filter(record, filter_name)
+
+                    payload = {
+                        "run_id": run_id,
+                        "signal_id": signal_id,
+                        "candidate_instance_id": candidate_instance_id,
+                        "paper_trade_replay_key": paper_trade_replay_key,
+                        "asset": ticker,
+                        "market_slug": meta.get("slug", ""),
+                        "side": model_side,
+                        "outcome": model_side,
+                        "edge": float(model_ev),
+                        "ev": float(model_ev),
+                        "probability": float(getattr(probability, "p_yes" if model_side == "YES" else "p_no", 0.0)),
+                        "volatility_regime": volatility_regime,
+                        "trend_regime": regime_detail.get("trend_regime"),
+                        "entry_price": float(candidate.yes_ask if model_side == "YES" else candidate.no_ask),
+                        "proposed_size_usd": proposed_size_usd,
+                        "filter_name": eval_result["filter_name"],
+                        "filter_version": eval_result["filter_version"],
+                        "filter_params": eval_result["filter_params"],
+                        "shadow_pass": eval_result["shadow_pass"],
+                        "shadow_reason": eval_result["shadow_reason"],
+                        "would_trade": eval_result["would_trade"],
+                        "schema_version": "1.0",
+
+                        # Companion identity mapping fields for QuantEventLogger
+                        "market_key": getattr(candidate, "market_id", ""),
+                        "condition_id": meta.get("condition_id", ""),
+                        "token_id": selected_token_id,
+                        "epoch_start_ts": getattr(ptb_info, "epoch_start_ts", 0),
+                    }
+                    self.quant_events.log_signal_filter_shadow(payload)
+                except Exception as inner_e:
+                    LOGGER.error("[SHADOW] Error evaluating shadow filter %s: %s", filter_name, inner_e)
+        except Exception as e:
+            LOGGER.error("[SHADOW] Fail-soft caught telemetry exception: %s", e, exc_info=True)
 
     def _display_payload_with_candidate_trace_identity(self, payload: dict[str, object]) -> dict[str, object]:
         display_payload = dict(payload)
@@ -2079,7 +2198,7 @@ class PolymarketTrader:
         epoch_start = int(epoch_start or 0)
         if epoch_start <= 0:
             return self._phase2_readiness_timestamps(ticker, epoch_start)
-            
+
         store = self._phase2_readiness_store()
         bucket = store.setdefault((ticker, epoch_start), {})
         now = self._utc_timestamp()
@@ -2106,7 +2225,7 @@ class PolymarketTrader:
             (first_evaluable_ready, "first_evaluable_at", "first_evaluable_ready_seconds_remaining"),
             (first_tradable_ready, "first_tradable_at", "first_tradable_seconds_remaining"),
         ]
-        
+
         # New v1 fields
         readiness_map.extend([
             (True, "first_discovered_ts", "first_discovered_seconds_remaining"),
@@ -2139,7 +2258,7 @@ class PolymarketTrader:
         first_seen_rem = self._diagnostic_int(bucket.get("first_discovered_seconds_remaining")) or 0
         first_ob_rem = self._diagnostic_int(bucket.get("first_orderbook_seen_seconds_remaining")) or 0
         first_trad_rem = self._diagnostic_int(bucket.get("first_tradable_seconds_remaining")) or 0
-        
+
         bucket["discovery_to_book_seconds"] = max(0, first_seen_rem - first_ob_rem) if first_ob_rem > 0 else 0
         bucket["book_to_tradable_seconds"] = max(0, first_ob_rem - first_trad_rem) if (first_ob_rem > 0 and first_trad_rem > 0) else 0
         bucket["total_discovery_to_tradable_seconds"] = max(0, first_seen_rem - first_trad_rem) if (first_seen_rem > 0 and first_trad_rem > 0) else 0
@@ -2156,7 +2275,7 @@ class PolymarketTrader:
             current_state = "SPREAD_NORMALIZED"
         if first_tradable_ready:
             current_state = "TRADABLE"
-            
+
         # Fix C — Phase 2 Write-Path Monotonicity Guard.
         # Prevents Phase 1 TOKEN_READY downgrade of a previously SPREAD_NORMALIZED/TRADABLE
         # state when an early exit path (hard_block, FINAL_DERISK) skips Phase 2 correction.
@@ -2172,7 +2291,7 @@ class PolymarketTrader:
         if _STATE_LEVEL.get(current_state, 0) >= _STATE_LEVEL.get(_prev_best, 0):
             bucket["executable_book_state_best_seen"] = current_state
         bucket["executable_spread_state"] = "NORMALIZED" if spread_ready else "WIDE" if orderbook_ready else "UNKNOWN"
-        
+
         # Spread oscillation tracking
         prev_spread_normalized = bucket.get("_prev_spread_normalized")
         if prev_spread_normalized is not None and prev_spread_normalized != spread_ready:
@@ -3113,7 +3232,7 @@ class PolymarketTrader:
             duration = int(max(0, first_seen_remaining - current_remaining))
             detail.setdefault("candidate_lifecycle_duration_seconds", duration)
             detail.setdefault("candidate_lifecycle_duration", duration)
-        
+
         # Preload Next Market v1
         detail["preload_attempted"] = getattr(self, "_preload_attempted", False)
         detail["preload_success"] = getattr(self, "_preload_success", False)
@@ -3131,7 +3250,7 @@ class PolymarketTrader:
         detail["preload_cache_age_seconds"] = getattr(self, "_preload_cache_age_seconds", 0)
         detail["preload_next_epoch_start"] = getattr(self, "_preload_next_epoch_start", 0)
         detail["preload_next_epoch_remaining_seconds"] = getattr(self, "_preload_next_epoch_remaining_seconds", 0)
-        
+
         return detail
 
     def _phase2_observability_payload(
@@ -3342,12 +3461,12 @@ class PolymarketTrader:
         first_tradable = self._diagnostic_int(readiness_timestamps.get("first_tradable_seconds_remaining")) or 0
         first_orderbook_ready = self._diagnostic_int(readiness_timestamps.get("orderbook_ready_seconds_remaining")) or 0
         candidate_lifecycle_duration_seconds = max(0, int(first_seen) - int(seconds_until_close))
-        
+
         # Timing Metrics Calculation
         first_seen_rem = self._diagnostic_int(readiness_timestamps.get("first_discovered_seconds_remaining")) or 0
         first_ob_rem = self._diagnostic_int(readiness_timestamps.get("first_orderbook_seen_seconds_remaining")) or 0
         first_trad_rem = self._diagnostic_int(readiness_timestamps.get("first_tradable_seconds_remaining")) or 0
-        
+
         discovery_to_book = max(0, first_seen_rem - first_ob_rem) if first_ob_rem > 0 else 0
         book_to_tradable = max(0, first_ob_rem - first_trad_rem) if (first_ob_rem > 0 and first_trad_rem > 0) else 0
         total_discovery_to_tradable = max(0, first_seen_rem - first_trad_rem) if (first_seen_rem > 0 and first_trad_rem > 0) else 0
@@ -7331,15 +7450,15 @@ class PolymarketTrader:
         self._preload_failed_reason = None
         self._preload_ticker = asset.split('/')[0].upper() # e.g. BTC from BTC/ETH
         ticker = self._preload_ticker
-        
+
         start_mono = time.monotonic()
-        
+
         try:
             # check if we already have a successful preload for the *upcoming* epoch
             now_ts = int(time.time())
             # For 5-min markets, the next epoch starts at the next multiple of 300
             next_expected_epoch = ((now_ts // 300) + 1) * 300
-            
+
             self._preload_next_epoch_start = next_expected_epoch
             self._preload_next_epoch_remaining_seconds = next_expected_epoch - now_ts
 
@@ -7352,10 +7471,10 @@ class PolymarketTrader:
 
             self._preload_cache_hit = False
             self._preload_cache_age_seconds = 0
-            
+
             # Actually fetch
             next_market = self.gamma.get_next_5min_market(ticker)
-            
+
             latency_ms = int((time.monotonic() - start_mono) * 1000)
             self._preload_latency_ms = latency_ms
 
@@ -7369,7 +7488,7 @@ class PolymarketTrader:
                 self._preload_no_token_id_present = bool(next_market.no_token_id)
                 self._preload_seconds_before_epoch = next_market.epoch_start_ts - self._preload_success_ts
                 self._preload_lead_seconds = self._preload_seconds_before_epoch # alias
-                
+
                 # Optionally warm orderbook
                 if next_market.yes_token_id and next_market.no_token_id:
                     try:
@@ -7382,7 +7501,7 @@ class PolymarketTrader:
                     except Exception as ob_exc:
                         self._preload_orderbook_warmed = False
                         self._preload_orderbook_state = f"ERROR: {ob_exc}"
-                
+
                 self._emit_quant_event(
                     "log_system_health",
                     self._preload_observability_payload()
@@ -7400,7 +7519,7 @@ class PolymarketTrader:
                     self._preload_observability_payload()
                 )
                 LOGGER.warning("[PRELOAD] No next market found for asset %s.", asset)
-                
+
         except Exception as e:
             self._preload_failed_reason = f"exception: {e}"
             self._preload_latency_ms = int((time.monotonic() - start_mono) * 1000)
@@ -9440,39 +9559,59 @@ class PolymarketTrader:
             clob_detail["signal_name"] = "PROBABILITY_EV_EDGE"
             clob_detail["signal_reason"] = f"{model_side.lower()}_ev_above_threshold"
 
+            # Passive Phase B Shadow Telemetry
+            if getattr(self.settings, "shadow_telemetry_enabled", False):
+                self._evaluate_passive_shadow_telemetry(
+                    ticker=ticker,
+                    candidate=candidate,
+                    probability=probability,
+                    model_side=model_side,
+                    model_ev=model_ev,
+                    regime_detail=regime_detail,
+                    ptb_info=ptb_info,
+                    meta=meta,
+                    yes_token_id=yes_token_id,
+                    no_token_id=no_token_id,
+                    ob_spread=ob_spread,
+                    ob_liquidity_usd=ob_liquidity_usd,
+                    trades_last_hour=trades_last_hour,
+                    daily_drawdown_pct=daily_drawdown_pct,
+                    risk_off=risk_off,
+                )
+
             # Evaluate shadow filters in paper mode only
             if self._runtime_mode() == "paper":
                 self._baseline_accepted += 1
                 shadow_filter_reasons = []
                 ev_cap_shadow_reject = False
                 yes_floor_shadow_reject = False
-                
+
                 if model_ev >= 0.15:
                     ev_cap_shadow_reject = True
                     shadow_filter_reasons.append("ev_cap_toxicity")
                     self._ev_cap_shadow_rejects += 1
-                    
+
                 entry_prob = probability.p_yes if model_side == "YES" else probability.p_no
                 if model_side == "YES" and entry_prob < 0.60:
                     yes_floor_shadow_reject = True
                     shadow_filter_reasons.append("yes_probability_floor")
                     self._yes_floor_shadow_rejects += 1
-                    
+
                 shadow_would_reject = ev_cap_shadow_reject or yes_floor_shadow_reject
                 if shadow_would_reject:
                     self._shadow_would_reject += 1
-                    
+
                 if self.quant_events:
                     import uuid
                     shadow_decision_id = f"sd_{uuid.uuid4().hex[:16]}"
                     candidate_trace_id = candidate.candidate_trace_id
                     run_fragment = self.quant_events.run_id[:8] if self.quant_events.run_id else "norund"
                     replay_chain_id = f"rc_{run_fragment}_{candidate_trace_id[3:]}" if candidate_trace_id else "rc_missing"
-                    
+
                     selected_token_id = yes_token_id if model_side == "YES" else no_token_id
                     paper_trade_replay_key = f"{meta.get('condition_id', '')}|{ptb_info.epoch_start_ts}|{ticker}|{model_side}|{selected_token_id}"
                     timestamp_utc = self.quant_events._timestamp()
-                    
+
                     shadow_payload = {
                         "filter_version": "signal_filter_v1_shadow",
                         "run_id": self.quant_events.run_id,
@@ -9496,7 +9635,7 @@ class PolymarketTrader:
                         "paper_trade_replay_key": paper_trade_replay_key,
                         "position_id": None,
                         "timestamp_utc": timestamp_utc,
-                        
+
                         # companion mapping fields for logger digest
                         "market_key": market.market_id,
                         "condition_id": meta.get("condition_id", ""),
@@ -10988,7 +11127,7 @@ class PolymarketTrader:
             ob = None
             orderbook_available = True
             token_id = self._position_token_id(pos)
-            
+
             try:
                 ob = self.client.get_orderbook(token_id)
             except Exception as exc:
@@ -11002,7 +11141,7 @@ class PolymarketTrader:
             ask_size = 0.0
             midpoint = 0.0
             depth_ok = False
-            
+
             unrealized_raw_bid_pct = 0.0
             unrealized_mid_pct = 0.0
             unrealized_mid_depth_pct = 0.0
@@ -11021,12 +11160,12 @@ class PolymarketTrader:
                 raw_ask = float(ob.best_ask)
                 bid_size = float(ob.bid_size)
                 ask_size = float(ob.ask_size)
-                
+
                 if raw_bid > 0 and raw_ask > 0:
                     midpoint = (raw_bid + raw_ask) / 2.0
                 else:
                     midpoint = raw_bid if raw_bid > 0 else float(pos.entry_price)
-                
+
                 # Check depth
                 depth_ok = (bid_size >= 10.0 and ask_size >= 10.0)
 
@@ -11047,24 +11186,24 @@ class PolymarketTrader:
                         unrealized_mid_depth_pct = unrealized_mid_pct
                     else:
                         unrealized_mid_depth_pct = 0.0
-                
+
                 # Threshold check
                 actual_raw_bid_stop = (unrealized_raw_bid_pct <= -stop_loss_pct)
                 shadow_mid_stop = (unrealized_mid_pct <= -stop_loss_pct)
                 shadow_mid_depth_stop = (unrealized_mid_depth_pct <= -stop_loss_pct)
-                
+
                 # Raw bid counters
                 if actual_raw_bid_stop:
                     self._consecutive_raw_breach_seconds[pos_id] = self._consecutive_raw_breach_seconds.get(pos_id, 0) + 1
                 else:
                     self._consecutive_raw_breach_seconds[pos_id] = 0
-                
+
                 # Mid price counters
                 if shadow_mid_stop:
                     self._consecutive_mid_breach_seconds[pos_id] = self._consecutive_mid_breach_seconds.get(pos_id, 0) + 1
                 else:
                     self._consecutive_mid_breach_seconds[pos_id] = 0
-                
+
                 consecutive_raw_count = self._consecutive_raw_breach_seconds[pos_id]
                 consecutive_mid_count = self._consecutive_mid_breach_seconds[pos_id]
 
@@ -12288,7 +12427,7 @@ class PolymarketTrader:
                 receipt=None,
                 partial=False,
             )
-            
+
             from utils.telegram_reporter import build_settlement_alert
 
             self._notify_telegram(
