@@ -60,3 +60,8 @@ runtime/
 # Local AI tool settings
 .claude/
 recovery_backups/
+
+# Backup and scratch folders
+.venv_migration_old_backup/
+scratch/
+*.pyc
