@@ -326,6 +326,108 @@ def test_no_nested_close_decision_loop_behavior(tmp_path: Path) -> None:
     rows, report = _read_output(output_dir)
     assert rows[0]["join_status"] == "JOINED_SIGNAL_ID"
     assert report["total_closes"] == 1
+    assert report["decision_rows_retained"] == 1
+    assert report["decision_rows_skipped_run_id"] == 500
+    assert report["required_run_id_count"] == 1
+
+
+def test_irrelevant_decision_rows_are_not_retained(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    _write_jsonl(
+        decision_root / "irrelevant_same_run.jsonl",
+        [
+            _decision_row(signal_id="other_signal", candidate_id="other_candidate", condition_id="other_cond"),
+            _decision_row(signal_id=None, candidate_id=None, condition_id="other_cond"),
+        ],
+    )
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir)
+
+    rows, report = _read_output(output_dir)
+    assert rows[0]["join_status"] == "JOINED_SIGNAL_ID"
+    assert report["decision_rows_retained"] == 1
+    assert report["decision_rows_skipped_key"] == 2
+
+
+def test_unmatched_run_id_lines_are_not_parsed(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    with (decision_root / "unmatched_run_invalid.jsonl").open("w", encoding="utf-8", newline="\n") as handle:
+        handle.write('{"run_id":"noise_run","payload":{"condition_id":"cond_1"}\n')
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir)
+
+    _, report = _read_output(output_dir)
+    assert report["decision_rows_parsed"] == 1
+    assert report["decision_rows_retained"] == 1
+
+
+def test_decision_index_matches_required_condition_when_signal_and_candidate_missing(tmp_path: Path) -> None:
+    decision = _decision_row(signal_id=None, candidate_id=None, timestamp="2026-06-21T00:01:00Z")
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(
+        tmp_path,
+        decision=decision,
+        open_payload={"signal_id": None, "candidate_id": None},
+        close_payload={"signal_id": None, "candidate_id": None},
+    )
+    _write_jsonl(
+        decision_root / "same_run_noise.jsonl",
+        [_decision_row(signal_id=None, candidate_id=None, condition_id="other_cond")],
+    )
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir)
+
+    rows, report = _read_output(output_dir)
+    assert rows[0]["join_status"] == "JOINED_NEAREST_CONDITION"
+    assert report["decision_rows_retained"] == 1
+    assert report["required_condition_id_count"] == 1
+
+
+def test_max_decision_rows_loaded_guard_triggers(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+
+    with pytest.raises(ValueError, match="max_decision_rows_loaded exceeded"):
+        build_joined_records(
+            execution_root,
+            trade_root,
+            decision_root,
+            output_dir,
+            max_decision_rows_loaded=0,
+        )
+
+    assert not (output_dir / "joined_records.jsonl").exists()
+
+
+def test_large_irrelevant_decision_fixture_remains_low_retention(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    _write_jsonl(
+        decision_root / "large_irrelevant.jsonl",
+        [
+            _decision_row(run_id=f"noise_{idx}", signal_id=f"noise_signal_{idx}", condition_id=f"noise_cond_{idx}")
+            for idx in range(1000)
+        ],
+    )
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir)
+
+    _, report = _read_output(output_dir)
+    assert report["decision_rows_seen"] == 1001
+    assert report["decision_rows_parsed"] == 1
+    assert report["decision_rows_retained"] == 1
+    assert report["decision_retention_rate"] == pytest.approx(1.0)
+
+
+def test_empty_decision_requirements_do_not_parse_decision_log(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _fixture_roots(tmp_path)
+    missing_source = trade_root / "missing.jsonl"
+    _write_jsonl(execution_root / "journals" / "trade" / "2026-06-21.jsonl", [_execution_close(missing_source, "0" * 64)])
+    _write_jsonl(decision_root / "2026-06-21.jsonl", [_decision_row(), _decision_row(run_id="noise_run")])
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir)
+
+    _, report = _read_output(output_dir)
+    assert report["decision_rows_seen"] == 2
+    assert report["decision_rows_parsed"] == 0
+    assert report["decision_rows_retained"] == 0
 
 
 def test_shadow_filter_evaluator_compatibility(tmp_path: Path) -> None:
