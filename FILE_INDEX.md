@@ -1,58 +1,91 @@
 # FILE_INDEX.md
 
-> Last updated: 2026-05-15.
-> Purpose: quick file map for Codex and human operators. This is an index, not a source of truth for live readiness.
+> Last updated: 2026-06-21.
+> Purpose: Quick file map for Codex and human operators. This is an index, not a source of truth for live readiness.
 
-## Start Here
+## 1. Documentation Folder Map
 
-Read these first for normal work:
+To prevent clutter in the repository root and keep the engine's operation clean, historical documentation, audits, reports, and evidence have been organized into the `docs/` folder.
 
-| File | Use For |
-|------|---------|
-| `CODEX_START_HERE.md` | Minimal session startup context and safe commands. |
-| `PROJECT_RULES.md` | Token discipline, safety constraints, and task workflow rules. |
-| `AGENTS.md` | Auto-loaded Codex safety rules, role-doc workflow, and project boundaries. |
-| `MASTER_AGENT_ROUTER.md` | Pick the right role doc for scoped tasks. |
-| `CURRENT_PROJECT_STATUS.md` | Current implementation status, blockers, and latest operational truth. |
-| `PROJECT_STRUCTURE.md` | Root pointer to canonical architecture docs. |
-| `KNOWN_ISSUES.md` | Root pointer to known issues. |
-| `FILE_INDEX.md` | This quick map. |
-| `QUANT_FUTURE_DECISION_ENGINE.md` | Exactly 3 future options for research/runtime decisions. |
-| `DOCUMENTATION_MAP.md` | Clean human/AI documentation map. |
-| `docs/PROJECT_STRUCTURE.md` | Canonical architecture, runtime flow, data flow, logging flow, and folder map. |
-| `docs/KNOWN_ISSUES.md` | Current bugs, technical debt, and live blockers. |
-| `docs/PROJECT_CLEANUP_REPORT.md` | Cleanup history and archived-doc decisions. |
+| Directory | Purpose / Category | Contents Description |
+| :--- | :--- | :--- |
+| [`docs/architecture/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/) | **System Architecture** | Technical blueprints, engine designs, data schemas, and pipeline structures. |
+| [`docs/audits/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/audits/) | **Forensics & Safety Audits** | Codebase audits, pre-commit checklists, safety reviews, and forensic check logs. |
+| [`docs/reports/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/reports/) | **Development Milestones** | Implementation reports, commit reports, recovery reports, and status summaries. |
+| [`docs/evidence/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/evidence/) | **Validation & Test Logs** | SQLite real-data validations, shadow telemetry runtime confirmation logs, and compatibility checks. |
+| [`docs/research/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/) | **Quant Strategy Research** | Strategy research plans, campaigns, active questions, and hypothesis ledgers. |
+| [`docs/operations/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/) | **Operations & Deployment** | Operational runbooks and VPS/execution setup guides. |
+| [`docs/quant_agent_setup_md/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/quant_agent_setup_md/) | **AI Agent Roles** | Safety-first role playbooks, templates, and agent setups. |
+
+> [!WARNING]
+> **Historical Evidence Warning**: Most files in `docs/audits/`, `docs/reports/`, and `docs/evidence/` represent point-in-time development logs and historical validation records. They are preserved for auditability and trace history, and they are **NOT active operational specifications or system instructions**. Active guidelines must be checked only in the root files (e.g., `PROJECT_RULES.md`, `AGENTS.md`).
+
+---
+
+## 2. Active Root Entrypoints
+
+The following core files remain in the root directory and must be read at the start of any session or task:
+
+| File | Purpose |
+| :--- | :--- |
+| [`README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/README.md) | User-facing overview, CLI commands, and setup instructions. |
+| [`PROJECT_RULES.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/PROJECT_RULES.md) | **Critical**: Token discipline, safety constraints, and task workflow rules. |
+| [`AGENTS.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/AGENTS.md) | **Critical**: Auto-loaded Codex safety rules, role boundaries, and project limits. |
+| [`CURRENT_PROJECT_STATUS.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/CURRENT_PROJECT_STATUS.md) | Current implementation truth, blockers, and next priorities. |
+| [`CODEX_START_HERE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/CODEX_START_HERE.md) | Minimal session startup context and safe commands. |
+| [`MASTER_AGENT_ROUTER.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/MASTER_AGENT_ROUTER.md) | Pick the right role doc for scoped tasks. |
+| [`FILE_INDEX.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/FILE_INDEX.md) | This index file. |
+| [`DOCUMENTATION_MAP.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/DOCUMENTATION_MAP.md) | Clean human/AI documentation map. |
+| [`KNOWN_ISSUES.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/KNOWN_ISSUES.md) | Quick pointer to known live issues and tickets. |
+| [`PROJECT_STRUCTURE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/PROJECT_STRUCTURE.md) | Quick pointer to canonical architecture. |
+| [`QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_FUTURE_DECISION_ENGINE.md) | Exactly 3 future options for research/runtime decisions. |
 
 Use these only for specific task types:
 
 | File | Use For |
-|------|---------|
-| `docs/OBSERVABILITY_PLAN.md` | Logging, JSONL, Telegram, health, incidents. |
-| `docs/PAPER_TRADING_RUNBOOK.md` | Paper run operation and post-run evaluation. |
-| `docs/BANKROLL_TIER_SYSTEM.md` | Bankroll rank/tier context. |
-| `docs/AGENT_WORKFLOW.md` | How to use project role docs. |
-| `QUANT_REGIME_PROBABILITY_ENGINE.md` | Phase 1 regime/probability diagnostics roadmap. |
-| `INVENTORY_REPLAY_RESEARCH_PLAN.md` | Phase 2 paper-only reload/unload replay plan. |
-| `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md` | Phase 3 bounded multi-price inventory design target. |
-| `QUANT_LIFECYCLE_INVENTORY_ENGINE.md` | Official future lifecycle inventory system specification. |
-| `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md` | Spread/liquidity/timing research plan. |
-| `CODEX_START_PROMPT.md` | Reusable Codex startup prompt. |
-| `CHATGPT_PROJECT_START_PROMPT.md` | Reusable ChatGPT planning/review prompt. |
-| `.codex/README.md` | Safe AI workflow harness overview for Codex / Claude / Gemini / ChatGPT. |
-| `.codex/skills/` | Reusable guidance skills; docs-only, not autonomous runtime modules. |
-| `.codex/security/AI_AGENT_SECURITY_CHECKLIST.md` | AI-agent and live-risk safety checklist. |
-| `.codex/prompts/` | Reusable AI startup/review prompts; human-invoked only, no hooks. |
-| `research/session_memory_template.md` | Compact session handoff template for run/day memory. |
-| `research/daily/README.md` | Daily research note workflow to reduce cross-tool context loss. |
-| `VULTR_PAPER_RUN.md` | Experimental HFT paper utility deployment notes, not canonical live readiness. |
+| :--- | :--- |
+| [`docs/OBSERVABILITY_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/OBSERVABILITY_PLAN.md) | Logging, JSONL, Telegram, health, incidents. |
+| [`docs/PAPER_TRADING_RUNBOOK.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/PAPER_TRADING_RUNBOOK.md) | Paper run operation and post-run evaluation. |
+| [`docs/BANKROLL_TIER_SYSTEM.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/BANKROLL_TIER_SYSTEM.md) | Bankroll rank/tier context. |
+| [`docs/AGENT_WORKFLOW.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/AGENT_WORKFLOW.md) | How to use project role docs. |
+| [`QUANT_REGIME_PROBABILITY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_REGIME_PROBABILITY_ENGINE.md) | Phase 1 regime/probability diagnostics roadmap. |
+| [`INVENTORY_REPLAY_RESEARCH_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/INVENTORY_REPLAY_RESEARCH_PLAN.md) | Phase 2 paper-only reload/unload replay plan. |
+| [`BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md) | Phase 3 bounded multi-price inventory design target. |
+| [`QUANT_LIFECYCLE_INVENTORY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_LIFECYCLE_INVENTORY_ENGINE.md) | Official future lifecycle inventory system specification. |
+| [`MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md) | Spread/liquidity/timing research plan. |
+| [`CODEX_START_PROMPT.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/CODEX_START_PROMPT.md) | Reusable Codex startup prompt. |
+| [`CHATGPT_PROJECT_START_PROMPT.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/CHATGPT_PROJECT_START_PROMPT.md) | Reusable ChatGPT planning/review prompt. |
+| [`.codex/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/README.md) | Safe AI workflow harness overview for Codex / Claude / Gemini / ChatGPT. |
+| [`.codex/skills/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/) | Reusable guidance skills; docs-only, not autonomous runtime modules. |
+| [`.codex/security/AI_AGENT_SECURITY_CHECKLIST.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/security/AI_AGENT_SECURITY_CHECKLIST.md) | AI-agent and live-risk safety checklist. |
+| [`.codex/prompts/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/prompts/) | Reusable AI startup/review prompts; human-invoked only, no hooks. |
+| [`research/session_memory_template.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/research/session_memory_template.md) | Compact session handoff template for run/day memory. |
+| [`research/daily/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/research/daily/README.md) | Daily research note workflow to reduce cross-tool context loss. |
+| [`VULTR_PAPER_RUN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/VULTR_PAPER_RUN.md) | Experimental HFT paper utility deployment notes, not canonical live readiness. |
 
-## Canonical Runtime Files
+---
+
+## 3. Research Governance
+
+These files enforce system safety, coordinate the active question gating mechanism, and define research authority:
+
+| File | Role / Purpose |
+| :--- | :--- |
+| [`docs/research/ACTIVE_QUESTION.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/ACTIVE_QUESTION.md) | Tracks the single active question that blocks any changes to strategy, sizer, execution, thresholds, or inventory. |
+| [`docs/research/AUDIT_REGISTRY.json`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/AUDIT_REGISTRY.json) | JSON registry of verified backtest, replay, and pipeline audits to prevent duplicate investigations. |
+| [`docs/research/DECISION_REGISTRY.json`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/DECISION_REGISTRY.json) | JSON registry of proposed and approved configuration and parameter changes. |
+| [`docs/research/RESEARCH_AUTHORITY_MAP_V2.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/RESEARCH_AUTHORITY_MAP_V2.md) | Defines the authority levels, limitations, allowed and forbidden uses of all completed quant audits. |
+| [`docs/research/GOVERNANCE_STARTUP_SEQUENCE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/GOVERNANCE_STARTUP_SEQUENCE.md) | Defines the startup check sequence for AI assistants to align scope. |
+
+---
+
+## 4. Canonical Runtime Files
 
 | File | Role |
-|------|------|
-| `main.py` | CLI dispatcher, paper/live realtime orchestration, verify mode, dashboard/backtest mode routing. |
-| `config/settings.py` | Pydantic settings, env defaults, paper/live flags, risk settings, startup config support. |
-| `utils/config_validator.py` | Startup config validation and secret-safe config summaries. |
+| :--- | :--- |
+| [`main.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/main.py) | CLI dispatcher, paper/live realtime orchestration, verify mode, dashboard/backtest mode routing. |
+| [`config/settings.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/config/settings.py) | Pydantic settings, env defaults, paper/live flags, risk settings, startup config support. |
+| [`utils/config_validator.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/config_validator.py) | Startup config validation and secret-safe config summaries. |
 
 Safe default runtime:
 
@@ -78,182 +111,191 @@ Live remains blocked until explicit operator intent and readiness validation:
 python main.py --mode live --interval 60
 ```
 
-## Polymarket Core
+---
+
+## 5. Polymarket Core
 
 | File | Role |
-|------|------|
-| `polymarket/trader.py` | Main trade coordinator: cycle loop, market analysis, risk plan use, paper execution, reconciliation, exits, dashboard state, observability events. |
-| `polymarket/client.py` | Polymarket CLOB client, auth, orderbooks, balances, orders, redemptions. |
-| `polymarket/gamma_fetcher.py` | Gamma market/event/token discovery. |
-| `polymarket/market_feed.py` | Binance market feed singleton. |
-| `polymarket/oracle_price_feed.py` | Oracle/PTB price feed path. |
-| `polymarket/virtual_ptb.py` | Virtual price-to-beat tracker used by realtime trader. |
-| `polymarket/signal.py` | Realtime signal logic. Do not change without matching backtest work. |
-| `polymarket/regime_diagnostics.py` | Passive regime/probability diagnostics; not trade approval. |
-| `polymarket/probability_model.py` | Probability model input/output path. |
-| `polymarket/expected_value.py` | Expected value calculation from probability, price, and cost inputs. |
-| `polymarket/backtester_5m.py` | Backtest path for 5-minute strategy validation. |
-| `polymarket/order_manager.py` | Converts signal/risk inputs into `RiskPlan`. |
-| `polymarket/order_intent.py` | ENTRY/EXIT validation guard. |
-| `polymarket/position_manager.py` | Live order/fill reconciliation; distinct from in-memory `utils/position_tracker.py`. (pending_code_verification: confirm boundary with position_tracker.py) |
-| `polymarket/bankroll_tiers.py` | Bankroll rank/tier rules and hysteresis inputs. |
-| `polymarket/position_sizing.py` | Rank-aware position sizing calculation. |
-| `polymarket/risk_modes.py` | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN state ladder. |
-| `polymarket/realtime_logger.py` | Realtime scan/trade CSV and paper summary logging. |
+| :--- | :--- |
+| [`polymarket/trader.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/trader.py) | Main trade coordinator: cycle loop, market analysis, risk plan use, paper execution, reconciliation, exits, dashboard state, observability events. |
+| [`polymarket/client.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/client.py) | Polymarket CLOB client, auth, orderbooks, balances, orders, redemptions. |
+| [`polymarket/gamma_fetcher.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/gamma_fetcher.py) | Gamma market/event/token discovery. |
+| [`polymarket/market_feed.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/market_feed.py) | Binance market feed singleton. |
+| [`polymarket/oracle_price_feed.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/oracle_price_feed.py) | Oracle/PTB price feed path. |
+| [`polymarket/virtual_ptb.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/virtual_ptb.py) | Virtual price-to-beat tracker used by realtime trader. |
+| [`polymarket/signal.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/signal.py) | Realtime signal logic. Do not change without matching backtest work. |
+| [`polymarket/regime_diagnostics.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/regime_diagnostics.py) | Passive regime/probability diagnostics; not trade approval. |
+| [`polymarket/probability_model.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/probability_model.py) | Probability model input/output path. |
+| [`polymarket/expected_value.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/expected_value.py) | Expected value calculation from probability, price, and cost inputs. |
+| [`polymarket/backtester_5m.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/backtester_5m.py) | Backtest path for 5-minute strategy validation. |
+| [`polymarket/order_manager.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/order_manager.py) | Converts signal/risk inputs into `RiskPlan`. |
+| [`polymarket/order_intent.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/order_intent.py) | ENTRY/EXIT validation guard. |
+| [`polymarket/position_manager.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/position_manager.py) | Live order/fill reconciliation; distinct from in-memory `utils/position_tracker.py`. |
+| [`polymarket/bankroll_tiers.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/bankroll_tiers.py) | Bankroll rank/tier rules and hysteresis inputs. |
+| [`polymarket/position_sizing.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/position_sizing.py) | Rank-aware position sizing calculation. |
+| [`polymarket/risk_modes.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/risk_modes.py) | NORMAL/DEFENSIVE/MICRO_RECOVERY/LOCKDOWN state ladder. |
+| [`polymarket/realtime_logger.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/realtime_logger.py) | Realtime scan/trade CSV and paper summary logging. |
 
-## Risk, Positions, Display
+---
 
-| File | Role |
-|------|------|
-| `utils/risk_manager.py` | Canonical hard risk policy for the Polymarket path. |
-| `utils/position_tracker.py` | Position state, exposure, drawdown, and reconciliation support. |
-| `utils/display.py` | Terminal UI V2 and other Rich display surfaces. |
-| `utils/logger.py` | Console/file/Telegram logging setup with Windows file-lock resilience. |
-
-## Observability And Reporting
+## 6. Risk, Positions, Display
 
 | File | Role |
-|------|------|
-| `utils/quant_event_logger.py` | Fail-soft JSONL quant event writer under `runtime/quant_data/`. |
-| `utils/telegram_alerts.py` | Central Telegram cooldown/dedup alert layer. |
-| `utils/telegram_reporter.py` | Telegram message builders and daily report sender. |
-| `utils/scan_log_loader.py` | Shared scan CSV loader for old and per-run scan logs. |
-| `daily_report.py` | Daily report builder/sender. |
-| `tools/quant_data_quality.py` | Offline JSONL data quality checker. |
-| `tools/replay_analyzer.py` | Offline replay report generator. |
-| `tools/no_entry_analyzer.py` | Offline no-entry paper session diagnostics. |
-| `tools/session_runtime_evaluator.py` | Offline/session paper runtime health and bottleneck evaluator; supports UTC `--since/--until` filters. |
-| `tools/paper_evaluation_report.py` | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
-| `tools/offline_telegram_summary.py` | Offline Telegram-safe paper evidence summary formatter/sender from generated reports; default is print-only. |
-| `tools/multi_session_runner.py` | Offline multi-session validation orchestrator. Defaults to dry-run command recording, optionally executes the fixed Phase 2 replay chain into isolated `runtime/reports/multi_session_validation/` output folders, records `validation_coverage` as `PARTIAL_VALIDATION_ONLY` with required-but-not-run supplementary replay tools, warns that `score_c_accuracy` is not OOS seed-threshold validation, and never promotes verdicts or mutates existing replay reports. |
-| `dashboard/offline_quant_report_dashboard.py` | Local read-only dashboard server for completed `runtime/reports/*.json` evidence; run with `python dashboard/offline_quant_report_dashboard.py --reports-dir runtime/reports --host 127.0.0.1 --port 8765`. |
-| `dashboard/offline_quant_report_dashboard.html` | Static browser UI for the offline quant report dashboard; reads only the local dashboard summary endpoint. |
-| `tools/semantic_c_shadow_fill_replay.py` | Offline fill replay simulator: replays `zero_size_probe_v1` + Semantic C shadow fields; reports hypothetical fill count, size distribution, BTC/ETH split, lifecycle split, exposure curve, cutoff collision rate, PnL (if settlement available), and paper-trial verdict. Offline-only; no runtime changes. |
-| `tools/semantic_c_shadow_pnl_truth.py` | Offline PnL truth layer: attaches settlement truth (inferred from near-close `yes_bid` in `market_snapshots`) to Semantic C shadow fill opportunities; reports settlement coverage, hypothetical PnL, BTC/ETH split, lifecycle split, win rate, avg win/loss, max drawdown, unresolved markets, data quality verdict, and economic evidence verdict. Offline-only; no runtime changes. |
-| `tools/semantic_c_inventory_continuity_replay.py` | Offline inventory continuity state machine: replays shadow fill candidates with per-asset open/close states (FLAT→OPEN→HOLD→REDUCE→FINAL_DERISK→CLOSED), max-one-position-per-asset gate, settlement-based closing, and opportunity-cost tracking for skipped candidates. Reports 14 outputs including entries, skips, concurrent exposure, proxy PnL, BTC/ETH split, win rate, drawdown, clustered losses, forced/unresolved closes, and scoped-paper-trial verdict. Offline-only; no runtime changes. |
-| `tools/lifecycle_profit_management_replay.py` | Offline lifecycle profit management replay: simulates five hold/reduce/derisk policies (A=baseline, B=reduce-50%-at-2x, C=reduce-50%-at-3x, D=derisk-before-close, E=hold-winners/cut-late-decay) with no-future-leakage enforcement. Reports premature_reduce_regret_usd and false_decay_trigger_count per policy. Offline-only; no runtime changes. |
-| `tools/semantic_c_bounded_reload_replay.py` | Offline bounded reload opportunity replay: simulates four reload policies (A=1/asset, B=2/asset, C=3/asset, D=exposure-capped at 7.5%) to measure how much of the $323.33 skipped opportunity cost can be recovered without unsafe exposure or drawdown. Reports 13 outputs per policy plus correlated-exposure metrics (same_epoch_reload_count, max_reload_count_per_epoch, worst_losing_epoch_pnl, exposure_concentration, reload_loss_cluster_count). Explicitly states reloads are correlated exposure, NOT diversification. Offline-only; no runtime changes. |
+| :--- | :--- |
+| [`utils/risk_manager.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/risk_manager.py) | Canonical hard risk policy for the Polymarket path. |
+| [`utils/position_tracker.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/position_tracker.py) | Position state, exposure, drawdown, and reconciliation support. |
+| [`utils/display.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/display.py) | Terminal UI V2 and other Rich display surfaces. |
+| [`utils/logger.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/logger.py) | Console/file/Telegram logging setup with Windows file-lock resilience. |
 
-Offline tools must remain offline-only. Do not wire their output into automatic runtime decisions without a separately scoped phase.
+---
 
-## Official Project Phase Roadmap
+## 7. Observability And Reporting
 
-1. Phase 1: regime classification, probability scoring, indicator evidence, observability only.
-2. Phase 2: paper-only inventory replay, reload/unload analysis, opportunity decay, MFE/MAE tracking.
-3. Phase 3: bounded multi-price inventory engine with max inventory cap, max risk cap, stop loss, forced exit, no martingale, and no unlimited averaging down.
-4. Phase 4: continuous probabilistic inventory trading only after paper evidence supports it.
+| File | Role |
+| :--- | :--- |
+| [`utils/quant_event_logger.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/quant_event_logger.py) | Fail-soft JSONL quant event writer under `runtime/quant_data/`. |
+| [`utils/telegram_alerts.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/telegram_alerts.py) | Central Telegram cooldown/dedup alert layer. |
+| [`utils/telegram_reporter.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/telegram_reporter.py) | Telegram message builders and daily report sender. |
+| [`utils/scan_log_loader.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/utils/scan_log_loader.py) | Shared scan CSV loader for old and per-run scan logs. |
+| [`daily_report.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/daily_report.py) | Daily report builder/sender. |
 
-`QUANT_LIFECYCLE_INVENTORY_ENGINE.md` is the official source-of-truth spec for future lifecycle inventory design. Future inventory docs and role prompts use these lifecycle states: OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, and CLOSED_OR_UNSAFE. They are research/design vocabulary until a separately scoped implementation phase promotes them.
+---
 
-Current paper runtime visibility:
+## 8. Offline Analysis & Replay Tools
 
-- `utils/display.py` surfaces BANKROLL_TIER_V2 tier metadata, MICRO_SURVIVAL_MODE, MICRO adaptive timing, liquidity/recovery, cutoff reasons, and early-window timing.
-- `polymarket/bankroll_tiers.py` owns centralized bankroll tier metadata and hysteresis.
-- MICRO survival/timing visibility is paper-focused; live readiness and live sizing are unchanged.
+Offline analysis, simulation, and evidence harvesting utilities (must remain offline-only and not feed automatic runtime decisions):
 
-## Tests To Start With
+| File | Role / Purpose |
+| :--- | :--- |
+| [`tools/phase_b_daily_evidence_collector.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/phase_b_daily_evidence_collector.py) | Extracts and compiles Phase B shadow telemetry for a specific UTC date. |
+| [`tools/phase_b_daily_report.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/phase_b_daily_report.py) | Aggregates daily telemetry, trades, PnL, drawdowns, and outputs markdown dashboards. |
+| [`tools/phase_b_snapshot_archiver.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/phase_b_snapshot_archiver.py) | Archives daily dashboards into dated snapshots and maintains a JSON metadata index. |
+| [`tools/phase_b_snapshot_summary.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/phase_b_snapshot_summary.py) | Formats a rolling summary of recent snapshots suitable for Telegram reporting. |
+| [`tools/quant_data_quality.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/quant_data_quality.py) | Offline JSONL quant event data quality and schema checker. |
+| [`tools/replay_analyzer.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/replay_analyzer.py) | Offline backtest/replay report generator. |
+| [`tools/no_entry_analyzer.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/no_entry_analyzer.py) | Offline no-entry paper session diagnostics. |
+| [`tools/session_runtime_evaluator.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/session_runtime_evaluator.py) | Offline session paper runtime health and bottleneck evaluator. |
+| [`tools/paper_evaluation_report.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/paper_evaluation_report.py) | Offline PASS/CAUTION/FAIL paper evidence evaluator. |
+| [`tools/offline_telegram_summary.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/offline_telegram_summary.py) | Offline Telegram-safe paper evidence summary formatter/sender. |
+| [`tools/multi_session_runner.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/multi_session_runner.py) | Offline multi-session validation command recorder/runner. |
+| [`dashboard/offline_quant_report_dashboard.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/dashboard/offline_quant_report_dashboard.py) | Local read-only report dashboard server (port 8765). |
+| [`tools/semantic_c_shadow_fill_replay.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/semantic_c_shadow_fill_replay.py) | Replays `zero_size_probe_v1` and Semantic C shadow fills. |
+| [`tools/semantic_c_shadow_pnl_truth.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/semantic_c_shadow_pnl_truth.py) | Offline settlement and PnL truth compiler for shadow candidates. |
+| [`tools/semantic_c_inventory_continuity_replay.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/semantic_c_inventory_continuity_replay.py) | Replays shadow fills with per-asset open/close state logic. |
+| [`tools/lifecycle_profit_management_replay.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/lifecycle_profit_management_replay.py) | Simulates and compares lifecycle exit and reduction policies. |
+| [`tools/semantic_c_bounded_reload_replay.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/tools/semantic_c_bounded_reload_replay.py) | Simulates reload accumulation policies with risk caps. |
 
-Use targeted tests for scoped work:
+---
 
-| Area | Tests |
-|------|-------|
-| Paper/runtime separation | `tests/test_paper_mode.py` |
-| Risk and execution guards | `tests/test_execution_risk_controls.py`, `tests/test_risk_modes.py`, `tests/test_bankroll_tiers.py` |
-| Order intent and reconciliation | `tests/test_position_reconciliation.py`, `tests/test_polymarket_trader.py` |
-| Exit logic | `tests/test_exit_agent.py` |
-| Logging and observability | `tests/test_logging_resilience.py`, `tests/test_scan_log_loading.py`, `tests/test_quant_event_logger.py`, `tests/test_telegram_alerts.py` |
-| Terminal UI | `tests/test_terminal_dashboard_display.py` |
-| Shutdown | `tests/test_runtime_shutdown.py` |
-| Offline analysis | `tests/test_quant_data_quality.py`, `tests/test_replay_analyzer.py`, `tests/test_paper_evaluation_report.py`, `tests/test_no_entry_analyzer.py`, `tests/test_offline_telegram_summary.py`, `tests/test_offline_quant_report_dashboard.py`, `tests/test_semantic_c_shadow_fill_replay.py`, `tests/test_semantic_c_shadow_pnl_truth.py`, `tests/test_semantic_c_inventory_continuity_replay.py`, `tests/test_semantic_c_bounded_reload_replay.py`, `tests/test_lifecycle_profit_management_replay.py` |
-| Multi-session validation tooling | `tests/test_multi_session_runner.py` |
+## 9. Official Project Phase Roadmap
 
-Full suite:
+1. **Phase 1**: Regime classification, probability scoring, indicator evidence, observability only.
+2. **Phase 2**: Paper-only inventory replay, reload/unload analysis, opportunity decay, MFE/MAE tracking.
+3. **Phase 3**: Bounded multi-price inventory engine with max inventory cap, max risk cap, stop loss, forced exit, and no martingale.
+4. **Phase 4**: Continuous probabilistic inventory trading only after paper evidence supports it.
 
-```bash
-python -m pytest tests/ -q
-```
+`QUANT_LIFECYCLE_INVENTORY_ENGINE.md` is the official spec for future lifecycle inventory design (OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, CLOSED_OR_UNSAFE).
 
-## Role Docs
+---
 
-Use `MASTER_AGENT_ROUTER.md` first, then read only the relevant role doc:
+## 10. Tests To Start With
 
-| Folder | Role |
-|--------|------|
-| `docs/quant_agent_setup_md/roles/` | Safety-first role prompts for scoped Codex work. |
-| `docs/quant_agent_setup_md/playbooks/` | Workflow/playbook guidance. |
-| `docs/quant_agent_setup_md/templates/` | Review/status/bug templates. |
-| `docs/quant_agent_setup_md/roles/18_MARKET_REGIME_AGENT.md` | Volatility/trend regime diagnostics. |
-| `docs/quant_agent_setup_md/roles/19_FAIR_VALUE_ENGINE_AGENT.md` | Dynamic fair value and probability estimate research. |
-| `docs/quant_agent_setup_md/roles/20_INVENTORY_ENGINE_AGENT.md` | Controlled inventory accumulation, reload, unload, and runner rules. |
-| `docs/quant_agent_setup_md/roles/21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Spread, liquidity, maker/taker, fill quality, and price improvement. |
-| `docs/quant_agent_setup_md/roles/22_INVENTORY_ANALYTICS_AGENT.md` | Offline missed-opportunity and inventory replay analytics. |
-| `docs/quant_agent_setup_md/roles/23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Future lifecycle inventory coordination across opening scan, active inventory, profit management, final derisk, and risk budget. |
+Use targeted pytest commands to validate code changes:
 
-These markdown files guide work. They are not autonomous runtime modules and do not prove code is implemented.
+| Area | Command |
+| :--- | :--- |
+| **All Tests** | `python -m pytest tests/ -q` |
+| **Paper/Runtime Separation** | `pytest tests/test_paper_mode.py` |
+| **Risk & execution guards** | `pytest tests/test_execution_risk_controls.py tests/test_risk_modes.py tests/test_bankroll_tiers.py` |
+| **Order intent & recon** | `pytest tests/test_position_reconciliation.py tests/test_polymarket_trader.py` |
+| **Exit logic** | `pytest tests/test_exit_agent.py` |
+| **Observability** | `pytest tests/test_logging_resilience.py tests/test_scan_log_loading.py tests/test_quant_event_logger.py tests/test_telegram_alerts.py` |
+| **Phase B Daily Collector** | `pytest tests/test_phase_b_daily_evidence_collector.py` |
+| **Terminal UI Dashboard** | `pytest tests/test_terminal_dashboard_display.py` |
+| **Clean Shutdown** | `pytest tests/test_runtime_shutdown.py` |
+| **Offline Replay Audits** | `pytest tests/test_quant_data_quality.py tests/test_replay_analyzer.py tests/test_paper_evaluation_report.py tests/test_no_entry_analyzer.py tests/test_offline_telegram_summary.py tests/test_offline_quant_report_dashboard.py tests/test_semantic_c_shadow_fill_replay.py tests/test_semantic_c_shadow_pnl_truth.py tests/test_semantic_c_inventory_continuity_replay.py tests/test_semantic_c_bounded_reload_replay.py tests/test_lifecycle_profit_management_replay.py` |
 
-## AI Agent Workflow Harness
+---
 
-| Path | Role |
-|------|------|
-| `.codex/README.md` | Overview of the safe AI-agent workflow harness and boundaries. |
-| `.codex/skills/README.md` | Rules for reusable guidance skills. |
-| `.codex/skills/no-entry-root-cause.md` | No-entry and no-fill root-cause checklist. |
-| `.codex/skills/session-regime-analysis.md` | Time-of-day/session market personality research guide. |
-| `.codex/skills/replay-diagnostics.md` | Replay, JSONL, report consistency, and semantic mismatch guide. |
-| `.codex/skills/risk-budget-review.md` | Dynamic Quant Risk Budget review guide. |
-| `.codex/skills/live-risk-security-check.md` | Live-risk and secret-safety preflight checklist. |
-| `.codex/skills/lifecycle-inventory-planning.md` | Future lifecycle inventory planning guide. |
-| `.codex/skills/semantic-shadow-sizing.md` | Semantic confidence, EV quality, and shadow sizing research guide. |
-| `.codex/security/AI_AGENT_SECURITY_CHECKLIST.md` | Hard AI-agent safety warnings. |
-| `.codex/prompts/CODEX_AI_HARNESS_START_PROMPT.md` | Reusable Codex harness startup prompt. |
-| `.codex/prompts/CHATGPT_PROJECT_REVIEW_PROMPT.md` | Reusable ChatGPT planning/review prompt. |
-| `research/session_memory_template.md` | Session memory template for handoffs. |
-| `research/daily/README.md` | Daily research note workflow. |
+## 11. Role Docs
 
-The harness is docs/config-only. It does not enable hooks, MCP servers, auto-running commands, runtime decisions, or trading behavior.
+Playbooks and prompts live under `docs/quant_agent_setup_md/roles/`. Use `MASTER_AGENT_ROUTER.md` first.
 
-## Secondary Or Experimental Areas
+| Path | Primary Responsibility |
+| :--- | :--- |
+| `01_PROJECT_MANAGER_AGENT.md` | Scope, sequencing, handoffs, promotion gates. |
+| `02_CODE_ARCHITECT_AGENT.md` | File ownership, interfaces, modularity. |
+| `03_RISK_MANAGER_AGENT.md` | Dynamic Quant Risk Budget and safety gates. |
+| `04_EXIT_EXECUTION_AGENT.md` | Profit unload, stop loss, final derisk, exits. |
+| `05_MARKET_DATA_AGENT.md` | Scanner lifecycle, token IDs, orderbooks. |
+| `06_POSITION_RECONCILIATION_AGENT.md` | True inventory, orders, fills, mismatches. |
+| `07_TEST_CI_AGENT.md` | Targeted tests and safety proof. |
+| `08_RESEARCH_QUANT_AGENT.md` | Hypothesis testing and paper evidence. |
+| `09_SIGNAL_STRATEGY_AGENT.md` | Signal/probability/EV model changes. |
+| `10_BACKTEST_REPLAY_AGENT.md` | Backtest, replay, MFE/MAE, opportunity decay. |
+| `11_OBSERVABILITY_INCIDENT_AGENT.md` | Compact JSONL/log/health/incident evidence. |
+| `18_MARKET_REGIME_AGENT.md` | Volatility/trend/compression regimes. |
+| `19_FAIR_VALUE_ENGINE_AGENT.md` | Fair value, implied probability, EV. |
+| `20_INVENTORY_ENGINE_AGENT.md` | Bounded inventory design. |
+| `21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Executable edge, spread, liquidity. |
+| `22_INVENTORY_ANALYTICS_AGENT.md` | Offline inventory replay analytics. |
+| `23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Lifecycle inventory coordination. |
+
+---
+
+## 12. AI Agent Workflow Harness
+
+Located in `.codex/`. Docs/config-only; no active runtime hooks.
+
+| Path | Role / Content |
+| :--- | :--- |
+| [`.codex/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/README.md) | Safe AI harness overview and boundaries. |
+| [`.codex/skills/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/README.md) | Guidelines for reusable AI skills. |
+| [`.codex/skills/no-entry-root-cause.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/no-entry-root-cause.md) | No-entry and no-fill root cause checklist. |
+| [`.codex/skills/session-regime-analysis.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/session-regime-analysis.md) | Time-of-day regime research guide. |
+| [`.codex/skills/replay-diagnostics.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/replay-diagnostics.md) | Replay JSONL report discrepancy guide. |
+| [`.codex/skills/risk-budget-review.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/risk-budget-review.md) | Dynamic risk budget safety checks. |
+| [`.codex/skills/live-risk-security-check.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/skills/live-risk-security-check.md) | Live risk and secrets safety checklist. |
+| [`.codex/security/AI_AGENT_SECURITY_CHECKLIST.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/security/AI_AGENT_SECURITY_CHECKLIST.md) | Hard AI agent constraints and live-risk warnings. |
+
+---
+
+## 13. Secondary Or Experimental Paths
 
 | Path | Status |
-|------|--------|
+| :--- | :--- |
 | `hft_paper_run.py` | Active HFT paper simulation utility. |
 | `hft/` | Experimental HFT engine; paper-first only. |
-| `crypto_scalper/` | Separate crypto scalper path, not canonical Polymarket runtime. |
-| `dashboard/` | Streamlit dashboards; overlapping dashboard surface. |
-| `web-dashboard/` | Next.js dashboard; separate frontend surface. |
-| `dashboard/offline_quant_report_dashboard.py` | Read-only offline report dashboard entrypoint; not a runtime trading surface. |
+| `crypto_scalper/` | Separate crypto scalper path; not canonical Polymarket runtime. |
+| `dashboard/` | Streamlit dashboards; overlapping UI surface. |
+| `web-dashboard/` | Next.js dashboard; separate frontend UI. |
 | `polymarket/five_min_monitor.py` | Standalone market monitor. |
 
-Do not promote secondary paths to canonical live execution without a dedicated review.
+---
 
-## Generated Or Evidence Folders
+## 14. Generated Or Evidence Folders
 
-Do not treat these as source-of-truth code during normal work:
+| Path | Rule / Content |
+| :--- | :--- |
+| `runtime/` | Generated runtime state, quant JSONL, scan logs, and reports. Do not edit manually. |
+| `logs/` | Generated console logs and logs.txt. Preserve. |
+| `logs_vps/` | VPS operational logs. Preserve. |
+| `backtest_results/` | Generated backtest outputs. |
+| `archive/legacy/` | Archived prompts and stale files. Do not use as active workspace. |
 
-| Path | Rule |
-|------|------|
-| `runtime/` | Generated runtime state, quant JSONL, realtime logs, reports. Do not edit casually. |
-| `logs/` | Generated app logs. Preserve for evidence. |
-| `logs_vps/` | VPS operational evidence. Preserve. |
-| `backtest_results/` | Generated backtest artifacts. Preserve. |
-| `archive/legacy/` | Historical archived files. Do not use as active workflow. |
+---
 
-## Files Not To Touch Casually
+## 15. Files And Data Not To Touch Casually
 
 - `.env`
 - `.env.example`
 - `config/`
-- runtime logs and scan logs
-- wallet/API credential helpers
-- live flags, private keys, wallet addresses, allowances
-- strategy research records
+- Wallet/API credential helpers (`register_api_keys.py`, etc.)
+- Live flags, private keys, wallet addresses, and allowance approvals
+- Active strategy research records and telemetry databases
 
-## Cleanup Notes
+---
 
-Archived prompt/docs from the 2026-05-09 markdown cleanup live under:
+## 16. Cleanup Notes
 
-```text
-archive/legacy/docs/2026-05-09-md-cleanup/
-```
-
-Those files are historical references only. Active Codex workflow starts from `CODEX_START_HERE.md`, `PROJECT_RULES.md`, `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `CURRENT_PROJECT_STATUS.md`, `PROJECT_STRUCTURE.md`, `KNOWN_ISSUES.md`, `FILE_INDEX.md`, and `QUANT_FUTURE_DECISION_ENGINE.md`.
+Archived prompt/docs from previous cleanups live under `archive/legacy/`. Active AI workflow starts strictly from `CODEX_START_HERE.md`, `PROJECT_RULES.md`, `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `CURRENT_PROJECT_STATUS.md`, `PROJECT_STRUCTURE.md`, `KNOWN_ISSUES.md`, and `FILE_INDEX.md`.
