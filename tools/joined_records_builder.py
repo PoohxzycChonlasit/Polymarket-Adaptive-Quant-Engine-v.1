@@ -5,6 +5,7 @@ import bisect
 import hashlib
 import json
 import os
+import sqlite3
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +37,30 @@ REQUIRED_OUTPUT_FIELDS = (
     "join_status",
     "join_offset_seconds",
 )
+SLIM_INDEX_SCHEMA_VERSION = "decision_log_slim_index.v1"
+SLIM_INDEX_SQLITE = "decision_log_slim.sqlite"
+SLIM_INDEX_MANIFEST = "decision_log_slim_manifest.json"
+SLIM_INDEX_REQUIRED_COLUMNS = {
+    "id",
+    "timestamp_utc",
+    "run_id",
+    "signal_id",
+    "candidate_id",
+    "condition_id",
+    "edge",
+    "ev",
+    "ev_after_spread",
+    "true_probability",
+    "volatility_regime",
+    "trend_regime",
+    "source_file",
+    "source_line",
+}
+SLIM_INDEX_REQUIRED_INDEXES = {
+    "idx_run_signal",
+    "idx_run_candidate",
+    "idx_run_condition_time",
+}
 
 
 def _workspace_root() -> Path:
@@ -316,6 +341,7 @@ def _load_decision_indexes(
     by_candidate: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     by_condition: dict[tuple[str, str], list[tuple[datetime, dict[str, Any]]]] = defaultdict(list)
     stats = {
+        "decision_source_mode": "RAW_SCAN",
         "decision_rows_seen": 0,
         "decision_rows_parsed": 0,
         "decision_rows_retained": 0,
@@ -455,6 +481,189 @@ def _load_decision_indexes(
         "last_updated_utc": _utc_now_iso(),
     }
     _write_progress_sidecar(progress_path, progress_payload)
+    return {"by_signal": by_signal, "by_candidate": by_candidate, "by_condition": by_condition, "stats": stats}
+
+
+def _resolve_manifest_path(path_value: str) -> Path:
+    path = Path(path_value)
+    return path if path.is_absolute() else (_workspace_root() / path).resolve()
+
+
+def _load_slim_manifest(index_root: Path) -> dict[str, Any]:
+    manifest_path = index_root / SLIM_INDEX_MANIFEST
+    if not manifest_path.exists():
+        raise ValueError(f"missing {SLIM_INDEX_MANIFEST}: {manifest_path}")
+    with manifest_path.open("r", encoding="utf-8") as handle:
+        manifest = json.load(handle)
+    if manifest.get("schema_version") != SLIM_INDEX_SCHEMA_VERSION:
+        raise ValueError(f"unsupported slim index schema_version: {manifest.get('schema_version')}")
+    return manifest
+
+
+def _validate_slim_index_freshness(index_root: Path, decision_root: Path) -> dict[str, Any]:
+    if not is_safe_scratch_path(index_root):
+        raise ValueError(f"decision slim index root outside scratch: {index_root}")
+    sqlite_path = index_root / SLIM_INDEX_SQLITE
+    if not sqlite_path.exists():
+        raise ValueError(f"missing {SLIM_INDEX_SQLITE}: {sqlite_path}")
+
+    manifest = _load_slim_manifest(index_root)
+    current_files = {path.resolve(): path for path in sorted(decision_root.glob("*.jsonl"))}
+    manifest_entries = manifest.get("source_files")
+    if not isinstance(manifest_entries, list):
+        raise ValueError("slim index manifest source_files missing or invalid")
+
+    manifest_files: dict[Path, dict[str, Any]] = {}
+    for entry in manifest_entries:
+        if not isinstance(entry, dict) or not entry.get("filename"):
+            raise ValueError("slim index manifest source file entry invalid")
+        manifest_files[_resolve_manifest_path(str(entry["filename"]))] = entry
+
+    if set(current_files) != set(manifest_files):
+        raise ValueError("stale slim index source file set mismatch")
+
+    for resolved_path, actual_path in current_files.items():
+        entry = manifest_files[resolved_path]
+        stat = actual_path.stat()
+        if int(entry.get("size_bytes", -1)) != stat.st_size:
+            raise ValueError(f"stale slim index size mismatch: {actual_path}")
+        if int(entry.get("mtime_ns", -1)) != stat.st_mtime_ns:
+            raise ValueError(f"stale slim index mtime mismatch: {actual_path}")
+
+    with sqlite3.connect(sqlite_path) as conn:
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(decisions)").fetchall()}
+        if not SLIM_INDEX_REQUIRED_COLUMNS.issubset(columns):
+            missing = sorted(SLIM_INDEX_REQUIRED_COLUMNS - columns)
+            raise ValueError(f"slim index schema missing columns: {missing}")
+        indexes = {row[1] for row in conn.execute("PRAGMA index_list(decisions)").fetchall()}
+        if not SLIM_INDEX_REQUIRED_INDEXES.issubset(indexes):
+            missing = sorted(SLIM_INDEX_REQUIRED_INDEXES - indexes)
+            raise ValueError(f"slim index schema missing indexes: {missing}")
+
+    return {
+        "manifest": manifest,
+        "sqlite_path": sqlite_path,
+        "schema_version": manifest.get("schema_version"),
+        "freshness_status": "FRESH",
+    }
+
+
+def _sqlite_decision_row(row: sqlite3.Row) -> dict[str, Any]:
+    return {
+        "timestamp_utc": row["timestamp_utc"],
+        "run_id": str(row["run_id"] or ""),
+        "signal_id": row["signal_id"],
+        "candidate_id": row["candidate_id"],
+        "condition_id": row["condition_id"],
+        "edge": row["edge"],
+        "ev": row["ev"],
+        "ev_after_spread": row["ev_after_spread"],
+        "true_probability": row["true_probability"],
+        "volatility_regime": row["volatility_regime"],
+        "trend_regime": row["trend_regime"],
+        "source_file": row["source_file"],
+        "source_line": row["source_line"],
+    }
+
+
+def _load_decision_indexes_from_slim_index(
+    index_root: Path,
+    decision_root: Path,
+    required_run_ids: set[str],
+    required_signal_ids: set[tuple[str, str]],
+    required_candidate_ids: set[tuple[str, str]],
+    required_condition_ids: set[tuple[str, str]],
+    max_decision_rows_loaded: int,
+) -> dict[str, Any]:
+    validation = _validate_slim_index_freshness(index_root, decision_root)
+    by_signal: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    by_candidate: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    by_condition: dict[tuple[str, str], list[tuple[datetime, dict[str, Any]]]] = defaultdict(list)
+    loaded_rows: dict[tuple[Any, ...], dict[str, Any]] = {}
+
+    def remember(row: sqlite3.Row) -> None:
+        projected = _sqlite_decision_row(row)
+        key = (
+            row["id"],
+            projected.get("source_file"),
+            projected.get("source_line"),
+        )
+        loaded_rows.setdefault(key, projected)
+
+    with sqlite3.connect(validation["sqlite_path"]) as conn:
+        conn.row_factory = sqlite3.Row
+        for run_id, signal_id in sorted(required_signal_ids):
+            for row in conn.execute(
+                """
+                SELECT * FROM decisions
+                WHERE run_id = ? AND signal_id = ?
+                ORDER BY timestamp_utc, source_file, source_line
+                """,
+                (run_id, signal_id),
+            ):
+                remember(row)
+        for run_id, candidate_id in sorted(required_candidate_ids):
+            for row in conn.execute(
+                """
+                SELECT * FROM decisions
+                WHERE run_id = ? AND candidate_id = ?
+                ORDER BY timestamp_utc, source_file, source_line
+                """,
+                (run_id, candidate_id),
+            ):
+                remember(row)
+        for run_id, condition_id in sorted(required_condition_ids):
+            for row in conn.execute(
+                """
+                SELECT * FROM decisions
+                WHERE run_id = ? AND condition_id = ?
+                ORDER BY timestamp_utc, source_file, source_line
+                """,
+                (run_id, condition_id),
+            ):
+                remember(row)
+
+    if len(loaded_rows) > max_decision_rows_loaded:
+        raise ValueError(f"max_decision_rows_loaded exceeded: {len(loaded_rows)} > {max_decision_rows_loaded}")
+
+    for projected in loaded_rows.values():
+        run_id = str(projected.get("run_id") or "")
+        signal_id = projected.get("signal_id")
+        candidate_id = projected.get("candidate_id")
+        condition_id = projected.get("condition_id")
+        signal_key = (run_id, str(signal_id)) if signal_id else None
+        candidate_key = (run_id, str(candidate_id)) if candidate_id else None
+        condition_key = (run_id, str(condition_id)) if condition_id else None
+        if signal_key and signal_key in required_signal_ids:
+            by_signal[signal_key].append(projected)
+        if candidate_key and candidate_key in required_candidate_ids:
+            by_candidate[candidate_key].append(projected)
+        if condition_key and condition_key in required_condition_ids:
+            timestamp = _parse_ts(projected.get("timestamp_utc"))
+            if timestamp:
+                by_condition[condition_key].append((timestamp, projected))
+
+    for values in by_condition.values():
+        values.sort(key=lambda item: item[0])
+
+    stats = {
+        "decision_source_mode": "SLIM_INDEX",
+        "decision_slim_index_root": str(index_root),
+        "decision_slim_index_schema_version": validation["schema_version"],
+        "decision_slim_index_freshness_status": validation["freshness_status"],
+        "decision_slim_index_rows_loaded": len(loaded_rows),
+        "decision_rows_seen": 0,
+        "decision_rows_parsed": 0,
+        "decision_rows_retained": len(loaded_rows),
+        "decision_rows_skipped_run_id": 0,
+        "decision_rows_skipped_key": 0,
+        "decision_retention_rate": 1.0 if loaded_rows else 0.0,
+        "required_run_id_count": len(required_run_ids),
+        "required_condition_id_count": len(_stringify_required(required_condition_ids)),
+        "required_signal_id_count": len(_stringify_required(required_signal_ids)),
+        "required_candidate_id_count": len(_stringify_required(required_candidate_ids)),
+        "memory_guard_status": "OK",
+    }
     return {"by_signal": by_signal, "by_candidate": by_candidate, "by_condition": by_condition, "stats": stats}
 
 
@@ -727,6 +936,7 @@ def build_joined_records(
     max_decision_rows_loaded: int = 250000,
     progress_every_files: int = 5,
     progress_every_rows: int = 250000,
+    decision_slim_index_root: str | Path | None = None,
 ) -> dict[str, Any]:
     output_path = Path(output_dir)
     if not is_safe_scratch_path(output_path):
@@ -735,17 +945,28 @@ def build_joined_records(
     closes = _load_execution_closes(Path(execution_journal_root), max_records)
     trade_indexes = _load_trade_indexes(Path(trade_journal_root))
     requirements = _collect_decision_requirements(closes, trade_indexes)
-    decision_indexes = _load_decision_indexes(
-        Path(decision_log_root),
-        requirements["run_ids"],
-        requirements["signal_ids"],
-        requirements["candidate_ids"],
-        requirements["condition_ids"],
-        max_decision_rows_loaded,
-        progress_every_files,
-        progress_every_rows,
-        output_path / "joined_records_progress.json",
-    )
+    if decision_slim_index_root is not None:
+        decision_indexes = _load_decision_indexes_from_slim_index(
+            Path(decision_slim_index_root),
+            Path(decision_log_root),
+            requirements["run_ids"],
+            requirements["signal_ids"],
+            requirements["candidate_ids"],
+            requirements["condition_ids"],
+            max_decision_rows_loaded,
+        )
+    else:
+        decision_indexes = _load_decision_indexes(
+            Path(decision_log_root),
+            requirements["run_ids"],
+            requirements["signal_ids"],
+            requirements["candidate_ids"],
+            requirements["condition_ids"],
+            max_decision_rows_loaded,
+            progress_every_files,
+            progress_every_rows,
+            output_path / "joined_records_progress.json",
+        )
 
     records: list[dict[str, Any]] = []
     source_hash_mismatch_count = 0
@@ -786,6 +1007,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-decision-rows-loaded", type=int, default=250000)
     parser.add_argument("--progress-every-files", type=int, default=5)
     parser.add_argument("--progress-every-rows", type=int, default=250000)
+    parser.add_argument("--decision-slim-index-root", type=Path, default=None)
     return parser
 
 
@@ -802,6 +1024,7 @@ def main(argv: list[str] | None = None) -> int:
         max_decision_rows_loaded=args.max_decision_rows_loaded,
         progress_every_files=args.progress_every_files,
         progress_every_rows=args.progress_every_rows,
+        decision_slim_index_root=args.decision_slim_index_root,
     )
     print(_json_dumps(report))
     return 0

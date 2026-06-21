@@ -4,6 +4,7 @@ import hashlib
 import json
 import ast
 import shutil
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -122,6 +123,90 @@ def _read_output(output_dir: Path) -> tuple[list[dict], dict]:
     rows = [json.loads(line) for line in (output_dir / "joined_records.jsonl").read_text(encoding="utf-8").splitlines()]
     report = json.loads((output_dir / "joined_records_report.json").read_text(encoding="utf-8"))
     return rows, report
+
+
+def _write_slim_index(index_root: Path, decision_root: Path, rows: list[dict]) -> Path:
+    index_root.mkdir(parents=True, exist_ok=True)
+    sqlite_path = index_root / "decision_log_slim.sqlite"
+    conn = sqlite3.connect(sqlite_path)
+    try:
+        conn.executescript(
+            """
+            CREATE TABLE decisions (
+              id INTEGER PRIMARY KEY,
+              timestamp_utc TEXT,
+              run_id TEXT,
+              signal_id TEXT,
+              candidate_id TEXT,
+              condition_id TEXT,
+              edge REAL,
+              ev REAL,
+              ev_after_spread REAL,
+              true_probability REAL,
+              volatility_regime TEXT,
+              trend_regime TEXT,
+              source_file TEXT,
+              source_line INTEGER
+            );
+            CREATE INDEX idx_run_signal ON decisions(run_id, signal_id);
+            CREATE INDEX idx_run_candidate ON decisions(run_id, candidate_id);
+            CREATE INDEX idx_run_condition_time ON decisions(run_id, condition_id, timestamp_utc);
+            """
+        )
+        for row in rows:
+            payload = row.get("payload", {})
+            conn.execute(
+                """
+                INSERT INTO decisions (
+                    timestamp_utc, run_id, signal_id, candidate_id, condition_id,
+                    edge, ev, ev_after_spread, true_probability, volatility_regime,
+                    trend_regime, source_file, source_line
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    row.get("timestamp_utc"),
+                    row.get("run_id"),
+                    payload.get("signal_id") if "signal_id" in payload else row.get("signal_id"),
+                    payload.get("candidate_id") if "candidate_id" in payload else row.get("candidate_id"),
+                    payload.get("condition_id") if "condition_id" in payload else row.get("condition_id"),
+                    payload.get("edge") if "edge" in payload else row.get("edge"),
+                    payload.get("ev") if "ev" in payload else row.get("ev"),
+                    payload.get("ev_after_spread") if "ev_after_spread" in payload else row.get("ev_after_spread"),
+                    payload.get("true_probability") if "true_probability" in payload else row.get("true_probability"),
+                    payload.get("volatility_regime") if "volatility_regime" in payload else row.get("volatility_regime"),
+                    payload.get("trend_regime") if "trend_regime" in payload else row.get("trend_regime"),
+                    str(decision_root / "2026-06-21.jsonl"),
+                    1,
+                ),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+    source_files = []
+    for path in sorted(decision_root.glob("*.jsonl")):
+        stat = path.stat()
+        source_files.append({"filename": str(path), "size_bytes": stat.st_size, "mtime_ns": stat.st_mtime_ns})
+    (index_root / "decision_log_slim_manifest.json").write_text(
+        json.dumps(
+            {
+                "schema_version": "decision_log_slim_index.v1",
+                "created_at_utc": "2026-06-21T00:00:00Z",
+                "decision_log_root": str(decision_root),
+                "files_indexed": len(source_files),
+                "rows_seen": len(rows),
+                "rows_inserted": len(rows),
+                "malformed_rows": 0,
+                "sqlite_path": "decision_log_slim.sqlite",
+                "source_files": source_files,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return index_root
 
 
 def test_join_by_signal_id(tmp_path: Path) -> None:
@@ -508,6 +593,101 @@ def test_cli_writes_expected_outputs(tmp_path: Path) -> None:
     assert (output_dir / "joined_records_report.json").exists()
     assert not (output_dir / "joined_records.jsonl.tmp").exists()
     assert not (output_dir / "joined_records_report.json.tmp").exists()
+
+
+def test_slim_index_lookup_by_signal_id(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [_decision_row()])
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir, decision_slim_index_root=index_root)
+
+    rows, report = _read_output(output_dir)
+    assert rows[0]["join_status"] == "JOINED_SIGNAL_ID"
+    assert rows[0]["edge"] == 0.07
+    assert report["decision_source_mode"] == "SLIM_INDEX"
+    assert report["decision_rows_retained"] == 1
+
+
+def test_slim_index_lookup_by_candidate_id(tmp_path: Path) -> None:
+    decision = _decision_row(signal_id=None, candidate_id="candidate_1")
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(
+        tmp_path,
+        decision=decision,
+        open_payload={"signal_id": None},
+        close_payload={"signal_id": None},
+    )
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [decision])
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir, decision_slim_index_root=index_root)
+
+    rows, report = _read_output(output_dir)
+    assert rows[0]["join_status"] == "JOINED_CANDIDATE_ID"
+    assert report["decision_source_mode"] == "SLIM_INDEX"
+
+
+def test_slim_index_lookup_by_condition_id_nearest_timestamp(tmp_path: Path) -> None:
+    decision = _decision_row(signal_id=None, candidate_id=None, timestamp="2026-06-21T00:01:00Z")
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(
+        tmp_path,
+        decision=decision,
+        open_payload={"signal_id": None, "candidate_id": None},
+        close_payload={"signal_id": None, "candidate_id": None},
+    )
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [decision])
+
+    build_joined_records(execution_root, trade_root, decision_root, output_dir, decision_slim_index_root=index_root)
+
+    rows, report = _read_output(output_dir)
+    assert rows[0]["join_status"] == "JOINED_NEAREST_CONDITION"
+    assert rows[0]["join_offset_seconds"] == 60.0
+    assert report["decision_source_mode"] == "SLIM_INDEX"
+
+
+def test_slim_index_missing_sqlite_fails_closed(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [_decision_row()])
+    (index_root / "decision_log_slim.sqlite").unlink()
+
+    with pytest.raises(ValueError, match="decision_log_slim.sqlite"):
+        build_joined_records(execution_root, trade_root, decision_root, output_dir, decision_slim_index_root=index_root)
+
+
+def test_slim_index_missing_manifest_fails_closed(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [_decision_row()])
+    (index_root / "decision_log_slim_manifest.json").unlink()
+
+    with pytest.raises(ValueError, match="decision_log_slim_manifest.json"):
+        build_joined_records(execution_root, trade_root, decision_root, output_dir, decision_slim_index_root=index_root)
+
+
+def test_slim_index_manifest_schema_mismatch_fails_closed(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, output_dir = _write_basic_fixture(tmp_path)
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [_decision_row()])
+    manifest_path = index_root / "decision_log_slim_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["schema_version"] = "wrong"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="schema_version"):
+        build_joined_records(execution_root, trade_root, decision_root, output_dir, decision_slim_index_root=index_root)
+
+
+def test_slim_index_output_matches_jsonl_mode_for_identical_fixture(tmp_path: Path) -> None:
+    execution_root, trade_root, decision_root, raw_output = _write_basic_fixture(tmp_path)
+    slim_output = tmp_path / "scratch" / "joined_records_builder" / "slim_output"
+    index_root = _write_slim_index(tmp_path / "scratch" / "decision_slim" / "output", decision_root, [_decision_row()])
+
+    build_joined_records(execution_root, trade_root, decision_root, raw_output, max_join_seconds=120)
+    build_joined_records(execution_root, trade_root, decision_root, slim_output, max_join_seconds=120, decision_slim_index_root=index_root)
+
+    raw_rows, raw_report = _read_output(raw_output)
+    slim_rows, slim_report = _read_output(slim_output)
+    assert slim_rows == raw_rows
+    assert slim_report["join_status_counts"] == raw_report["join_status_counts"]
+    assert slim_report["joined_closes"] == raw_report["joined_closes"]
+    assert slim_report["missing_edge_count"] == raw_report["missing_edge_count"]
+    assert slim_report["decision_source_mode"] == "SLIM_INDEX"
 
 
 def test_no_forbidden_imports() -> None:
