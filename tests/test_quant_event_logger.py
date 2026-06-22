@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+from config.settings import get_settings
 from utils.quant_event_logger import QuantEventLogger
 
 
@@ -14,6 +15,95 @@ def _fixed_now() -> datetime:
 
 def _read_jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+DISPLAY_ONLY_KEYS = [
+    "adaptive_cutoff_denied_reason",
+    "ask_price",
+    "best_market",
+    "best_side",
+    "book_to_tradable_seconds",
+    "clob_consecutive_failures",
+    "clob_last_error_category",
+    "clob_last_error_class",
+    "delta_multiplier",
+    "delta_regime",
+    "depth_ready",
+    "discovery_to_book_seconds",
+    "distance_from_ptb_pct",
+    "epoch_end_ts",
+    "epoch_start_ts",
+    "final_size",
+    "frequency_multiplier",
+    "last_successful_orderbook_age_ms",
+    "liquidity_ready",
+    "min_ev",
+    "mode",
+    "model_p_no",
+    "model_p_yes",
+    "no_orderbook_age_ms",
+    "p_no",
+    "p_yes",
+    "price_change_pct",
+    "price_velocity",
+    "realized_volatility",
+    "risk_plan_zero_diagnostics",
+    "score",
+    "total_discovery_to_tradable_seconds",
+    "yes_orderbook_age_ms",
+]
+
+
+def _display_payload() -> dict:
+    return {
+        "adaptive_cutoff_denied_reason": "test_reason",
+        "ask_price": 0.55,
+        "best_market": "btc-5m",
+        "best_side": "YES",
+        "book_to_tradable_seconds": 12,
+        "clob_consecutive_failures": 0,
+        "clob_last_error_category": "NONE",
+        "clob_last_error_class": "NONE",
+        "delta_multiplier": 1.5,
+        "delta_regime": "UP",
+        "depth_ready": True,
+        "discovery_to_book_seconds": 5,
+        "distance_from_ptb_pct": 0.02,
+        "epoch_end_ts": 1770000000,
+        "epoch_start_ts": 1769999700,
+        "final_size": 20.0,
+        "frequency_multiplier": 1.0,
+        "last_successful_orderbook_age_ms": 350,
+        "liquidity_ready": True,
+        "min_ev": 0.01,
+        "mode": "paper",
+        "model_p_no": 0.35,
+        "model_p_yes": 0.65,
+        "no_orderbook_age_ms": 120,
+        "p_no": 0.38,
+        "p_yes": 0.62,
+        "price_change_pct": 0.005,
+        "price_velocity": 0.0001,
+        "realized_volatility": 0.012,
+        "risk_plan_zero_diagnostics": {"reason": "zero_budget"},
+        "score": 45.2,
+        "total_discovery_to_tradable_seconds": 15,
+        "yes_orderbook_age_ms": 110,
+    }
+
+
+def _decision_payload_with_display() -> dict:
+    display = _display_payload()
+    return {
+        "ticker": "BTC",
+        "decision_type": "skipped",
+        "display": display,
+        **display,
+    }
+
+
+def _reset_settings_cache() -> None:
+    get_settings.cache_clear()
 
 
 def test_quant_event_logger_writes_required_jsonl_fields(tmp_path: Path) -> None:
@@ -155,6 +245,73 @@ def test_quant_event_logger_trace_identity_handles_missing_fields_safely(tmp_pat
     assert "condition_id" not in event["payload"]
     assert "token_id" not in event["payload"]
     assert "side" not in event["payload"]
+
+
+def test_slim_decision_logging_default_preserves_display(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("SLIM_DECISION_LOGGING", raising=False)
+    _reset_settings_cache()
+
+    logger = QuantEventLogger(base_dir=tmp_path, enabled=True, run_id="run-test", now=_fixed_now)
+    payload = _decision_payload_with_display()
+
+    try:
+        assert logger.log_decision(payload)
+    finally:
+        _reset_settings_cache()
+
+    emitted = _read_jsonl(tmp_path / "decision_log" / "2026-05-08.jsonl")[0]["payload"]
+    assert emitted["display"] == payload["display"]
+    for key in DISPLAY_ONLY_KEYS:
+        assert emitted[key] == payload[key]
+
+
+def test_slim_decision_logging_enabled_removes_display_and_keeps_promoted_keys(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SLIM_DECISION_LOGGING", "true")
+    _reset_settings_cache()
+
+    logger = QuantEventLogger(base_dir=tmp_path, enabled=True, run_id="run-test", now=_fixed_now)
+    payload = _decision_payload_with_display()
+    original_display = dict(payload["display"])
+
+    try:
+        assert logger.log_decision(payload)
+    finally:
+        _reset_settings_cache()
+
+    emitted = _read_jsonl(tmp_path / "decision_log" / "2026-05-08.jsonl")[0]["payload"]
+    assert "display" not in emitted
+    assert payload["display"] == original_display
+    for key in DISPLAY_ONLY_KEYS:
+        assert emitted[key] == payload[key]
+
+
+def test_slim_decision_logging_preserves_display_for_non_decision_categories(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv("SLIM_DECISION_LOGGING", "true")
+    _reset_settings_cache()
+
+    logger = QuantEventLogger(base_dir=tmp_path, enabled=True, run_id="run-test", now=_fixed_now)
+    display = {"trend_regime": "up", "score": 42}
+
+    try:
+        assert logger.log_market_snapshot({"asset": "BTC", "display": display})
+        assert logger.log_risk_event({"reason": "risk_check", "display": display})
+        assert logger.log_research_snapshot({"topic": "schema_slimming", "display": display})
+    finally:
+        _reset_settings_cache()
+
+    market_payload = _read_jsonl(tmp_path / "market_snapshots" / "2026-05-08.jsonl")[0]["payload"]
+    risk_payload = _read_jsonl(tmp_path / "risk_log" / "2026-05-08.jsonl")[0]["payload"]
+    research_payload = _read_jsonl(tmp_path / "research_log" / "2026-05-08.jsonl")[0]["payload"]
+
+    assert market_payload["display"] == display
+    assert risk_payload["display"] == display
+    assert research_payload["display"] == display
 
 
 def test_market_observation_key_helper_resolves_epoch_aliases() -> None:

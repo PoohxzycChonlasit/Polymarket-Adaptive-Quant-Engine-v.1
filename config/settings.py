@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     research_data_enabled: bool = True
     quant_data_dir: str = "runtime/quant_data"
     quant_event_schema_version: str = "1.0"
+    slim_decision_logging: bool = False
     # --- Hybrid Phase v1 settings ---
     hybrid_phase_v1_enabled: bool = True
     research_decision_snapshots_enabled: bool = True

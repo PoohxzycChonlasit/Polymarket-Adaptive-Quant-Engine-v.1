@@ -102,6 +102,7 @@ class QuantEventLogger:
         self.run_id = run_id or f"{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{os.getpid()}_{uuid.uuid4().hex[:8]}"
         self.source_module = source_module
         self.schema_version = schema_version or getattr(settings, "quant_event_schema_version", "1.0")
+        self.slim_decision_logging = bool(getattr(settings, "slim_decision_logging", False))
         self._now = now or (lambda: datetime.now(timezone.utc))
         self._disabled_categories: set[str] = set()
 
@@ -113,6 +114,9 @@ class QuantEventLogger:
         return self._write_event("market_snapshot", payload)
 
     def log_decision(self, payload: dict[str, Any] | None = None) -> bool:
+        if self.slim_decision_logging and isinstance(payload, dict):
+            payload = dict(payload)
+            payload.pop("display", None)
         return self._write_event("decision", payload)
 
     def log_execution(self, payload: dict[str, Any] | None = None) -> bool:
