@@ -164,13 +164,218 @@ def test_large_file_estimation_uses_bounded_sample(monkeypatch, tmp_path: Path) 
     assert candidate["original_size_bytes"] == len(oversized)
 
 
-def test_compress_and_restore_modes_are_safe_stubs(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    with pytest.raises(SystemExit) as compress_exit:
-        main(["--compress", "--age-days", "7", "--algorithm", "gzip", "--runtime-root", str(tmp_path / "runtime")])
-    assert compress_exit.value.code == 2
-    assert "not implemented" in capsys.readouterr().err.lower()
+def test_gzip_compress_roundtrip_removes_source_after_verification(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    _write(source, "{\"a\":1}\n{\"b\":2}\n")
 
-    with pytest.raises(SystemExit) as restore_exit:
-        main(["--restore", "--age-days", "7", "--algorithm", "gzip", "--runtime-root", str(tmp_path / "runtime")])
-    assert restore_exit.value.code == 2
-    assert "not implemented" in capsys.readouterr().err.lower()
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+
+    archive = source.with_name(source.name + ".gz")
+    assert not source.exists()
+    assert archive.exists()
+    record = manifest["records"][0]
+    assert record["status"] == "compressed"
+    assert record["line_count_before"] == 2
+    assert record["line_count_after_decompress"] == 2
+    assert record["source_sha256_before"] == record["source_sha256_after"]
+    assert record["verified_before_source_remove"] is True
+    assert record["source_removed"] is True
+
+
+def test_restore_roundtrip_recreates_original_jsonl_without_removing_archive(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    original = "{\"a\":1}\n{\"b\":2}\n"
+    _write(source, original)
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+    archive = source.with_name(source.name + ".gz")
+
+    restore_report = compressor.restore_from_manifest(
+        manifest=manifest,
+        max_files=1,
+        allow_overwrite=False,
+        verify_only=False,
+    )
+
+    assert source.read_text(encoding="utf-8") == original
+    assert archive.exists()
+    record = restore_report["records"][0]
+    assert record["status"] == "restored"
+    assert record["restored_sha256"] == manifest["records"][0]["source_sha256_before"]
+    assert record["line_count_restored"] == manifest["records"][0]["line_count_before"]
+
+
+def test_verify_only_restore_validates_without_recreating_jsonl(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    _write(source, "{\"a\":1}\n")
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+    archive = source.with_name(source.name + ".gz")
+
+    restore_report = compressor.restore_from_manifest(
+        manifest=manifest,
+        max_files=1,
+        allow_overwrite=False,
+        verify_only=True,
+    )
+
+    assert not source.exists()
+    assert archive.exists()
+    assert not source.with_name(source.name + ".restore.tmp").exists()
+    assert restore_report["records"][0]["status"] == "verified"
+
+
+def test_compress_rejects_existing_tmp_without_cleanup_flag(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    _write(source, "{\"a\":1}\n")
+    tmp_archive = source.with_name(source.name + ".gz.tmp")
+    _write(tmp_archive, "partial")
+
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+        cleanup_tmp=False,
+    )
+
+    assert source.exists()
+    assert tmp_archive.exists()
+    assert manifest["records"][0]["status"] == "rejected"
+    assert manifest["records"][0]["reason"] == "tmp_exists"
+
+
+def test_restore_rejects_existing_jsonl_without_allow_overwrite(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    _write(source, "{\"a\":1}\n")
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+    source.write_text("existing replacement\n", encoding="utf-8")
+
+    report = compressor.restore_from_manifest(
+        manifest=manifest,
+        max_files=1,
+        allow_overwrite=False,
+        verify_only=False,
+    )
+
+    assert report["records"][0]["status"] == "rejected"
+    assert report["records"][0]["reason"] == "restore_path_exists"
+    assert source.read_text(encoding="utf-8") == "existing replacement\n"
+
+
+def test_compress_manifest_schema_is_valid(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    _write(source, "{\"a\":1}\n")
+
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+
+    assert manifest["schema_version"] == "2.0"
+    assert manifest["mode"] == "compress"
+    assert manifest["algorithm"] == "gzip"
+    assert manifest["summary"]["compressed_count"] == 1
+    assert manifest["summary"]["rejected_count"] == 0
+    assert manifest["records"][0]["archive_sha256"]
+    assert manifest["records"][0]["source_sha256_before"]
+
+
+def test_compress_still_excludes_current_day(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-22.jsonl"
+    _write(source, "{\"a\":1}\n")
+
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=1,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+
+    assert source.exists()
+    assert not source.with_name(source.name + ".gz").exists()
+    assert manifest["records"][0]["status"] == "rejected"
+    assert manifest["records"][0]["reason"] == "current_utc_day"
+
+
+def test_compress_cli_requires_max_files(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc:
+        main([
+            "--compress",
+            "--age-days",
+            "7",
+            "--algorithm",
+            "gzip",
+            "--runtime-root",
+            str(tmp_path / "runtime"),
+        ])
+    assert exc.value.code == 2
+    assert "max-files" in capsys.readouterr().err.lower()
+
+
+def test_restore_cli_reads_manifest_path(tmp_path: Path) -> None:
+    source = tmp_path / "runtime" / "quant_data" / "risk_log" / "2026-06-14.jsonl"
+    _write(source, "{\"a\":1}\n")
+    manifest = compressor.compress_candidates(
+        runtime_root=tmp_path / "runtime",
+        manifest_root=tmp_path / "runtime" / "storage_manifests" / "compress",
+        age_days=7,
+        algorithm="gzip",
+        today=date(2026, 6, 22),
+        max_files=1,
+        one_file=source,
+    )
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = main([
+        "--restore",
+        "--manifest",
+        str(manifest_path),
+        "--max-files",
+        "1",
+    ])
+
+    assert result == 0
+    assert source.exists()
