@@ -1252,6 +1252,26 @@ class PolymarketTrader:
                 enriched_payload = self._phase2_complete_lifecycle_observability(raw_payload)
             else:
                 enriched_payload = raw_payload
+
+            if event_method == "log_decision":
+                # Promote 33 display-only keys from payload["display"] to payload root if missing
+                display_dict = enriched_payload.get("display")
+                if isinstance(display_dict, dict):
+                    display_only_keys = [
+                        "adaptive_cutoff_denied_reason", "ask_price", "best_market", "best_side",
+                        "book_to_tradable_seconds", "clob_consecutive_failures", "clob_last_error_category",
+                        "clob_last_error_class", "delta_multiplier", "delta_regime", "depth_ready",
+                        "discovery_to_book_seconds", "distance_from_ptb_pct", "epoch_end_ts", "epoch_start_ts",
+                        "final_size", "frequency_multiplier", "last_successful_orderbook_age_ms",
+                        "liquidity_ready", "min_ev", "mode", "model_p_no", "model_p_yes",
+                        "no_orderbook_age_ms", "p_no", "p_yes", "price_change_pct", "price_velocity",
+                        "realized_volatility", "risk_plan_zero_diagnostics", "score",
+                        "total_discovery_to_tradable_seconds", "yes_orderbook_age_ms"
+                    ]
+                    for key in display_only_keys:
+                        if key in display_dict and key not in enriched_payload:
+                            enriched_payload[key] = display_dict[key]
+
             display_payload = self._display_payload_with_candidate_trace_identity(enriched_payload)
             emitted = bool(method(display_payload))
             self._observability_health_display_state = self._observability_health_from_payload(
