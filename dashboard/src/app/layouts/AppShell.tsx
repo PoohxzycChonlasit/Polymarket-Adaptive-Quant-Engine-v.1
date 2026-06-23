@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
 import { StatusBadge } from "../../components/badges/StatusBadge";
+import { Sidebar } from "../../components/navigation/Sidebar";
+import { Topbar } from "../../components/navigation/Topbar";
 import { ReadOnlyBanner } from "../../components/common/ReadOnlyBanner";
 import type { DashboardState } from "../../types/dashboard";
 import { getStateTone, getValue } from "../../utils/guards";
@@ -75,7 +77,13 @@ export function AppShell({
       <Header state={state} isFetching={isFetching} apiStatus={apiStatus} />
       {stateError && state ? <div className="warning-banner">Refresh failed; showing last successful dashboard state.</div> : null}
       <WarningBanner state={state} />
-      {children}
+      <div className="dashboard-layout">
+        <Sidebar />
+        <div className="dashboard-content">
+          <Topbar stateStatus={state?.meta?.state_status} apiStatus={apiStatus} isFetching={isFetching} />
+          {children}
+        </div>
+      </div>
       <footer className="app-footer">
         <span>No trading buttons. No runtime controls. No config editing. HTTP polling only.</span>
         <span>Backend target: http://127.0.0.1:8000/api/dashboard/state</span>

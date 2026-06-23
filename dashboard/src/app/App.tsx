@@ -1,6 +1,6 @@
 import { AppShell, ApiOffline } from "./layouts/AppShell";
+import { AppRoutes } from "./router/AppRouter";
 import { useDashboardState } from "../hooks/useDashboardState";
-import { OverviewPage } from "../pages/overview/OverviewPage";
 
 export default function App() {
   const { alerts, healthQuery, state, stateQuery } = useDashboardState();
@@ -17,7 +17,7 @@ export default function App() {
       stateError={stateQuery.isError}
     >
       {stateQuery.isLoading ? <div className="loading-card">Loading dashboard state...</div> : null}
-      <OverviewPage state={state} alerts={alerts} />
+      <AppRoutes state={state} alerts={alerts} />
     </AppShell>
   );
 }

@@ -25,6 +25,7 @@ export interface DashboardState {
   trades?: {
     today?: Record<string, unknown>;
     latest_report?: Record<string, unknown>;
+    recent?: Record<string, unknown>[];
   };
   risk?: Record<string, unknown>;
   health?: {
