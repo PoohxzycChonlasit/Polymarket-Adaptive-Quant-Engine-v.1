@@ -222,6 +222,80 @@ export interface LifecycleAnalytics {
   alerts?: Record<string, unknown>[];
 }
 
+export interface RegimeLeaderboardRow {
+  regime: string;
+  scanned: number;
+  entries: number;
+  entry_rate: number;
+  no_entries: number;
+  no_entry_rate: number;
+  risk_rejections: number;
+  risk_rejection_rate: number;
+  net_pnl: number;
+  expectancy: number;
+  win_rate: number;
+  profit_factor: number;
+  verdict: string;
+}
+
+export interface RegimeEntryRateRow {
+  regime: string;
+  entry_rate: number;
+  entries: number;
+  scanned: number;
+}
+
+export interface RegimeNoEntryRow {
+  regime: string;
+  no_entry_rate: number;
+  no_entries: number;
+  scanned: number;
+}
+
+export interface RegimeRiskRejectRow {
+  regime: string;
+  risk_rejection_rate: number;
+  rejections: number;
+  skipped: number;
+}
+
+export interface RegimeExpectancyRow {
+  regime: string;
+  expectancy: number;
+  net_pnl: number;
+}
+
+export interface RegimeCandidateLossRow {
+  regime: string;
+  stage: string;
+  lost: number;
+}
+
+export interface RegimeRecommendationRow {
+  regime: string;
+  reason: string;
+}
+
+export interface RegimeAnalytics {
+  status?: "OK" | "PARTIAL" | "MISSING" | string;
+  summary?: {
+    best_regime?: string;
+    worst_regime?: string;
+    highest_entry_rate_regime?: string;
+    highest_no_entry_regime?: string;
+    highest_risk_reject_regime?: string;
+  };
+  leaderboard?: RegimeLeaderboardRow[];
+  entry_rate?: RegimeEntryRateRow[];
+  no_entry_rate?: RegimeNoEntryRow[];
+  risk_reject_rate?: RegimeRiskRejectRow[];
+  expectancy?: RegimeExpectancyRow[];
+  candidate_loss?: RegimeCandidateLossRow[];
+  recommended_regimes?: RegimeRecommendationRow[];
+  avoid_regimes?: RegimeRecommendationRow[];
+  alerts?: Record<string, unknown>[];
+}
+
 export interface ResearchAnalytics {
   status?: "OK" | "PARTIAL" | "MISSING" | string;
   generated_at?: string;
@@ -249,6 +323,7 @@ export interface ResearchAnalytics {
   no_entry_analytics?: NoEntryAnalytics;
   session_analytics?: SessionAnalytics;
   lifecycle_analytics?: LifecycleAnalytics;
+  regime_analytics?: RegimeAnalytics;
   alerts?: AlertRecord[];
 }
 

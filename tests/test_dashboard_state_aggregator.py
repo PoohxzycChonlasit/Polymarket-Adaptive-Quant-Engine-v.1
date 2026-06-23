@@ -770,3 +770,128 @@ def test_lifecycle_analytics_stage_loss_non_negative(tmp_path: Path) -> None:
 
     for loss in lc_an["stage_losses"]:
         assert loss["lost"] >= 0
+
+
+def test_regime_analytics_when_reports_exist(tmp_path: Path) -> None:
+    # 1. Create research_exports/canonical_regime_enriched_trades_v1.csv
+    exports_dir = tmp_path / "research_exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    csv_file = exports_dir / "canonical_regime_enriched_trades_v1.csv"
+    csv_file.write_text(
+        "market_regime,pnl_usdc,outcome_win_loss\n"
+        "TREND_UP,10.0,WIN\n"
+        "TREND_UP,-5.0,LOSS\n"
+        "TREND_DOWN,-2.0,LOSS\n",
+        encoding="utf-8"
+    )
+
+    # 2. Create reports/session_runtime_evaluation_2026-06-23.json
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    _write_json(
+        reports_dir / "session_runtime_evaluation_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "regime_probability_summary": {
+                "market_regimes": [["TREND_UP", 10], ["TREND_DOWN", 5]],
+                "skip_decisions_by_regime": {"TREND_UP": 8, "TREND_DOWN": 4},
+                "enter_candidates_by_regime": {"TREND_UP": 2, "TREND_DOWN": 1},
+                "skip_reasons_by_regime": {
+                    "TREND_UP": [["confidence_too_low", 4], ["risk_plan_zero", 4]],
+                    "TREND_DOWN": [["ev_below_threshold", 4]]
+                }
+            }
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    reg_an = state["research_analytics"]["regime_analytics"]
+
+    assert reg_an["status"] == "OK"
+    assert reg_an["summary"]["best_regime"] == "TREND_UP"
+    assert reg_an["summary"]["worst_regime"] == "TREND_DOWN"
+
+    leaderboard = {item["regime"]: item for item in reg_an["leaderboard"]}
+    assert "TREND_UP" in leaderboard
+    assert "TREND_DOWN" in leaderboard
+
+    # Check TREND_UP
+    trend_up = leaderboard["TREND_UP"]
+    assert trend_up["scanned"] == 10
+    assert trend_up["entries"] == 2
+    assert trend_up["entry_rate"] == 0.2
+    assert trend_up["no_entries"] == 8
+    assert trend_up["risk_rejections"] == 4
+    assert trend_up["risk_rejection_rate"] == 0.5
+    assert trend_up["net_pnl"] == 5.0
+    assert trend_up["expectancy"] == 2.5
+    assert trend_up["win_rate"] == 0.5
+
+    # Check recommended/avoid
+    assert any(item["regime"] == "TREND_UP" for item in reg_an["recommended_regimes"])
+
+
+def test_regime_analytics_when_reports_missing(tmp_path: Path) -> None:
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    reg_an = state["research_analytics"]["regime_analytics"]
+
+    assert reg_an["status"] == "MISSING"
+    assert reg_an["summary"]["best_regime"] == ""
+    assert reg_an["leaderboard"] == []
+
+
+def test_regime_analytics_when_reports_malformed(tmp_path: Path) -> None:
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "session_runtime_evaluation_2026-06-23.json").write_text("{bad json}", encoding="utf-8")
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    reg_an = state["research_analytics"]["regime_analytics"]
+
+    assert reg_an["status"] == "MISSING"
+
+
+def test_regime_analytics_sorting(tmp_path: Path) -> None:
+    exports_dir = tmp_path / "research_exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    csv_file = exports_dir / "canonical_regime_enriched_trades_v1.csv"
+    csv_file.write_text(
+        "market_regime,pnl_usdc,outcome_win_loss\n"
+        "TREND_UP,-10.0,LOSS\n"
+        "TREND_DOWN,15.0,WIN\n"
+        "SIDEWAY,2.0,WIN\n",
+        encoding="utf-8"
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    reg_an = state["research_analytics"]["regime_analytics"]
+
+    assert reg_an["status"] == "PARTIAL"  # No session evaluations, but CSV exists
+    leaderboard = reg_an["leaderboard"]
+    assert len(leaderboard) == 3
+
+    # Sorted by net_pnl descending
+    assert leaderboard[0]["regime"] == "TREND_DOWN"  # PnL = 15.0
+    assert leaderboard[1]["regime"] == "SIDEWAY"     # PnL = 2.0
+    assert leaderboard[2]["regime"] == "TREND_UP"     # PnL = -10.0
+
+
+def test_regime_analytics_rates_non_negative(tmp_path: Path) -> None:
+    exports_dir = tmp_path / "research_exports"
+    exports_dir.mkdir(parents=True, exist_ok=True)
+    csv_file = exports_dir / "canonical_regime_enriched_trades_v1.csv"
+    csv_file.write_text(
+        "market_regime,pnl_usdc,outcome_win_loss\n"
+        "TREND_UP,-5.0,LOSS\n",
+        encoding="utf-8"
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    reg_an = state["research_analytics"]["regime_analytics"]
+
+    for item in reg_an["leaderboard"]:
+        assert item["entry_rate"] >= 0.0
+        assert item["no_entry_rate"] >= 0.0
+        assert item["risk_rejection_rate"] >= 0.0
+        assert item["win_rate"] >= 0.0
+        assert item["profit_factor"] >= 0.0

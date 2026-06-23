@@ -29,7 +29,7 @@ const researchRoadmap = [
   {
     title: "Regime Analytics",
     description: "Market regime breakdowns, signal performance by regime, and volatility-state comparisons.",
-    status: "read-only planned",
+    status: "active v1",
   },
   {
     title: "Expectancy Analytics",
@@ -104,6 +104,9 @@ export function ResearchPage() {
 
   const lifecycleAnalytics = research?.lifecycle_analytics;
   const lifecycleSummary = lifecycleAnalytics?.summary;
+
+  const regimeAnalytics = research?.regime_analytics;
+  const regimeSummary = regimeAnalytics?.summary;
 
   return (
     <div className="flex flex-col gap-3">
@@ -875,6 +878,220 @@ export function ResearchPage() {
                   ]}
                   empty="No lifecycle history leaderboard."
                 />
+              </div>
+            </div>
+          </div>
+        )}
+      </SectionPanel>
+
+      <SectionPanel title="Regime Analytics V1" subtitle="Breakdown of system throughput, risk rejections, expectancy, and PnL by market regime.">
+        {!regimeAnalytics || regimeAnalytics.status === "MISSING" ? (
+          <EmptyState label="No regime analytics data is available. Ensure valid reports exist." />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Regime Summary KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 min-[1600px]:grid-cols-5 gap-3">
+              <MetricCard
+                label="Best Performing Regime"
+                value={regimeSummary?.best_regime || "N/A"}
+                helper="by net PnL"
+                tone="good"
+              />
+              <MetricCard
+                label="Worst Performing Regime"
+                value={regimeSummary?.worst_regime || "N/A"}
+                helper="by net PnL"
+                tone="bad"
+              />
+              <MetricCard
+                label="Highest Entry Rate"
+                value={regimeSummary?.highest_entry_rate_regime || "N/A"}
+                helper="max entries / scanned"
+              />
+              <MetricCard
+                label="Highest No-Entry Rate"
+                value={regimeSummary?.highest_no_entry_regime || "N/A"}
+                helper="max skips / scanned"
+              />
+              <MetricCard
+                label="Highest Risk Rejections"
+                value={regimeSummary?.highest_risk_reject_regime || "N/A"}
+                helper="max risk rejects"
+              />
+            </div>
+
+            {/* Regime Leaderboard */}
+            <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+              <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Regime Leaderboard</h3>
+              <DataTable
+                rows={(regimeAnalytics.leaderboard ?? []).map((row) => ({
+                  ...row,
+                  scanned: formatNumber(row.scanned),
+                  entries: formatNumber(row.entries),
+                  entry_rate: formatPercent(row.entry_rate),
+                  no_entries: formatNumber(row.no_entries),
+                  no_entry_rate: formatPercent(row.no_entry_rate),
+                  risk_rejections: formatNumber(row.risk_rejections),
+                  risk_rejection_rate: formatPercent(row.risk_rejection_rate),
+                  net_pnl: `$${formatNumber(row.net_pnl, 2)}`,
+                  expectancy: formatNumber(row.expectancy, 4),
+                  win_rate: formatPercent(row.win_rate),
+                  profit_factor: formatNumber(row.profit_factor, 2)
+                }))}
+                columns={[
+                  { key: "regime", label: "Market Regime" },
+                  { key: "scanned", label: "Scanned" },
+                  { key: "entries", label: "Entries" },
+                  { key: "entry_rate", label: "Entry Rate" },
+                  { key: "no_entries", label: "No-Entries" },
+                  { key: "no_entry_rate", label: "No-Entry Rate" },
+                  { key: "risk_rejections", label: "Risk Rejections" },
+                  { key: "risk_rejection_rate", label: "Risk Reject Rate" },
+                  { key: "net_pnl", label: "Net PnL" },
+                  { key: "expectancy", label: "Expectancy" },
+                  { key: "win_rate", label: "Win Rate" },
+                  { key: "profit_factor", label: "Profit Factor" },
+                  { key: "verdict", label: "Verdict" }
+                ]}
+                empty="No regime leaderboard available."
+              />
+            </div>
+
+            {/* Grid of Rates & Expectancy */}
+            <div className="grid grid-cols-1 min-[1400px]:grid-cols-2 gap-4">
+              {/* Entry Rate by Regime */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Entry Rate by Regime</h3>
+                <DataTable
+                  rows={(regimeAnalytics.entry_rate ?? []).map((row) => ({
+                    ...row,
+                    entry_rate: formatPercent(row.entry_rate),
+                    entries: formatNumber(row.entries),
+                    scanned: formatNumber(row.scanned)
+                  }))}
+                  columns={[
+                    { key: "regime", label: "Market Regime" },
+                    { key: "entry_rate", label: "Entry Rate" },
+                    { key: "entries", label: "Entries" },
+                    { key: "scanned", label: "Scanned" }
+                  ]}
+                  empty="No entry rate statistics available."
+                />
+              </div>
+
+              {/* No Entry Rate by Regime */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">No-Entry Rate by Regime</h3>
+                <DataTable
+                  rows={(regimeAnalytics.no_entry_rate ?? []).map((row) => ({
+                    ...row,
+                    no_entry_rate: formatPercent(row.no_entry_rate),
+                    no_entries: formatNumber(row.no_entries),
+                    scanned: formatNumber(row.scanned)
+                  }))}
+                  columns={[
+                    { key: "regime", label: "Market Regime" },
+                    { key: "no_entry_rate", label: "No-Entry Rate" },
+                    { key: "no_entries", label: "No-Entries" },
+                    { key: "scanned", label: "Scanned" }
+                  ]}
+                  empty="No no-entry rate statistics available."
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 min-[1400px]:grid-cols-2 gap-4">
+              {/* Risk Reject Rate by Regime */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Risk Rejection Rate by Regime</h3>
+                <DataTable
+                  rows={(regimeAnalytics.risk_reject_rate ?? []).map((row) => ({
+                    ...row,
+                    risk_rejection_rate: formatPercent(row.risk_rejection_rate),
+                    rejections: formatNumber(row.rejections),
+                    skipped: formatNumber(row.skipped)
+                  }))}
+                  columns={[
+                    { key: "regime", label: "Market Regime" },
+                    { key: "risk_rejection_rate", label: "Risk Reject Rate" },
+                    { key: "rejections", label: "Rejections" },
+                    { key: "skipped", label: "Skips" }
+                  ]}
+                  empty="No risk rejection rate statistics available."
+                />
+              </div>
+
+              {/* Expectancy by Regime */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Expectancy by Regime</h3>
+                <DataTable
+                  rows={(regimeAnalytics.expectancy ?? []).map((row) => ({
+                    ...row,
+                    expectancy: formatNumber(row.expectancy, 4),
+                    net_pnl: `$${formatNumber(row.net_pnl, 2)}`
+                  }))}
+                  columns={[
+                    { key: "regime", label: "Market Regime" },
+                    { key: "expectancy", label: "Expectancy" },
+                    { key: "net_pnl", label: "Net PnL" }
+                  ]}
+                  empty="No expectancy statistics available."
+                />
+              </div>
+            </div>
+
+            {/* Candidate Loss & Recommendations */}
+            <div className="grid grid-cols-1 min-[1400px]:grid-cols-2 gap-4">
+              {/* Candidate Loss by Stage */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Candidate Loss by Regime Stage</h3>
+                <DataTable
+                  rows={(regimeAnalytics.candidate_loss ?? []).map((row) => ({
+                    ...row,
+                    lost: formatNumber(row.lost)
+                  }))}
+                  columns={[
+                    { key: "regime", label: "Market Regime" },
+                    { key: "stage", label: "Pipeline Filter Stage" },
+                    { key: "lost", label: "Candidates Lost" }
+                  ]}
+                  empty="No candidate loss data available."
+                />
+              </div>
+
+              {/* Recommended & Avoid Regimes */}
+              <div className="flex flex-col gap-4">
+                <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm flex-1">
+                  <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-[#008f39] border-b border-[#d9d9d9] pb-2">Recommended Regimes</h3>
+                  {regimeAnalytics.recommended_regimes?.length ? (
+                    <div className="flex flex-col gap-2">
+                      {regimeAnalytics.recommended_regimes.map((rec) => (
+                        <div key={rec.regime} className="p-2 border border-[#d9d9d9] bg-[#e6f4ea]/10 rounded">
+                          <div className="font-bold text-[13px] text-[#008f39] font-mono">{rec.regime}</div>
+                          <div className="text-[12px] text-[#404040] mt-1">{rec.reason}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState label="No recommended regimes found." />
+                  )}
+                </div>
+
+                <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm flex-1">
+                  <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-[#c62828] border-b border-[#d9d9d9] pb-2">Regimes to Avoid</h3>
+                  {regimeAnalytics.avoid_regimes?.length ? (
+                    <div className="flex flex-col gap-2">
+                      {regimeAnalytics.avoid_regimes.map((rec) => (
+                        <div key={rec.regime} className="p-2 border border-[#d9d9d9] bg-[#fde8e8]/20 rounded">
+                          <div className="font-bold text-[13px] text-[#c62828] font-mono">{rec.regime}</div>
+                          <div className="text-[12px] text-[#404040] mt-1">{rec.reason}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState label="No regimes to avoid found." />
+                  )}
+                </div>
               </div>
             </div>
           </div>

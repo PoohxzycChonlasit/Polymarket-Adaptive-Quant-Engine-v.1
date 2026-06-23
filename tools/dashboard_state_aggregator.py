@@ -372,6 +372,25 @@ def _empty_state(root: Path, date: str, now: datetime) -> dict[str, Any]:
                 "leaderboard": [],
                 "alerts": []
             },
+            "regime_analytics": {
+                "status": "MISSING",
+                "summary": {
+                    "best_regime": "",
+                    "worst_regime": "",
+                    "highest_entry_rate_regime": "",
+                    "highest_no_entry_regime": "",
+                    "highest_risk_reject_regime": ""
+                },
+                "leaderboard": [],
+                "entry_rate": [],
+                "no_entry_rate": [],
+                "risk_reject_rate": [],
+                "expectancy": [],
+                "candidate_loss": [],
+                "recommended_regimes": [],
+                "avoid_regimes": [],
+                "alerts": []
+            },
             "alerts": [],
         },
         "alerts": {
@@ -1532,6 +1551,266 @@ def _extract_lifecycle_analytics(reports_dir: Path) -> dict[str, Any]:
     }
 
 
+def _extract_regime_analytics(reports_dir: Path, root_dir: Path) -> dict[str, Any]:
+    default_res = {
+        "status": "MISSING",
+        "summary": {
+            "best_regime": "",
+            "worst_regime": "",
+            "highest_entry_rate_regime": "",
+            "highest_no_entry_regime": "",
+            "highest_risk_reject_regime": ""
+        },
+        "leaderboard": [],
+        "entry_rate": [],
+        "no_entry_rate": [],
+        "risk_reject_rate": [],
+        "expectancy": [],
+        "candidate_loss": [],
+        "recommended_regimes": [],
+        "avoid_regimes": [],
+        "alerts": []
+    }
+
+    # 1. Parse CSV
+    regime_csv_data = {}
+    csv_path = root_dir / "research_exports" / "canonical_regime_enriched_trades_v1.csv"
+    if csv_path.exists():
+        try:
+            import csv
+            with csv_path.open("r", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    reg = row.get("market_regime", "UNKNOWN")
+                    if not reg:
+                        reg = "UNKNOWN"
+                    pnl = float(row.get("pnl_usdc", 0.0) or 0.0)
+                    win = row.get("outcome_win_loss", "") == "WIN"
+
+                    if reg not in regime_csv_data:
+                        regime_csv_data[reg] = {
+                            "trades": 0,
+                            "wins": 0,
+                            "losses": 0,
+                            "pnl": 0.0,
+                            "gross_profits": 0.0,
+                            "gross_losses": 0.0
+                        }
+                    stats = regime_csv_data[reg]
+                    stats["trades"] += 1
+                    if win:
+                        stats["wins"] += 1
+                        stats["gross_profits"] += pnl
+                    else:
+                        stats["losses"] += 1
+                        stats["gross_losses"] += abs(pnl)
+                    stats["pnl"] += pnl
+        except Exception:
+            pass
+
+    # 2. Parse session evaluations
+    regime_session_data = {}
+    try:
+        for p in reports_dir.glob("session_runtime_evaluation_*.json"):
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if not isinstance(rep, dict):
+                    continue
+                summary = rep.get("regime_probability_summary")
+                if not isinstance(summary, dict):
+                    continue
+
+                m_regimes = summary.get("market_regimes") or []
+                if isinstance(m_regimes, list):
+                    for item in m_regimes:
+                        if isinstance(item, list) and len(item) == 2:
+                            reg, count = item[0], item[1]
+                            regime_session_data.setdefault(reg, {}).setdefault("scanned", 0)
+                            regime_session_data[reg]["scanned"] += int(count)
+                elif isinstance(m_regimes, dict):
+                    for reg, count in m_regimes.items():
+                        regime_session_data.setdefault(reg, {}).setdefault("scanned", 0)
+                        regime_session_data[reg]["scanned"] += int(count)
+
+                skips = summary.get("skip_decisions_by_regime") or {}
+                if isinstance(skips, dict):
+                    for reg, count in skips.items():
+                        regime_session_data.setdefault(reg, {}).setdefault("skipped", 0)
+                        regime_session_data[reg]["skipped"] += int(count)
+
+                enters = summary.get("enter_candidates_by_regime") or {}
+                if isinstance(enters, dict):
+                    for reg, count in enters.items():
+                        regime_session_data.setdefault(reg, {}).setdefault("entered", 0)
+                        regime_session_data[reg]["entered"] += int(count)
+
+                reasons_by_reg = summary.get("skip_reasons_by_regime") or {}
+                if isinstance(reasons_by_reg, dict):
+                    for reg, reasons in reasons_by_reg.items():
+                        regime_session_data.setdefault(reg, {}).setdefault("risk_rejects", 0)
+                        regime_session_data.setdefault(reg, {}).setdefault("skipped_reasons", Counter())
+                        if isinstance(reasons, list):
+                            for r_item in reasons:
+                                if isinstance(r_item, list) and len(r_item) == 2:
+                                    reason, count = r_item[0], int(r_item[1])
+                                    regime_session_data[reg]["skipped_reasons"][reason] += count
+                                    r_lower = reason.lower()
+                                    if "risk" in r_lower or "lockdown" in r_lower or "defensive" in r_lower:
+                                        regime_session_data[reg]["risk_rejects"] += count
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    all_regimes = set(list(regime_csv_data.keys()) + list(regime_session_data.keys()))
+    if not all_regimes:
+        return default_res
+
+    leaderboard = []
+    entry_rates = []
+    no_entry_rates = []
+    risk_reject_rates = []
+    expectancies = []
+    candidate_losses = []
+
+    for reg in sorted(all_regimes):
+        csv_stats = regime_csv_data.get(reg, {})
+        sess_stats = regime_session_data.get(reg, {})
+
+        trades = csv_stats.get("trades", 0)
+        wins = csv_stats.get("wins", 0)
+        losses = csv_stats.get("losses", 0)
+        pnl = csv_stats.get("pnl", 0.0)
+        gross_profits = csv_stats.get("gross_profits", 0.0)
+        gross_losses = csv_stats.get("gross_losses", 0.0)
+
+        scanned = sess_stats.get("scanned", 0)
+        entered = sess_stats.get("entered", 0)
+        skipped = sess_stats.get("skipped", 0)
+        risk_rejects = sess_stats.get("risk_rejects", 0)
+
+        if scanned == 0 and trades > 0:
+            entered = trades
+            scanned = trades
+            skipped = 0
+
+        entry_rate = round(entered / scanned, 4) if scanned > 0 else 0.0
+        no_entry_rate = round(skipped / scanned, 4) if scanned > 0 else 0.0
+        risk_reject_rate = round(risk_rejects / skipped, 4) if skipped > 0 else 0.0
+
+        expectancy = round(pnl / trades, 4) if trades > 0 else 0.0
+        win_rate = round(wins / trades, 4) if trades > 0 else 0.0
+        profit_factor = round(gross_profits / gross_losses, 4) if gross_losses > 0 else round(gross_profits, 4) if gross_profits > 0 else 1.0
+
+        if expectancy > 0.01 and win_rate >= 0.5:
+            verdict = "TRADEABLE"
+        elif expectancy < -0.01 or risk_reject_rate > 0.3:
+            verdict = "AVOID"
+        else:
+            verdict = "WATCHLIST"
+
+        leaderboard.append({
+            "regime": reg,
+            "scanned": scanned,
+            "entries": entered,
+            "entry_rate": entry_rate,
+            "no_entries": skipped,
+            "no_entry_rate": no_entry_rate,
+            "risk_rejections": risk_rejects,
+            "risk_rejection_rate": risk_reject_rate,
+            "net_pnl": round(pnl, 4),
+            "expectancy": expectancy,
+            "win_rate": win_rate,
+            "profit_factor": profit_factor,
+            "verdict": verdict
+        })
+
+        entry_rates.append({
+            "regime": reg,
+            "entry_rate": entry_rate,
+            "entries": entered,
+            "scanned": scanned
+        })
+
+        no_entry_rates.append({
+            "regime": reg,
+            "no_entry_rate": no_entry_rate,
+            "no_entries": skipped,
+            "scanned": scanned
+        })
+
+        risk_reject_rates.append({
+            "regime": reg,
+            "risk_rejection_rate": risk_reject_rate,
+            "rejections": risk_rejects,
+            "skipped": skipped
+        })
+
+        expectancies.append({
+            "regime": reg,
+            "expectancy": expectancy,
+            "net_pnl": round(pnl, 4)
+        })
+
+        skipped_reasons = sess_stats.get("skipped_reasons", Counter())
+        for stage, count in skipped_reasons.items():
+            candidate_losses.append({
+                "regime": reg,
+                "stage": stage,
+                "lost": count
+            })
+
+    # Sort leaderboard by Net PnL descending
+    leaderboard.sort(key=lambda x: x["net_pnl"], reverse=True)
+
+    best_regime = leaderboard[0]["regime"] if leaderboard else ""
+    worst_regime = leaderboard[-1]["regime"] if leaderboard else ""
+    highest_entry_rate_regime = max(leaderboard, key=lambda x: x["entry_rate"])["regime"] if leaderboard else ""
+    highest_no_entry_regime = max(leaderboard, key=lambda x: x["no_entry_rate"])["regime"] if leaderboard else ""
+    highest_risk_reject_regime = max(leaderboard, key=lambda x: x["risk_rejection_rate"])["regime"] if leaderboard else ""
+
+    recommended_regimes = []
+    avoid_regimes = []
+
+    for item in leaderboard:
+        reg = item["regime"]
+        if item["verdict"] == "TRADEABLE":
+            recommended_regimes.append({
+                "regime": reg,
+                "reason": f"Expectancy is {item['expectancy']:.4f} with win rate {item['win_rate'] * 100:.1f}%."
+            })
+        elif item["verdict"] == "AVOID":
+            avoid_regimes.append({
+                "regime": reg,
+                "reason": f"Negative expectancy ({item['expectancy']:.4f}) or high risk reject rate ({item['risk_rejection_rate'] * 100:.1f}%)."
+            })
+
+    status = "OK"
+    if not regime_session_data:
+        status = "PARTIAL"
+
+    return {
+        "status": status,
+        "summary": {
+            "best_regime": best_regime,
+            "worst_regime": worst_regime,
+            "highest_entry_rate_regime": highest_entry_rate_regime,
+            "highest_no_entry_regime": highest_no_entry_regime,
+            "highest_risk_reject_regime": highest_risk_reject_regime
+        },
+        "leaderboard": leaderboard,
+        "entry_rate": entry_rates,
+        "no_entry_rate": no_entry_rates,
+        "risk_reject_rate": risk_reject_rates,
+        "expectancy": expectancies,
+        "candidate_loss": candidate_losses,
+        "recommended_regimes": recommended_regimes,
+        "avoid_regimes": avoid_regimes,
+        "alerts": []
+    }
+
+
 def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
     reports = root / "reports"
     found = False
@@ -1644,6 +1923,7 @@ def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
         _research_alert(state, "DATA_QUALITY_REPORT_UNREADABLE", str(quality_error), quality_path or reports)
 
     state["research_analytics"]["lifecycle_analytics"] = _extract_lifecycle_analytics(reports)
+    state["research_analytics"]["regime_analytics"] = _extract_regime_analytics(reports, root)
     return found
 
 
