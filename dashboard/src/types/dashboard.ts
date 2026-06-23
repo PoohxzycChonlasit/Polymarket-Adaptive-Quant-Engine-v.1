@@ -46,11 +46,43 @@ export interface DashboardState {
       [key: string]: unknown;
     };
   };
+  research_analytics?: ResearchAnalytics;
   alerts?: {
     active?: AlertRecord[];
     counts?: Record<string, number>;
     recent?: AlertRecord[];
   };
+}
+
+export interface ResearchReasonRow {
+  name?: string;
+  count?: number | null;
+}
+
+export interface ResearchAnalytics {
+  status?: "OK" | "PARTIAL" | "MISSING" | string;
+  generated_at?: string;
+  latest_research_state?: {
+    latest_run_id?: string | null;
+    replay_truth_maturity?: string | null;
+    direct_field_maturity?: string | null;
+    latest_replay_confidence?: string | null;
+    direct_field_rate?: number | null;
+    proxy_field_rate?: number | null;
+    unknown_lifecycle_rate?: number | null;
+    recommended_next_step?: string | null;
+    blind_spots?: string[];
+  };
+  candidate_loss_reasons?: ResearchReasonRow[];
+  lifecycle_bottlenecks?: ResearchReasonRow[];
+  ev_null_reasons?: ResearchReasonRow[];
+  reports?: {
+    replay?: Record<string, unknown>;
+    no_entry?: Record<string, unknown>;
+    session_runtime?: Record<string, unknown>;
+    data_quality?: Record<string, unknown>;
+  };
+  alerts?: AlertRecord[];
 }
 
 export interface AlertRecord {

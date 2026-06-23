@@ -273,6 +273,31 @@ def _empty_state(root: Path, date: str, now: datetime) -> dict[str, Any]:
             "latest_replay_report": {},
             "latest_no_entry_report": {},
         },
+        "research_analytics": {
+            "status": "MISSING",
+            "generated_at": _iso_z(now),
+            "latest_research_state": {
+                "latest_run_id": None,
+                "replay_truth_maturity": None,
+                "direct_field_maturity": None,
+                "latest_replay_confidence": None,
+                "direct_field_rate": None,
+                "proxy_field_rate": None,
+                "unknown_lifecycle_rate": None,
+                "recommended_next_step": None,
+                "blind_spots": [],
+            },
+            "candidate_loss_reasons": [],
+            "lifecycle_bottlenecks": [],
+            "ev_null_reasons": [],
+            "reports": {
+                "replay": {},
+                "no_entry": {},
+                "session_runtime": {},
+                "data_quality": {},
+            },
+            "alerts": [],
+        },
         "alerts": {
             "active": [],
             "recent": [],
@@ -722,6 +747,238 @@ def _apply_research_exports(state: dict[str, Any], root: Path) -> None:
     }
 
 
+def _research_alert(state: dict[str, Any], code: str, message: str, source: Path | str) -> None:
+    state["research_analytics"]["alerts"].append(
+        {
+            "severity": "warning",
+            "code": code,
+            "message": message,
+            "source": str(source),
+        }
+    )
+
+
+def _parse_research_count_item(line: str) -> dict[str, Any] | None:
+    text = line.strip()
+    if not text.startswith("- "):
+        return None
+    item = text[2:].strip()
+    if not item:
+        return None
+    if ":" not in item:
+        return {"name": item, "count": None}
+    name, raw_count = item.split(":", 1)
+    name = name.strip()
+    try:
+        count: int | None = int(raw_count.strip())
+    except ValueError:
+        count = None
+    return {"name": name, "count": count}
+
+
+def _parse_research_state_markdown(path: Path) -> tuple[dict[str, Any] | None, str | None]:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return None, "missing"
+    except Exception as exc:
+        return None, f"unreadable: {exc}"
+    if "\x00" in text:
+        return None, "contains_nul"
+
+    scalar_keys = {
+        "latest_run_id",
+        "replay_truth_maturity",
+        "direct_field_maturity",
+        "latest_replay_confidence",
+        "direct_field_rate",
+        "proxy_field_rate",
+        "unknown_lifecycle_rate",
+    }
+    parsed: dict[str, Any] = {
+        "latest_research_state": {
+            "latest_run_id": None,
+            "replay_truth_maturity": None,
+            "direct_field_maturity": None,
+            "latest_replay_confidence": None,
+            "direct_field_rate": None,
+            "proxy_field_rate": None,
+            "unknown_lifecycle_rate": None,
+            "recommended_next_step": None,
+            "blind_spots": [],
+        },
+        "candidate_loss_reasons": [],
+        "lifecycle_bottlenecks": [],
+        "ev_null_reasons": [],
+    }
+    section = ""
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("## "):
+            section = line[3:].strip().lower()
+            continue
+        if ":" in line and not line.startswith("- "):
+            key, value = line.split(":", 1)
+            key = key.strip()
+            value = value.strip()
+            if key in scalar_keys:
+                parsed["latest_research_state"][key] = _as_float(value) if key.endswith("_rate") else value
+            continue
+        if not line.startswith("- "):
+            continue
+        item_text = line[2:].strip()
+        if section == "top candidate loss reasons":
+            item = _parse_research_count_item(line)
+            if item:
+                parsed["candidate_loss_reasons"].append(item)
+        elif section == "top lifecycle bottlenecks":
+            item = _parse_research_count_item(line)
+            if item:
+                parsed["lifecycle_bottlenecks"].append(item)
+        elif section == "top ev null reasons":
+            item = _parse_research_count_item(line)
+            if item:
+                parsed["ev_null_reasons"].append(item)
+        elif section == "current blind spots" and item_text:
+            parsed["latest_research_state"]["blind_spots"].append(item_text)
+        elif section == "recommended next step" and item_text:
+            parsed["latest_research_state"]["recommended_next_step"] = item_text
+
+    if not any(_has_value(parsed["latest_research_state"].get(key)) for key in scalar_keys):
+        return parsed, "no_compact_fields"
+    return parsed, None
+
+
+def _safe_list_count(value: Any) -> int:
+    return len(value) if isinstance(value, list) else 0
+
+
+def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
+    reports = root / "reports"
+    found = False
+
+    replay_path = _latest_json_file(reports, "replay_report_*.json")
+    replay, replay_error = _read_json(replay_path) if replay_path else (None, "missing")
+    if replay:
+        found = True
+        phase2 = replay.get("phase2_coverage") if isinstance(replay.get("phase2_coverage"), dict) else {}
+        state["research_analytics"]["reports"]["replay"] = {
+            "path": str(replay_path),
+            "date_from": replay.get("date_from"),
+            "date_to": replay.get("date_to"),
+            "run_id": replay.get("run_id"),
+            "events_loaded": replay.get("events_loaded"),
+            "total_trades": replay.get("total_trades"),
+            "wins": replay.get("wins"),
+            "losses": replay.get("losses"),
+            "win_rate": replay.get("win_rate"),
+            "gross_pnl": replay.get("gross_pnl"),
+            "average_pnl": replay.get("average_pnl"),
+            "approved_decisions": replay.get("approved_decisions"),
+            "rejected_decisions": replay.get("rejected_decisions"),
+            "risk_reject_count": replay.get("risk_reject_count"),
+            "lifecycle_replay_confidence": replay.get("lifecycle_replay_confidence"),
+            "phase2_coverage_status": phase2.get("status"),
+            "missed_starter_candidate_count": _safe_list_count(replay.get("missed_starter_candidates")),
+            "top_skip_reasons": replay.get("top_skip_reasons", []),
+            "bad_json_lines": replay.get("bad_json_lines"),
+        }
+    elif replay_error != "missing":
+        _research_alert(state, "REPLAY_REPORT_UNREADABLE", str(replay_error), replay_path or reports)
+
+    no_entry_path = _latest_json_file(reports, "no_entry_report_*.json")
+    no_entry, no_entry_error = _read_json(no_entry_path) if no_entry_path else (None, "missing")
+    if no_entry:
+        found = True
+        state["research_analytics"]["reports"]["no_entry"] = {
+            "path": str(no_entry_path),
+            "date": no_entry.get("date"),
+            "total_scanned": no_entry.get("total_scanned"),
+            "total_entered": no_entry.get("total_entered"),
+            "total_skipped": no_entry.get("total_skipped"),
+            "root_cause_category": no_entry.get("root_cause_category"),
+            "root_cause_counts": no_entry.get("root_cause_counts", {}),
+            "root_cause_details": no_entry.get("root_cause_details", []),
+            "top_skip_reasons": no_entry.get("top_skip_reasons", []),
+            "recommendations": no_entry.get("recommendations", []),
+            "market_data_quality": no_entry.get("market_data_quality", {}),
+        }
+    elif no_entry_error != "missing":
+        _research_alert(state, "NO_ENTRY_REPORT_UNREADABLE", str(no_entry_error), no_entry_path or reports)
+
+    session_path = _latest_json_file(reports, "session_runtime_evaluation_*.json")
+    session, session_error = _read_json(session_path) if session_path else (None, "missing")
+    if session:
+        found = True
+        state["research_analytics"]["reports"]["session_runtime"] = {
+            "path": str(session_path),
+            "session_status": session.get("session_status"),
+            "primary_bottleneck": session.get("primary_bottleneck"),
+            "secondary_bottleneck": session.get("secondary_bottleneck"),
+            "scanned": session.get("scanned"),
+            "entered": session.get("entered"),
+            "skipped": session.get("skipped"),
+            "top_skip_reasons": session.get("top_skip_reasons", []),
+            "recommendations": session.get("recommendations", []),
+            "inventory_replay_readiness": session.get("inventory_replay_readiness", {}),
+            "timing_quality": session.get("timing_quality", {}),
+        }
+    elif session_error != "missing":
+        _research_alert(state, "SESSION_RUNTIME_REPORT_UNREADABLE", str(session_error), session_path or reports)
+
+    quality_path = _latest_json_file(reports, "quant_data_quality_*.json")
+    quality, quality_error = _read_json(quality_path) if quality_path else (None, "missing")
+    if quality:
+        found = True
+        replay_continuity = quality.get("replay_continuity") if isinstance(quality.get("replay_continuity"), dict) else {}
+        research_log_integrity = quality.get("research_log_integrity") if isinstance(quality.get("research_log_integrity"), dict) else {}
+        phase2 = quality.get("phase2_coverage") if isinstance(quality.get("phase2_coverage"), dict) else {}
+        state["research_analytics"]["reports"]["data_quality"] = {
+            "path": str(quality_path),
+            "ok": quality.get("ok"),
+            "files_scanned": quality.get("files_scanned"),
+            "lines_scanned": quality.get("lines_scanned"),
+            "valid_events": quality.get("valid_events"),
+            "bad_json_lines": quality.get("bad_json_lines"),
+            "missing_required_fields": quality.get("missing_required_fields"),
+            "invalid_timestamps": quality.get("invalid_timestamps"),
+            "invalid_event_types": quality.get("invalid_event_types"),
+            "invalid_modes": quality.get("invalid_modes"),
+            "invalid_numeric_fields": quality.get("invalid_numeric_fields"),
+            "empty_files": quality.get("empty_files"),
+            "unreadable_files": quality.get("unreadable_files"),
+            "replay_continuity_status": replay_continuity.get("status"),
+            "trustworthy_for_replay": replay_continuity.get("trustworthy_for_replay"),
+            "research_log_integrity_status": research_log_integrity.get("status"),
+            "phase2_coverage_status": phase2.get("status"),
+        }
+    elif quality_error != "missing":
+        _research_alert(state, "DATA_QUALITY_REPORT_UNREADABLE", str(quality_error), quality_path or reports)
+
+    return found
+
+
+def _apply_research_analytics(state: dict[str, Any], root: Path) -> None:
+    research_path = root / "research_state" / "latest_research_state.md"
+    parsed, error = _parse_research_state_markdown(research_path)
+    has_research_state = parsed is not None and error is None
+    if parsed:
+        state["research_analytics"]["latest_research_state"].update(parsed["latest_research_state"])
+        state["research_analytics"]["candidate_loss_reasons"] = parsed["candidate_loss_reasons"]
+        state["research_analytics"]["lifecycle_bottlenecks"] = parsed["lifecycle_bottlenecks"]
+        state["research_analytics"]["ev_null_reasons"] = parsed["ev_null_reasons"]
+    if error and error != "missing":
+        _research_alert(state, "RESEARCH_STATE_PARSE_WARNING", str(error), research_path)
+
+    has_reports = _apply_research_reports(state, root)
+    if has_research_state and has_reports and not state["research_analytics"]["alerts"]:
+        state["research_analytics"]["status"] = "OK"
+    elif has_research_state or has_reports or state["research_analytics"]["alerts"]:
+        state["research_analytics"]["status"] = "PARTIAL"
+    else:
+        state["research_analytics"]["status"] = "MISSING"
+
+
 def build_dashboard_state(
     runtime_root: str | Path = "runtime",
     *,
@@ -744,6 +1001,7 @@ def build_dashboard_state(
     _apply_storage(state, root, now_dt)
     _apply_reports(state, root)
     _apply_research_exports(state, root)
+    _apply_research_analytics(state, root)
 
     if state["meta"]["partial"]:
         state["meta"]["state_status"] = "PARTIAL"
