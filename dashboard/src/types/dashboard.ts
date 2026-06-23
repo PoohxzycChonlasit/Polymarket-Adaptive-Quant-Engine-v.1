@@ -174,6 +174,54 @@ export interface SessionAnalytics {
   sessions_to_avoid?: SessionRecommendationRow[];
 }
 
+export interface LifecycleFunnelRow {
+  stage: string;
+  count: number;
+  yield: number;
+}
+
+export interface LifecycleLossRow {
+  stage: string;
+  lost: number;
+}
+
+export interface LifecycleKillReasonRow {
+  reason: string;
+  count: number;
+}
+
+export interface LifecycleOpportunityRow {
+  reason: string;
+  lost_candidates: number;
+}
+
+export interface LifecycleLeaderboardRow {
+  date: string;
+  scanned: number;
+  entries: number;
+  throughput_rate: number;
+  dominant_blocker: string;
+}
+
+export interface LifecycleAnalytics {
+  status?: "OK" | "PARTIAL" | "MISSING" | string;
+  summary?: {
+    candidate_count?: number;
+    signal_pass_count?: number;
+    ev_pass_count?: number;
+    risk_pass_count?: number;
+    execution_pass_count?: number;
+    entry_count?: number;
+    exit_count?: number;
+  };
+  funnel?: LifecycleFunnelRow[];
+  stage_losses?: LifecycleLossRow[];
+  top_kill_reasons?: LifecycleKillReasonRow[];
+  opportunity_cost?: LifecycleOpportunityRow[];
+  leaderboard?: LifecycleLeaderboardRow[];
+  alerts?: Record<string, unknown>[];
+}
+
 export interface ResearchAnalytics {
   status?: "OK" | "PARTIAL" | "MISSING" | string;
   generated_at?: string;
@@ -200,6 +248,7 @@ export interface ResearchAnalytics {
   replay_analytics?: ReplayAnalytics;
   no_entry_analytics?: NoEntryAnalytics;
   session_analytics?: SessionAnalytics;
+  lifecycle_analytics?: LifecycleAnalytics;
   alerts?: AlertRecord[];
 }
 

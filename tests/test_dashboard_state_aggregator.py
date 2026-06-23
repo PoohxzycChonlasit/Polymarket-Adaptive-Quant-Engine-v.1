@@ -651,3 +651,122 @@ def test_session_analytics_status_transitions(tmp_path: Path) -> None:
     )
     state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
     assert state["research_analytics"]["session_analytics"]["status"] == "OK"
+
+
+def test_lifecycle_analytics_when_reports_exist(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "reports" / "no_entry_report_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "total_scanned": 100,
+            "total_entered": 5,
+            "total_skipped": 95,
+            "skip_reason_counts": {
+                "confidence_too_low": 20,
+                "ev_below_threshold": 30,
+                "risk_plan_zero": 10,
+                "time_unsafe": 15
+            }
+        }
+    )
+    _write_json(
+        tmp_path / "reports" / "replay_report_2026-06-23.json",
+        {
+            "date_from": "2026-06-23",
+            "approved_decisions": 50,
+            "risk_reject_count": 10,
+            "total_trades": 5,
+            "wins": 3,
+            "losses": 2,
+            "win_rate": 0.6,
+            "gross_pnl": 50.0,
+            "top_skip_reasons": [["delta_extreme", 10]],
+            "trades": []
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    lc_an = state["research_analytics"]["lifecycle_analytics"]
+
+    assert lc_an["status"] == "OK"
+    summary = lc_an["summary"]
+    assert summary["candidate_count"] == 100
+    assert summary["signal_pass_count"] == 80
+    assert summary["ev_pass_count"] == 50
+    assert summary["risk_pass_count"] == 40
+    assert summary["execution_pass_count"] == 5
+    assert summary["entry_count"] == 5
+    assert summary["exit_count"] == 5
+
+
+def test_lifecycle_analytics_when_reports_missing(tmp_path: Path) -> None:
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    lc_an = state["research_analytics"]["lifecycle_analytics"]
+
+    assert lc_an["status"] == "MISSING"
+    assert lc_an["summary"]["candidate_count"] == 0
+    assert lc_an["funnel"] == []
+
+
+def test_lifecycle_analytics_when_reports_malformed(tmp_path: Path) -> None:
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "no_entry_report_2026-06-23.json").write_text("{bad json}", encoding="utf-8")
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    lc_an = state["research_analytics"]["lifecycle_analytics"]
+
+    assert lc_an["status"] == "MISSING"
+    assert lc_an["summary"]["candidate_count"] == 0
+
+
+def test_lifecycle_analytics_funnel_monotonicity(tmp_path: Path) -> None:
+    # Set up inconsistent report counts that would normally violate monotonicity
+    _write_json(
+        tmp_path / "reports" / "no_entry_report_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "total_scanned": 10,
+            "total_entered": 50,
+            "total_skipped": 0,
+            "skip_reason_counts": {}
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    lc_an = state["research_analytics"]["lifecycle_analytics"]
+
+    assert lc_an["status"] == "OK"
+    summary = lc_an["summary"]
+    assert summary["candidate_count"] == 10
+    assert summary["signal_pass_count"] == 10
+    assert summary["ev_pass_count"] == 10
+    assert summary["risk_pass_count"] == 10
+    assert summary["execution_pass_count"] == 10
+    assert summary["entry_count"] == 10
+    assert summary["exit_count"] == 10
+
+    # Yields should not exceed 100%
+    for f in lc_an["funnel"]:
+        assert f["yield"] <= 100.0
+
+
+def test_lifecycle_analytics_stage_loss_non_negative(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "reports" / "no_entry_report_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "total_scanned": 100,
+            "total_entered": 10,
+            "total_skipped": 90,
+            "skip_reason_counts": {
+                "confidence_too_low": 5,
+            }
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    lc_an = state["research_analytics"]["lifecycle_analytics"]
+
+    for loss in lc_an["stage_losses"]:
+        assert loss["lost"] >= 0

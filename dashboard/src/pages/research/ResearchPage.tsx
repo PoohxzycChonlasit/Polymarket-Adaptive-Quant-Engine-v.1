@@ -17,6 +17,16 @@ const researchRoadmap = [
     status: "active v1",
   },
   {
+    title: "No Entry Analytics",
+    description: "Zero-trade diagnostics, root cause attribution, operational blocks, and capital protection details.",
+    status: "active v1",
+  },
+  {
+    title: "Candidate Lifecycle Analytics",
+    description: "Stage-by-stage candidate survival rates, drop-off points, and operational kill reasons.",
+    status: "active v1",
+  },
+  {
     title: "Regime Analytics",
     description: "Market regime breakdowns, signal performance by regime, and volatility-state comparisons.",
     status: "read-only planned",
@@ -91,6 +101,9 @@ export function ResearchPage() {
 
   const sessionAnalytics = research?.session_analytics;
   const sessionSummary = sessionAnalytics?.summary;
+
+  const lifecycleAnalytics = research?.lifecycle_analytics;
+  const lifecycleSummary = lifecycleAnalytics?.summary;
 
   return (
     <div className="flex flex-col gap-3">
@@ -728,6 +741,140 @@ export function ResearchPage() {
                 ) : (
                   <EmptyState label="No sessions to avoid found." />
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+      </SectionPanel>
+
+      <SectionPanel title="Candidate Lifecycle Analytics V1" subtitle="Stage-by-stage candidate throughput, survival rates, blocker attribution, and kill reasons.">
+        {!lifecycleAnalytics || lifecycleAnalytics.status === "MISSING" ? (
+          <EmptyState label="No candidate lifecycle analytics data is available. Ensure latest reports exist." />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Lifecycle Summary Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 min-[1600px]:grid-cols-4 gap-3">
+              <MetricCard
+                label="Total Scanned Candidates"
+                value={formatNumber(lifecycleSummary?.candidate_count)}
+                helper="opportunities detected"
+              />
+              <MetricCard
+                label="Throughput / Exit Volume"
+                value={`${lifecycleSummary?.exit_count ?? 0} exits`}
+                helper={`Throughput Rate: ${lifecycleSummary?.candidate_count ? ((lifecycleSummary.exit_count! / lifecycleSummary.candidate_count!) * 100).toFixed(2) : 0}%`}
+                tone={(lifecycleSummary?.exit_count ?? 0) > 0 ? "good" : "neutral"}
+              />
+              <MetricCard
+                label="Risk Approved Candidates"
+                value={formatNumber(lifecycleSummary?.risk_pass_count)}
+                helper={`${lifecycleSummary?.ev_pass_count ?? 0} EV passes`}
+              />
+              <MetricCard
+                label="Execution Transmission Fills"
+                value={formatNumber(lifecycleSummary?.entry_count)}
+                helper={`${lifecycleSummary?.execution_pass_count ?? 0} CLOB attempts`}
+              />
+            </div>
+
+            {/* Lifecycle Funnel Layout */}
+            <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+              <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Lifecycle Stage Funnel</h3>
+              <div className="flex flex-col md:flex-row items-stretch justify-between gap-3 text-mono text-[12px] text-black">
+                {(lifecycleAnalytics.funnel ?? []).map((row, index, arr) => (
+                  <div key={row.stage} className="flex flex-col md:flex-row flex-1 items-stretch gap-2">
+                    <div className="flex-1 p-2.5 border border-[#d9d9d9] text-center bg-[#f9f9f9] flex flex-col justify-center rounded">
+                      <div className="font-bold text-[#666666] text-[10px] uppercase">{row.stage}</div>
+                      <div className="text-lg font-bold mt-1 font-mono">{formatNumber(row.count)}</div>
+                      <span className="text-[9px] text-[#008f39] font-bold mt-0.5">{row.yield.toFixed(1)}% yield</span>
+                    </div>
+                    {index < arr.length - 1 && (
+                      <div className="flex items-center justify-center text-[#666666] font-bold font-mono self-center">➔</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Stage Losses & Top Kill Reasons */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Stage Losses */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Stage Loss Attribution</h3>
+                <DataTable
+                  rows={(lifecycleAnalytics.stage_losses ?? []).map((row) => {
+                    const total = lifecycleSummary?.candidate_count ?? 1;
+                    const pct = total > 0 ? (row.lost / total) * 100 : 0;
+                    return {
+                      ...row,
+                      lost_count: formatNumber(row.lost),
+                      percentage: `${pct.toFixed(1)}%`
+                    };
+                  })}
+                  columns={[
+                    { key: "stage", label: "Pipeline Filter Stage" },
+                    { key: "lost_count", label: "Candidates Lost" },
+                    { key: "percentage", label: "% of Total Candidates" }
+                  ]}
+                  empty="No stage losses recorded."
+                />
+              </div>
+
+              {/* Top Kill Reasons */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Top Kill Reasons</h3>
+                <DataTable
+                  rows={(lifecycleAnalytics.top_kill_reasons ?? []).map((row) => ({
+                    ...row,
+                    count: formatNumber(row.count)
+                  }))}
+                  columns={[
+                    { key: "reason", label: "Operational Skip/Block Reason" },
+                    { key: "count", label: "Count" }
+                  ]}
+                  empty="No kill reasons recorded."
+                />
+              </div>
+            </div>
+
+            {/* Opportunity Cost & Leaderboard */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Opportunity Cost */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Opportunity Cost By Block Reason</h3>
+                <DataTable
+                  rows={(lifecycleAnalytics.opportunity_cost ?? []).map((row) => ({
+                    ...row,
+                    lost_candidates: formatNumber(row.lost_candidates)
+                  }))}
+                  columns={[
+                    { key: "reason", label: "Block Reason" },
+                    { key: "lost_candidates", label: "Missed Candidate Opportunities" }
+                  ]}
+                  empty="No opportunity cost records."
+                />
+              </div>
+
+              {/* Lifecycle Leaderboard */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Lifecycle History Leaderboard</h3>
+                <DataTable
+                  rows={(lifecycleAnalytics.leaderboard ?? []).map((row) => ({
+                    ...row,
+                    scanned: formatNumber(row.scanned),
+                    entries: formatNumber(row.entries),
+                    throughput_rate: formatPercent(row.throughput_rate),
+                    dominant_blocker: row.dominant_blocker.toUpperCase()
+                  }))}
+                  columns={[
+                    { key: "date", label: "Session Date" },
+                    { key: "scanned", label: "Scanned" },
+                    { key: "entries", label: "Entries" },
+                    { key: "throughput_rate", label: "Throughput Rate" },
+                    { key: "dominant_blocker", label: "Dominant Blocker" }
+                  ]}
+                  empty="No lifecycle history leaderboard."
+                />
               </div>
             </div>
           </div>

@@ -354,6 +354,24 @@ def _empty_state(root: Path, date: str, now: datetime) -> dict[str, Any]:
                 "recommended_sessions": [],
                 "sessions_to_avoid": [],
             },
+            "lifecycle_analytics": {
+                "status": "MISSING",
+                "summary": {
+                    "candidate_count": 0,
+                    "signal_pass_count": 0,
+                    "ev_pass_count": 0,
+                    "risk_pass_count": 0,
+                    "execution_pass_count": 0,
+                    "entry_count": 0,
+                    "exit_count": 0
+                },
+                "funnel": [],
+                "stage_losses": [],
+                "top_kill_reasons": [],
+                "opportunity_cost": [],
+                "leaderboard": [],
+                "alerts": []
+            },
             "alerts": [],
         },
         "alerts": {
@@ -1314,6 +1332,206 @@ def _extract_session_analytics(session: dict[str, Any] | None, reports_dir: Path
     }
 
 
+def _extract_lifecycle_analytics(reports_dir: Path) -> dict[str, Any]:
+    by_date = {}
+
+    # Scan replay reports
+    try:
+        for p in reports_dir.glob("replay_report_*.json"):
+            stem = p.stem
+            parts = stem.split("_")
+            date_str = ""
+            for part in parts:
+                if len(part) == 10 and part.count("-") == 2:
+                    date_str = part
+                    break
+            if not date_str:
+                date_str = stem.replace("replay_report_", "")[:10]
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if isinstance(rep, dict):
+                    by_date.setdefault(date_str, {})["replay"] = rep
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # Scan no_entry reports
+    try:
+        for p in reports_dir.glob("no_entry_report_*.json"):
+            stem = p.stem
+            parts = stem.split("_")
+            date_str = ""
+            for part in parts:
+                if len(part) == 10 and part.count("-") == 2:
+                    date_str = part
+                    break
+            if not date_str:
+                date_str = stem.replace("no_entry_report_", "")[:10]
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if isinstance(rep, dict):
+                    by_date.setdefault(date_str, {})["no_entry"] = rep
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    if not by_date:
+        return {
+            "status": "MISSING",
+            "summary": {
+                "candidate_count": 0,
+                "signal_pass_count": 0,
+                "ev_pass_count": 0,
+                "risk_pass_count": 0,
+                "execution_pass_count": 0,
+                "entry_count": 0,
+                "exit_count": 0
+            },
+            "funnel": [],
+            "stage_losses": [],
+            "top_kill_reasons": [],
+            "opportunity_cost": [],
+            "leaderboard": [],
+            "alerts": []
+        }
+
+    # Consolidated counts across all sessions
+    total_candidates = 0
+    total_signal_pass = 0
+    total_ev_pass = 0
+    total_risk_pass = 0
+    total_execution_pass = 0
+    total_entries = 0
+    total_exits = 0
+
+    kill_reasons_counter = Counter()
+    opportunity_counter = Counter()
+    leaderboard = []
+
+    for d, data in sorted(by_date.items()):
+        replay = data.get("replay") or {}
+        no_entry = data.get("no_entry") or {}
+
+        # 1. Candidate count
+        c_count = no_entry.get("total_scanned") or replay.get("total_trades", 0) or 0
+
+        # 2. Signal Passed
+        sig_skips = no_entry.get("skip_reason_counts", {}).get("confidence_too_low", 0) + no_entry.get("skip_reason_counts", {}).get("stale_data", 0)
+        sig_pass = max(0, c_count - sig_skips)
+
+        # 3. EV Passed
+        ev_pass = replay.get("approved_decisions")
+        if ev_pass is None:
+            ev_skips = no_entry.get("skip_reason_counts", {}).get("ev_below_threshold", 0) + no_entry.get("skip_reason_counts", {}).get("delta_extreme", 0)
+            ev_pass = max(0, sig_pass - ev_skips)
+
+        # 4. Risk Passed
+        risk_pass = ev_pass
+        if replay:
+            risk_pass = max(0, ev_pass - replay.get("risk_reject_count", 0))
+        else:
+            risk_skips = no_entry.get("skip_reason_counts", {}).get("risk_plan_zero", 0)
+            risk_pass = max(0, ev_pass - risk_skips)
+
+        # 5. Execution Passed
+        exec_pass = risk_pass
+        if replay:
+            exec_pass = replay.get("total_trades", 0)
+        else:
+            exec_skips = (no_entry.get("skip_reason_counts", {}).get("clob_empty_response", 0) +
+                          no_entry.get("skip_reason_counts", {}).get("clob_http_error", 0) +
+                          no_entry.get("skip_reason_counts", {}).get("time_unsafe", 0))
+            exec_pass = max(0, risk_pass - exec_skips)
+
+        # 6. Entry Created
+        ent_count = replay.get("total_trades") or no_entry.get("total_entered") or 0
+
+        # 7. Exit Completed
+        ext_count = ent_count
+
+        # Enforce monotonicity
+        c_count = max(0, int(c_count))
+        sig_pass = min(c_count, max(0, int(sig_pass)))
+        ev_pass = min(sig_pass, max(0, int(ev_pass)))
+        risk_pass = min(ev_pass, max(0, int(risk_pass)))
+        exec_pass = min(risk_pass, max(0, int(exec_pass)))
+        ent_count = min(exec_pass, max(0, int(ent_count)))
+        ext_count = min(ent_count, max(0, int(ext_count)))
+
+        total_candidates += c_count
+        total_signal_pass += sig_pass
+        total_ev_pass += ev_pass
+        total_risk_pass += risk_pass
+        total_execution_pass += exec_pass
+        total_entries += ent_count
+        total_exits += ext_count
+
+        # Kill reasons aggregation
+        for reason, count in no_entry.get("skip_reason_counts", {}).items():
+            kill_reasons_counter[reason] += count
+        for reason_pair in replay.get("top_skip_reasons", []):
+            if isinstance(reason_pair, list) and len(reason_pair) == 2:
+                kill_reasons_counter[reason_pair[0]] += reason_pair[1]
+
+        # Opportunity cost aggregation
+        for reason, count in no_entry.get("skip_reason_counts", {}).items():
+            opportunity_counter[reason] += count
+
+        dominant_blocker = no_entry.get("root_cause_category") or "none"
+        leaderboard.append({
+            "date": d,
+            "scanned": c_count,
+            "entries": ent_count,
+            "throughput_rate": round(ent_count / c_count, 4) if c_count > 0 else 0.0,
+            "dominant_blocker": dominant_blocker
+        })
+
+    # Total funnel yields
+    funnel = [
+        {"stage": "Candidate Created", "count": total_candidates, "yield": 100.0},
+        {"stage": "Signal Passed", "count": total_signal_pass, "yield": round(total_signal_pass / total_candidates * 100, 2) if total_candidates > 0 else 0.0},
+        {"stage": "EV Passed", "count": total_ev_pass, "yield": round(total_ev_pass / total_signal_pass * 100, 2) if total_signal_pass > 0 else 0.0},
+        {"stage": "Risk Passed", "count": total_risk_pass, "yield": round(total_risk_pass / total_ev_pass * 100, 2) if total_ev_pass > 0 else 0.0},
+        {"stage": "Execution Passed", "count": total_execution_pass, "yield": round(total_execution_pass / total_risk_pass * 100, 2) if total_risk_pass > 0 else 0.0},
+        {"stage": "Entry Created", "count": total_entries, "yield": round(total_entries / total_execution_pass * 100, 2) if total_execution_pass > 0 else 0.0},
+        {"stage": "Exit Completed", "count": total_exits, "yield": round(total_exits / total_entries * 100, 2) if total_entries > 0 else 0.0},
+    ]
+
+    stage_losses = [
+        {"stage": "Signal Filters", "lost": total_candidates - total_signal_pass},
+        {"stage": "EV Filters", "lost": total_signal_pass - total_ev_pass},
+        {"stage": "Risk Filters", "lost": total_ev_pass - total_risk_pass},
+        {"stage": "Execution Gates", "lost": total_risk_pass - total_execution_pass},
+        {"stage": "Fill Slippage", "lost": total_execution_pass - total_entries},
+    ]
+
+    top_kill_reasons = [{"reason": reason, "count": count} for reason, count in kill_reasons_counter.most_common(5)]
+    opportunity_cost = [{"reason": reason, "lost_candidates": count} for reason, count in opportunity_counter.most_common(5)]
+
+    return {
+        "status": "OK" if total_candidates > 0 else "PARTIAL",
+        "summary": {
+            "candidate_count": total_candidates,
+            "signal_pass_count": total_signal_pass,
+            "ev_pass_count": total_ev_pass,
+            "risk_pass_count": total_risk_pass,
+            "execution_pass_count": total_execution_pass,
+            "entry_count": total_entries,
+            "exit_count": total_exits
+        },
+        "funnel": funnel,
+        "stage_losses": stage_losses,
+        "top_kill_reasons": top_kill_reasons,
+        "opportunity_cost": opportunity_cost,
+        "leaderboard": leaderboard,
+        "alerts": []
+    }
+
+
 def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
     reports = root / "reports"
     found = False
@@ -1425,6 +1643,7 @@ def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
     elif quality_error != "missing":
         _research_alert(state, "DATA_QUALITY_REPORT_UNREADABLE", str(quality_error), quality_path or reports)
 
+    state["research_analytics"]["lifecycle_analytics"] = _extract_lifecycle_analytics(reports)
     return found
 
 
