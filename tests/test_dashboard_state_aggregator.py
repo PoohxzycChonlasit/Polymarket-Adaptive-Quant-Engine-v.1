@@ -357,6 +357,86 @@ def test_research_analytics_maps_latest_report_summaries(tmp_path: Path) -> None
     assert reports["data_quality"]["replay_continuity_status"] == "CAUTION"
 
 
+def test_replay_analytics_when_report_exists(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "reports" / "replay_report_2026-06-23.json",
+        {
+            "date_from": "2026-06-23",
+            "date_to": "2026-06-23",
+            "total_trades": 2,
+            "wins": 1,
+            "losses": 1,
+            "win_rate": 0.5,
+            "gross_pnl": 0.03,
+            "skipped_decisions": 10,
+            "approved_decisions": 2,
+            "risk_reject_count": 0,
+            "timing_decay_summary": {"avg_seconds_remaining": 120.0},
+            "top_skip_reasons": [["delta_extreme", 5]],
+            "trades": [
+                {
+                    "timestamp_utc": "2026-06-23T12:00:00Z",
+                    "ticker": "BTC",
+                    "side": "YES",
+                    "pnl": 0.05,
+                    "holding_seconds": 30.0,
+                    "outcome": "YES",
+                },
+                {
+                    "timestamp_utc": "2026-06-23T12:01:00Z",
+                    "ticker": "ETH",
+                    "side": "NO",
+                    "pnl": -0.02,
+                    "holding_seconds": 45.0,
+                    "outcome": "YES",
+                }
+            ]
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    replay_an = state["research_analytics"]["replay_analytics"]
+
+    assert replay_an["status"] == "OK"
+    assert replay_an["summary"]["trades"] == 2
+    assert replay_an["summary"]["wins"] == 1
+    assert replay_an["summary"]["losses"] == 1
+    assert replay_an["summary"]["net_pnl"] == 0.03
+    assert replay_an["summary"]["profit_factor"] == 2.5 # 0.05 / 0.02
+    assert replay_an["lifecycle_funnel"]["candidates"] == 12
+    assert replay_an["lifecycle_funnel"]["signals"] == 2
+    assert replay_an["lifecycle_funnel"]["risk_pass"] == 2
+    assert replay_an["lifecycle_funnel"]["entries"] == 2
+    assert len(replay_an["top_winners"]) == 2
+    assert len(replay_an["top_losers"]) == 2
+    assert len(replay_an["evidence_table"]) == 2
+    assert replay_an["evidence_table"][0]["asset"] == "BTC"
+    assert replay_an["evidence_table"][1]["pnl"] == -0.02
+    assert len(replay_an["session_breakdown"]) == 1
+    assert replay_an["session_breakdown"][0]["verdict"] == "PASS"
+
+
+def test_replay_analytics_when_report_missing(tmp_path: Path) -> None:
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    replay_an = state["research_analytics"]["replay_analytics"]
+
+    assert replay_an["status"] == "MISSING"
+    assert replay_an["summary"]["trades"] == 0
+    assert replay_an["session_breakdown"] == []
+
+
+def test_replay_analytics_when_report_malformed(tmp_path: Path) -> None:
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "replay_report_2026-06-23.json").write_text("{bad json}", encoding="utf-8")
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    replay_an = state["research_analytics"]["replay_analytics"]
+
+    assert replay_an["status"] == "MISSING"
+    assert any(alert["code"] == "REPLAY_REPORT_UNREADABLE" for alert in state["research_analytics"]["alerts"])
+
+
 def test_atomic_write_creates_valid_json(tmp_path: Path) -> None:
     state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
     output = tmp_path / "dashboard_state.json"

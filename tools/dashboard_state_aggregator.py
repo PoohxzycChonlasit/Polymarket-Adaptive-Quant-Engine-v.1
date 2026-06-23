@@ -296,6 +296,32 @@ def _empty_state(root: Path, date: str, now: datetime) -> dict[str, Any]:
                 "session_runtime": {},
                 "data_quality": {},
             },
+            "replay_analytics": {
+                "status": "MISSING",
+                "summary": {
+                    "trades": 0,
+                    "wins": 0,
+                    "losses": 0,
+                    "breakeven": 0,
+                    "win_rate": 0.0,
+                    "net_pnl": 0.0,
+                    "profit_factor": 0.0,
+                },
+                "opportunity_cost": {
+                    "timing_decay": {},
+                    "top_skip_reasons": [],
+                },
+                "lifecycle_funnel": {
+                    "candidates": 0,
+                    "signals": 0,
+                    "risk_pass": 0,
+                    "entries": 0,
+                },
+                "session_breakdown": [],
+                "top_winners": [],
+                "top_losers": [],
+                "evidence_table": [],
+            },
             "alerts": [],
         },
         "alerts": {
@@ -853,6 +879,132 @@ def _safe_list_count(value: Any) -> int:
     return len(value) if isinstance(value, list) else 0
 
 
+def _extract_replay_analytics(replay: dict[str, Any] | None, reports_dir: Path) -> dict[str, Any]:
+    if not replay:
+        return {
+            "status": "MISSING",
+            "summary": {
+                "trades": 0,
+                "wins": 0,
+                "losses": 0,
+                "breakeven": 0,
+                "win_rate": 0.0,
+                "net_pnl": 0.0,
+                "profit_factor": 0.0,
+            },
+            "opportunity_cost": {
+                "timing_decay": {},
+                "top_skip_reasons": [],
+            },
+            "lifecycle_funnel": {
+                "candidates": 0,
+                "signals": 0,
+                "risk_pass": 0,
+                "entries": 0,
+            },
+            "session_breakdown": [],
+            "top_winners": [],
+            "top_losers": [],
+            "evidence_table": [],
+        }
+
+    trades_list = replay.get("trades")
+    if not isinstance(trades_list, list):
+        trades_list = []
+
+    # Calculate profit factor
+    gross_profits = sum(t.get("pnl", 0.0) for t in trades_list if isinstance(t, dict) and t.get("pnl", 0.0) > 0)
+    gross_losses = sum(abs(t.get("pnl", 0.0)) for t in trades_list if isinstance(t, dict) and t.get("pnl", 0.0) < 0)
+    profit_factor = round(gross_profits / gross_losses, 4) if gross_losses > 0 else (99.0 if gross_profits > 0 else 1.0)
+
+    # Sort trades for winners / losers
+    sorted_trades = sorted(trades_list, key=lambda x: x.get("pnl", 0.0) if isinstance(x, dict) else 0.0)
+
+    def _map_trade(t: Any) -> dict[str, Any]:
+        if not isinstance(t, dict):
+            return {}
+        return {
+            "timestamp_utc": t.get("timestamp_utc", "n/a"),
+            "asset": t.get("ticker") or t.get("market_id") or "n/a",
+            "side": t.get("side", "n/a"),
+            "signal": t.get("signal") or "n/a",
+            "holding_seconds": t.get("holding_seconds"),
+            "outcome": t.get("outcome", "n/a"),
+            "pnl": t.get("pnl", 0.0),
+        }
+
+    top_losers = [_map_trade(t) for t in sorted_trades[:5] if isinstance(t, dict)]
+    top_winners = [_map_trade(t) for t in reversed(sorted_trades[-5:]) if isinstance(t, dict)]
+    evidence_table = [_map_trade(t) for t in trades_list if isinstance(t, dict)]
+
+    total_trades = replay.get("total_trades", 0)
+    wins = replay.get("wins", 0)
+    losses = replay.get("losses", 0)
+    breakeven = max(0, total_trades - wins - losses)
+
+    skipped = replay.get("skipped_decisions", 0) or 0
+    approved = replay.get("approved_decisions", 0) or 0
+    risk_reject = replay.get("risk_reject_count", 0) or 0
+
+    timing_decay = replay.get("timing_decay_summary") or {}
+    top_skip_reasons = replay.get("top_skip_reasons") or []
+
+    session_breakdown = []
+    try:
+        for p in sorted(reports_dir.glob("replay_report_*.json")):
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if isinstance(rep, dict):
+                    rep_wins = rep.get("wins", 0) or 0
+                    rep_losses = rep.get("losses", 0) or 0
+                    rep_pnl = rep.get("gross_pnl", 0.0) or 0.0
+                    rep_win_rate = rep.get("win_rate", 0.0) or 0.0
+
+                    verdict = "PASS" if rep_win_rate >= 0.5 and rep_pnl > 0 else "CAUTION"
+                    rep_skips = rep.get("top_skip_reasons", [])
+                    bottleneck = rep_skips[0][0] if rep_skips else "none"
+
+                    session_breakdown.append({
+                        "date": rep.get("date_from") or p.stem.replace("replay_report_", ""),
+                        "verdict": verdict,
+                        "trades": f"{rep_wins}W / {rep_losses}L",
+                        "pnl": rep_pnl,
+                        "bottleneck": bottleneck,
+                    })
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    return {
+        "status": "OK" if trades_list else "PARTIAL",
+        "summary": {
+            "trades": total_trades,
+            "wins": wins,
+            "losses": losses,
+            "breakeven": breakeven,
+            "win_rate": replay.get("win_rate", 0.0) or 0.0,
+            "net_pnl": replay.get("gross_pnl", 0.0) or 0.0,
+            "profit_factor": profit_factor,
+        },
+        "opportunity_cost": {
+            "timing_decay": timing_decay,
+            "top_skip_reasons": top_skip_reasons,
+        },
+        "lifecycle_funnel": {
+            "candidates": skipped + approved,
+            "signals": approved,
+            "risk_pass": max(0, approved - risk_reject),
+            "entries": total_trades,
+        },
+        "session_breakdown": session_breakdown,
+        "top_winners": top_winners,
+        "top_losers": top_losers,
+        "evidence_table": evidence_table,
+    }
+
+
 def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
     reports = root / "reports"
     found = False
@@ -883,8 +1035,11 @@ def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
             "top_skip_reasons": replay.get("top_skip_reasons", []),
             "bad_json_lines": replay.get("bad_json_lines"),
         }
-    elif replay_error != "missing":
-        _research_alert(state, "REPLAY_REPORT_UNREADABLE", str(replay_error), replay_path or reports)
+        state["research_analytics"]["replay_analytics"] = _extract_replay_analytics(replay, reports)
+    else:
+        state["research_analytics"]["replay_analytics"] = _extract_replay_analytics(None, reports)
+        if replay_error != "missing":
+            _research_alert(state, "REPLAY_REPORT_UNREADABLE", str(replay_error), replay_path or reports)
 
     no_entry_path = _latest_json_file(reports, "no_entry_report_*.json")
     no_entry, no_entry_error = _read_json(no_entry_path) if no_entry_path else (None, "missing")

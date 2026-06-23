@@ -59,6 +59,49 @@ export interface ResearchReasonRow {
   count?: number | null;
 }
 
+export interface ReplayTradeRow {
+  timestamp_utc?: string;
+  asset?: string;
+  side?: string;
+  signal?: string;
+  holding_seconds?: number | null;
+  outcome?: string;
+  pnl?: number;
+}
+
+export interface ReplayAnalytics {
+  status?: "OK" | "PARTIAL" | "MISSING" | string;
+  summary?: {
+    trades?: number;
+    wins?: number;
+    losses?: number;
+    breakeven?: number;
+    win_rate?: number;
+    net_pnl?: number;
+    profit_factor?: number;
+  };
+  opportunity_cost?: {
+    timing_decay?: Record<string, unknown>;
+    top_skip_reasons?: [string, number][];
+  };
+  lifecycle_funnel?: {
+    candidates?: number;
+    signals?: number;
+    risk_pass?: number;
+    entries?: number;
+  };
+  session_breakdown?: {
+    date?: string;
+    verdict?: string;
+    trades?: string;
+    pnl?: number;
+    bottleneck?: string;
+  }[];
+  top_winners?: ReplayTradeRow[];
+  top_losers?: ReplayTradeRow[];
+  evidence_table?: ReplayTradeRow[];
+}
+
 export interface ResearchAnalytics {
   status?: "OK" | "PARTIAL" | "MISSING" | string;
   generated_at?: string;
@@ -82,6 +125,7 @@ export interface ResearchAnalytics {
     session_runtime?: Record<string, unknown>;
     data_quality?: Record<string, unknown>;
   };
+  replay_analytics?: ReplayAnalytics;
   alerts?: AlertRecord[];
 }
 
