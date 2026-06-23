@@ -11,12 +11,12 @@ export function Topbar({
   isFetching: boolean;
 }) {
   return (
-    <div className="topbar">
-      <div>
-        <p className="eyebrow">Local operator console</p>
-        <strong>Read-only dashboard pages</strong>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 px-4 border border-[#d9d9d9] bg-white rounded-lg mb-3 shadow-sm">
+      <div className="flex flex-col font-mono">
+        <p className="text-[12px] uppercase font-bold tracking-wider text-[#666666] m-0">Local operator console</p>
+        <strong className="text-[14px] text-[#000000] font-bold">Read-only dashboard</strong>
       </div>
-      <div className="topbar-badges">
+      <div className="flex flex-wrap items-center gap-2">
         <StatusBadge label={`State ${stateStatus ?? "UNKNOWN"}`} tone={getStateTone(stateStatus)} />
         <StatusBadge label={`API ${apiStatus ?? "unknown"}`} tone={apiStatus === "ok" ? "good" : "warn"} />
         <StatusBadge label={isFetching ? "refreshing" : "15s polling"} />
