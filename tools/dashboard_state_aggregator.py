@@ -322,6 +322,38 @@ def _empty_state(root: Path, date: str, now: datetime) -> dict[str, Any]:
                 "top_losers": [],
                 "evidence_table": [],
             },
+            "no_entry_analytics": {
+                "status": "MISSING",
+                "summary": {
+                    "total_candidates": 0,
+                    "entries": 0,
+                    "entry_rate": 0.0,
+                },
+                "root_causes": [],
+                "blocker_categories": [],
+                "timing_cutoff": {},
+                "risk_zero": {},
+                "liquidity": {},
+                "ev_missing": {},
+                "clob_errors": {},
+                "recommended_investigation": [],
+            },
+            "session_analytics": {
+                "status": "MISSING",
+                "summary": {
+                    "best_session": "",
+                    "worst_session": "",
+                    "highest_entry_rate_session": "",
+                    "highest_no_entry_session": "",
+                },
+                "leaderboard": [],
+                "entry_rate": [],
+                "no_entry_rate": [],
+                "risk_reject_rate": [],
+                "expectancy": [],
+                "recommended_sessions": [],
+                "sessions_to_avoid": [],
+            },
             "alerts": [],
         },
         "alerts": {
@@ -1005,6 +1037,283 @@ def _extract_replay_analytics(replay: dict[str, Any] | None, reports_dir: Path) 
     }
 
 
+def _extract_no_entry_analytics(no_entry: dict[str, Any] | None) -> dict[str, Any]:
+    if not no_entry:
+        return {
+            "status": "MISSING",
+            "summary": {
+                "total_candidates": 0,
+                "entries": 0,
+                "entry_rate": 0.0,
+            },
+            "root_causes": [],
+            "blocker_categories": [],
+            "timing_cutoff": {},
+            "risk_zero": {},
+            "liquidity": {},
+            "ev_missing": {},
+            "clob_errors": {},
+            "recommended_investigation": [],
+        }
+
+    total_scanned = no_entry.get("total_scanned", 0)
+    total_entered = no_entry.get("total_entered", 0)
+    entry_rate = round(total_entered / total_scanned, 4) if total_scanned > 0 else 0.0
+
+    root_cause_counts = no_entry.get("root_cause_counts", {})
+    root_causes = [[k, v] for k, v in root_cause_counts.items()] if isinstance(root_cause_counts, dict) else []
+
+    top_skip_reasons = no_entry.get("top_skip_reasons", [])
+    blocker_categories = top_skip_reasons if isinstance(top_skip_reasons, list) else []
+
+    timing_decay = no_entry.get("timing_decay_summary") or {}
+    timing_cutoff = {
+        "count_time_unsafe": no_entry.get("count_time_unsafe", 0),
+        "avg_seconds_remaining": timing_decay.get("avg_seconds_remaining", 0.0),
+        "closest_seconds_remaining": timing_decay.get("closest_seconds_remaining") or timing_decay.get("min_seconds_remaining"),
+        "timing_buckets": no_entry.get("skip_by_time_bucket", {}),
+    }
+
+    phase2 = no_entry.get("phase2_coverage") or {}
+    risk_zero = {
+        "count_risk_plan_zero": no_entry.get("count_risk_plan_zero", 0),
+        "bankroll_tier_name": phase2.get("bankroll_tier_name") or "n/a",
+        "bankroll_mode": phase2.get("bankroll_mode") or "n/a",
+        "micro_position_size": phase2.get("micro_position_size") or 0.0,
+        "micro_survival_active": phase2.get("micro_survival_active") or False,
+    }
+
+    quality = no_entry.get("market_data_quality") or {}
+    liquidity = {
+        "count_orderbook_unavailable_or_stale": no_entry.get("count_orderbook_unavailable_or_stale", 0),
+        "average_orderbook_age_ms": quality.get("average_orderbook_age_ms", 0.0),
+        "token_mapping_warning_count": quality.get("token_mapping_warning_count", 0),
+    }
+
+    skip_reasons = no_entry.get("skip_reason_counts") or {}
+    ev_missing = {
+        "no_probability_model_output": skip_reasons.get("no_probability_model_output", 0) + skip_reasons.get("ev_not_visible", 0),
+        "no_market_price": skip_reasons.get("no_market_price", 0) + skip_reasons.get("price_not_visible", 0),
+    }
+
+    clob_errors = quality.get("clob_error_categories") or {}
+
+    recommended_investigation = no_entry.get("recommendations") or []
+
+    return {
+        "status": "OK" if total_scanned > 0 else "PARTIAL",
+        "summary": {
+            "total_candidates": total_scanned,
+            "entries": total_entered,
+            "entry_rate": entry_rate,
+        },
+        "root_causes": root_causes,
+        "blocker_categories": blocker_categories,
+        "timing_cutoff": timing_cutoff,
+        "risk_zero": risk_zero,
+        "liquidity": liquidity,
+        "ev_missing": ev_missing,
+        "clob_errors": clob_errors,
+        "recommended_investigation": recommended_investigation,
+    }
+
+
+def _extract_session_analytics(session: dict[str, Any] | None, reports_dir: Path) -> dict[str, Any]:
+    by_date = {}
+
+    # 1. Scan replay reports
+    try:
+        for p in reports_dir.glob("replay_report_*.json"):
+            stem = p.stem
+            parts = stem.split("_")
+            date_str = ""
+            for part in parts:
+                if len(part) == 10 and part.count("-") == 2:
+                    date_str = part
+                    break
+            if not date_str:
+                date_str = stem.replace("replay_report_", "")[:10]
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if isinstance(rep, dict):
+                    by_date.setdefault(date_str, {})["replay"] = rep
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # 2. Scan no_entry reports
+    try:
+        for p in reports_dir.glob("no_entry_report_*.json"):
+            stem = p.stem
+            parts = stem.split("_")
+            date_str = ""
+            for part in parts:
+                if len(part) == 10 and part.count("-") == 2:
+                    date_str = part
+                    break
+            if not date_str:
+                date_str = stem.replace("no_entry_report_", "")[:10]
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if isinstance(rep, dict):
+                    by_date.setdefault(date_str, {})["no_entry"] = rep
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # 3. Scan session evaluations
+    try:
+        for p in reports_dir.glob("session_runtime_evaluation_*.json"):
+            stem = p.stem
+            parts = stem.split("_")
+            date_str = ""
+            for part in parts:
+                if len(part) == 10 and part.count("-") == 2:
+                    date_str = part
+                    break
+            if not date_str:
+                date_str = stem.replace("session_runtime_evaluation_", "")[:10]
+            try:
+                with p.open("r", encoding="utf-8") as h:
+                    rep = json.load(h)
+                if isinstance(rep, dict):
+                    by_date.setdefault(date_str, {})["evaluation"] = rep
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    if session:
+        eval_date = session.get("date")
+        if eval_date:
+            by_date.setdefault(eval_date, {})["evaluation"] = session
+
+    if not by_date:
+        return {
+            "status": "MISSING",
+            "summary": {
+                "best_session": "",
+                "worst_session": "",
+                "highest_entry_rate_session": "",
+                "highest_no_entry_session": "",
+            },
+            "leaderboard": [],
+            "entry_rate": [],
+            "no_entry_rate": [],
+            "risk_reject_rate": [],
+            "expectancy": [],
+            "recommended_sessions": [],
+            "sessions_to_avoid": [],
+        }
+
+    leaderboard = []
+    entry_rates = []
+    no_entry_rates = []
+    risk_reject_rates = []
+    expectancies = []
+    recommended_sessions = []
+    sessions_to_avoid = []
+
+    for d, data in sorted(by_date.items()):
+        replay = data.get("replay") or {}
+        no_entry = data.get("no_entry") or {}
+        evaluation = data.get("evaluation") or {}
+
+        total_trades = replay.get("total_trades", 0)
+        wins = replay.get("wins", 0)
+        losses = replay.get("losses", 0)
+        net_pnl = replay.get("gross_pnl", 0.0) or 0.0
+        win_rate = replay.get("win_rate", 0.0) or 0.0
+
+        trades_list = replay.get("trades") or []
+        gross_profits = sum(t.get("pnl", 0.0) for t in trades_list if isinstance(t, dict) and t.get("pnl", 0.0) > 0)
+        gross_losses = sum(abs(t.get("pnl", 0.0)) for t in trades_list if isinstance(t, dict) and t.get("pnl", 0.0) < 0)
+        profit_factor = round(gross_profits / gross_losses, 4) if gross_losses > 0 else (99.0 if gross_profits > 0 else 1.0)
+
+        scanned = no_entry.get("total_scanned") or evaluation.get("health_summary", {}).get("scanned") or total_trades or 1
+        entered = no_entry.get("total_entered") or evaluation.get("health_summary", {}).get("entered") or total_trades
+        skipped = no_entry.get("total_skipped") or evaluation.get("health_summary", {}).get("skipped") or 0
+        risk_rejects = no_entry.get("count_risk_plan_zero", 0) or evaluation.get("risk_blocks", {}).get("count_risk_plan_zero", 0)
+
+        entry_rate = round(entered / scanned, 4) if scanned > 0 else 0.0
+        no_entry_rate = round(skipped / scanned, 4) if scanned > 0 else 0.0
+        risk_reject_rate = round(risk_rejects / scanned, 4) if scanned > 0 else 0.0
+
+        expectancy = replay.get("average_pnl") or (round(net_pnl / total_trades, 4) if total_trades > 0 else 0.0)
+
+        primary_bottleneck = evaluation.get("primary_bottleneck") or no_entry.get("root_cause_category") or "none"
+        session_status = evaluation.get("session_status") or ("PASS" if win_rate >= 0.5 and net_pnl >= 0 else "CAUTION")
+
+        leaderboard.append({
+            "date": d,
+            "trades": total_trades,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "net_pnl": net_pnl,
+            "profit_factor": profit_factor,
+            "entry_rate": entry_rate,
+            "no_entry_rate": no_entry_rate,
+            "risk_rejects": risk_rejects,
+            "expectancy": expectancy,
+            "primary_bottleneck": primary_bottleneck,
+            "verdict": session_status,
+        })
+
+        entry_rates.append({"date": d, "entry_rate": entry_rate})
+        no_entry_rates.append({"date": d, "no_entry_rate": no_entry_rate})
+        risk_reject_rates.append({"date": d, "risk_reject_rate": risk_reject_rate})
+        expectancies.append({"date": d, "expectancy": expectancy})
+
+        verdict = session_status.upper()
+        if verdict == "PASS":
+            recommended_sessions.append({
+                "date": d,
+                "reason": f"High Win Rate ({win_rate*100:.1f}%) and positive PnL (${net_pnl:.2f})."
+            })
+        elif verdict == "FAIL" or primary_bottleneck in {"latency", "websocket_instability", "websocket_dropped", "stale_data"}:
+            sessions_to_avoid.append({
+                "date": d,
+                "reason": f"Fail status or operational bottleneck: {primary_bottleneck}."
+            })
+
+    best_session = ""
+    worst_session = ""
+    highest_entry_rate_session = ""
+    highest_no_entry_session = ""
+
+    if leaderboard:
+        best = max(leaderboard, key=lambda x: x["net_pnl"])
+        best_session = f"{best['date']} (${best['net_pnl']:.2f})"
+        worst = min(leaderboard, key=lambda x: x["net_pnl"])
+        worst_session = f"{worst['date']} (${worst['net_pnl']:.2f})"
+        high_entry = max(leaderboard, key=lambda x: x["entry_rate"])
+        highest_entry_rate_session = f"{high_entry['date']} ({high_entry['entry_rate']*100:.1f}%)"
+        high_no_entry = max(leaderboard, key=lambda x: x["no_entry_rate"])
+        highest_no_entry_session = f"{high_no_entry['date']} ({high_no_entry['no_entry_rate']*100:.1f}%)"
+
+    return {
+        "status": "OK" if leaderboard else "PARTIAL",
+        "summary": {
+            "best_session": best_session,
+            "worst_session": worst_session,
+            "highest_entry_rate_session": highest_entry_rate_session,
+            "highest_no_entry_session": highest_no_entry_session,
+        },
+        "leaderboard": leaderboard,
+        "entry_rate": entry_rates,
+        "no_entry_rate": no_entry_rates,
+        "risk_reject_rate": risk_reject_rates,
+        "expectancy": expectancies,
+        "recommended_sessions": recommended_sessions,
+        "sessions_to_avoid": sessions_to_avoid,
+    }
+
+
 def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
     reports = root / "reports"
     found = False
@@ -1058,8 +1367,11 @@ def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
             "recommendations": no_entry.get("recommendations", []),
             "market_data_quality": no_entry.get("market_data_quality", {}),
         }
-    elif no_entry_error != "missing":
-        _research_alert(state, "NO_ENTRY_REPORT_UNREADABLE", str(no_entry_error), no_entry_path or reports)
+        state["research_analytics"]["no_entry_analytics"] = _extract_no_entry_analytics(no_entry)
+    else:
+        state["research_analytics"]["no_entry_analytics"] = _extract_no_entry_analytics(None)
+        if no_entry_error != "missing":
+            _research_alert(state, "NO_ENTRY_REPORT_UNREADABLE", str(no_entry_error), no_entry_path or reports)
 
     session_path = _latest_json_file(reports, "session_runtime_evaluation_*.json")
     session, session_error = _read_json(session_path) if session_path else (None, "missing")
@@ -1078,8 +1390,11 @@ def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
             "inventory_replay_readiness": session.get("inventory_replay_readiness", {}),
             "timing_quality": session.get("timing_quality", {}),
         }
-    elif session_error != "missing":
-        _research_alert(state, "SESSION_RUNTIME_REPORT_UNREADABLE", str(session_error), session_path or reports)
+        state["research_analytics"]["session_analytics"] = _extract_session_analytics(session, reports)
+    else:
+        state["research_analytics"]["session_analytics"] = _extract_session_analytics(None, reports)
+        if session_error != "missing":
+            _research_alert(state, "SESSION_RUNTIME_REPORT_UNREADABLE", str(session_error), session_path or reports)
 
     quality_path = _latest_json_file(reports, "quant_data_quality_*.json")
     quality, quality_error = _read_json(quality_path) if quality_path else (None, "missing")

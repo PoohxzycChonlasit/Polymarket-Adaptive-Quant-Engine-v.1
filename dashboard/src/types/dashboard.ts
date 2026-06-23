@@ -102,6 +102,78 @@ export interface ReplayAnalytics {
   evidence_table?: ReplayTradeRow[];
 }
 
+export interface NoEntryAnalytics {
+  status?: "OK" | "PARTIAL" | "MISSING" | string;
+  summary?: {
+    total_candidates?: number;
+    entries?: number;
+    entry_rate?: number;
+  };
+  root_causes?: [string, number][];
+  blocker_categories?: [string, number][];
+  timing_cutoff?: {
+    count_time_unsafe?: number;
+    avg_seconds_remaining?: number;
+    closest_seconds_remaining?: number | null;
+    timing_buckets?: Record<string, number>;
+  };
+  risk_zero?: {
+    count_risk_plan_zero?: number;
+    bankroll_tier_name?: string;
+    bankroll_mode?: string;
+    micro_position_size?: number;
+    micro_survival_active?: boolean;
+  };
+  liquidity?: {
+    count_orderbook_unavailable_or_stale?: number;
+    average_orderbook_age_ms?: number;
+    token_mapping_warning_count?: number;
+  };
+  ev_missing?: {
+    no_probability_model_output?: number;
+    no_market_price?: number;
+  };
+  clob_errors?: Record<string, number>;
+  recommended_investigation?: string[];
+}
+
+export interface SessionLeaderboardRow {
+  date: string;
+  trades: number;
+  wins: number;
+  losses: number;
+  win_rate: number;
+  net_pnl: number;
+  profit_factor: number;
+  entry_rate: number;
+  risk_rejects: number;
+  expectancy: number;
+  primary_bottleneck: string;
+  verdict: string;
+}
+
+export interface SessionRecommendationRow {
+  date: string;
+  reason: string;
+}
+
+export interface SessionAnalytics {
+  status?: "OK" | "PARTIAL" | "MISSING" | string;
+  summary?: {
+    best_session?: string;
+    worst_session?: string;
+    highest_entry_rate_session?: string;
+    highest_no_entry_session?: string;
+  };
+  leaderboard?: SessionLeaderboardRow[];
+  entry_rate?: { date: string; entry_rate: number }[];
+  no_entry_rate?: { date: string; no_entry_rate: number }[];
+  risk_reject_rate?: { date: string; risk_reject_rate: number }[];
+  expectancy?: { date: string; expectancy: number }[];
+  recommended_sessions?: SessionRecommendationRow[];
+  sessions_to_avoid?: SessionRecommendationRow[];
+}
+
 export interface ResearchAnalytics {
   status?: "OK" | "PARTIAL" | "MISSING" | string;
   generated_at?: string;
@@ -126,6 +198,8 @@ export interface ResearchAnalytics {
     data_quality?: Record<string, unknown>;
   };
   replay_analytics?: ReplayAnalytics;
+  no_entry_analytics?: NoEntryAnalytics;
+  session_analytics?: SessionAnalytics;
   alerts?: AlertRecord[];
 }
 

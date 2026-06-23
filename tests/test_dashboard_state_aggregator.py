@@ -437,6 +437,87 @@ def test_replay_analytics_when_report_malformed(tmp_path: Path) -> None:
     assert any(alert["code"] == "REPLAY_REPORT_UNREADABLE" for alert in state["research_analytics"]["alerts"])
 
 
+def test_no_entry_analytics_when_report_exists(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "reports" / "no_entry_report_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "total_scanned": 100,
+            "total_entered": 0,
+            "total_skipped": 100,
+            "count_time_unsafe": 10,
+            "count_risk_plan_zero": 5,
+            "count_orderbook_unavailable_or_stale": 20,
+            "root_cause_counts": {"strategy": 50, "risk": 5, "cutoff": 10, "data": 20, "execution": 15},
+            "top_skip_reasons": [["confidence_too_low", 50], ["delta_extreme", 15]],
+            "timing_decay_summary": {
+                "avg_seconds_remaining": 45.5,
+                "min_seconds_remaining": 12.0
+            },
+            "phase2_coverage": {
+                "bankroll_tier_name": "Tier 1",
+                "bankroll_mode": "defensive",
+                "micro_position_size": 25.0,
+                "micro_survival_active": True
+            },
+            "market_data_quality": {
+                "average_orderbook_age_ms": 120.0,
+                "token_mapping_warning_count": 2,
+                "clob_error_categories": {"timeout": 3}
+            },
+            "skip_reason_counts": {
+                "no_probability_model_output": 8,
+                "no_market_price": 4
+            },
+            "recommendations": ["Review strategy thresholds."]
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    no_entry_an = state["research_analytics"]["no_entry_analytics"]
+
+    assert no_entry_an["status"] == "OK"
+    assert no_entry_an["summary"]["total_candidates"] == 100
+    assert no_entry_an["summary"]["entries"] == 0
+    assert no_entry_an["summary"]["entry_rate"] == 0.0
+    assert len(no_entry_an["root_causes"]) == 5
+    assert len(no_entry_an["blocker_categories"]) == 2
+    assert no_entry_an["timing_cutoff"]["count_time_unsafe"] == 10
+    assert no_entry_an["timing_cutoff"]["avg_seconds_remaining"] == 45.5
+    assert no_entry_an["timing_cutoff"]["closest_seconds_remaining"] == 12.0
+    assert no_entry_an["risk_zero"]["count_risk_plan_zero"] == 5
+    assert no_entry_an["risk_zero"]["bankroll_tier_name"] == "Tier 1"
+    assert no_entry_an["risk_zero"]["micro_position_size"] == 25.0
+    assert no_entry_an["risk_zero"]["micro_survival_active"] is True
+    assert no_entry_an["liquidity"]["count_orderbook_unavailable_or_stale"] == 20
+    assert no_entry_an["liquidity"]["average_orderbook_age_ms"] == 120.0
+    assert no_entry_an["liquidity"]["token_mapping_warning_count"] == 2
+    assert no_entry_an["ev_missing"]["no_probability_model_output"] == 8
+    assert no_entry_an["ev_missing"]["no_market_price"] == 4
+    assert no_entry_an["clob_errors"] == {"timeout": 3}
+    assert no_entry_an["recommended_investigation"] == ["Review strategy thresholds."]
+
+
+def test_no_entry_analytics_when_report_missing(tmp_path: Path) -> None:
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    no_entry_an = state["research_analytics"]["no_entry_analytics"]
+
+    assert no_entry_an["status"] == "MISSING"
+    assert no_entry_an["summary"]["total_candidates"] == 0
+
+
+def test_no_entry_analytics_when_report_malformed(tmp_path: Path) -> None:
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "no_entry_report_2026-06-23.json").write_text("{bad json}", encoding="utf-8")
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    no_entry_an = state["research_analytics"]["no_entry_analytics"]
+
+    assert no_entry_an["status"] == "MISSING"
+    assert any(alert["code"] == "NO_ENTRY_REPORT_UNREADABLE" for alert in state["research_analytics"]["alerts"])
+
+
 def test_atomic_write_creates_valid_json(tmp_path: Path) -> None:
     state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
     output = tmp_path / "dashboard_state.json"
@@ -457,3 +538,116 @@ def test_no_source_file_is_modified(tmp_path: Path) -> None:
 
     after = (source.stat().st_size, source.stat().st_mtime_ns)
     assert after == before
+
+
+def test_session_analytics_when_report_exists(tmp_path: Path) -> None:
+    _write_json(
+        tmp_path / "reports" / "session_runtime_evaluation_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "session_status": "PASS",
+            "primary_bottleneck": "none",
+            "secondary_bottleneck": "none",
+            "scanned": 100,
+            "entered": 20,
+            "skipped": 80,
+            "top_skip_reasons": [["delta_extreme", 30]],
+            "recommendations": ["No recommendations needed."],
+            "inventory_replay_readiness": {"ok": True},
+            "timing_quality": {"average_seconds_remaining": 120.0},
+        }
+    )
+    _write_json(
+        tmp_path / "reports" / "replay_report_2026-06-23.json",
+        {
+            "date_from": "2026-06-23",
+            "total_trades": 20,
+            "wins": 12,
+            "losses": 8,
+            "win_rate": 0.6,
+            "gross_pnl": 150.0,
+            "average_pnl": 7.5,
+            "trades": []
+        }
+    )
+    _write_json(
+        tmp_path / "reports" / "no_entry_report_2026-06-23.json",
+        {
+            "date": "2026-06-23",
+            "total_scanned": 100,
+            "total_entered": 20,
+            "total_skipped": 80,
+            "count_risk_plan_zero": 5
+        }
+    )
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    session_an = state["research_analytics"]["session_analytics"]
+
+    assert session_an["status"] == "OK"
+    assert session_an["summary"]["best_session"] == "2026-06-23 ($150.00)"
+    assert session_an["summary"]["worst_session"] == "2026-06-23 ($150.00)"
+    assert session_an["summary"]["highest_entry_rate_session"] == "2026-06-23 (20.0%)"
+    assert session_an["summary"]["highest_no_entry_session"] == "2026-06-23 (80.0%)"
+    assert len(session_an["leaderboard"]) == 1
+    assert session_an["leaderboard"][0]["date"] == "2026-06-23"
+    assert session_an["leaderboard"][0]["trades"] == 20
+    assert session_an["leaderboard"][0]["wins"] == 12
+    assert session_an["leaderboard"][0]["losses"] == 8
+    assert session_an["leaderboard"][0]["win_rate"] == 0.6
+    assert session_an["leaderboard"][0]["net_pnl"] == 150.0
+    assert session_an["leaderboard"][0]["entry_rate"] == 0.2
+    assert session_an["leaderboard"][0]["risk_rejects"] == 5
+    assert session_an["leaderboard"][0]["expectancy"] == 7.5
+    assert session_an["leaderboard"][0]["verdict"] == "PASS"
+
+    assert session_an["entry_rate"] == [{"date": "2026-06-23", "entry_rate": 0.2}]
+    assert session_an["no_entry_rate"] == [{"date": "2026-06-23", "no_entry_rate": 0.8}]
+    assert session_an["risk_reject_rate"] == [{"date": "2026-06-23", "risk_reject_rate": 0.05}]
+    assert session_an["expectancy"] == [{"date": "2026-06-23", "expectancy": 7.5}]
+    assert len(session_an["recommended_sessions"]) == 1
+    assert session_an["recommended_sessions"][0]["date"] == "2026-06-23"
+    assert session_an["sessions_to_avoid"] == []
+
+
+def test_session_analytics_when_report_missing(tmp_path: Path) -> None:
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    session_an = state["research_analytics"]["session_analytics"]
+
+    assert session_an["status"] == "MISSING"
+    assert session_an["summary"]["best_session"] == ""
+    assert session_an["leaderboard"] == []
+
+
+def test_session_analytics_when_report_malformed(tmp_path: Path) -> None:
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    (reports_dir / "session_runtime_evaluation_2026-06-23.json").write_text("{bad json}", encoding="utf-8")
+
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    session_an = state["research_analytics"]["session_analytics"]
+
+    assert session_an["status"] == "MISSING"
+    assert any(alert["code"] == "SESSION_RUNTIME_REPORT_UNREADABLE" for alert in state["research_analytics"]["alerts"])
+
+
+def test_session_analytics_status_transitions(tmp_path: Path) -> None:
+    # 1. No reports at all: status is MISSING
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    assert state["research_analytics"]["session_analytics"]["status"] == "MISSING"
+
+    # 2. Only replay report exists: status is OK because leaderboard has 1 item
+    _write_json(
+        tmp_path / "reports" / "replay_report_2026-06-23.json",
+        {
+            "date_from": "2026-06-23",
+            "total_trades": 10,
+            "wins": 5,
+            "losses": 5,
+            "win_rate": 0.5,
+            "gross_pnl": 10.0,
+            "trades": []
+        }
+    )
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    assert state["research_analytics"]["session_analytics"]["status"] == "OK"

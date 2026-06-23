@@ -14,7 +14,7 @@ const researchRoadmap = [
   {
     title: "Session Analytics",
     description: "Paper-session health, entry funnel movement, runtime stability, and trade-count progression.",
-    status: "read-only planned",
+    status: "active v1",
   },
   {
     title: "Regime Analytics",
@@ -81,6 +81,16 @@ export function ResearchPage() {
   const summary = replayAnalytics?.summary;
   const opportunity = replayAnalytics?.opportunity_cost;
   const funnel = replayAnalytics?.lifecycle_funnel;
+
+  const noEntryAnalytics = research?.no_entry_analytics;
+  const noEntrySummary = noEntryAnalytics?.summary;
+  const timingCutoff = noEntryAnalytics?.timing_cutoff;
+  const riskZero = noEntryAnalytics?.risk_zero;
+  const liquidity = noEntryAnalytics?.liquidity;
+  const evMissing = noEntryAnalytics?.ev_missing;
+
+  const sessionAnalytics = research?.session_analytics;
+  const sessionSummary = sessionAnalytics?.summary;
 
   return (
     <div className="flex flex-col gap-3">
@@ -354,6 +364,370 @@ export function ResearchPage() {
                   ]}
                   empty="No trade evidence in latest report."
                 />
+              </div>
+            </div>
+          </div>
+        )}
+      </SectionPanel>
+
+      <SectionPanel title="No Entry Analytics V1" subtitle="Zero-trade diagnostics, root cause attribution, operational blocks, and capital protection details.">
+        {!noEntryAnalytics || noEntryAnalytics.status === "MISSING" ? (
+          <EmptyState label="No entry analytics data is available. Ensure latest no-entry report exists." />
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 min-[1600px]:grid-cols-4 gap-3">
+              <MetricCard
+                label="No Entry Status"
+                value={noEntryAnalytics.status ?? "n/a"}
+                helper="latest report status"
+                tone={noEntryAnalytics.status === "OK" ? "good" : "warn"}
+              />
+              <MetricCard
+                label="Total Candidates"
+                value={formatNumber(noEntrySummary?.total_candidates)}
+                helper="opportunities scanned"
+              />
+              <MetricCard
+                label="Entries / Rate"
+                value={`${noEntrySummary?.entries ?? 0} entries`}
+                helper={`Entry Rate: ${formatPercent(noEntrySummary?.entry_rate)}`}
+                tone={(noEntrySummary?.entries ?? 0) > 0 ? "warn" : "good"}
+              />
+              <MetricCard
+                label="Dominant Blocker"
+                value={String(research?.reports?.no_entry?.root_cause_category ?? "n/a").toUpperCase()}
+                helper="primary bottleneck source"
+                tone={research?.reports?.no_entry?.root_cause_category === "strategy" ? "good" : "bad"}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 min-[1600px]:grid-cols-3 gap-4">
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Root Cause Breakdown</h3>
+                <div className="flex flex-col gap-3 font-mono text-[12px] text-black">
+                  {(noEntryAnalytics.root_causes ?? []).map(([category, count]) => {
+                    const total = noEntrySummary?.total_candidates ?? 1;
+                    const pct = total > 0 ? (count / total) * 100 : 0;
+                    return (
+                      <div key={category} className="flex flex-col gap-1">
+                        <div className="flex justify-between">
+                          <span className="font-bold uppercase">{category}</span>
+                          <span>{count} ({pct.toFixed(1)}%)</span>
+                        </div>
+                        <div className="w-full bg-[#f2f2f2] h-2 rounded border border-[#d9d9d9]">
+                          <div
+                            className="bg-[#000000] h-full rounded"
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {(!noEntryAnalytics.root_causes || noEntryAnalytics.root_causes.length === 0) && (
+                    <div className="text-muted">No root cause counts available.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm min-[1600px]:col-span-2">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Recommended Investigation</h3>
+                {noEntryAnalytics.recommended_investigation && noEntryAnalytics.recommended_investigation.length > 0 ? (
+                  <ul className="m-0 pl-5 text-[13px] leading-relaxed text-[#404040] font-mono">
+                    {noEntryAnalytics.recommended_investigation.map((rec, i) => (
+                      <li key={i} className="mb-1">{rec}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-[#666666] text-[13px]">No recommendations available.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 min-[1600px]:grid-cols-2 gap-4">
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Blocker Category Table</h3>
+                <DataTable
+                  rows={(noEntryAnalytics.blocker_categories ?? []).map(([reason, count]) => {
+                    const total = noEntrySummary?.total_candidates ?? 1;
+                    return {
+                      reason,
+                      count,
+                      percentage: formatPercent(total > 0 ? count / total : 0)
+                    };
+                  })}
+                  columns={[
+                    { key: "reason", label: "Reason Blocker" },
+                    { key: "count", label: "Count" },
+                    { key: "percentage", label: "% of Total" }
+                  ]}
+                  empty="No blockers recorded."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm font-mono text-[12px] text-black">
+                  <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2 font-sans">Timing Cutoff Panel</h3>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Time Unsafe Skips:</span>
+                      <span className="font-bold">{timingCutoff?.count_time_unsafe ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Avg Seconds Remaining:</span>
+                      <span className="font-bold">{timingCutoff?.avg_seconds_remaining ? `${timingCutoff.avg_seconds_remaining.toFixed(1)}s` : "n/a"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Closest Seconds:</span>
+                      <span className="font-bold">{timingCutoff?.closest_seconds_remaining ? `${timingCutoff.closest_seconds_remaining}s` : "n/a"}</span>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-[#d9d9d9]">
+                      <div className="font-bold text-[#666666] mb-1 font-sans text-[10px] uppercase">Timing Buckets</div>
+                      {Object.entries(timingCutoff?.timing_buckets ?? {}).map(([b, count]) => (
+                        <div key={b} className="flex justify-between text-[11px] mt-0.5">
+                          <span className="capitalize">{b}:</span>
+                          <span>{String(count)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm font-mono text-[12px] text-black">
+                  <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2 font-sans">Risk Zero Panel</h3>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Risk Plan Zero Skips:</span>
+                      <span className="font-bold">{riskZero?.count_risk_plan_zero ?? 0}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Bankroll Tier Name:</span>
+                      <span className="font-bold">{riskZero?.bankroll_tier_name ?? "n/a"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Bankroll Mode:</span>
+                      <span className="font-bold">{riskZero?.bankroll_mode ?? "n/a"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Micro Position Size:</span>
+                      <span className="font-bold">{riskZero?.micro_position_size ? formatCurrency(riskZero.micro_position_size) : "n/a"}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-[#666666]">Micro Survival Active:</span>
+                      <span className="font-bold">{String(riskZero?.micro_survival_active ?? "false")}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 min-[1600px]:grid-cols-3 gap-4">
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm font-mono text-[12px] text-black">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2 font-sans">Liquidity Panel</h3>
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between">
+                    <span className="text-[#666666]">Orderbook Unavailable Skips:</span>
+                    <span className="font-bold">{liquidity?.count_orderbook_unavailable_or_stale ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#666666]">Avg Orderbook Age:</span>
+                    <span className="font-bold">{liquidity?.average_orderbook_age_ms ? `${liquidity.average_orderbook_age_ms.toFixed(1)}ms` : "n/a"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#666666]">Token Mapping Warnings:</span>
+                    <span className="font-bold text-[#c62828]">{liquidity?.token_mapping_warning_count ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm font-mono text-[12px] text-black">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2 font-sans">EV Missing Panel</h3>
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between">
+                    <span className="text-[#666666]">Missing Prob Model Skips:</span>
+                    <span className="font-bold">{evMissing?.no_probability_model_output ?? 0}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#666666]">Missing Market Price Skips:</span>
+                    <span className="font-bold">{evMissing?.no_market_price ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">CLOB Error Panel</h3>
+                <DataTable
+                  rows={Object.entries(noEntryAnalytics.clob_errors ?? {}).map(([error, count]) => ({ error, count }))}
+                  columns={[
+                    { key: "error", label: "CLOB Error Category" },
+                    { key: "count", label: "Count" }
+                  ]}
+                  empty="No CLOB errors recorded."
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </SectionPanel>
+
+      <SectionPanel title="Session Analytics V1" subtitle="Multi-session performance, leaderboard, entry yield, no-entry rate, risk rejection, and expectancy trends.">
+        {!sessionAnalytics || sessionAnalytics.status === "MISSING" ? (
+          <EmptyState label="No session analytics data is available. Ensure latest session runtime evaluation report exists." />
+        ) : (
+          <div className="flex flex-col gap-4">
+            {/* Session Summary Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-2 min-[1600px]:grid-cols-4 gap-3">
+              <MetricCard
+                label="Best Session"
+                value={sessionSummary?.best_session || "n/a"}
+                helper="by net realized PnL"
+                tone={(sessionSummary?.best_session && !sessionSummary.best_session.includes("$-")) ? "good" : "neutral"}
+              />
+              <MetricCard
+                label="Worst Session"
+                value={sessionSummary?.worst_session || "n/a"}
+                helper="by net realized PnL"
+                tone={(sessionSummary?.worst_session && sessionSummary.worst_session.includes("$-")) ? "bad" : "neutral"}
+              />
+              <MetricCard
+                label="Highest Entry Rate"
+                value={sessionSummary?.highest_entry_rate_session || "n/a"}
+                helper="session date & rate"
+              />
+              <MetricCard
+                label="Highest No-Entry Rate"
+                value={sessionSummary?.highest_no_entry_session || "n/a"}
+                helper="session date & skipped rate"
+              />
+            </div>
+
+            {/* Session Leaderboard */}
+            <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+              <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Session Leaderboard</h3>
+              <div className="overflow-x-auto">
+                <DataTable
+                  rows={(sessionAnalytics.leaderboard ?? []).map((row) => ({
+                    ...row,
+                    net_pnl: formatCurrency(row.net_pnl),
+                    win_rate: formatPercent(row.win_rate),
+                    entry_rate: formatPercent(row.entry_rate),
+                    expectancy: formatNumber(row.expectancy, 4),
+                  }))}
+                  columns={[
+                    { key: "date", label: "Session Date" },
+                    { key: "trades", label: "Trades" },
+                    { key: "win_rate", label: "Win Rate" },
+                    { key: "net_pnl", label: "PnL ($)" },
+                    { key: "profit_factor", label: "Profit Factor" },
+                    { key: "entry_rate", label: "Entry Rate" },
+                    { key: "risk_rejects", label: "Risk Rejects" },
+                    { key: "expectancy", label: "Expectancy" },
+                    { key: "primary_bottleneck", label: "Primary Blocker" },
+                    { key: "verdict", label: "Verdict" },
+                  ]}
+                  empty="No sessions recorded in leaderboard."
+                />
+              </div>
+            </div>
+
+            {/* Rates breakdown panels */}
+            <div className="grid grid-cols-1 md:grid-cols-2 min-[1600px]:grid-cols-4 gap-4">
+              {/* Entry Rate by Session */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Entry Rate By Session</h3>
+                <DataTable
+                  rows={(sessionAnalytics.entry_rate ?? []).map((row) => ({
+                    ...row,
+                    entry_rate: formatPercent(row.entry_rate),
+                  }))}
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "entry_rate", label: "Entry Rate" },
+                  ]}
+                  empty="No entry rate data available."
+                />
+              </div>
+
+              {/* No Entry By Session */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">No Entry By Session</h3>
+                <DataTable
+                  rows={(sessionAnalytics.no_entry_rate ?? []).map((row) => ({
+                    ...row,
+                    no_entry_rate: formatPercent(row.no_entry_rate),
+                  }))}
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "no_entry_rate", label: "No-Entry Rate" },
+                  ]}
+                  empty="No no-entry rate data available."
+                />
+              </div>
+
+              {/* Risk Reject By Session */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Risk Reject By Session</h3>
+                <DataTable
+                  rows={(sessionAnalytics.risk_reject_rate ?? []).map((row) => ({
+                    ...row,
+                    risk_reject_rate: formatPercent(row.risk_reject_rate),
+                  }))}
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "risk_reject_rate", label: "Risk Reject Rate" },
+                  ]}
+                  empty="No risk reject rate data available."
+                />
+              </div>
+
+              {/* Expectancy By Session */}
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-black border-b border-[#d9d9d9] pb-2">Expectancy By Session</h3>
+                <DataTable
+                  rows={(sessionAnalytics.expectancy ?? []).map((row) => ({
+                    ...row,
+                    expectancy: formatNumber(row.expectancy, 4),
+                  }))}
+                  columns={[
+                    { key: "date", label: "Date" },
+                    { key: "expectancy", label: "Expectancy" },
+                  ]}
+                  empty="No expectancy data available."
+                />
+              </div>
+            </div>
+
+            {/* Recommendations Panels */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-[#008f39] border-b border-[#d9d9d9] pb-2">Recommended Sessions</h3>
+                {sessionAnalytics.recommended_sessions?.length ? (
+                  <div className="flex flex-col gap-2">
+                    {sessionAnalytics.recommended_sessions.map((rec) => (
+                      <div key={rec.date} className="p-2 border border-[#d9d9d9] bg-[#e6f4ea]/10 rounded">
+                        <div className="font-bold text-[13px] text-[#008f39] font-mono">{rec.date}</div>
+                        <div className="text-[12px] text-[#404040] mt-1">{rec.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState label="No recommended sessions found." />
+                )}
+              </div>
+
+              <div className="p-4 border border-[#d9d9d9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[14px] font-bold uppercase tracking-wider text-[#c62828] border-b border-[#d9d9d9] pb-2">Sessions to Avoid</h3>
+                {sessionAnalytics.sessions_to_avoid?.length ? (
+                  <div className="flex flex-col gap-2">
+                    {sessionAnalytics.sessions_to_avoid.map((rec) => (
+                      <div key={rec.date} className="p-2 border border-[#d9d9d9] bg-[#fde8e8]/20 rounded">
+                        <div className="font-bold text-[13px] text-[#c62828] font-mono">{rec.date}</div>
+                        <div className="text-[12px] text-[#404040] mt-1">{rec.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState label="No sessions to avoid found." />
+                )}
               </div>
             </div>
           </div>
