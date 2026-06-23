@@ -1,4 +1,4 @@
-import type { ChartRow, CountRecord, DashboardState, Tone } from "./types";
+import type { ChartRow, CountRecord, DashboardState } from "../types/dashboard";
 
 export function numericValue(value: unknown): number | null {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -32,19 +32,6 @@ export function toWinLossRows(today?: Record<string, unknown>): ChartRow[] {
     { name: "Losses", value: numericValue(today?.loss_count) ?? 0 },
     { name: "Breakeven", value: numericValue(today?.breakeven_count) ?? 0 },
   ].filter((row) => row.value > 0);
-}
-
-export function getStateTone(stateStatus?: string): Tone {
-  if (stateStatus === "OK") {
-    return "good";
-  }
-  if (stateStatus === "PARTIAL") {
-    return "warn";
-  }
-  if (stateStatus === "ERROR") {
-    return "bad";
-  }
-  return "neutral";
 }
 
 export function formatCurrency(value: unknown): string {

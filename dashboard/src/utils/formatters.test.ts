@@ -3,10 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   entriesFromRecord,
   formatCurrency,
-  getStateTone,
   sumRecordValues,
   toWinLossRows,
-} from "./dashboardData";
+} from "./formatters";
+import { getStateTone } from "./guards";
 
 describe("dashboard data helpers", () => {
   it("turns count records into sorted chart rows", () => {

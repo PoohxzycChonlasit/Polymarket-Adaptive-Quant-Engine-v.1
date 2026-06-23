@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { DashboardHealth, DashboardState } from "./types";
+import type { DashboardHealth, DashboardState } from "../../types/dashboard";
 
 const API_BASE_URL = import.meta.env.VITE_DASHBOARD_API_BASE_URL ?? "";
 
