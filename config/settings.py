@@ -207,7 +207,7 @@ class Settings(BaseSettings):
     max_entries_per_market: int = 1
     max_risk_per_market: float = 0.06
     micro_survival_bankroll_threshold: float = 100.0
-    micro_survival_min_position_size: float = 0.05
+    micro_survival_min_position_size: float = 0.10  # Polymarket CLOB hard minimum is $0.10
     micro_survival_risk_fraction: float = 0.0025
     micro_adaptive_timing_enabled: bool = True
     micro_hard_close_floor_seconds: int = 35

@@ -545,7 +545,7 @@ def build_micro_survival_risk_plan(
     )
     risk_cap_usd = account_balance * effective_fraction
     minimum_usd = max(float(min_position_size_usd), 0.0)
-    notional_size = min(max(risk_cap_usd, minimum_usd), risk_cap_usd, account_balance)
+    notional_size = min(max(risk_cap_usd, minimum_usd), account_balance)
     notional_size = round(max(notional_size, 0.0), 6)
     position_size = round(notional_size / max(entry_price, 1e-9), 6)
     stop_loss_price = entry_price * (1 - stop_loss_pct)

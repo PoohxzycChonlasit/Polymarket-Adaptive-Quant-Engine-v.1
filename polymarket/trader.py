@@ -626,7 +626,7 @@ class PolymarketTrader:
             float(getattr(self.settings, "max_single_trade_risk", 0.03) or 0.03),
         )
         risk_cap = max(balance * max(effective_fraction, 0.0), 0.0)
-        return round(min(max(self._micro_survival_min_position_size(), risk_cap), risk_cap, balance), 6)
+        return round(min(max(risk_cap, self._micro_survival_min_position_size()), balance), 6)
 
     def _bankroll_mode_detail(self, bankroll: float | None = None) -> dict[str, object]:
         balance = self.bankroll_state.current_bankroll_for_sizing if bankroll is None else float(bankroll)
@@ -9847,6 +9847,7 @@ class PolymarketTrader:
             self._apply_risk_mode_to_plan(risk_plan, risk_mode_decision)
 
         if risk_plan.position_size <= 0:
+            _side_win_rate = probability.p_yes if model_side == "YES" else probability.p_no
             self._emit_zero_size_probe_event(
                 ticker=ticker,
                 market_id=market.market_id,
@@ -9854,6 +9855,7 @@ class PolymarketTrader:
                 ptb_info=ptb_info,
                 timing_detail=timing_detail,
                 confidence=confidence,
+                side_win_rate=_side_win_rate,
                 ev=model_ev,
                 entry_price=entry_price,
             )
@@ -12573,6 +12575,7 @@ class PolymarketTrader:
         ptb_info,
         timing_detail: dict,
         confidence: float,
+        side_win_rate: float = 0.0,
         ev: float,
         entry_price: float,
     ) -> None:
@@ -12630,6 +12633,7 @@ class PolymarketTrader:
                 "micro_position_size": round(float(self._micro_position_size(bankroll)), 6),
                 # model output
                 "confidence": round(float(confidence or 0.0), 6),
+                "side_win_rate": round(float(side_win_rate or 0.0), 6),
                 "ev": round(ev_f, 6),
                 "ev_positive": ev_f > 0.0,
                 "confidence_passed": float(confidence or 0.0) >= 0.54,
