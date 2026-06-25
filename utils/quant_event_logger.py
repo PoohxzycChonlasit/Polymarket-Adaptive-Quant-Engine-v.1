@@ -74,6 +74,44 @@ class QuantEventLogger:
         "signal_filter_shadow": "signal_filter_shadow",
         "signal_filter_shadow_phase_b": "signal_filter_shadow_phase_b",
         "delta_shadow": "delta_shadow",
+        "ghost_position_detected": "system_health",
+    }
+
+    # Mapping from internal logger category → canonical stream event type
+    _STREAM_EVENT_TYPE_MAP: dict[str, str] = {
+        "market_snapshot": "market_snapshot_v1",
+        "decision": "go_no_go_decision_v1",
+        "execution": "paper_order_submitted_v1",
+        "trade_open": "position_opened_v1",
+        "trade_close": "position_closed_v1",
+        "trade_path_checkpoint": "position_reconciled_v1",
+        "orderbook_lineage_probe": "orderbook_state_changed_v1",
+        "risk_event": "risk_mode_changed_v1",
+        "system_health": "runtime_warning_v1",
+        "research_snapshot": "analytics_loaded_v1",
+        "stop_loss_shadow": "exit_signal_v1",
+        "signal_filter_shadow": "candidate_rejected_v1",
+        "signal_filter_shadow_phase_b": "candidate_rejected_v1",
+        "delta_shadow": "sizing_evaluated_v1",
+        "ghost_position_detected": "ghost_position_detected_v1",
+    }
+
+    _STREAM_PRIORITY_MAP: dict[str, str] = {
+        "market_snapshot": "LOW",
+        "decision": "HIGH",
+        "execution": "HIGH",
+        "trade_open": "CRITICAL",
+        "trade_close": "CRITICAL",
+        "trade_path_checkpoint": "HIGH",
+        "orderbook_lineage_probe": "LOW",
+        "risk_event": "HIGH",
+        "system_health": "HIGH",
+        "research_snapshot": "NORMAL",
+        "stop_loss_shadow": "HIGH",
+        "signal_filter_shadow": "LOW",
+        "signal_filter_shadow_phase_b": "LOW",
+        "delta_shadow": "NORMAL",
+        "ghost_position_detected": "CRITICAL",
     }
 
     def __init__(
@@ -105,6 +143,9 @@ class QuantEventLogger:
         self.slim_decision_logging = bool(getattr(settings, "slim_decision_logging", False))
         self._now = now or (lambda: datetime.now(timezone.utc))
         self._disabled_categories: set[str] = set()
+        # Parallel stream writer — injected by caller (e.g. PolymarketTrader).
+        # None by default so existing tests are unaffected.
+        self.event_stream: Any = None
 
     @property
     def disabled_categories(self) -> set[str]:
@@ -140,6 +181,9 @@ class QuantEventLogger:
     def log_system_health(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("system_health", payload)
 
+    def log_ghost_position_detected(self, payload: dict[str, Any] | None = None) -> bool:
+        return self._write_event("ghost_position_detected", payload)
+
     def log_research_snapshot(self, payload: dict[str, Any] | None = None) -> bool:
         if not self.research_enabled:
             return False
@@ -174,7 +218,18 @@ class QuantEventLogger:
             "payload": enriched_payload,
         }
         path = self.base_dir / category / f"{timestamp[:10]}.jsonl"
-        return self._append_jsonl(category, path, event)
+        result = self._append_jsonl(category, path, event)
+
+        # --- Parallel emit to RuntimeEventStream (if attached) ---
+        if self.event_stream is not None:
+            try:
+                stream_type = self._STREAM_EVENT_TYPE_MAP.get(event_type, event_type)
+                stream_priority = self._STREAM_PRIORITY_MAP.get(event_type, "NORMAL")
+                self.event_stream.emit(stream_type, enriched_payload, priority=stream_priority)
+            except Exception:
+                LOGGER.warning("[QuantEventLogger] event_stream emit failed", exc_info=True)
+
+        return result
 
     def _with_candidate_trace_identity(
         self,

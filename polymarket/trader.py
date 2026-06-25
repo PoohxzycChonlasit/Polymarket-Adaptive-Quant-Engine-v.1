@@ -596,6 +596,48 @@ class PolymarketTrader:
     def _runtime_mode(self) -> str:
         return "paper" if self.settings.paper_trading else "live"
 
+    def run_ghost_position_sentinel(self, runtime_owner: Any | None = None) -> None:
+        """Sentinel to scan and quarantine ghost paper positions on startup."""
+        if not self.settings.paper_trading:
+            LOGGER.info("[SENTINEL] Sentinel skipped in live mode.")
+            return
+
+        run_id = getattr(self.quant_events, "run_id", "") or ""
+
+        owner_dict = None
+        if runtime_owner is not None:
+            if hasattr(runtime_owner, "manager"):
+                try:
+                    owner_dict = runtime_owner.manager._read_owner(runtime_owner.mode)
+                except Exception:
+                    pass
+            if owner_dict is None and isinstance(runtime_owner, dict):
+                owner_dict = runtime_owner
+
+        if owner_dict is None:
+            try:
+                owner_file = Path("runtime/ownership/paper_runtime_owner.json")
+                if owner_file.exists():
+                    owner_dict = json.loads(owner_file.read_text(encoding="utf-8"))
+            except Exception:
+                pass
+
+        LOGGER.info(
+            "[SENTINEL] Running Ghost Position Sentinel | run_id=%s | owner_pid=%s",
+            run_id, owner_dict.get("pid") if owner_dict else "unknown"
+        )
+
+        self.tracker.set_runtime_session_id(run_id)
+
+        def emit_cb(event_method: str, payload: dict[str, Any]) -> None:
+            self._emit_quant_event(event_method, payload)
+
+        self.tracker.run_sentinel_checks(
+            current_run_id=run_id,
+            active_owner=owner_dict,
+            telemetry_emit=emit_cb,
+        )
+
     def _micro_survival_threshold(self) -> float:
         return max(float(getattr(self.settings, "micro_survival_bankroll_threshold", 100.0) or 100.0), 0.0)
 
@@ -692,7 +734,16 @@ class PolymarketTrader:
 
     def _init_quant_event_logger(self) -> QuantEventLogger | None:
         try:
-            return QuantEventLogger(mode=self._runtime_mode(), source_module="polymarket.trader")
+            ql = QuantEventLogger(mode=self._runtime_mode(), source_module="polymarket.trader")
+            try:
+                from utils.runtime_event_stream import RuntimeEventStream
+                ql.event_stream = RuntimeEventStream(
+                    session_id=ql.run_id,
+                    mode=self._runtime_mode(),
+                )
+            except Exception as exc:
+                LOGGER.warning("[OBSERVABILITY] RuntimeEventStream disabled: %s", exc)
+            return ql
         except Exception as exc:
             LOGGER.warning("[OBSERVABILITY] QuantEventLogger disabled at startup: %s", exc)
             return None
@@ -1945,6 +1996,29 @@ class PolymarketTrader:
     def _finish_cycle_timing(self, *, reason: str, force: bool = False) -> None:
         self._last_scan_cycle_duration_ms = self._cycle_elapsed_ms()
         self._maybe_emit_system_health(force=force, reason=reason)
+        self._push_event_stream_metrics()
+
+    def _push_event_stream_metrics(self) -> None:
+        try:
+            ql = getattr(self, "quant_events", None)
+            stream = getattr(ql, "event_stream", None)
+            if stream is None:
+                return
+            stream.update_metrics_cache({
+                "loop_latency_ms": self._last_scan_cycle_duration_ms,
+                "decision_latency_ms": self._last_scan_cycle_duration_ms,
+                "paper_balance": float(getattr(self.settings, "account_balance", 0.0) or 0.0),
+                "active_positions": len(self.tracker.open_positions()),
+                "current_bankroll_tier": str(
+                    getattr(self.bankroll_state, "current_bankroll_tier", "") or ""
+                ),
+                "risk_mode": self._risk_mode_state.current_mode.value,
+                "candidate_count": int(
+                    getattr(self, "_current_cycle_market_count", 0) or 0
+                ),
+            })
+        except Exception:
+            LOGGER.debug("[EventStream] metrics push failed", exc_info=True)
 
     def _emit_telegram_route_telemetry(self, event: dict[str, object]) -> None:
         try:
