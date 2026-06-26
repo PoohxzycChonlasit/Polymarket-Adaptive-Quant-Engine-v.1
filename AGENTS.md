@@ -221,6 +221,31 @@ Minimum evidence grade by task class:
 
 ---
 
+## Repository Output Location Policy
+
+**The repository root is reserved only for designated permanent entrypoints. Never create new `.md` files in root.**
+
+Before writing any `.md` deliverable, declare:
+```
+DOCUMENT_TYPE: [audit|report|design|research|operations]
+DESTINATION:   docs/[audits|reports|architecture|research|operations]/FILENAME.md
+REASON:        [one line why this destination is correct]
+```
+
+Routing table:
+
+| Type | Destination |
+|------|------------|
+| Architecture / design / spec / plan / blueprint | `docs/architecture/` |
+| Audit / review / gate check / forensic / verification | `docs/audits/` |
+| Report / commit report / implementation report / status sync / batch report | `docs/reports/` |
+| Research / discovery / hypothesis / evidence | `docs/research/` |
+| Operations / runbook / runtime procedure | `docs/operations/` |
+
+Creating a `.md` file in root (other than a designated entrypoint or `AI_HANDOFF_*.md`) is a policy violation. If detected, invoke Role 24 (Repository Librarian) immediately to route it.
+
+---
+
 ## Mandatory Task Output Contract
 
 Every AI task — regardless of class — must end with this block:

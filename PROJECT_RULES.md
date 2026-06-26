@@ -152,6 +152,45 @@ When root has > 10 untracked `.md` files, invoke Role 24 (Repository Librarian) 
 
 ---
 
+# Repository Output Location Policy
+
+The repository root is reserved only for designated permanent entrypoints. AI agents must NOT create new markdown files in root.
+
+**Before writing any `.md` file, declare:**
+1. Document type (audit / report / design / research / operations)
+2. Destination path under `docs/`
+3. Why that path is correct
+
+**Routing table:**
+
+| Document type | Destination |
+|---------------|------------|
+| Architecture / design / spec / plan / blueprint / roadmap | `docs/architecture/` |
+| Audit / review / forensic / validation / gate check / verification | `docs/audits/` |
+| Report / commit report / implementation report / status sync / batch report / session artifact | `docs/reports/` |
+| Research / discovery / hypothesis / inventory / evidence | `docs/research/` |
+| Operations / runbook / runtime procedure | `docs/operations/` |
+
+**Examples:**
+
+```
+WRONG:  BATCH_2_GATE_CHECK_001.md         (root)
+RIGHT:  docs/audits/BATCH_2_GATE_CHECK_001.md
+
+WRONG:  CURRENT_PROJECT_STATUS_SYNC_001.md  (root)
+RIGHT:  docs/reports/CURRENT_PROJECT_STATUS_SYNC_001.md
+
+WRONG:  MY_DESIGN_001.md                  (root)
+RIGHT:  docs/architecture/MY_DESIGN_001.md
+```
+
+**Designated root entrypoints** (the only `.md` files permitted in root):
+`README.md` · `AGENTS.md` · `PROJECT_RULES.md` · `MASTER_AGENT_ROUTER.md` · `CURRENT_PROJECT_STATUS.md` · `CODEX_START_HERE.md` · `FILE_INDEX.md` · `DOCUMENTATION_MAP.md` · `CLAUDE.md` · `CODEX_START_PROMPT.md` · `CHATGPT_PROJECT_START_PROMPT.md` · `PROJECT_STRUCTURE.md` · `KNOWN_ISSUES.md` · `QUANT_FUTURE_DECISION_ENGINE.md` · `QUANT_LIFECYCLE_INVENTORY_ENGINE.md` · `QUANT_REGIME_PROBABILITY_ENGINE.md` · `BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md` · `INVENTORY_REPLAY_RESEARCH_PLAN.md` · `MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md` · `VULTR_PAPER_RUN.md` · `AI_HANDOFF_*.md`
+
+Any other `.md` file created in root is a policy violation. When the Repository Librarian (Role 24) detects > 0 non-entrypoint `.md` files in root, it must route them immediately.
+
+---
+
 # Session Handoff Rule
 
 Every AI session must produce a handoff document before the session closes or the user switches to a different AI system.

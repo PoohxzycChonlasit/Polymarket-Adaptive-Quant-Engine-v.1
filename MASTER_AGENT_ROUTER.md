@@ -135,6 +135,22 @@ After session ends, produce a RUNTIME_SESSION_REPORT with: run_id, cycles, event
 
 ---
 
+## Repository Output Location Rule
+
+Before any `.md` deliverable is written, the task must declare its destination under `docs/`. Root markdown creation (except for designated entrypoints and `AI_HANDOFF_*.md`) is a policy violation.
+
+**If a task creates or moves markdown files** → invoke Role 24 (Repository Librarian) to select and verify the destination path before writing.
+
+Quick routing:
+- Gate check / audit / verification / forensic → `docs/audits/`
+- Report / commit report / batch report / status sync → `docs/reports/`
+- Design / spec / plan / blueprint / architecture → `docs/architecture/`
+- Research / discovery / evidence → `docs/research/`
+
+Any AI that writes a non-entrypoint `.md` to root must route it to `docs/` before the task output contract is complete.
+
+---
+
 ## Documentation Cleanup Trigger
 
 When there are > 10 untracked `.md` files in the repository root, invoke `24_REPOSITORY_LIBRARIAN_AGENT.md` before the next commit. The Librarian routes files to correct `docs/` subdirectories and updates `FILE_INDEX.md`.
