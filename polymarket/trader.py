@@ -60,6 +60,7 @@ from utils.telegram_alerts import TelegramAlertLayer, emit_startup_config_teleme
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
 import polymarket.shadow_telemetry as shadow_telemetry
 from polymarket.trader_presentation import TraderPresentationHelper
+from polymarket.orchestration.trader_lifecycle import TraderLifecycleHelper
 
 
 LOGGER = logging.getLogger(__name__)
@@ -372,6 +373,7 @@ class PolymarketTrader:
     """
 
     _presentation = TraderPresentationHelper()
+    _lifecycle = TraderLifecycleHelper()
 
     def __init__(
         self,
@@ -550,51 +552,17 @@ class PolymarketTrader:
         self._yes_floor_shadow_rejects = 0
 
     def _call_shutdown_hook(self, hook, *, join_timeout: float | None = None) -> None:
-        if not callable(hook):
-            return
-        if join_timeout is None:
-            hook()
-            return
-        try:
-            hook(join_timeout=join_timeout)
-        except TypeError:
-            hook()
+        return self._lifecycle.call_shutdown_hook(self, hook, join_timeout=join_timeout)
 
     def close(self, *, join_timeout: float | None = None) -> None:
         """Release trader-owned background resources without changing trading state."""
-        if self._shutdown_complete:
-            return
-        self._shutdown_complete = True
-        try:
-            self._emit_path_truth_shutdown_events()
-        except Exception:
-            pass
-        try:
-            close_ptb = getattr(self.ptb_tracker, "close", None)
-            self._call_shutdown_hook(close_ptb, join_timeout=join_timeout)
-        except Exception as exc:
-            LOGGER.debug("[SHUTDOWN] PTB/oracle feed close failed: %s", exc)
-        for module_name, attr_name in (
-            ("polymarket.market_feed", "_feed"),
-            ("polymarket.quant_indicators", "_quant_feed"),
-        ):
-            try:
-                module = __import__(module_name, fromlist=[attr_name])
-                feed = getattr(module, attr_name, None)
-                stop_feed = getattr(feed, "stop", None)
-                self._call_shutdown_hook(stop_feed, join_timeout=join_timeout)
-            except Exception as exc:
-                LOGGER.debug("[SHUTDOWN] %s close failed: %s", module_name, exc)
-        try:
-            self._maybe_emit_system_health(force=True, reason="shutdown")
-        except Exception:
-            pass
+        return self._lifecycle.close(self, join_timeout=join_timeout)
 
     def shutdown(self, *, join_timeout: float | None = None) -> None:
-        self.close(join_timeout=join_timeout)
+        return self.close(join_timeout=join_timeout)
 
     def stop(self, *, join_timeout: float | None = None) -> None:
-        self.close(join_timeout=join_timeout)
+        return self.close(join_timeout=join_timeout)
 
     def _runtime_mode(self) -> str:
         return "paper" if self.settings.paper_trading else "live"
@@ -736,37 +704,10 @@ class PolymarketTrader:
         )
 
     def _init_quant_event_logger(self) -> QuantEventLogger | None:
-        try:
-            ql = QuantEventLogger(mode=self._runtime_mode(), source_module="polymarket.trader")
-            try:
-                from utils.runtime_event_stream import RuntimeEventStream
-                ql.event_stream = RuntimeEventStream(
-                    session_id=ql.run_id,
-                    mode=self._runtime_mode(),
-                )
-            except Exception as exc:
-                LOGGER.warning("[OBSERVABILITY] RuntimeEventStream disabled: %s", exc)
-            return ql
-        except Exception as exc:
-            LOGGER.warning("[OBSERVABILITY] QuantEventLogger disabled at startup: %s", exc)
-            return None
+         return self._lifecycle.init_quant_event_logger(self)
 
     def _init_telegram_alert_layer(self) -> TelegramAlertLayer | None:
-        try:
-            run_id = str(getattr(self.quant_events, "run_id", "") or "") or None
-            layer = TelegramAlertLayer(
-                telemetry_emit=self._emit_telegram_route_telemetry,
-                run_id=run_id,
-            )
-            emit_startup_config_telemetry(
-                self.settings,
-                telemetry_emit=self._emit_telegram_route_telemetry,
-                run_id=run_id,
-            )
-            return layer
-        except Exception as exc:
-            LOGGER.warning("[OBSERVABILITY] Telegram alert layer disabled at startup: %s", exc)
-            return None
+         return self._lifecycle.init_telegram_alert_layer(self)
 
     def _default_observability_health_display_state(self) -> dict[str, object]:
         return self._presentation.default_observability_health_display_state()
@@ -7168,89 +7109,7 @@ class PolymarketTrader:
     # ------------------------------------------------------------------
 
     def _ensure_connected(self) -> None:
-        if self._connected:
-            return
-
-        LOGGER.info(
-            "Connecting to Polymarket CLOB client (paper_trading=%s) to fetch balance...",
-            self.settings.paper_trading,
-        )
-        if self.settings.paper_trading:
-            if self.paper_stats.trades_simulated == 0 and abs(self.bankroll_state.realized_pnl) < 0.0001:
-                self._paper_virtual_reference_balance = float(self.settings.account_balance)
-            if self._paper_wallet_reference_enabled():
-                LOGGER.info(
-                    "[PAPER] Wallet reference startup sync active -- reading real wallet/CLOB balance once "
-                    "to initialize paper virtual cash. Execution remains PAPER ONLY; NO LIVE ORDERS."
-                )
-                self._refresh_wallet_reference_balance(force=True)
-            else:
-                LOGGER.info("[PAPER] Local simulation mode active -- skipping CLOB connect and live balance fetch.")
-                self._apply_balance(float(self.settings.account_balance), refresh_wallet_reference=False)
-                self._paper_virtual_cash_initial = float(self.bankroll_state.current_bankroll_for_sizing)
-                self._balance_source = "paper_virtual"
-            if not self._balance_wallet_address:
-                self._balance_wallet_address = self._wallet_address_for_logs()
-            LOGGER.info(
-                "[WALLET CONNECTED] mode=paper connected=%s wallet_address=%s balance_source=%s execution=PAPER_ONLY",
-                "reference_only" if self._balance_source == "wallet_reference_paper" else "false",
-                self._balance_wallet_address or "not_configured",
-                self._balance_source,
-            )
-            LOGGER.info(
-                "[USDC BALANCE] mode=paper source=%s balance=$%.4f wallet_bankroll=%s paper_cash=$%.4f "
-                "paper_sizing_balance=$%.4f execution=PAPER_ONLY no_live_orders=true",
-                self._balance_source,
-                self.bankroll_state.current_cash_balance,
-                (
-                    f"${self._wallet_reference_balance:.4f}"
-                    if self._wallet_reference_balance is not None
-                    else "unavailable"
-                ),
-                self.bankroll_state.current_cash_balance,
-                self.bankroll_state.current_bankroll_for_sizing,
-            )
-            LOGGER.info(
-                "[PAPER BALANCE STARTUP] mode=paper paper_starting_balance_source=%s "
-                "paper_wallet_sync_on_start=%s paper_wallet_sync_mode=%s "
-                "live_wallet_reference_balance=%s paper_virtual_cash_initial=$%.4f fallback_used=%s",
-                self._paper_starting_balance_source_setting(),
-                str(self._paper_wallet_sync_on_start()).lower(),
-                self._paper_wallet_sync_mode(),
-                (
-                    f"${self._wallet_reference_balance:.4f}"
-                    if self._wallet_reference_balance is not None
-                    else "unavailable"
-                ),
-                self._paper_virtual_cash_initial,
-                str(self._paper_startup_fallback_used).lower(),
-            )
-            self._connected = True
-            self._maybe_emit_system_health(force=True, reason="startup_connected")
-            return
-
-        try:
-            self.client.connect()
-            snapshot = self._fetch_live_balance_snapshot()
-            real_balance = snapshot.balance
-            self._record_balance_snapshot(snapshot)
-
-            self._apply_balance(real_balance, reset_starting_balance=True)
-            LOGGER.info(
-                "[WALLET CONNECTED] mode=live connected=true wallet_address=%s balance_source=%s",
-                self._balance_wallet_address,
-                self._balance_source,
-            )
-            LOGGER.info("Bankroll fetched: $%.4f", real_balance)
-            if real_balance == 0:
-                LOGGER.warning("Wallet Balance is $0.00. Orders will be skipped.")
-            self._log_wallet_startup_verification()
-            self._connected = True
-            self._maybe_emit_system_health(force=True, reason="startup_connected")
-        except Exception:
-            LOGGER.exception("Failed to connect to Polymarket CLOB. Using Default Bankroll.")
-            self._connected = False
-            self._maybe_emit_system_health(force=True, reason="startup_connect_failed")
+        return self._lifecycle.ensure_connected(self)
 
     def _apply_balance(
         self,
