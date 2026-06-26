@@ -296,6 +296,89 @@ export interface RegimeAnalytics {
   alerts?: Record<string, unknown>[];
 }
 
+export interface MfeMaeProxy {
+  label: string;
+  winner_mean: number | null;
+  winner_median: number | null;
+  winner_max: number | null;
+  winner_min: number | null;
+  winner_p25: number | null;
+  winner_p75: number | null;
+}
+
+export interface MaeMaeProxy {
+  label: string;
+  loser_mean: number | null;
+  loser_median: number | null;
+  loser_max: number | null;
+  loser_min: number | null;
+  loser_p25: number | null;
+  loser_p75: number | null;
+}
+
+export interface HoldTimeBucket {
+  bucket: string;
+  n: number;
+  win_rate: number | null;
+  mean_pnl: number | null;
+  total_pnl: number | null;
+  tp_count: number;
+  sl_count: number;
+}
+
+export interface ExitReasonRow {
+  reason: string;
+  count: number;
+  share: number;
+}
+
+export interface MaeMfeSummary {
+  win_rate: number | null;
+  profit_factor: number | null;
+  avg_winner_pnl: number | null;
+  avg_loser_pnl: number | null;
+  avg_winner_hold_s: number | null;
+  avg_loser_hold_s: number | null;
+  avg_mfe_proxy: number | null;
+  avg_mae_proxy: number | null;
+  tp_count: number;
+  sl_count: number;
+  forced_exit_count: number;
+}
+
+export interface MaeMfeBreakdownRow {
+  regime?: string;
+  side?: string;
+  asset?: string;
+  n: number;
+  win_rate: number | null;
+  mean_pnl: number | null;
+  avg_hold_s: number | null;
+  tp_count?: number;
+  sl_count?: number;
+}
+
+export interface MaeMfeAnalytics {
+  status: "MISSING" | "PARTIAL" | "OK" | string;
+  generated_at: string;
+  data_warning: string;
+  source_csv: string;
+  total_trades: number;
+  summary: MaeMfeSummary;
+  exit_reason_distribution: ExitReasonRow[];
+  hold_time_buckets: HoldTimeBucket[];
+  mfe_proxy: MfeMaeProxy;
+  mae_proxy: MaeMaeProxy;
+  regime_breakdown: MaeMfeBreakdownRow[];
+  side_breakdown: MaeMfeBreakdownRow[];
+  asset_breakdown: MaeMfeBreakdownRow[];
+  optimal_hold_bucket: string | null;
+  dominant_loss_bucket: string | null;
+  verdict: string | null;
+  verdict_reason: string | null;
+  alerts: string[];
+}
+
 export interface ResearchAnalytics {
   status?: "OK" | "PARTIAL" | "MISSING" | string;
   generated_at?: string;
@@ -324,8 +407,10 @@ export interface ResearchAnalytics {
   session_analytics?: SessionAnalytics;
   lifecycle_analytics?: LifecycleAnalytics;
   regime_analytics?: RegimeAnalytics;
+  mae_mfe_analytics?: MaeMfeAnalytics;
   alerts?: AlertRecord[];
 }
+
 
 export interface AlertRecord {
   code?: string;

@@ -391,6 +391,54 @@ def _empty_state(root: Path, date: str, now: datetime) -> dict[str, Any]:
                 "avoid_regimes": [],
                 "alerts": []
             },
+            "mae_mfe_analytics": {
+                "status": "MISSING",
+                "generated_at": _iso_z(now),
+                "data_warning": "Exit excursion proxies only. No intra-trade tick MAE/MFE recorded.",
+                "source_csv": "",
+                "total_trades": 0,
+                "summary": {
+                    "win_rate": None,
+                    "profit_factor": None,
+                    "avg_winner_pnl": None,
+                    "avg_loser_pnl": None,
+                    "avg_winner_hold_s": None,
+                    "avg_loser_hold_s": None,
+                    "avg_mfe_proxy": None,
+                    "avg_mae_proxy": None,
+                    "tp_count": 0,
+                    "sl_count": 0,
+                    "forced_exit_count": 0,
+                },
+                "exit_reason_distribution": [],
+                "hold_time_buckets": [],
+                "mfe_proxy": {
+                    "label": "Exit Price - Entry Price (TP trades)",
+                    "winner_mean": None,
+                    "winner_median": None,
+                    "winner_max": None,
+                    "winner_min": None,
+                    "winner_p25": None,
+                    "winner_p75": None,
+                },
+                "mae_proxy": {
+                    "label": "Entry Price - Exit Price (SL trades)",
+                    "loser_mean": None,
+                    "loser_median": None,
+                    "loser_max": None,
+                    "loser_min": None,
+                    "loser_p25": None,
+                    "loser_p75": None,
+                },
+                "regime_breakdown": [],
+                "side_breakdown": [],
+                "asset_breakdown": [],
+                "optimal_hold_bucket": None,
+                "dominant_loss_bucket": None,
+                "verdict": None,
+                "verdict_reason": None,
+                "alerts": [],
+            },
             "alerts": [],
         },
         "alerts": {
@@ -1811,6 +1859,343 @@ def _extract_regime_analytics(reports_dir: Path, root_dir: Path) -> dict[str, An
     }
 
 
+def _extract_mae_mfe_analytics(root_dir: Path) -> dict[str, Any]:
+    """Read canonical_regime_enriched_trades_v1.csv and produce MAE/MFE analytics.
+
+    Uses entry-to-exit price movement as a terminal excursion proxy since
+    intra-trade tick MAE/MFE is not recorded in the current JSONL schema.
+    This function is read-only and offline-only.
+    """
+    import csv as _csv
+    import statistics as _stats
+
+    DATA_WARNING = "Exit excursion proxies only. No intra-trade tick MAE/MFE recorded."
+    HOLD_BUCKETS = [
+        ("0-15s",  0,  15),
+        ("15-30s", 15, 30),
+        ("30-45s", 30, 45),
+        ("45-60s", 45, 60),
+        ("60s+",   60, float("inf")),
+    ]
+
+    csv_path = root_dir / "research_exports" / "canonical_regime_enriched_trades_v1.csv"
+
+    empty: dict[str, Any] = {
+        "status": "MISSING",
+        "generated_at": _iso_z(_utc_now()),
+        "data_warning": DATA_WARNING,
+        "source_csv": str(csv_path),
+        "total_trades": 0,
+        "summary": {
+            "win_rate": None, "profit_factor": None,
+            "avg_winner_pnl": None, "avg_loser_pnl": None,
+            "avg_winner_hold_s": None, "avg_loser_hold_s": None,
+            "avg_mfe_proxy": None, "avg_mae_proxy": None,
+            "tp_count": 0, "sl_count": 0, "forced_exit_count": 0,
+        },
+        "exit_reason_distribution": [],
+        "hold_time_buckets": [],
+        "mfe_proxy": {
+            "label": "Exit Price - Entry Price (TP trades)",
+            "winner_mean": None, "winner_median": None, "winner_max": None,
+            "winner_min": None, "winner_p25": None, "winner_p75": None,
+        },
+        "mae_proxy": {
+            "label": "Entry Price - Exit Price (SL trades)",
+            "loser_mean": None, "loser_median": None, "loser_max": None,
+            "loser_min": None, "loser_p25": None, "loser_p75": None,
+        },
+        "regime_breakdown": [],
+        "side_breakdown": [],
+        "asset_breakdown": [],
+        "optimal_hold_bucket": None,
+        "dominant_loss_bucket": None,
+        "verdict": None,
+        "verdict_reason": None,
+        "alerts": [],
+    }
+
+    if not csv_path.exists():
+        return empty
+
+    rows: list[dict[str, Any]] = []
+    parse_errors = 0
+    try:
+        with csv_path.open("r", encoding="utf-8") as f:
+            reader = _csv.DictReader(f)
+            for raw in reader:
+                try:
+                    hold = float(raw.get("hold_seconds") or "")
+                    pnl = float(raw.get("pnl_usdc") or "")
+                    entry_p = float(raw.get("entry_price") or "")
+                    exit_p = float(raw.get("exit_price") or "")
+                except (ValueError, TypeError):
+                    parse_errors += 1
+                    continue
+                rows.append({
+                    "hold_seconds": hold,
+                    "pnl_usdc": pnl,
+                    "entry_price": entry_p,
+                    "exit_price": exit_p,
+                    "exit_reason": raw.get("exit_reason", ""),
+                    "outcome_win_loss": raw.get("outcome_win_loss", ""),
+                    "market_regime": raw.get("market_regime", "UNKNOWN") or "UNKNOWN",
+                    "side": raw.get("side", "UNKNOWN") or "UNKNOWN",
+                    "asset": raw.get("asset", "UNKNOWN") or "UNKNOWN",
+                })
+    except Exception as exc:
+        empty["alerts"].append(f"CSV_READ_ERROR: {exc}")
+        return empty
+
+    total = len(rows)
+    if total == 0:
+        result = dict(empty)
+        result["status"] = "PARTIAL"
+        if parse_errors:
+            result["alerts"].append(f"PARSE_ERRORS: {parse_errors} rows skipped")
+        return result
+
+    # --- Classify rows ---
+    tp_rows   = [r for r in rows if r["exit_reason"] == "take_profit_target_reached"]
+    sl_rows   = [r for r in rows if "stop_loss" in r["exit_reason"]]
+    forced_rows = [r for r in rows if r["exit_reason"] == "forced_exit"]
+    win_rows  = [r for r in rows if r["outcome_win_loss"] == "WIN"]
+    loss_rows = [r for r in rows if r["outcome_win_loss"] == "LOSS"]
+
+    # --- Helper to compute safe percentiles ---
+    def _pct(vals: list[float], p: float) -> float | None:
+        if len(vals) < 2:
+            return round(vals[0], 6) if vals else None
+        try:
+            n = max(2, min(100, int(1.0 / (min(p, 1 - p) or 0.01))))
+            qs = _stats.quantiles(vals, n=n)
+            idx = max(0, min(len(qs) - 1, round(p * n) - 1))
+            return round(qs[idx], 6)
+        except Exception:
+            return None
+
+    # --- MFE proxy (TP trades: exit - entry) ---
+    mfe_vals = [r["exit_price"] - r["entry_price"] for r in tp_rows]
+    mfe_proxy: dict[str, Any] = {
+        "label": "Exit Price - Entry Price (TP trades)",
+        "winner_mean":   round(_stats.mean(mfe_vals), 6) if mfe_vals else None,
+        "winner_median": round(_stats.median(mfe_vals), 6) if mfe_vals else None,
+        "winner_max":    round(max(mfe_vals), 6) if mfe_vals else None,
+        "winner_min":    round(min(mfe_vals), 6) if mfe_vals else None,
+        "winner_p25":    _pct(mfe_vals, 0.25) if mfe_vals else None,
+        "winner_p75":    _pct(mfe_vals, 0.75) if mfe_vals else None,
+    }
+
+    # --- MAE proxy (SL trades: entry - exit, always positive) ---
+    mae_vals = [r["entry_price"] - r["exit_price"] for r in sl_rows]
+    mae_proxy: dict[str, Any] = {
+        "label": "Entry Price - Exit Price (SL trades)",
+        "loser_mean":   round(_stats.mean(mae_vals), 6) if mae_vals else None,
+        "loser_median": round(_stats.median(mae_vals), 6) if mae_vals else None,
+        "loser_max":    round(max(mae_vals), 6) if mae_vals else None,
+        "loser_min":    round(min(mae_vals), 6) if mae_vals else None,
+        "loser_p25":    _pct(mae_vals, 0.25) if mae_vals else None,
+        "loser_p75":    _pct(mae_vals, 0.75) if mae_vals else None,
+    }
+
+    # --- Summary ---
+    win_pnls  = [r["pnl_usdc"] for r in win_rows]
+    loss_pnls = [r["pnl_usdc"] for r in loss_rows]
+    tp_pnl    = sum(r["pnl_usdc"] for r in tp_rows)
+    sl_pnl    = abs(sum(r["pnl_usdc"] for r in sl_rows))
+    profit_factor = round(tp_pnl / sl_pnl, 4) if sl_pnl > 0 else None
+    win_rate = round(len(win_rows) / total, 4) if total > 0 else None
+
+    win_hold  = [r["hold_seconds"] for r in win_rows]
+    loss_hold = [r["hold_seconds"] for r in loss_rows]
+
+    summary: dict[str, Any] = {
+        "win_rate":          win_rate,
+        "profit_factor":     profit_factor,
+        "avg_winner_pnl":    round(_stats.mean(win_pnls), 6) if win_pnls else None,
+        "avg_loser_pnl":     round(_stats.mean(loss_pnls), 6) if loss_pnls else None,
+        "avg_winner_hold_s": round(_stats.mean(win_hold), 2) if win_hold else None,
+        "avg_loser_hold_s":  round(_stats.mean(loss_hold), 2) if loss_hold else None,
+        "avg_mfe_proxy":     round(_stats.mean(mfe_vals), 6) if mfe_vals else None,
+        "avg_mae_proxy":     round(_stats.mean(mae_vals), 6) if mae_vals else None,
+        "tp_count":          len(tp_rows),
+        "sl_count":          len(sl_rows),
+        "forced_exit_count": len(forced_rows),
+    }
+
+    # --- Exit reason distribution ---
+    from collections import Counter as _Counter
+    reason_ctr = _Counter(r["exit_reason"] for r in rows)
+    exit_reason_dist = [
+        {"reason": k, "count": v, "share": round(v / total, 4)}
+        for k, v in sorted(reason_ctr.items(), key=lambda x: -x[1])
+    ]
+
+    # --- Hold-time buckets ---
+    def _bucket_label(hold: float) -> str:
+        for label, lo, hi in HOLD_BUCKETS:
+            if lo <= hold < hi:
+                return label
+        return "60s+"
+
+    bucket_acc: dict[str, dict[str, Any]] = {label: {"n": 0, "pnls": [], "tp": 0, "sl": 0, "wins": 0} for label, _, _ in HOLD_BUCKETS}
+    for r in rows:
+        bl = _bucket_label(r["hold_seconds"])
+        bucket_acc[bl]["n"] += 1
+        bucket_acc[bl]["pnls"].append(r["pnl_usdc"])
+        if r["outcome_win_loss"] == "WIN":
+            bucket_acc[bl]["wins"] += 1
+        if r["exit_reason"] == "take_profit_target_reached":
+            bucket_acc[bl]["tp"] += 1
+        elif "stop_loss" in r["exit_reason"]:
+            bucket_acc[bl]["sl"] += 1
+
+    hold_time_buckets = []
+    for label, _, _ in HOLD_BUCKETS:
+        acc = bucket_acc[label]
+        n = acc["n"]
+        pnls_b = acc["pnls"]
+        wr = round(acc["wins"] / n, 4) if n > 0 else None
+        mean_pnl = round(_stats.mean(pnls_b), 6) if pnls_b else None
+        total_pnl = round(sum(pnls_b), 6) if pnls_b else None
+        hold_time_buckets.append({
+            "bucket":    label,
+            "n":         n,
+            "win_rate":  wr,
+            "mean_pnl":  mean_pnl,
+            "total_pnl": total_pnl,
+            "tp_count":  acc["tp"],
+            "sl_count":  acc["sl"],
+        })
+
+    # --- Regime breakdown ---
+    regime_acc: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        reg = r["market_regime"]
+        if reg not in regime_acc:
+            regime_acc[reg] = {"n": 0, "wins": 0, "pnls": [], "holds": [], "tp": 0, "sl": 0}
+        regime_acc[reg]["n"] += 1
+        regime_acc[reg]["pnls"].append(r["pnl_usdc"])
+        regime_acc[reg]["holds"].append(r["hold_seconds"])
+        if r["outcome_win_loss"] == "WIN":
+            regime_acc[reg]["wins"] += 1
+        if r["exit_reason"] == "take_profit_target_reached":
+            regime_acc[reg]["tp"] += 1
+        elif "stop_loss" in r["exit_reason"]:
+            regime_acc[reg]["sl"] += 1
+
+    regime_breakdown = [
+        {
+            "regime":    reg,
+            "n":         v["n"],
+            "win_rate":  round(v["wins"] / v["n"], 4) if v["n"] else None,
+            "mean_pnl":  round(_stats.mean(v["pnls"]), 6) if v["pnls"] else None,
+            "avg_hold_s": round(_stats.mean(v["holds"]), 2) if v["holds"] else None,
+            "tp_count":  v["tp"],
+            "sl_count":  v["sl"],
+        }
+        for reg, v in sorted(regime_acc.items(), key=lambda x: -(x[1]["n"]))
+    ]
+
+    # --- Side breakdown ---
+    side_acc: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        s = r["side"]
+        if s not in side_acc:
+            side_acc[s] = {"n": 0, "wins": 0, "pnls": [], "holds": []}
+        side_acc[s]["n"] += 1
+        side_acc[s]["pnls"].append(r["pnl_usdc"])
+        side_acc[s]["holds"].append(r["hold_seconds"])
+        if r["outcome_win_loss"] == "WIN":
+            side_acc[s]["wins"] += 1
+
+    side_breakdown = [
+        {
+            "side":      s,
+            "n":         v["n"],
+            "win_rate":  round(v["wins"] / v["n"], 4) if v["n"] else None,
+            "mean_pnl":  round(_stats.mean(v["pnls"]), 6) if v["pnls"] else None,
+            "avg_hold_s": round(_stats.mean(v["holds"]), 2) if v["holds"] else None,
+        }
+        for s, v in sorted(side_acc.items())
+    ]
+
+    # --- Asset breakdown ---
+    asset_acc: dict[str, dict[str, Any]] = {}
+    for r in rows:
+        a = r["asset"]
+        if a not in asset_acc:
+            asset_acc[a] = {"n": 0, "wins": 0, "pnls": [], "holds": []}
+        asset_acc[a]["n"] += 1
+        asset_acc[a]["pnls"].append(r["pnl_usdc"])
+        asset_acc[a]["holds"].append(r["hold_seconds"])
+        if r["outcome_win_loss"] == "WIN":
+            asset_acc[a]["wins"] += 1
+
+    asset_breakdown = [
+        {
+            "asset":     a,
+            "n":         v["n"],
+            "win_rate":  round(v["wins"] / v["n"], 4) if v["n"] else None,
+            "mean_pnl":  round(_stats.mean(v["pnls"]), 6) if v["pnls"] else None,
+            "avg_hold_s": round(_stats.mean(v["holds"]), 2) if v["holds"] else None,
+        }
+        for a, v in sorted(asset_acc.items())
+    ]
+
+    # --- Optimal / dominant bucket ---
+    valid_buckets = [b for b in hold_time_buckets if b["n"] >= 5 and b["mean_pnl"] is not None]
+    optimal_hold_bucket: str | None = None
+    dominant_loss_bucket: str | None = None
+    if valid_buckets:
+        optimal = max(valid_buckets, key=lambda b: b["mean_pnl"])
+        if optimal["mean_pnl"] is not None and optimal["mean_pnl"] > 0:
+            optimal_hold_bucket = optimal["bucket"]
+        loss_candidates = [b for b in valid_buckets if b["total_pnl"] is not None and b["total_pnl"] < 0]
+        if loss_candidates:
+            dominant_loss_bucket = min(loss_candidates, key=lambda b: b["total_pnl"])["bucket"]
+
+    # --- Verdict ---
+    if profit_factor is None:
+        verdict = "INSUFFICIENT_DATA"
+        verdict_reason = "Profit factor could not be computed (no SL trades)."
+    elif profit_factor < 1.0:
+        verdict = "EXPECTANCY_NEGATIVE"
+        dlb = f" Dominant loss bucket: {dominant_loss_bucket}." if dominant_loss_bucket else ""
+        ohb = f" Optimal hold bucket: {optimal_hold_bucket}." if optimal_hold_bucket else ""
+        verdict_reason = f"Profit factor {profit_factor:.4f} < 1.0.{dlb}{ohb}"
+    else:
+        verdict = "EXPECTANCY_POSITIVE"
+        verdict_reason = f"Profit factor {profit_factor:.4f} >= 1.0."
+
+    alerts: list[str] = []
+    if parse_errors:
+        alerts.append(f"PARSE_ERRORS: {parse_errors} rows skipped due to bad numeric fields")
+
+    status = "OK" if total >= 10 else "PARTIAL"
+
+    return {
+        "status":                  status,
+        "generated_at":            _iso_z(_utc_now()),
+        "data_warning":            DATA_WARNING,
+        "source_csv":              str(csv_path),
+        "total_trades":            total,
+        "summary":                 summary,
+        "exit_reason_distribution": exit_reason_dist,
+        "hold_time_buckets":       hold_time_buckets,
+        "mfe_proxy":               mfe_proxy,
+        "mae_proxy":               mae_proxy,
+        "regime_breakdown":        regime_breakdown,
+        "side_breakdown":          side_breakdown,
+        "asset_breakdown":         asset_breakdown,
+        "optimal_hold_bucket":     optimal_hold_bucket,
+        "dominant_loss_bucket":    dominant_loss_bucket,
+        "verdict":                 verdict,
+        "verdict_reason":          verdict_reason,
+        "alerts":                  alerts,
+    }
+
+
 def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
     reports = root / "reports"
     found = False
@@ -1924,6 +2309,7 @@ def _apply_research_reports(state: dict[str, Any], root: Path) -> bool:
 
     state["research_analytics"]["lifecycle_analytics"] = _extract_lifecycle_analytics(reports)
     state["research_analytics"]["regime_analytics"] = _extract_regime_analytics(reports, root)
+    state["research_analytics"]["mae_mfe_analytics"] = _extract_mae_mfe_analytics(root)
     return found
 
 

@@ -895,3 +895,189 @@ def test_regime_analytics_rates_non_negative(tmp_path: Path) -> None:
         assert item["risk_rejection_rate"] >= 0.0
         assert item["win_rate"] >= 0.0
         assert item["profit_factor"] >= 0.0
+
+
+# ---------------------------------------------------------------------------
+# MAE/MFE Analytics V1 Tests
+# ---------------------------------------------------------------------------
+
+_MAE_MFE_CSV_HEADER = (
+    "hold_seconds,entry_price,exit_price,pnl_usdc,"
+    "exit_reason,outcome_win_loss,market_regime,side,asset\n"
+)
+
+
+def _mae_mfe_csv_rows(rows: list[tuple]) -> str:
+    """Format rows as CSV lines for MAE/MFE analytics tests."""
+    return _MAE_MFE_CSV_HEADER + "".join(
+        f"{hs},{ep},{xp},{pnl},{reason},{wl},{regime},{side},{asset}\n"
+        for hs, ep, xp, pnl, reason, wl, regime, side, asset in rows
+    )
+
+
+def _write_mae_mfe_csv(tmp_path: Path, content: str) -> None:
+    exports = tmp_path / "research_exports"
+    exports.mkdir(parents=True, exist_ok=True)
+    (exports / "canonical_regime_enriched_trades_v1.csv").write_text(content, encoding="utf-8")
+
+
+def test_mae_mfe_missing_csv(tmp_path: Path) -> None:
+    """When CSV is absent status must be MISSING and fields null."""
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+    assert mae["status"] == "MISSING"
+    assert mae["total_trades"] == 0
+    assert mae["summary"]["win_rate"] is None
+    assert mae["summary"]["profit_factor"] is None
+
+
+def test_mae_mfe_empty_csv(tmp_path: Path) -> None:
+    """A CSV with only a header row must yield status PARTIAL, not crash."""
+    _write_mae_mfe_csv(tmp_path, _MAE_MFE_CSV_HEADER)
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+    assert mae["status"] == "PARTIAL"
+    assert mae["total_trades"] == 0
+
+
+def test_mae_mfe_minimal_csv(tmp_path: Path) -> None:
+    """Correct aggregation for a small synthetic CSV."""
+    rows = [
+        # (hold_s, entry, exit, pnl, exit_reason, wl, regime, side, asset)
+        (20, 0.50, 0.60, 0.0086, "take_profit_target_reached", "WIN", "COMPRESSION", "YES", "ETH"),
+        (10, 0.50, 0.44, -0.0052, "stop_loss", "LOSS", "COMPRESSION", "YES", "ETH"),
+        (25, 0.55, 0.65, 0.0091, "take_profit_target_reached", "WIN", "TREND_UP",   "NO",  "BTC"),
+        (12, 0.55, 0.49, -0.0048, "stop_loss_hit", "LOSS", "TREND_UP",   "NO",  "BTC"),
+        (30, 0.60, 0.70, 0.0088, "take_profit_target_reached", "WIN", "SIDEWAY",    "YES", "ETH"),
+        (8,  0.60, 0.54, -0.0051, "stop_loss", "LOSS", "SIDEWAY",    "YES", "ETH"),
+        (35, 0.52, 0.62, 0.0090, "take_profit_target_reached", "WIN", "COMPRESSION", "NO",  "BTC"),
+        (11, 0.52, 0.46, -0.0049, "stop_loss", "LOSS", "COMPRESSION", "NO",  "BTC"),
+        (22, 0.48, 0.58, 0.0084, "take_profit_target_reached", "WIN", "TREND_DOWN", "YES", "ETH"),
+        (9,  0.48, 0.42, -0.0050, "stop_loss", "LOSS", "TREND_DOWN", "YES", "ETH"),
+    ]
+    _write_mae_mfe_csv(tmp_path, _mae_mfe_csv_rows(rows))
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+
+    assert mae["status"] == "OK"
+    assert mae["total_trades"] == 10
+    assert mae["summary"]["tp_count"] == 5
+    assert mae["summary"]["sl_count"] == 5
+    assert mae["summary"]["win_rate"] == 0.5
+    assert mae["mfe_proxy"]["winner_mean"] is not None
+    assert mae["mae_proxy"]["loser_mean"] is not None
+
+
+def test_mae_mfe_win_loss_split(tmp_path: Path) -> None:
+    """tp_count + sl_count + forced_exit_count must cover all trades."""
+    rows = [
+        (20, 0.50, 0.60,  0.009, "take_profit_target_reached", "WIN",  "COMPRESSION", "YES", "ETH"),
+        (10, 0.50, 0.44, -0.005, "stop_loss",                  "LOSS", "COMPRESSION", "YES", "ETH"),
+        (15, 0.55, 0.49, -0.005, "stop_loss_hit",              "LOSS", "TREND_UP",    "NO",  "BTC"),
+        (18, 0.55, 0.49, -0.005, "forced_exit",                "LOSS", "TREND_UP",    "NO",  "BTC"),
+    ]
+    _write_mae_mfe_csv(tmp_path, _mae_mfe_csv_rows(rows))
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+    s = mae["summary"]
+    assert s["tp_count"] + s["sl_count"] + s["forced_exit_count"] == mae["total_trades"]
+
+
+def test_mae_mfe_hold_time_buckets(tmp_path: Path) -> None:
+    """All 5 hold-time buckets must be present; n totals must equal total_trades."""
+    rows = [
+        (5,  0.50, 0.44, -0.005, "stop_loss",                  "LOSS", "COMPRESSION", "YES", "ETH"),
+        (18, 0.50, 0.60,  0.009, "take_profit_target_reached", "WIN",  "COMPRESSION", "YES", "ETH"),
+        (33, 0.55, 0.65,  0.009, "take_profit_target_reached", "WIN",  "TREND_UP",    "NO",  "BTC"),
+        (50, 0.55, 0.49, -0.005, "stop_loss",                  "LOSS", "TREND_UP",    "NO",  "BTC"),
+        (90, 0.60, 0.70,  0.009, "take_profit_target_reached", "WIN",  "SIDEWAY",     "YES", "ETH"),
+    ]
+    _write_mae_mfe_csv(tmp_path, _mae_mfe_csv_rows(rows))
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+
+    labels = [b["bucket"] for b in mae["hold_time_buckets"]]
+    assert labels == ["0-15s", "15-30s", "30-45s", "45-60s", "60s+"]
+    total_n = sum(b["n"] for b in mae["hold_time_buckets"])
+    assert total_n == mae["total_trades"]
+
+
+def test_mae_mfe_profit_factor(tmp_path: Path) -> None:
+    """Profit factor must match manual sum(TP pnl) / abs(sum(SL pnl))."""
+    rows = [
+        (20, 0.50, 0.60, 0.010, "take_profit_target_reached", "WIN",  "COMPRESSION", "YES", "ETH"),
+        (10, 0.50, 0.44, -0.006, "stop_loss",                 "LOSS", "COMPRESSION", "YES", "ETH"),
+        (25, 0.55, 0.65, 0.010, "take_profit_target_reached", "WIN",  "TREND_UP",    "NO",  "BTC"),
+        (12, 0.55, 0.49, -0.005, "stop_loss",                 "LOSS", "TREND_UP",    "NO",  "BTC"),
+    ]
+    _write_mae_mfe_csv(tmp_path, _mae_mfe_csv_rows(rows))
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+
+    expected_pf = round(0.020 / 0.011, 4)
+    assert abs(mae["summary"]["profit_factor"] - expected_pf) < 0.001
+
+
+def test_mae_mfe_verdict_negative(tmp_path: Path) -> None:
+    """When profit factor < 1.0 verdict must be EXPECTANCY_NEGATIVE."""
+    rows = [
+        (10, 0.50, 0.55, 0.004, "take_profit_target_reached", "WIN",  "COMPRESSION", "YES", "ETH"),
+        (8,  0.50, 0.44, -0.008, "stop_loss",                 "LOSS", "COMPRESSION", "YES", "ETH"),
+        (12, 0.55, 0.60, 0.004, "take_profit_target_reached", "WIN",  "TREND_UP",    "NO",  "BTC"),
+        (9,  0.55, 0.49, -0.008, "stop_loss",                 "LOSS", "TREND_UP",    "NO",  "BTC"),
+    ]
+    _write_mae_mfe_csv(tmp_path, _mae_mfe_csv_rows(rows))
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+    assert mae["verdict"] == "EXPECTANCY_NEGATIVE"
+    assert mae["summary"]["profit_factor"] < 1.0
+
+
+def test_mae_mfe_verdict_positive(tmp_path: Path) -> None:
+    """When profit factor >= 1.0 verdict must be EXPECTANCY_POSITIVE."""
+    rows = [
+        (20, 0.50, 0.60, 0.012, "take_profit_target_reached", "WIN",  "COMPRESSION", "YES", "ETH"),
+        (10, 0.50, 0.47, -0.004, "stop_loss",                 "LOSS", "COMPRESSION", "YES", "ETH"),
+        (25, 0.55, 0.65, 0.012, "take_profit_target_reached", "WIN",  "TREND_UP",    "NO",  "BTC"),
+        (11, 0.55, 0.52, -0.004, "stop_loss",                 "LOSS", "TREND_UP",    "NO",  "BTC"),
+    ]
+    _write_mae_mfe_csv(tmp_path, _mae_mfe_csv_rows(rows))
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+    assert mae["verdict"] == "EXPECTANCY_POSITIVE"
+    assert mae["summary"]["profit_factor"] >= 1.0
+
+
+def test_mae_mfe_bad_rows_skipped(tmp_path: Path) -> None:
+    """Rows with non-numeric hold_seconds or pnl_usdc must be skipped without crashing."""
+    content = (
+        _MAE_MFE_CSV_HEADER
+        + "BADHOLD,0.50,0.60,0.009,take_profit_target_reached,WIN,COMPRESSION,YES,ETH\n"
+        + "20,BADENTRY,0.60,0.009,take_profit_target_reached,WIN,COMPRESSION,YES,ETH\n"
+        + "20,0.50,0.60,BADPNL,take_profit_target_reached,WIN,COMPRESSION,YES,ETH\n"
+        + "18,0.50,0.60,0.009,take_profit_target_reached,WIN,COMPRESSION,YES,ETH\n"
+        + "10,0.50,0.44,-0.005,stop_loss,LOSS,COMPRESSION,YES,ETH\n"
+    )
+    _write_mae_mfe_csv(tmp_path, content)
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+
+    # 3 bad rows skipped, 2 valid rows remain
+    assert mae["total_trades"] == 2
+    assert any("PARSE_ERRORS" in a for a in mae["alerts"])
+
+
+def test_mae_mfe_in_dashboard_state(tmp_path: Path) -> None:
+    """build_dashboard_state must always include mae_mfe_analytics key."""
+    state = build_dashboard_state(tmp_path, date="2026-06-23", now=NOW)
+    assert "mae_mfe_analytics" in state["research_analytics"]
+    mae = state["research_analytics"]["mae_mfe_analytics"]
+    # Required top-level keys must always be present
+    required_keys = {
+        "status", "generated_at", "data_warning", "source_csv", "total_trades",
+        "summary", "exit_reason_distribution", "hold_time_buckets",
+        "mfe_proxy", "mae_proxy", "regime_breakdown", "side_breakdown",
+        "asset_breakdown", "optimal_hold_bucket", "dominant_loss_bucket",
+        "verdict", "verdict_reason", "alerts",
+    }
+    assert required_keys.issubset(set(mae.keys()))

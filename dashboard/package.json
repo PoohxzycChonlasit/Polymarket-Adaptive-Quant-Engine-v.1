@@ -9,13 +9,18 @@
     "test:run": "vitest run"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.1",
     "@tanstack/react-query": "^5.101.0",
     "@vitejs/plugin-react": "^4.3.4",
     "axios": "^1.18.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.21.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.18.0",
     "recharts": "^3.8.1",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.5"
   },

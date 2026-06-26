@@ -32,6 +32,11 @@ const researchRoadmap = [
     status: "active v1",
   },
   {
+    title: "MAE/MFE Analytics",
+    description: "Hold-time expectancy, exit excursion proxies, profit factor, exit-reason distribution, and regime/side/asset breakdowns.",
+    status: "active v1",
+  },
+  {
     title: "Expectancy Analytics",
     description: "Entry EV, realized PnL, win rate, signal reason, and candidate-instance comparisons.",
     status: "read-only planned",
@@ -107,6 +112,9 @@ export function ResearchPage() {
 
   const regimeAnalytics = research?.regime_analytics;
   const regimeSummary = regimeAnalytics?.summary;
+
+  const maeMfe = research?.mae_mfe_analytics;
+  const maeMfeSummary = maeMfe?.summary;
 
   return (
     <div className="flex flex-col gap-3">
@@ -1094,6 +1102,336 @@ export function ResearchPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+      </SectionPanel>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* MAE/MFE ANALYTICS V1                                                 */}
+      {/* ------------------------------------------------------------------ */}
+      <SectionPanel
+        title="MAE/MFE Analytics V1"
+        subtitle="Hold-time expectancy, exit excursion proxies, profit factor, and exit-reason breakdown. Read-only offline evidence — exit price minus entry price proxy only, no intra-trade tick MAE/MFE."
+      >
+        {!maeMfe || maeMfe.status === "MISSING" ? (
+          <EmptyState label="MAE/MFE analytics unavailable. Ensure canonical_regime_enriched_trades_v1.csv exists in runtime/research_exports/." />
+        ) : (
+          <div className="flex flex-col gap-4">
+
+            {/* Data warning note */}
+            <div className="px-3 py-2 bg-[#F5F5F0] border border-[#D4C5A9] rounded text-[11px] text-[#6B6B8A] italic font-mono">
+              ⚠ {maeMfe.data_warning} — Source: {maeMfe.source_csv?.split(/[\/\\]/).pop() ?? "n/a"} — {maeMfe.total_trades} canonical trades
+            </div>
+
+            {/* Summary metric cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 min-[1600px]:grid-cols-6 gap-3">
+              <MetricCard
+                label="MAE/MFE Status"
+                value={maeMfe.status}
+                helper="analytics status"
+                tone={maeMfe.status === "OK" ? "good" : maeMfe.status === "PARTIAL" ? "warn" : "neutral"}
+              />
+              <MetricCard
+                label="Total Trades"
+                value={String(maeMfe.total_trades)}
+                helper={`TP: ${maeMfeSummary?.tp_count ?? 0}  SL: ${maeMfeSummary?.sl_count ?? 0}`}
+              />
+              <MetricCard
+                label="Win Rate"
+                value={formatPercent(maeMfeSummary?.win_rate)}
+                helper="winners / total"
+                tone={(maeMfeSummary?.win_rate ?? 0) >= 0.5 ? "good" : (maeMfeSummary?.win_rate ?? 0) > 0 ? "warn" : "neutral"}
+              />
+              <MetricCard
+                label="Profit Factor"
+                value={maeMfeSummary?.profit_factor != null ? maeMfeSummary.profit_factor.toFixed(4) : "n/a"}
+                helper="TP gross / SL gross"
+                tone={(maeMfeSummary?.profit_factor ?? 0) >= 1.0 ? "good" : (maeMfeSummary?.profit_factor ?? 0) > 0 ? "bad" : "neutral"}
+              />
+              <MetricCard
+                label="Avg Winner Hold"
+                value={maeMfeSummary?.avg_winner_hold_s != null ? `${maeMfeSummary.avg_winner_hold_s.toFixed(1)}s` : "n/a"}
+                helper="seconds"
+                tone="good"
+              />
+              <MetricCard
+                label="Avg Loser Hold"
+                value={maeMfeSummary?.avg_loser_hold_s != null ? `${maeMfeSummary.avg_loser_hold_s.toFixed(1)}s` : "n/a"}
+                helper="seconds"
+                tone="bad"
+              />
+            </div>
+
+            {/* Exit excursion proxies + Exit reason distribution */}
+            <div className="grid grid-cols-1 min-[1600px]:grid-cols-2 gap-4">
+
+              <div className="p-4 border border-[#D4C5A9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[13px] font-bold uppercase tracking-wider text-[#1A1A2E] border-b border-[#D4C5A9] pb-2">
+                  Exit Excursion Proxies
+                </h3>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="p-3 border border-[#D4C5A9] bg-[#F5F5F0] rounded">
+                    <div className="text-[10px] font-bold uppercase text-[#006B3C] tracking-wider mb-1">MFE Proxy (Winners / TP)</div>
+                    <div className="text-[11px] italic text-[#6B6B8A] mb-2">{maeMfe.mfe_proxy?.label}</div>
+                    <div className="grid grid-cols-2 gap-1 text-[12px] font-mono">
+                      <span className="text-[#5C4A1E]">Mean:</span>
+                      <span className="font-bold text-[#006B3C]">{maeMfe.mfe_proxy?.winner_mean != null ? `+${maeMfe.mfe_proxy.winner_mean.toFixed(4)}` : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">Median:</span>
+                      <span className="font-bold text-[#006B3C]">{maeMfe.mfe_proxy?.winner_median != null ? `+${maeMfe.mfe_proxy.winner_median.toFixed(4)}` : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">Max:</span>
+                      <span className="font-bold">{maeMfe.mfe_proxy?.winner_max != null ? `+${maeMfe.mfe_proxy.winner_max.toFixed(4)}` : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">Min:</span>
+                      <span className="font-bold">{maeMfe.mfe_proxy?.winner_min != null ? `+${maeMfe.mfe_proxy.winner_min.toFixed(4)}` : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">P25:</span>
+                      <span className="font-bold">{maeMfe.mfe_proxy?.winner_p25 != null ? `+${maeMfe.mfe_proxy.winner_p25.toFixed(4)}` : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">P75:</span>
+                      <span className="font-bold">{maeMfe.mfe_proxy?.winner_p75 != null ? `+${maeMfe.mfe_proxy.winner_p75.toFixed(4)}` : "n/a"}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 border border-[#D4C5A9] bg-[#F5F5F0] rounded">
+                    <div className="text-[10px] font-bold uppercase text-[#8B0000] tracking-wider mb-1">MAE Proxy (Losers / SL)</div>
+                    <div className="text-[11px] italic text-[#6B6B8A] mb-2">{maeMfe.mae_proxy?.label}</div>
+                    <div className="grid grid-cols-2 gap-1 text-[12px] font-mono">
+                      <span className="text-[#5C4A1E]">Mean:</span>
+                      <span className="font-bold text-[#8B0000]">{maeMfe.mae_proxy?.loser_mean != null ? maeMfe.mae_proxy.loser_mean.toFixed(4) : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">Median:</span>
+                      <span className="font-bold text-[#8B0000]">{maeMfe.mae_proxy?.loser_median != null ? maeMfe.mae_proxy.loser_median.toFixed(4) : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">Max:</span>
+                      <span className="font-bold">{maeMfe.mae_proxy?.loser_max != null ? maeMfe.mae_proxy.loser_max.toFixed(4) : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">Min:</span>
+                      <span className="font-bold">{maeMfe.mae_proxy?.loser_min != null ? maeMfe.mae_proxy.loser_min.toFixed(4) : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">P25:</span>
+                      <span className="font-bold">{maeMfe.mae_proxy?.loser_p25 != null ? maeMfe.mae_proxy.loser_p25.toFixed(4) : "n/a"}</span>
+                      <span className="text-[#5C4A1E]">P75:</span>
+                      <span className="font-bold">{maeMfe.mae_proxy?.loser_p75 != null ? maeMfe.mae_proxy.loser_p75.toFixed(4) : "n/a"}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Avg winner/loser PnL row */}
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <div className="p-2 border border-[#D4C5A9] bg-[#F5F5F0] rounded text-center">
+                    <div className="text-[10px] uppercase text-[#006B3C] font-bold">Avg Winner PnL</div>
+                    <div className="font-bold font-mono text-[14px] text-[#006B3C]">
+                      {maeMfeSummary?.avg_winner_pnl != null ? formatCurrency(maeMfeSummary.avg_winner_pnl) : "n/a"}
+                    </div>
+                  </div>
+                  <div className="p-2 border border-[#D4C5A9] bg-[#F5F5F0] rounded text-center">
+                    <div className="text-[10px] uppercase text-[#8B0000] font-bold">Avg Loser PnL</div>
+                    <div className="font-bold font-mono text-[14px] text-[#8B0000]">
+                      {maeMfeSummary?.avg_loser_pnl != null ? formatCurrency(maeMfeSummary.avg_loser_pnl) : "n/a"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border border-[#D4C5A9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[13px] font-bold uppercase tracking-wider text-[#1A1A2E] border-b border-[#D4C5A9] pb-2">
+                  Exit Reason Distribution
+                </h3>
+                {maeMfe.exit_reason_distribution?.length ? (
+                  <div className="flex flex-col gap-2">
+                    {maeMfe.exit_reason_distribution.map((row) => (
+                      <div key={row.reason} className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <div className="flex justify-between text-[12px] font-mono mb-1">
+                            <span className="text-[#1A1A2E] font-bold truncate max-w-[200px]" title={row.reason}>
+                              {row.reason}
+                            </span>
+                            <span className={`font-bold shrink-0 ml-2 ${
+                              row.reason === "take_profit_target_reached" ? "text-[#006B3C]" : "text-[#8B0000]"
+                            }`}>
+                              {row.count} ({(row.share * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-[#F5F5F0] rounded overflow-hidden">
+                            <div
+                              className={`h-full rounded ${
+                                row.reason === "take_profit_target_reached" ? "bg-[#006B3C]" : "bg-[#8B0000]"
+                              }`}
+                              style={{ width: `${(row.share * 100).toFixed(1)}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState label="No exit reason data." />
+                )}
+              </div>
+            </div>
+
+            {/* Hold-time expectancy table */}
+            <div className="p-4 border border-[#D4C5A9] bg-white rounded shadow-sm">
+              <div className="flex items-center justify-between mb-3 border-b border-[#D4C5A9] pb-2">
+                <h3 className="m-0 text-[13px] font-bold uppercase tracking-wider text-[#1A1A2E]">
+                  Hold-Time Expectancy Table
+                </h3>
+                <div className="flex gap-2 text-[11px]">
+                  {maeMfe.dominant_loss_bucket && (
+                    <span className="px-2 py-0.5 bg-[#5C4A1E] text-white rounded font-mono font-bold">
+                      ↓ Dominant Loss: {maeMfe.dominant_loss_bucket}
+                    </span>
+                  )}
+                  {maeMfe.optimal_hold_bucket && (
+                    <span className="px-2 py-0.5 bg-[#006B3C] text-white rounded font-mono font-bold">
+                      ✓ Optimal: {maeMfe.optimal_hold_bucket}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-[12px] font-mono border-collapse">
+                  <thead>
+                    <tr className="bg-[#F5F5F0]">
+                      <th className="text-left px-3 py-2 border border-[#D4C5A9] font-bold text-[#1A1A2E] text-[11px] uppercase">Bucket</th>
+                      <th className="text-right px-3 py-2 border border-[#D4C5A9] font-bold text-[#1A1A2E] text-[11px] uppercase">n</th>
+                      <th className="text-right px-3 py-2 border border-[#D4C5A9] font-bold text-[#1A1A2E] text-[11px] uppercase">Win%</th>
+                      <th className="text-right px-3 py-2 border border-[#D4C5A9] font-bold text-[#1A1A2E] text-[11px] uppercase">Mean PnL</th>
+                      <th className="text-right px-3 py-2 border border-[#D4C5A9] font-bold text-[#1A1A2E] text-[11px] uppercase">Total PnL</th>
+                      <th className="text-right px-3 py-2 border border-[#D4C5A9] font-bold text-[#006B3C] text-[11px] uppercase">TP</th>
+                      <th className="text-right px-3 py-2 border border-[#D4C5A9] font-bold text-[#8B0000] text-[11px] uppercase">SL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(maeMfe.hold_time_buckets ?? []).map((row) => {
+                      const isLoss = (row.total_pnl ?? 0) < 0;
+                      const isOptimal = row.bucket === maeMfe.optimal_hold_bucket;
+                      const isDominantLoss = row.bucket === maeMfe.dominant_loss_bucket;
+                      return (
+                        <tr
+                          key={row.bucket}
+                          className={`border-b border-[#D4C5A9] ${
+                            isOptimal ? "bg-[#e6f4ea]/40" : isDominantLoss ? "bg-[#fde8e8]/40" : isLoss ? "bg-[#fff8f8]" : "bg-white"
+                          }`}
+                        >
+                          <td className={`px-3 py-2 border border-[#D4C5A9] font-bold ${
+                            isOptimal ? "text-[#006B3C]" : isDominantLoss ? "text-[#8B0000]" : "text-[#1A1A2E]"
+                          }`}>
+                            {row.bucket}
+                            {isOptimal && <span className="ml-1 text-[10px]">✓</span>}
+                            {isDominantLoss && <span className="ml-1 text-[10px]">↓</span>}
+                          </td>
+                          <td className="px-3 py-2 border border-[#D4C5A9] text-right text-[#1A1A2E]">{row.n}</td>
+                          <td className={`px-3 py-2 border border-[#D4C5A9] text-right font-bold ${
+                            (row.win_rate ?? 0) >= 0.5 ? "text-[#006B3C]" : "text-[#8B0000]"
+                          }`}>
+                            {row.win_rate != null ? `${(row.win_rate * 100).toFixed(1)}%` : "n/a"}
+                          </td>
+                          <td className={`px-3 py-2 border border-[#D4C5A9] text-right font-bold ${
+                            (row.mean_pnl ?? 0) >= 0 ? "text-[#006B3C]" : "text-[#8B0000]"
+                          }`}>
+                            {row.mean_pnl != null ? formatCurrency(row.mean_pnl) : "n/a"}
+                          </td>
+                          <td className={`px-3 py-2 border border-[#D4C5A9] text-right font-bold ${
+                            (row.total_pnl ?? 0) >= 0 ? "text-[#006B3C]" : "text-[#8B0000]"
+                          }`}>
+                            {row.total_pnl != null ? formatCurrency(row.total_pnl) : "n/a"}
+                          </td>
+                          <td className="px-3 py-2 border border-[#D4C5A9] text-right text-[#006B3C] font-bold">{row.tp_count}</td>
+                          <td className="px-3 py-2 border border-[#D4C5A9] text-right text-[#8B0000] font-bold">{row.sl_count}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {!maeMfe.hold_time_buckets?.length && <EmptyState label="No hold-time bucket data." />}
+              </div>
+            </div>
+
+            {/* Regime / Side / Asset breakdowns */}
+            <div className="grid grid-cols-1 min-[1600px]:grid-cols-3 gap-4">
+              <div className="p-4 border border-[#D4C5A9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[13px] font-bold uppercase tracking-wider text-[#1A1A2E] border-b border-[#D4C5A9] pb-2">Regime Breakdown</h3>
+                <DataTable
+                  rows={(maeMfe.regime_breakdown ?? []).map((r) => ({
+                    regime: r.regime ?? "—",
+                    n: r.n,
+                    win_rate: r.win_rate != null ? `${(r.win_rate * 100).toFixed(1)}%` : "n/a",
+                    mean_pnl: r.mean_pnl != null ? formatCurrency(r.mean_pnl) : "n/a",
+                    avg_hold_s: r.avg_hold_s != null ? `${r.avg_hold_s.toFixed(1)}s` : "n/a",
+                  }))}
+                  columns={[
+                    { key: "regime", label: "Regime" },
+                    { key: "n", label: "n" },
+                    { key: "win_rate", label: "Win%" },
+                    { key: "mean_pnl", label: "Mean PnL" },
+                    { key: "avg_hold_s", label: "Avg Hold" },
+                  ]}
+                  empty="No regime breakdown."
+                />
+              </div>
+
+              <div className="p-4 border border-[#D4C5A9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[13px] font-bold uppercase tracking-wider text-[#1A1A2E] border-b border-[#D4C5A9] pb-2">Side Breakdown (YES / NO)</h3>
+                <DataTable
+                  rows={(maeMfe.side_breakdown ?? []).map((r) => ({
+                    side: r.side ?? "—",
+                    n: r.n,
+                    win_rate: r.win_rate != null ? `${(r.win_rate * 100).toFixed(1)}%` : "n/a",
+                    mean_pnl: r.mean_pnl != null ? formatCurrency(r.mean_pnl) : "n/a",
+                    avg_hold_s: r.avg_hold_s != null ? `${r.avg_hold_s.toFixed(1)}s` : "n/a",
+                  }))}
+                  columns={[
+                    { key: "side", label: "Side" },
+                    { key: "n", label: "n" },
+                    { key: "win_rate", label: "Win%" },
+                    { key: "mean_pnl", label: "Mean PnL" },
+                    { key: "avg_hold_s", label: "Avg Hold" },
+                  ]}
+                  empty="No side breakdown."
+                />
+              </div>
+
+              <div className="p-4 border border-[#D4C5A9] bg-white rounded shadow-sm">
+                <h3 className="m-0 mb-3 text-[13px] font-bold uppercase tracking-wider text-[#1A1A2E] border-b border-[#D4C5A9] pb-2">Asset Breakdown (BTC / ETH)</h3>
+                <DataTable
+                  rows={(maeMfe.asset_breakdown ?? []).map((r) => ({
+                    asset: r.asset ?? "—",
+                    n: r.n,
+                    win_rate: r.win_rate != null ? `${(r.win_rate * 100).toFixed(1)}%` : "n/a",
+                    mean_pnl: r.mean_pnl != null ? formatCurrency(r.mean_pnl) : "n/a",
+                    avg_hold_s: r.avg_hold_s != null ? `${r.avg_hold_s.toFixed(1)}s` : "n/a",
+                  }))}
+                  columns={[
+                    { key: "asset", label: "Asset" },
+                    { key: "n", label: "n" },
+                    { key: "win_rate", label: "Win%" },
+                    { key: "mean_pnl", label: "Mean PnL" },
+                    { key: "avg_hold_s", label: "Avg Hold" },
+                  ]}
+                  empty="No asset breakdown."
+                />
+              </div>
+            </div>
+
+            {/* Verdict banner */}
+            <div className={`p-4 border rounded ${
+              maeMfe.verdict === "EXPECTANCY_POSITIVE"
+                ? "border-[#006B3C] bg-[#e6f4ea]/30"
+                : maeMfe.verdict === "EXPECTANCY_NEGATIVE"
+                ? "border-[#8B0000] bg-[#fde8e8]/30"
+                : "border-[#D4C5A9] bg-[#F5F5F0]"
+            }`}>
+              <div className={`text-[13px] font-bold font-mono uppercase tracking-wider mb-1 ${
+                maeMfe.verdict === "EXPECTANCY_POSITIVE" ? "text-[#006B3C]" :
+                maeMfe.verdict === "EXPECTANCY_NEGATIVE" ? "text-[#8B0000]" :
+                "text-[#5C4A1E]"
+              }`}>
+                {maeMfe.verdict === "EXPECTANCY_POSITIVE" && "✓ "}
+                {maeMfe.verdict === "EXPECTANCY_NEGATIVE" && "!! "}
+                VERDICT: {maeMfe.verdict ?? "—"}
+              </div>
+              <div className="text-[12px] text-[#1A1A2E] leading-relaxed">{maeMfe.verdict_reason}</div>
+              {maeMfe.alerts?.length ? (
+                <div className="mt-2 text-[11px] text-[#6B6B8A] italic">
+                  {maeMfe.alerts.join(" | ")}
+                </div>
+              ) : null}
+            </div>
+
           </div>
         )}
       </SectionPanel>

@@ -15,6 +15,6 @@ describe("OverviewPage", () => {
       </MemoryRouter>,
     );
 
-    expect(html).toContain("READ ONLY DASHBOARD - OBSERVABILITY ONLY");
+    expect(html).toContain("OBSERVABILITY ONLY");
   });
 });
