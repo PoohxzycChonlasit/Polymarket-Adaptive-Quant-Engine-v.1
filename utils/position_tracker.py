@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -108,6 +109,10 @@ class PositionTracker:
         self._daily_realized_pnl: float = 0.0
         self._peak_equity: float = self.settings.account_balance
         self._day_key: str = date.today().isoformat()
+        self.runtime_session_id = ""
+
+    def set_runtime_session_id(self, session_id: str) -> None:
+        self.runtime_session_id = session_id
 
     # ------------------------------------------------------------------
     # Risk gate
@@ -163,6 +168,12 @@ class PositionTracker:
         if source == "crypto" and side == "SELL" and stop_loss < entry_price < take_profit:
             stop_loss, take_profit = take_profit, stop_loss
         notional = size * entry_price
+        meta = dict(metadata or {})
+        if self.settings.paper_trading:
+            if getattr(self, "runtime_session_id", None):
+                meta.setdefault("runtime_session_id", self.runtime_session_id)
+            meta.setdefault("owner_pid", os.getpid())
+
         position = Position(
             position_id=str(uuid.uuid4())[:8],
             symbol=symbol,
@@ -176,7 +187,7 @@ class PositionTracker:
             take_profit=take_profit,
             order_id=order_id,
             status="open",
-            metadata=metadata or {},
+            metadata=meta,
         )
         with self._lock:
             self._positions[position.position_id] = position
@@ -341,11 +352,24 @@ class PositionTracker:
 
     def open_positions(self) -> list[Position]:
         with self._lock:
-            return [p for p in self._positions.values() if p.status == "open"]
+            return [
+                p for p in self._positions.values()
+                if p.status == "open" and p.status != "ghost" and not (p.metadata or {}).get("quarantined") is True
+            ]
 
     def closed_positions(self) -> list[Position]:
         with self._lock:
-            return [p for p in self._positions.values() if p.status != "open"]
+            return [
+                p for p in self._positions.values()
+                if p.status != "open" and p.status != "ghost" and not (p.metadata or {}).get("quarantined") is True
+            ]
+
+    def ghost_positions(self) -> list[Position]:
+        with self._lock:
+            return [
+                p for p in self._positions.values()
+                if p.status == "ghost" or (p.metadata or {}).get("quarantined") is True
+            ]
 
     def get_position(self, position_id: str) -> Position | None:
         with self._lock:
@@ -649,3 +673,156 @@ class PositionTracker:
                 except (TypeError, ValueError):
                     return 0.0
         return 0.0
+
+    def run_sentinel_checks(
+        self,
+        current_run_id: str,
+        active_owner: dict[str, Any] | None = None,
+        telemetry_emit: Callable[[str, dict[str, Any]], Any] | None = None,
+    ) -> None:
+        """Startup sentinel checks to quarantine ghost paper positions."""
+        import os
+        from datetime import datetime, UTC
+        
+        with self._lock:
+            open_pos = [p for p in self._positions.values() if p.status == "open"]
+            if not open_pos:
+                LOGGER.info("[SENTINEL] No open paper positions found to check.")
+                # Even if 0 found, emit startup summary metrics
+                if telemetry_emit:
+                    try:
+                        telemetry_emit("log_system_health", {
+                            "event": "ghost_position_sentinel_startup",
+                            "ghost_positions_found": 0,
+                            "ghost_positions_quarantined": 0,
+                            "ghost_positions_remaining": 0,
+                            "telemetry_scope": "sentinel"
+                        })
+                    except Exception as e:
+                        LOGGER.error("[SENTINEL] Telemetry emission failed: %s", e)
+                return
+
+            now = datetime.now(tz=UTC)
+            max_age_seconds = getattr(self.settings, "ghost_position_max_age", 3600)
+            quarantine_enabled = getattr(self.settings, "ghost_position_quarantine_enabled", True)
+
+            found_count = 0
+            quarantined_count = 0
+
+            for pos in open_pos:
+                ghost_reason = None
+                
+                # Calculate age
+                try:
+                    entry_dt = datetime.fromisoformat(pos.entry_time.replace("Z", "+00:00"))
+                    age_seconds = (now - entry_dt).total_seconds()
+                except Exception:
+                    age_seconds = 0.0
+                
+                # 1. OWNER_MISSING: missing runtime_session_id
+                pos_session_id = pos.metadata.get("runtime_session_id")
+                if not pos_session_id:
+                    ghost_reason = "OWNER_MISSING"
+                
+                # 2. SESSION_MISMATCH: runtime_session_id mismatch
+                elif pos_session_id != current_run_id:
+                    ghost_reason = "SESSION_MISMATCH"
+                
+                # 3. UNKNOWN_LIFECYCLE: lifecycle UNKNOWN or missing
+                lifecycle = pos.metadata.get("lifecycle_phase")
+                if not ghost_reason and (not lifecycle or lifecycle == "UNKNOWN"):
+                    ghost_reason = "UNKNOWN_LIFECYCLE"
+                
+                # 4. OWNER_RUNTIME_MISMATCH: entry timestamp older than owner startup
+                if not ghost_reason and active_owner and "started_utc" in active_owner:
+                    try:
+                        owner_start = datetime.fromisoformat(active_owner["started_utc"].replace("Z", "+00:00"))
+                        entry_dt = datetime.fromisoformat(pos.entry_time.replace("Z", "+00:00"))
+                        if entry_dt < owner_start:
+                            ghost_reason = "OWNER_RUNTIME_MISMATCH"
+                    except Exception:
+                        pass
+                
+                # 5. OWNER_RUNTIME_MISMATCH (cont): runtime ownership mismatch
+                if not ghost_reason and active_owner and pos_session_id != active_owner.get("run_id"):
+                    ghost_reason = "OWNER_RUNTIME_MISMATCH"
+                
+                # 6. OWNER_MISSING (cont): owner missing in active runtime registry
+                if not ghost_reason and (not active_owner or active_owner.get("status") != "active"):
+                    ghost_reason = "OWNER_MISSING"
+                
+                # 7. STALE_POSITION: age > ghost_position_max_age
+                if not ghost_reason and age_seconds > max_age_seconds:
+                    ghost_reason = "STALE_POSITION"
+                
+                # 8. PID_DEAD: owner PID dead
+                if not ghost_reason:
+                    owner_pid = pos.metadata.get("owner_pid")
+                    if owner_pid:
+                        try:
+                            from utils.runtime_ownership import _default_process_checker
+                            if not _default_process_checker(int(owner_pid)):
+                                ghost_reason = "PID_DEAD"
+                        except Exception:
+                            pass
+
+                # If detected as ghost
+                if ghost_reason:
+                    found_count += 1
+                    action_taken = "log_only"
+                    
+                    if quarantine_enabled:
+                        pos.status = "ghost"
+                        if pos.metadata is None:
+                            pos.metadata = {}
+                        pos.metadata["quarantined"] = True
+                        pos.metadata["ghost_reason"] = ghost_reason
+                        pos.metadata["ghost_detected_at"] = now.isoformat().replace("+00:00", "Z")
+                        quarantined_count += 1
+                        action_taken = "quarantined"
+                        LOGGER.warning(
+                            "[SENTINEL] Quarantined ghost position %s | reason=%s | age=%.1fs",
+                            pos.position_id, ghost_reason, age_seconds
+                        )
+                    else:
+                        LOGGER.info(
+                            "[SENTINEL] Ghost position detected but quarantine disabled: %s | reason=%s",
+                            pos.position_id, ghost_reason
+                        )
+
+                    # Emit structured observability event
+                    payload = {
+                        "position_id": pos.position_id,
+                        "runtime_session_id": current_run_id,
+                        "owner_pid": pos.metadata.get("owner_pid", 0) if pos.metadata else 0,
+                        "ghost_reason": ghost_reason,
+                        "quarantined": quarantine_enabled,
+                        "age_seconds": round(age_seconds, 2),
+                        "lifecycle": lifecycle or "UNKNOWN",
+                        "action_taken": action_taken,
+                        "telemetry_scope": "sentinel"
+                    }
+                    if telemetry_emit:
+                        try:
+                            telemetry_emit("log_ghost_position_detected", payload)
+                        except Exception as e:
+                            LOGGER.error("[SENTINEL] Event emission failed: %s", e)
+
+            remaining_count = found_count - quarantined_count
+            LOGGER.info(
+                "[SENTINEL] Startup metrics | Ghost Found: %d | Quarantined: %d | Remaining: %d",
+                found_count, quarantined_count, remaining_count
+            )
+
+            # Emit startup summary metric
+            if telemetry_emit:
+                try:
+                    telemetry_emit("log_system_health", {
+                        "event": "ghost_position_sentinel_startup",
+                        "ghost_positions_found": found_count,
+                        "ghost_positions_quarantined": quarantined_count,
+                        "ghost_positions_remaining": remaining_count,
+                        "telemetry_scope": "sentinel"
+                    })
+                except Exception as e:
+                    LOGGER.error("[SENTINEL] Telemetry emission failed: %s", e)

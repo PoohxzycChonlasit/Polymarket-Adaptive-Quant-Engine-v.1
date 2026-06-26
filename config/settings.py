@@ -219,6 +219,10 @@ class Settings(BaseSettings):
     dynamic_tp_boost_factor: float = 0.5    # TP boost = advantage% × this factor
     api_retry_attempts: int = 3             # Number of retries on API failure
     api_retry_backoff_base: float = 1.0     # Exponential backoff base (seconds)
+
+    # ── Ghost Position Sentinel ──────────────────────────────────────────────
+    ghost_position_max_age: int = 3600
+    ghost_position_quarantine_enabled: bool = True
     api_circuit_breaker_threshold: int = 5  # Consecutive failures before circuit opens
     api_circuit_breaker_cooldown: int = 30  # Seconds to wait when circuit is open
 
@@ -411,6 +415,7 @@ class Settings(BaseSettings):
         "arb_max_active_markets_small_bankroll",
         "summary_interval_cycles",
         "wallet_reference_refresh_seconds",
+        "ghost_position_max_age",
     )
     @classmethod
     def validate_positive_int(cls, v: int) -> int:
