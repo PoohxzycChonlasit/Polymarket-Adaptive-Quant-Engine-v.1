@@ -61,6 +61,7 @@ from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reas
 import polymarket.shadow_telemetry as shadow_telemetry
 from polymarket.trader_presentation import TraderPresentationHelper
 from polymarket.orchestration.trader_lifecycle import TraderLifecycleHelper
+from polymarket.orchestration.trader_observability import TraderObservabilityHelper
 
 
 LOGGER = logging.getLogger(__name__)
@@ -381,6 +382,7 @@ class PolymarketTrader:
         tracker: PositionTracker | None = None,
     ) -> None:
         self.settings = settings or get_settings()
+        self._observability = TraderObservabilityHelper(self.settings)
         self.client = PolymarketClient()
         self.gamma = GammaFetcher()
         self.order_manager = PolymarketOrderManager(
@@ -517,7 +519,7 @@ class PolymarketTrader:
             "empty_book_recovery_failed": 0,
             "empty_book_recovery_retries": 0,
         }
-        self._recent_display_trades: deque[dict[str, object]] = deque(maxlen=12)
+
         self._cycle_count = 0
         self._session_start_monotonic: float = time.monotonic()
         self._loop_exception_count: int = 0
@@ -534,7 +536,7 @@ class PolymarketTrader:
         self._outer_loop_poll_interval_seconds = 0.25
         self._last_scan_cycle_duration_ms = 0
         self._last_structured_logs: dict[str, str] = {}
-        self._observability_health_display_state: dict[str, object] = self._default_observability_health_display_state()
+
         self.quant_events = self._init_quant_event_logger()
         self.telegram_alerts = self._init_telegram_alert_layer()
         self._last_system_health_event_ts = 0.0
@@ -714,7 +716,7 @@ class PolymarketTrader:
 
     def dashboard_observability_health_state(self) -> dict[str, object]:
         """Return display-only observability health state for terminal UI surfaces."""
-        return dict(getattr(self, "_observability_health_display_state", self._default_observability_health_display_state()))
+        return self._observability.dashboard_observability_health_state(self)
 
     def _event_producer_label(self, event_method: str) -> str:
         return {
@@ -755,88 +757,12 @@ class PolymarketTrader:
         *,
         jsonl_ok: bool,
     ) -> dict[str, object]:
-        schema_version = str(getattr(getattr(self, "quant_events", None), "schema_version", "") or "--")
-        producer = self._event_producer_label(event_method)
-        has_trace = self._display_field_present(payload, "candidate_trace_id")
-        has_condition = self._display_field_present(payload, "condition_id")
-        has_token = self._display_field_present(payload, "token_id")
-        has_side = self._display_field_present(payload, "side", "outcome", "best_side")
-        has_probability = self._display_visibility_status(payload, "true_probability", "p_yes", "model_p_yes")
-        has_fair_value = self._display_visibility_status(payload, "fair_value")
-        has_ev = self._display_visibility_status(payload, "ev_after_spread", "ev")
-        model_attempted = self._display_visibility_status(
+        return self._observability._observability_health_from_payload(
+            self,
+            event_method,
             payload,
-            "model_attempted",
-            "ev_visibility_attempted",
-            "probability_model_stage",
-            "ev_calculation_stage",
+            jsonl_ok=jsonl_ok,
         )
-        trace_status = (
-            "TRACE+COND"
-            if has_trace and has_condition
-            else "TRACE_ONLY"
-            if has_trace
-            else "COND_ONLY"
-            if has_condition
-            else "UNKNOWN"
-        )
-        boundary = str(payload.get("decision_to_risk_boundary") or "").upper()
-        blocked_before_risk = int(
-            bool(payload.get("candidate_blocked_before_risk_visibility"))
-            or boundary == "BLOCKED_BEFORE_RISK"
-        )
-        risk_reachability = str(payload.get("risk_reachability_status") or boundary or "UNKNOWN")
-        risk_serialization = str(
-            payload.get("risk_serialization_status")
-            or payload.get("risk_serialization_visibility")
-            or "UNKNOWN"
-        )
-        pre_risk_cause = str(
-            payload.get("dominant_pre_risk_cause")
-            or payload.get("dominant_pre_risk_block_reason")
-            or payload.get("pre_risk_block_reason")
-            or payload.get("normalized_skip_reason")
-            or payload.get("skip_reason")
-            or "UNKNOWN"
-        )
-        model_gap = self._display_dominant_model_gap(payload)
-        event_identity = self._display_identity_readiness(payload)
-        chain_confidence = str(
-            payload.get("candidate_chain_trace_confidence")
-            or payload.get("candidate_trace_confidence")
-            or "UNKNOWN"
-        ).upper()
-        if chain_confidence not in {"DIRECT", "STRONG", "WEAK", "PROXY", "UNKNOWN"}:
-            chain_confidence = "UNKNOWN"
-        return {
-            "jsonl_status": "OK" if jsonl_ok else "WARN",
-            "jsonl_ok": bool(jsonl_ok),
-            "latest_producer": producer,
-            "latest_schema_version": schema_version,
-            "trace_enrichment_status": trace_status,
-            "condition_enrichment_status": "OK" if has_condition else "UNKNOWN",
-            "trace_id_enrichment_ok": has_trace,
-            "condition_id_enrichment_ok": has_condition,
-            "candidate_trace_id_present": has_trace,
-            "condition_id_present": has_condition,
-            "token_id_present": has_token,
-            "side_present": has_side,
-            "event_identity_readiness": event_identity,
-            "candidate_chain_trace_confidence": chain_confidence,
-            "identity_readiness": event_identity,
-            "model_attempted": model_attempted,
-            "probability_visible": has_probability,
-            "fair_value_visible": has_fair_value,
-            "ev_visible": has_ev,
-            "dominant_model_gap": model_gap,
-            "dominant_model_gap_reason": model_gap,
-            "blocked_before_risk_count": blocked_before_risk,
-            "dominant_pre_risk_cause": pre_risk_cause,
-            "dominant_pre_risk_block_reason": pre_risk_cause,
-            "risk_reachability_status": risk_reachability,
-            "risk_serialization_status": risk_serialization,
-            "risk_serialization_visibility": risk_serialization,
-        }
 
     def _evaluate_passive_shadow_telemetry(
         self,
@@ -1166,7 +1092,7 @@ class PolymarketTrader:
         if logger is None:
             state = self._default_observability_health_display_state()
             state["jsonl_status"] = "UNKNOWN"
-            self._observability_health_display_state = state
+            self._observability._observability_health_display_state = state
             return False
         try:
             logger.mode = self._runtime_mode()
@@ -1203,7 +1129,8 @@ class PolymarketTrader:
 
             display_payload = self._display_payload_with_candidate_trace_identity(enriched_payload)
             emitted = bool(method(display_payload))
-            self._observability_health_display_state = self._observability_health_from_payload(
+            self._observability._observability_health_display_state = self._observability._observability_health_from_payload(
+                self,
                 event_method,
                 display_payload,
                 jsonl_ok=emitted,
@@ -1216,7 +1143,7 @@ class PolymarketTrader:
             state["jsonl_ok"] = False
             state["latest_producer"] = self._event_producer_label(event_method)
             state["latest_schema_version"] = str(getattr(logger, "schema_version", "") or "--")
-            self._observability_health_display_state = state
+            self._observability._observability_health_display_state = state
             return False
 
     def _utc_timestamp(self) -> str:
@@ -5804,21 +5731,20 @@ class PolymarketTrader:
         realized_pnl: float = 0.0,
         status: str = "paper",
     ) -> None:
-        self._recent_display_trades.appendleft({
-            "time": datetime.now(tz=UTC).strftime("%H:%M:%S"),
-            "market": market,
-            "side": side,
-            "entry_price": float(entry_price),
-            "exit_price": float(exit_price) if exit_price is not None else None,
-            "size": float(size),
-            "realized_pnl": float(realized_pnl),
-            "reason": reason,
-            "mode": mode,
-            "status": status,
-        })
+        self._observability._record_display_trade(
+            market=market,
+            side=side,
+            entry_price=entry_price,
+            size=size,
+            reason=reason,
+            mode=mode,
+            exit_price=exit_price,
+            realized_pnl=realized_pnl,
+            status=status,
+        )
 
     def get_recent_display_trades(self) -> list[dict[str, object]]:
-        return list(self._recent_display_trades)
+        return self._observability.get_recent_display_trades()
 
     def _trades_last_hour(self) -> int:
         now = time.time()
