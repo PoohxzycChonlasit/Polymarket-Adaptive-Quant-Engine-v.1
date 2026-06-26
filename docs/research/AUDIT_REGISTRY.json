@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2026-06-21",
+  "audits": [
+    {
+      "audit_id": "REPLAY_METHODOLOGY_VALIDATION_001",
+      "title": "Validate mathematical correctness of share and win PnL formulas",
+      "owner": "Claude-3.5-Sonnet",
+      "status": "VERIFIED",
+      "verdict": "METHODOLOGY_VALIDATION",
+      "created_date": "2026-06-18",
+      "last_updated": "2026-06-18",
+      "superseded_by": null,
+      "canonical": true,
+      "next_action": "Establish standard backtest runs using validated formulas"
+    },
+    {
+      "audit_id": "RISK_PLAN_ZERO_FORENSIC_AUDIT_001",
+      "title": "Analyze zero position-sizing skips in real-time execution loop",
+      "owner": "Claude-3.5-Sonnet",
+      "status": "VERIFIED",
+      "verdict": "PIPELINE_DIAGNOSTIC",
+      "created_date": "2026-06-18",
+      "last_updated": "2026-06-18",
+      "superseded_by": null,
+      "canonical": true,
+      "next_action": "Incorporate confidence floor diagnostics into status monitoring"
+    },
+    {
+      "audit_id": "CLOB_EMPTY_RESPONSE_FORENSIC_AUDIT",
+      "title": "Forensic audit of empty orderbook states in CLOB client",
+      "owner": "Claude-3.5-Sonnet",
+      "status": "VERIFIED",
+      "verdict": "PIPELINE_DIAGNOSTIC",
+      "created_date": "2026-06-18",
+      "last_updated": "2026-06-18",
+      "superseded_by": null,
+      "canonical": true,
+      "next_action": "Parameterize websocket warmup constraints"
+    },
+    {
+      "audit_id": "LOW_PRICE_EDGE_VALIDATION_001",
+      "title": "Verify expectation profile of contracts priced under 10 cents",
+      "owner": "Claude-3.5-Sonnet",
+      "status": "VERIFIED",
+      "verdict": "EDGE_WEAK",
+      "created_date": "2026-06-18",
+      "last_updated": "2026-06-19",
+      "superseded_by": null,
+      "canonical": false,
+      "next_action": "Investigate settlement truth resolution under active question LOW_PRICE_TRUTH_RESOLUTION_001"
+    },
+    {
+      "audit_id": "SUB_5C_EXECUTION_REALITY_AUDIT",
+      "title": "Forensic audit of executability gates for ask prices under 5 cents",
+      "owner": "Claude-3.5-Sonnet",
+      "status": "VERIFIED",
+      "verdict": "OPEN_QUESTION",
+      "created_date": "2026-06-18",
+      "last_updated": "2026-06-19",
+      "superseded_by": null,
+      "canonical": false,
+      "next_action": "Resolve official on-chain settlement keys before treating as executable"
+    },
+    {
+      "audit_id": "DUPLICATE_OPEN_FORENSIC_AUDIT_001",
+      "title": "Forensic audit of duplicate_open failure on May 22, 2026",
+      "owner": "Antigravity",
+      "status": "VERIFIED",
+      "verdict": "LEGITIMATE_MULTI_OPEN",
+      "created_date": "2026-06-20",
+      "last_updated": "2026-06-21",
+      "superseded_by": null,
+      "canonical": true,
+      "next_action": "Modify paper mode order ID generator to prevent collision across restarts/runs"
+    },
+    {
+      "audit_id": "HISTORICAL_POSITION_IDENTITY_DESIGN_AUDIT_001",
+      "title": "Design audit for historical position identity to prevent paper order collisions",
+      "owner": "Antigravity",
+      "status": "VERIFIED",
+      "verdict": "READY_FOR_IDENTITY_PATCH",
+      "created_date": "2026-06-20",
+      "last_updated": "2026-06-21",
+      "superseded_by": null,
+      "canonical": true,
+      "next_action": "Implement identity patch using run_id and order_id/FIFO matching registry in tools/execution_paper_runtime.py"
+    }
+  ]
+}

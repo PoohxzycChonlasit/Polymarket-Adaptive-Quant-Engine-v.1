@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "last_updated": "2026-06-19",
+  "decisions": [
+    {
+      "decision_id": "DEC_2026_06_18_SHADOW_SIZER_DESIGN",
+      "evidence": "LOW_PRICE_EDGE_VALIDATION_001",
+      "approved_by": "Operator",
+      "status": "PROPOSED",
+      "rationale": "Approve the development of a shadow-only sizer configuration to monitor simulated executability of contracts under 5 cents ask before any live activation.",
+      "superseded_by": null
+    }
+  ]
+}
