@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections import deque
 from datetime import datetime, UTC
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from config.settings import Settings
+if TYPE_CHECKING:
+    from config.settings import Settings
 from polymarket.trader_presentation import TraderPresentationHelper
 
 LOGGER = logging.getLogger(__name__)
@@ -14,11 +16,20 @@ LOGGER = logging.getLogger(__name__)
 class TraderObservabilityHelper:
     """Helper owning display state, recent trades, and health monitoring for PolymarketTrader."""
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: "Settings | None" = None) -> None:
         self.settings = settings
         self._presentation = TraderPresentationHelper()
         self._recent_display_trades: deque[dict[str, Any]] = deque(maxlen=12)
         self._observability_health_display_state: dict[str, Any] = self._presentation.default_observability_health_display_state()
+        # Batch 3B-1: orderbook refresh timing state
+        self._last_orderbook_refresh_at_utc: dict[str, str] = {}
+        self._last_orderbook_refresh_monotonic: dict[str, float] = {}
+        self._last_orderbook_refresh_source: dict[str, str] = {}
+        self._last_orderbook_refresh_trigger: dict[str, str] = {}
+        self._last_orderbook_refresh_token_pair_key: dict[str, str] = {}
+        self._last_successful_yes_no_book_at_utc: dict[str, str] = {}
+        self._last_successful_yes_no_book_monotonic: dict[str, float] = {}
+        self._last_successful_yes_no_book_token_pair_key: dict[str, str] = {}
 
     def get_recent_display_trades(self) -> list[dict[str, Any]]:
         return list(self._recent_display_trades)
@@ -142,4 +153,133 @@ class TraderObservabilityHelper:
             "risk_reachability_status": risk_reachability,
             "risk_serialization_status": risk_serialization,
             "risk_serialization_visibility": risk_serialization,
+        }
+
+    # ------------------------------------------------------------------
+    # Batch 3B-1: orderbook refresh timing helpers
+    # ------------------------------------------------------------------
+
+    def _mark_orderbook_refresh(
+        self,
+        ticker: str,
+        *,
+        source: str,
+        trigger: str,
+        now_mono: float,
+        now_utc: str,
+        token_pair_key: str,
+        executable_yes_no_book: bool = False,
+    ) -> None:
+        """Mutate orderbook refresh timing state. Caller pre-computes now_mono/now_utc/token_pair_key."""
+        ticker_key = ticker.upper()
+        self._last_orderbook_refresh_monotonic[ticker_key] = now_mono
+        self._last_orderbook_refresh_at_utc[ticker_key] = now_utc
+        self._last_orderbook_refresh_source[ticker_key] = source
+        self._last_orderbook_refresh_trigger[ticker_key] = trigger
+        self._last_orderbook_refresh_token_pair_key[ticker_key] = token_pair_key
+        if executable_yes_no_book:
+            self._last_successful_yes_no_book_monotonic[ticker_key] = now_mono
+            self._last_successful_yes_no_book_at_utc[ticker_key] = now_utc
+            self._last_successful_yes_no_book_token_pair_key[ticker_key] = token_pair_key
+
+    def _orderbook_refresh_observability_detail(
+        self,
+        trader: Any,
+        ticker: str,
+        *,
+        current_executable_yes_no_book: bool = False,
+        record_decision_cycle: bool = False,
+        current_fetch_succeeded: "bool | None" = None,
+        condition_id: object = "",
+        yes_token_id: object = "",
+        no_token_id: object = "",
+        market_slug: object = "",
+    ) -> "dict[str, object]":
+        """Return orderbook refresh observability payload.
+
+        Reads _last_decision_cycle_monotonic and _cycle_started_at_utc from
+        trader (deferred fields — not yet migrated to helper). Reads all 8
+        moved fields from self.*. Calls trader._orderbook_token_pair_key()
+        for the pair-key computation.
+        """
+        ticker_key = ticker.upper()
+        now_mono = time.monotonic()
+        last_refresh_mono = self._last_orderbook_refresh_monotonic.get(ticker_key)
+        last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
+        previous_decision_mono = getattr(trader, "_last_decision_cycle_monotonic", {}).get(ticker_key)
+        decision_interval = None
+        if record_decision_cycle:
+            if previous_decision_mono is not None:
+                decision_interval = round(max(0.0, now_mono - previous_decision_mono), 3)
+            if not hasattr(trader, "_last_decision_cycle_monotonic"):
+                trader._last_decision_cycle_monotonic = {}
+            trader._last_decision_cycle_monotonic[ticker_key] = now_mono
+        refresh_age_ms = (
+            int(max(0.0, now_mono - last_refresh_mono) * 1000)
+            if last_refresh_mono is not None
+            else None
+        )
+        executable_age_ms = (
+            int(max(0.0, now_mono - last_success_mono) * 1000)
+            if last_success_mono is not None
+            else None
+        )
+        decision_token_pair_key = trader._orderbook_token_pair_key(
+            condition_id=condition_id,
+            yes_token_id=yes_token_id,
+            no_token_id=no_token_id,
+            market_slug=market_slug,
+        )
+        last_refresh_pair = self._last_orderbook_refresh_token_pair_key.get(ticker_key, "")
+        last_success_pair = self._last_successful_yes_no_book_token_pair_key.get(ticker_key, "")
+        lineage_match = bool(decision_token_pair_key and last_success_pair and decision_token_pair_key == last_success_pair)
+        if current_fetch_succeeded is True and current_executable_yes_no_book:
+            fetch_status = "fresh_fetch_executable"
+            stale_source = "CURRENT_DECISION_FETCH_EXECUTABLE"
+        elif current_fetch_succeeded is True:
+            fetch_status = "fresh_fetch_non_executable"
+            stale_source = (
+                "CURRENT_FETCH_NON_EXECUTABLE_PRIOR_EXECUTABLE_SAME_TOKEN_PAIR"
+                if lineage_match
+                else "CURRENT_FETCH_NON_EXECUTABLE_PRIOR_EXECUTABLE_DIFFERENT_OR_UNKNOWN_PAIR"
+                if last_success_mono is not None
+                else "CURRENT_FETCH_NON_EXECUTABLE_NO_PRIOR_EXECUTABLE"
+            )
+        elif current_fetch_succeeded is False:
+            fetch_status = "fresh_fetch_failed"
+            stale_source = (
+                "CURRENT_FETCH_FAILED_PRIOR_EXECUTABLE_SAME_TOKEN_PAIR"
+                if lineage_match
+                else "CURRENT_FETCH_FAILED_PRIOR_EXECUTABLE_DIFFERENT_OR_UNKNOWN_PAIR"
+                if last_success_mono is not None
+                else "CURRENT_FETCH_FAILED_NO_PRIOR_EXECUTABLE"
+            )
+        else:
+            fetch_status = "fresh_fetch_not_attempted_or_unobserved"
+            stale_source = (
+                "NO_CURRENT_FETCH_PRIOR_EXECUTABLE_SAME_TOKEN_PAIR"
+                if lineage_match
+                else "NO_CURRENT_FETCH_PRIOR_EXECUTABLE_DIFFERENT_OR_UNKNOWN_PAIR"
+                if last_success_mono is not None
+                else "NO_CURRENT_FETCH_NO_PRIOR_EXECUTABLE"
+            )
+        return {
+            "decision_cycle_started_at": str(getattr(trader, "_cycle_started_at_utc", "") or ""),
+            "last_orderbook_refresh_at": self._last_orderbook_refresh_at_utc.get(ticker_key, ""),
+            "orderbook_snapshot_age_ms_at_decision": refresh_age_ms,
+            "last_successful_yes_no_book_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+            "orderbook_refresh_source": self._last_orderbook_refresh_source.get(ticker_key, ""),
+            "orderbook_refresh_trigger": self._last_orderbook_refresh_trigger.get(ticker_key, ""),
+            "decision_token_pair_key": decision_token_pair_key,
+            "last_orderbook_refresh_token_pair_key": last_refresh_pair,
+            "last_successful_yes_no_book_token_pair_key": last_success_pair,
+            "orderbook_lineage_match": lineage_match,
+            "orderbook_current_fetch_status": fetch_status,
+            "orderbook_stale_reuse_source": stale_source,
+            "decision_cycle_interval_seconds": decision_interval,
+            "actual_market_revisit_frequency_seconds": decision_interval,
+            "orderbook_reuse_detected": bool(
+                last_success_mono is not None and not current_executable_yes_no_book
+            ),
+            "executable_book_last_seen_age_ms": executable_age_ms,
         }
