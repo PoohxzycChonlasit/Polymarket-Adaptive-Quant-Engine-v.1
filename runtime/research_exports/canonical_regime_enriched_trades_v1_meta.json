@@ -1,25 +1,25 @@
 {
-  "export_generated_at_utc": "2026-06-14T01:02:37Z",
+  "export_generated_at_utc": "2026-06-21T01:00:31Z",
   "export_schema_version": "canonical_regime_enriched_v1",
   "freshness": {
-    "latest_decision_ts_scanned": "2026-06-13T21:06:07.607455Z",
-    "latest_trade_close_ts": "2026-06-13T21:06:19.833393Z",
+    "latest_decision_ts_scanned": "2026-06-20T21:25:20.591692Z",
+    "latest_trade_close_ts": "2026-06-20T21:26:06.840722Z",
     "source_lag_seconds": 0.0,
     "status": "FRESH"
   },
   "source_files": {
-    "decision_log_count": 36,
-    "decision_log_latest_file": "runtime/quant_data/decision_log/2026-06-14.jsonl",
-    "decision_log_latest_mtime_utc": "2026-06-14T01:03:42Z",
-    "trade_journal_count": 33,
-    "trade_journal_latest_file": "runtime/quant_data/trade_journal/2026-06-13.jsonl",
-    "trade_journal_latest_mtime_utc": "2026-06-13T21:06:19Z"
+    "decision_log_count": 43,
+    "decision_log_latest_file": "runtime/quant_data/decision_log/2026-06-21.jsonl",
+    "decision_log_latest_mtime_utc": "2026-06-21T01:00:49Z",
+    "trade_journal_count": 40,
+    "trade_journal_latest_file": "runtime/quant_data/trade_journal/2026-06-20.jsonl",
+    "trade_journal_latest_mtime_utc": "2026-06-20T21:26:06Z"
   },
   "validation": {
-    "canonical_n": 73,
+    "canonical_n": 97,
     "direct_strong_rate": 1.0,
     "duplicate_rows_removed": 1,
-    "raw_filtered_rows": 74,
+    "raw_filtered_rows": 98,
     "regime_join_rate": 1.0,
     "status": "PASS",
     "unknown_regime_count": 0,
