@@ -1,6 +1,6 @@
 # PolyTrade Bot - Codex / AI Agent Instructions
 
-> Last synced: 2026-05-08.
+> Last synced: 2026-06-26.
 > Keep this file safety-first. It is auto-loaded for future AI sessions.
 
 ## Project Goal
@@ -28,7 +28,17 @@ Before modifying code, read `CURRENT_PROJECT_STATUS.md` and do not assume the pr
 
 ## Session Startup
 
-Read these first:
+At the very start of any session or AI switch, run this checklist:
+
+```
+[ ] Look for most recent AI_HANDOFF_*.md in project root
+[ ] If found: read it; run git status + git log -n 3 to verify claimed state
+[ ] State: "Handoff verified / Handoff not found / Handoff mismatch"
+[ ] If mismatch or no handoff: run CLASS 0 health check before any work
+[ ] Declare TASK_CLASS: [0-9] [name] before beginning any task
+```
+
+Then read these in order:
 
 1. `CODEX_START_HERE.md`
 2. `PROJECT_RULES.md`
@@ -73,15 +83,16 @@ For every task, before implementation:
 3. Select exactly one PRIMARY role.
 4. Select zero to three SUPPORTING roles only if the task crosses boundaries.
 5. Read only the selected role docs, not all role docs.
-6. State a compact role-routing block:
+6. Check `docs/research/ACTIVE_QUESTION.md`, `docs/research/AUDIT_REGISTRY.json`, and `docs/research/DECISION_REGISTRY.json` before initiating any new research or audits. If the hypothesis, dataset, or date scope is already registered, inherit the findings to prevent duplicate audits.
+7. State a compact role-routing block:
    - primary role
    - supporting roles
    - why selected
    - files allowed to inspect
    - files intentionally ignored
-7. Keep role usage compact. Do not paste full role docs into chat.
+8. Keep role usage compact. Do not paste full role docs into chat.
 
-Hard rule: never use role docs as permission to expand scope. Role docs guide reasoning only. Runtime changes still require explicit task scope.
+Hard rule: never use role docs as permission to expand scope. Role docs guide reasoning only. Runtime changes still require explicit task scope. Docs-only or diagnostics tasks must never modify Python runtime files, configuration files, sizer logic, or live trading behaviors. No new research frontier may be opened unless the current active question is closed.
 
 Optional AI workflow harness docs live under `.codex/`. These files provide reusable guidance, security checklists, and startup/review prompts for Codex / Claude / Gemini / ChatGPT. They are docs/config-only, do not enable hooks or MCP servers, and do not authorize runtime, strategy, risk, execution, wallet, live-config, or paper/live behavior changes.
 
@@ -145,12 +156,139 @@ Use these as guidance; they are markdown instructions, not autonomous runtime mo
 | `21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Executable edge, spread, liquidity               | Spread, liquidity, maker/taker, fill quality, adverse selection.           |
 | `22_INVENTORY_ANALYTICS_AGENT.md`      | Offline inventory replay analytics              | Missed reload/unload, MFE/MAE, recycling opportunity.                      |
 | `23_QUANT_LIFECYCLE_INVENTORY_AGENT.md`| Lifecycle inventory coordination                 | OPENING_SCAN through FINAL_DERISK, Dynamic Risk Budget, tier-aware design. |
+| `24_REPOSITORY_LIBRARIAN_AGENT.md`     | File hygiene, doc routing, root folder control   | After any session producing new .md files; before committing new docs.     |
+| `25_DATA_STEWARD_AGENT.md`             | JSONL schema contracts, event stream retention   | Before emitting new event types; when event stream exceeds 40 MB.          |
+| `26_AI_HANDOFF_AGENT.md`              | Cross-AI session handoff documents               | At END of every session before switching AI; at START after switching.     |
+| `27_VERIFICATION_OFFICER_AGENT.md`    | Challenge AI claims, enforce evidence grades     | Before any AI claim justifies a code change; when claims lack evidence.    |
+| `28_RUNTIME_OPERATIONS_AGENT.md`      | Paper/live session lifecycle management          | Before launching any paper session; after any session completes.           |
+| `29_ARCHITECTURE_GOVERNANCE_AGENT.md` | Refactor batch gate-check and scope enforcement  | Before every refactor batch; whenever an AI proposes starting Batch N.     |
 
 Status labels:
 
 - Implemented means code or docs exist and are usable now.
 - Partially implemented means some runtime support exists but validation or follow-up gaps remain.
 - Planned means the role or tool is only guidance until code/tests prove otherwise.
+
+---
+
+## Task Class System
+
+Every task must be classified before work begins. State `TASK_CLASS: [0-9] [name]` at the start of every response.
+
+| Class | Name | Pre-conditions | Output |
+|-------|------|---------------|--------|
+| 0 | HEALTH_CHECK | None | Observation report only; no file changes |
+| 1 | RESEARCH | Check AUDIT_REGISTRY; ACTIVE_QUESTION may be open | Report to `docs/research/` or `runtime/reports/` |
+| 2 | DESIGN_ONLY | None | Design document; no code changes; no commits |
+| 3 | DOCS_HOUSEKEEPING | Core runtime clean | Markdown files only; no code; no mixed commits |
+| 4 | TOOLING | Verify offline scope | New `tools/` file + tests; no runtime imports |
+| 5 | OBSERVABILITY | Core runtime clean; paper validated | New event/log code + schema entry + tests |
+| 6 | REFACTOR | Architecture Governance gate PASSED; paper validated; tests green | Moved code + re-exports + runtime validation + commit report |
+| 7 | FEATURE | Active question closed; explicit task scope; PM approval | New behavior + tests + paper validation + commit report |
+| 8 | LIVE_RISK | ALL: allowance confirmed, execution validated, PM explicit approval | Controlled validation report with full Grade A evidence |
+| 9 | ENVIRONMENT | None | Environment check report; no source code changes |
+
+If a task cannot be classified, ask for clarification before proceeding.
+
+---
+
+## Evidence Grade System
+
+Every material claim in an AI response must be tagged with its evidence grade.
+
+| Grade | Name | Meaning | Examples |
+|-------|------|---------|---------|
+| A | Runtime Observed | Seen in live or paper runtime output | Exit code, log lines, JSONL events, TUI panels |
+| B | Source Verified | Confirmed by reading actual code | File content, line numbers, call paths |
+| C | Test Verified | Confirmed by passing tests | pytest output, specific test names and timings |
+| D | Docs Aligned | Consistent with project documentation | CURRENT_PROJECT_STATUS.md, AGENTS.md entries |
+| E | AI Inferred | AI reasoning without independent check | Assumptions, "should work", analogies |
+
+**Grade E may never be used alone to justify a code change.** Grade A is required for all runtime safety claims.
+
+Minimum evidence grade by task class:
+
+| Class | Minimum Grade | Notes |
+|-------|--------------|-------|
+| 0 | A | Must observe, not infer |
+| 1 | B or C | Read code or run tests |
+| 3 | D | Docs aligned |
+| 4 | C | Tests must pass |
+| 5 | A + C | Runtime observed and tests pass |
+| 6 | A + C | Runtime validated and full tests pass |
+| 7 | A + C | Paper validated and tests pass |
+| 8 | A (live) | Only live runtime observation counts |
+
+---
+
+## Mandatory Task Output Contract
+
+Every AI task — regardless of class — must end with this block:
+
+```
+## TASK_OUTPUT_CONTRACT
+
+### Task Identity
+- Task name: [name]
+- Task class: [0-9]
+- Agent roles used: PRIMARY=[role] SUPPORTING=[roles or NONE]
+
+### Files Changed
+- [file path] — [what changed]
+- NONE (if no files changed)
+
+### Files Read (Not Changed)
+- [file path] — [why inspected]
+
+### Tests Run
+- Command: [exact command]
+- Result: [PASS N/N / FAIL N/N / NOT_REQUIRED (class 0/1/2/3)]
+- Pre-existing failures: [list or NONE]
+
+### Evidence
+- [Grade A/B/C/D/E] [claim]
+
+### Remaining Uncertainty
+- [what was not independently verified]
+
+### Commits Made
+- [sha] [message] or NONE
+
+### Active Question Status
+- OPEN: [question] / CLOSED / N/A
+
+### Batch 2 Authorization
+- NOT AUTHORIZED (unless explicitly stated by user in this session)
+
+### Recommended Next Task
+- [specific task name and class]
+```
+
+A task without this block is treated as **incomplete** by the next AI. Do not skip it.
+
+---
+
+## Session Handoff Rule
+
+Every AI session must produce a handoff document before the user closes the conversation or switches to a different AI system. The incoming AI must read this document before doing anything else.
+
+**Outgoing AI:** Create `AI_HANDOFF_[YYYYMMDD_HHMM].md` in the project root containing:
+- Repository state at session end (HEAD, branch, dirty files — Grade A verified)
+- Tasks completed this session (files changed, tests run, evidence)
+- Tasks started but not completed
+- Verified claims (Grade A/B/C) vs unverified assumptions (Grade D/E)
+- Active question status
+- Batch 2 authorization status (default: NOT AUTHORIZED)
+- Explicitly authorized next task
+
+**Incoming AI:** Before doing any work:
+1. Find most recent `AI_HANDOFF_*.md`
+2. Run `git status` and `git log -n 3 --oneline` to verify claimed state
+3. If state matches: proceed from the handoff's authorized next task
+4. If state does not match or no handoff exists: run a CLASS 0 health check first
+5. State at start of response: `Handoff verified / Handoff not found / Handoff mismatch`
+
+---
 
 ## Agent Use Boundaries
 

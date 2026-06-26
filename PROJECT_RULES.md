@@ -1,5 +1,22 @@
 # PROJECT_RULES.md
 
+# Evidence Hierarchy
+
+AI reports are claims until verified. The authoritative order from highest to lowest:
+
+```
+1. Runtime behavior   — what the running system actually does (Grade A)
+2. Source code        — what the code says it does (Grade B)
+3. Logs / JSONL       — what the runtime reported at a past time (Grade A historical)
+4. Tests              — what the test suite verified (Grade C)
+5. Docs               — what was intended (Grade D)
+6. AI report          — what an AI claimed (Grade E — unverified by default)
+```
+
+An AI claim that contradicts higher-level evidence is wrong until the contradiction is explained. Grade E alone may never justify a code change or runtime behavior claim.
+
+---
+
 # File Reading Rules
 
 - NEVER scan the entire repository unless explicitly requested.
@@ -13,8 +30,11 @@
 - parquet/
 - archives/
 - snapshots/
+- docs/archive/ (Obsolete research/logs)
 - generated files
   unless explicitly debugging those areas.
+
+- ALWAYS check docs/research/AUDIT_REGISTRY.json before starting a new research task or audit to verify if findings already exist.
 
 Exception for research tasks:
 
@@ -71,6 +91,17 @@ Current roadmap:
 
 Offline analyzers, replay outputs, and research tables are evidence only. Do not wire them into automatic runtime decisions without a separate explicit implementation phase.
 
+## Refactor Batch Gate Rule
+
+No AI may start Batch 2 (or any subsequent refactor batch) without:
+
+1. An Architecture Governance gate check (Role 29) returning `PROCEED`
+2. Core runtime files clean (`git diff` empty on `polymarket/trader.py` and peers)
+3. Paper runtime validated after the previous batch (minimum 3 cycles, clean exit)
+4. All tests passing (excluding documented pre-existing failures)
+
+If the user says "start Batch 2" without these preconditions met, the AI must run the gate check first.
+
 ---
 
 # Runtime Safety
@@ -83,6 +114,59 @@ Do not:
 - disable execution protections
 - merge paper/live logic
   without explicit approval.
+
+---
+
+# Commit Boundary Rules
+
+Each commit must contain exactly one type. Never mix types in a single commit.
+
+| Type | Contents | Example |
+|------|----------|---------|
+| A | Python runtime code only | `polymarket/`, `utils/`, `config/` |
+| B | Offline tools / dashboard only | `tools/`, `dashboard/` |
+| C | Documentation / markdown only | `*.md` files |
+| D | Tests only | `tests/` |
+| E | Environment only | `requirements.txt`, `.env.example` |
+| F | Data / exports only | `runtime/research_exports/` |
+
+**TYPE A commits must never be mixed with any other type.** Dashboard (B) and runtime (A) are always separate commits. Commit message must state which type the commit is.
+
+---
+
+# Markdown File Routing Rule
+
+New `.md` files must not be created in the repository root unless they are designated root entrypoints. All other `.md` files must be routed by the Repository Librarian Agent (Role 24) to the correct `docs/` subdirectory before commit.
+
+Designated root entrypoints (may remain in root):
+- `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `PROJECT_RULES.md`
+- `CURRENT_PROJECT_STATUS.md`, `CODEX_START_HERE.md`
+- `FILE_INDEX.md`, `DOCUMENTATION_MAP.md`, `KNOWN_ISSUES.md`
+- `PROJECT_STRUCTURE.md`, `QUANT_FUTURE_DECISION_ENGINE.md`, `README.md`
+- `AI_HANDOFF_*.md` (session handoff documents)
+- `CLAUDE.md` (Claude Code instructions)
+
+All design docs, audit reports, commit reports, and research docs must go to `docs/architecture/`, `docs/reports/`, `docs/audits/`, or `docs/research/`.
+
+When root has > 10 untracked `.md` files, invoke Role 24 (Repository Librarian) before the next commit.
+
+---
+
+# Session Handoff Rule
+
+Every AI session must produce a handoff document before the session closes or the user switches to a different AI system.
+
+File: `AI_HANDOFF_[YYYYMMDD_HHMM].md` in the project root.
+
+Minimum required content:
+- HEAD and branch (Grade A verified by `git log`)
+- Working tree status (Grade A verified by `git status`)
+- Tasks completed (files changed, tests run, evidence grades)
+- Active question status
+- Batch 2 authorization status (default: NOT AUTHORIZED)
+- Explicitly authorized next task
+
+The incoming AI must read the most recent handoff document before doing any work, verify the claimed state with `git status`, and state `Handoff verified / Handoff not found / Handoff mismatch` at the top of its first response.
 
 ---
 
@@ -192,6 +276,22 @@ Before editing:
 - explain why each inspected file is necessary
 - explain which files are intentionally ignored
 - avoid recursive module exploration
+
+---
+
+# Active Question System
+
+- Maximum Active Questions = 1.
+- Before opening any new research frontier or modifying code, the current active question listed in `docs/research/ACTIVE_QUESTION.md` must be closed.
+- Allowed closure states: `EDGE_REAL`, `REPLAY_ARTIFACT`, `DATA_INSUFFICIENT`.
+
+---
+
+# Anti-Loop Task Limits
+
+- Maximum background task polling attempts: 3.
+- Maximum wait time: 30 seconds.
+- If a background task or script has not finished within these limits, STOP immediately, cancel the task, and report partial findings.
 
 ---
 

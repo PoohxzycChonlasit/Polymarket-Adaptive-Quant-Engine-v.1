@@ -84,6 +84,70 @@ Always keep these global boundaries:
 | Paper-only inventory replay, missed reload/unload, MFE/MAE | `22_INVENTORY_ANALYTICS_AGENT.md` | `10_BACKTEST_REPLAY_AGENT.md`, `18_MARKET_REGIME_AGENT.md`, `21_EXECUTION_MICROSTRUCTURE_AGENT.md` |
 | Quant Lifecycle Inventory System, lifecycle state machine, tier-aware inventory decisions | `23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Choose up to 3: `03_RISK_MANAGER_AGENT.md`, `20_INVENTORY_ENGINE_AGENT.md`, `22_INVENTORY_ANALYTICS_AGENT.md`, `21_EXECUTION_MICROSTRUCTURE_AGENT.md`, `05_MARKET_DATA_AGENT.md`, `19_FAIR_VALUE_ENGINE_AGENT.md` |
 | Docs-only agent sync | `01_PROJECT_MANAGER_AGENT.md` | `02_CODE_ARCHITECT_AGENT.md`, `07_TEST_CI_AGENT.md` |
+| File hygiene, doc routing, root .md files > 10 untracked in root | `24_REPOSITORY_LIBRARIAN_AGENT.md` | None |
+| JSONL schema registration, event stream retention, disk budget | `25_DATA_STEWARD_AGENT.md` | `11_OBSERVABILITY_INCIDENT_AGENT.md` |
+| Cross-AI session handoff: end of session or start after AI switch | `26_AI_HANDOFF_AGENT.md` | None |
+| Verifying AI claims before using them to justify code changes | `27_VERIFICATION_OFFICER_AGENT.md` | Task-specific primary agent |
+| Launching, monitoring, or reporting on a paper or live session | `28_RUNTIME_OPERATIONS_AGENT.md` | `16_PAPER_EVALUATION_AGENT.md` |
+| Gate-checking a refactor batch before implementation starts | `29_ARCHITECTURE_GOVERNANCE_AGENT.md` | `02_CODE_ARCHITECT_AGENT.md`, `07_TEST_CI_AGENT.md` |
+
+## Batch 2 Gate Rule
+
+**No AI may start Batch 2 (or any refactor batch) without an explicit Architecture Governance gate check.**
+
+Before beginning any CLASS 6 refactor task:
+
+1. Invoke `29_ARCHITECTURE_GOVERNANCE_AGENT.md`
+2. Confirm gate verdict is `PROCEED` (not just assumed)
+3. Gate check must verify: HEAD at expected commit, core runtime clean, paper validated after last batch, active question closed, prior batch tests passing
+4. Only after `PROCEED` verdict may implementation begin
+
+If the user says "start Batch 2" without a gate check having been run in this session, the AI must run the gate check first and report the verdict before writing any code.
+
+---
+
+## Drift and Loop Recovery Trigger
+
+An AI has drifted or looped when ANY of these are true:
+- Same file read 3+ times without new conclusions
+- Same tool called 3+ times without new output
+- Git diff shows changes not related to the stated task
+- AI is restating context from > 3 messages ago without progressing
+
+**Recovery:** STOP all work. Run `git status` and `git diff`. Produce a DRIFT_DETECTION_REPORT. Return to last verified clean state. Invoke `27_VERIFICATION_OFFICER_AGENT.md` before resuming.
+
+Anti-loop limits:
+- Max re-reads of same file without new output: 2
+- Max role docs read per task: 4 (1 primary + 3 supporting)
+- Max background task polling attempts: 3
+
+---
+
+## Runtime Operations Trigger
+
+Before launching any paper session (`python main.py --mode paper`), invoke `28_RUNTIME_OPERATIONS_AGENT.md` to:
+- Confirm no existing session owner file is active
+- Confirm git status (dirty non-core files acceptable; dirty core files: STOP)
+- Confirm HEAD at expected commit
+- Record session intent and expected run duration
+
+After session ends, produce a RUNTIME_SESSION_REPORT with: run_id, cycles, events, no-live-orders confirmation, shutdown clean, follow-up required.
+
+---
+
+## Documentation Cleanup Trigger
+
+When there are > 10 untracked `.md` files in the repository root, invoke `24_REPOSITORY_LIBRARIAN_AGENT.md` before the next commit. The Librarian routes files to correct `docs/` subdirectories and updates `FILE_INDEX.md`.
+
+New `.md` files must be routed to:
+- `docs/architecture/` — design docs, blueprints, master plans
+- `docs/audits/` — pre-commit checklists, forensic audits
+- `docs/reports/` — commit reports, implementation reports, session reports
+- `docs/research/` — quant hypotheses, campaigns, governance
+- `docs/operations/` — runbooks, deployment guides
+- Root (designated entrypoints only) — `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, `PROJECT_RULES.md`, `CURRENT_PROJECT_STATUS.md`, `CODEX_START_HERE.md`, `FILE_INDEX.md`, `DOCUMENTATION_MAP.md`, `KNOWN_ISSUES.md`, `PROJECT_STRUCTURE.md`, `QUANT_FUTURE_DECISION_ENGINE.md`, `README.md`, `AI_HANDOFF_*.md`
+
+---
 
 ## Lifecycle Inventory Routing
 
@@ -108,6 +172,8 @@ Implemented:
 - Offline data quality, replay analyzer, session runtime evaluator, and paper evaluation report.
 - Clean shutdown hardening for major runtime-owned feeds/loggers.
 - Regime/probability diagnostics as observability/research fields.
+- Trader Refactor Batch 1 (`e76581fb`): `trader_presentation.py` extracted from `trader.py` via proxy delegation. Paper-validated 2026-06-26 (11 cycles, 443 events, exit 0).
+- Agent OS v1 (`AI_AGENT_OPERATING_SYSTEM_DESIGN_001.md`): evidence grades, task classes, output contracts, handoff protocol, roles 24-29 defined.
 
 Partially implemented:
 
