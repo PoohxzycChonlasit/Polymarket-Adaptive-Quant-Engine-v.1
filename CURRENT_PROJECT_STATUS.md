@@ -1,6 +1,6 @@
 # PolyTrade Bot / Polymarket 5M BTC-ETH Quant System - Current Project Status
 
-> Updated: 2026-05-29
+> Updated: 2026-06-26
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -45,6 +45,94 @@ python main.py --mode live --interval 60
 ```
 
 Live mode is still blocked by readiness checks while allowance/execution validation is incomplete. Always inspect `.env` and `config/settings.py` before live-risk work.
+
+---
+
+## 1.5 Governance Status
+
+The project enforces a strict cross-agent governance substrate to prevent duplicate investigations and token context waste.
+
+- **Governance Phase**: `PROJECT_OS_V1` (Phase 1 Complete, Phase 1.5 Hardened)
+- **Active Question**: `LOW_PRICE_TRUTH_RESOLUTION_001` (Active, blocking strategy/sizer/execution changes)
+- **Audit Registry Status**: ACTIVE / IMPLEMENTED (`docs/research/AUDIT_REGISTRY.json`)
+- **Decision Registry Status**: ACTIVE / IMPLEMENTED (`docs/research/DECISION_REGISTRY.json`)
+- **Authority Map Status**: ACTIVE / IMPLEMENTED (`docs/research/RESEARCH_AUTHORITY_MAP_V2.md`)
+
+*Core Constraint*: No strategy changes, sizer weight edits, or execution modifications are permitted until the active question is closed.
+
+---
+
+## 1.7 Desktop Migration and Refactor Session (2026-06-26)
+
+### Environment
+
+- **Desktop Migration**: Repository moved from notebook (user `poh_2`) to desktop (user `POOHXYZ`). The `.venv` was broken due to hardcoded path mismatch. Rebuilt fresh using `C:\Users\POOHXYZ\AppData\Local\Programs\Python\Python312\python.exe -m venv .venv` followed by `pip install -r requirements.txt`. All 297 dependencies installed cleanly.
+- **Environment Status**: Python 3.12.10 under `POOHXYZ`. `pydantic` 2.12.5, `py-clob-client` 0.34.6, `websockets` 16.0 all verified. `PolymarketTrader` import confirmed clean. `py_compile` passes for `trader.py` and `trader_presentation.py`.
+
+### Trader Refactor Batch 1 — COMMITTED
+
+- **Commit**: `e76581fb` — `refactor: extract trader presentation helpers`
+- **Scope**: Extracted presentation formatting helpers from `PolymarketTrader` into `polymarket/trader_presentation.py` (206 lines). Existing method names preserved via proxy delegation. No execution, risk, sizing, reconciliation, or live/paper behavior changed.
+- **Files changed**: `polymarket/trader.py` (−98 lines), `polymarket/trader_presentation.py` (new, +206 lines)
+- **Status**: `BATCH_1_COMPLETE`. Batch 2 has NOT started and requires Architecture Governance gate check before proceeding.
+
+### Paper Runtime Validation — COMPLETED
+
+- **Run ID**: `20260626T135846Z_19480_d6b9f23e`
+- **Duration**: 10 minutes 54 seconds
+- **Cycles**: 11 completed
+- **Events emitted**: 443 (from `runtime/event_stream/runtime_events_2026-06-26_001.jsonl`)
+- **Heartbeat rate**: 132 events ≈ exactly 660s ÷ 5s interval
+- **DATA status**: DEGRADED on startup (orderbook warm-up) → OK after first cycle
+- **Paper guard**: Enforced throughout — zero live orders, zero wallet writes
+- **Risk state**: NORMAL, 0% exposure, guard OK
+- **Shutdown**: SIGTERM at 660s limit (timeout wrapper), exit 124, expected
+
+### Agent Operating System v1 — COMMITTED
+
+- **Commit**: `65711bc` — `docs: implement AI agent operating system rules`
+- **Scope**: Added 6 new agent roles (24–29), Task Class system (0–9), Evidence Grade system (A–E), mandatory task output contract, session handoff rule, commit boundary rules, Batch 2 gate rule, and `.md` routing rule to `AGENTS.md`, `MASTER_AGENT_ROUTER.md`, and `PROJECT_RULES.md`.
+- **Design document**: `docs/architecture/AI_AGENT_OPERATING_SYSTEM_DESIGN_001.md`
+
+### Architecture Master Plan — COMMITTED
+
+- **Document**: `docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md`
+- **Scope**: Full 17-section enterprise architecture plan. Target state: `trader.py` ≤ 1,000 lines (currently 13,125). 10-batch decomposition roadmap defined. Module ownership, dependency rules, import rules, data architecture, schema registry, dashboard contract, and replay architecture all specified.
+
+### Repository Documentation Cleanup — COMMITTED (12 commits)
+
+Root markdown cleanup completed across two phases:
+
+| Phase | Method | Files Handled |
+|-------|--------|--------------|
+| Untracked R1–R7 (+ Pilot + R6) | `mv` + `git add` | ~345 files |
+| Tracked T1–T5 | `git mv` (R100 renames, history preserved) | 113 files |
+| Duplicate removed | `rm` | 1 file |
+| **Total** | | **~459 files** |
+
+**Repository `docs/` state after cleanup:**
+- `docs/architecture/`: 107 files (design docs, specs, plans, governance)
+- `docs/audits/`: 236 files (forensic audits, pre-commit audits, validations)
+- `docs/reports/`: 165 files (commit reports, implementation reports, batch reports)
+- `docs/research/`: committed research governance, registries, and evidence docs
+
+**Root tracked `.md`**: Now exactly the 20 designated entrypoints (AGENTS.md, README.md, PROJECT_RULES.md, MASTER_AGENT_ROUTER.md, CURRENT_PROJECT_STATUS.md, CODEX_START_HERE.md, FILE_INDEX.md, DOCUMENTATION_MAP.md, CLAUDE.md, and 12 others) plus 1 session batch report.
+
+### Current HEAD
+
+`9acbda4` — docs: complete root markdown cleanup (2026-06-26)
+
+---
+
+## 1.6 Migration, Recovery, and Audits (2026-06-20)
+
+- **Machine Migration**: Successfully migrated the workspace to a new host machine on 2026-06-20.
+- **Environment Status**: Fully recovered under Python 3.12.10. The virtual environment `.venv` was recreated, clean dependencies installed, and all 23 targeted tests passed.
+- **Option D Telemetry Restart**: The paper shadow telemetry run has been successfully restarted (`OPTION_D_RESTART_AFTER_MIGRATION_001` verdict `RESTART_SUCCESS`) under Run ID `20260619T174124Z_9572_52c34f1f`. It is actively scanning markets and outputting system health and stop-loss telemetry.
+- **Risk Audit Completed**: Completed the `MICRO_RECOVERY` Counterfactual Audit (`MICRO_RECOVERY_COUNTERFACTUAL_AUDIT_001`). Verdict is **`PROTECTIVE_CORRECT`**: current tight gates correctly prevent overtrading in bad regimes, saving the bot from an estimated ~$0.63 USD (micro-size) or ~$12.65 USD (standard size) in unnecessary losses over the last 24h.
+- **Funnel Audit Completed**: Completed the Entry Funnel Root Cause Audit (`ENTRY_FUNNEL_ROOT_CAUSE_AUDIT_001`). Verdict is **`YES`**: under-trading exists (capture rate of 0.29%). Timing gates (13.10% removed, 15.6% win rate) and risk floors (16.40% removed, 37.5% win rate) are protective, but `delta_extreme` (51.14% removed, 20.8% win rate but extremely cheap entry prices) is a genuine **alpha leak** worth +$6.17 USD (standard sizer) in missed profit.
+
+
 
 ---
 
@@ -527,6 +615,16 @@ If `.env` has `PAPER_TRADING=false` or `DRY_RUN=false`, treat the repo as live-r
 ---
 
 ## 8. Next Priority Tasks
+
+### Immediate (2026-06-26 session follow-up)
+
+0. **Architecture Governance Gate Check** (`BATCH_2_GATE_CHECK_001`) — Role 29 gate check required before any Trader Refactor Batch 2 work begins. Preconditions: HEAD at `9acbda4`, core runtime clean, paper validated on `20260626T135846Z_19480_d6b9f23e`, active question status checked, all Batch 1 tests passing.
+
+0a. **Update dashboard work** — `dashboard/src/pages/research/ResearchPage.tsx`, `tools/dashboard_state_aggregator.py`, and related files have uncommitted changes from the pre-migration session. These should be reviewed and committed as a separate dashboard batch before Batch 2 begins.
+
+0b. **Update `CURRENT_PROJECT_STATUS.md`** — Done (this file, 2026-06-26).
+
+### Ongoing
 
 1. Continue Phase 1 regime/probability evidence collection in safe paper sessions.
    - Use the existing paper runtime only.
