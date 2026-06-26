@@ -818,6 +818,9 @@ def run_replay(
                             emitted_event["identity_source"] = "canonical_position_id"
 
                     elif is_close:
+                        if condition_id == "":
+                            trigger_reject("missing_condition_id")
+                            continue
                         exit_price = payload.get("exit_price")
                         if exit_price is None:
                             exit_price = payload.get("price")
@@ -910,7 +913,7 @@ def run_replay(
                             matched_key = execution_position_id
 
                         if not open_pos:
-                            raise ReconciliationError("orphan_close")
+                            raise ReconciliationError(f"orphan_close at {source_file}:{line_idx} payload={payload}")
 
                         # Now resolve condition_id
                         curr_condition_id = condition_id or open_pos.get("condition_id")
