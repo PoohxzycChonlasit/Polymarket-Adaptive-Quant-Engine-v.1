@@ -30,6 +30,12 @@ class TraderObservabilityHelper:
         self._last_successful_yes_no_book_at_utc: dict[str, str] = {}
         self._last_successful_yes_no_book_monotonic: dict[str, float] = {}
         self._last_successful_yes_no_book_token_pair_key: dict[str, str] = {}
+        # Batch 3B-2: cadence / scheduler timing state
+        self._last_decision_cycle_monotonic: dict[str, float] = {}
+        self._market_evaluation_started_monotonic: dict[str, float] = {}
+        self._market_evaluation_started_at_utc: dict[str, str] = {}
+        self._current_cycle_market_sequence_index: dict[str, int] = {}
+        self._current_cycle_market_sequence_count: dict[str, int] = {}
 
     def get_recent_display_trades(self) -> list[dict[str, Any]]:
         return list(self._recent_display_trades)
@@ -156,6 +162,150 @@ class TraderObservabilityHelper:
         }
 
     # ------------------------------------------------------------------
+    # Batch 3B-2: cadence / scheduler / event-producer helpers
+    # ------------------------------------------------------------------
+
+    def _event_producer_label(self, event_method: str) -> str:
+        return {
+            "log_market_snapshot": "market_snapshots",
+            "log_decision": "decision_log",
+            "log_execution": "execution_log",
+            "log_risk_event": "risk_log",
+            "log_trade_open": "trade_journal",
+            "log_trade_close": "trade_journal",
+            "log_trade_path_checkpoint": "path_truth",
+            "log_orderbook_lineage_probe": "orderbook_lineage",
+            "log_system_health": "system_health",
+        }.get(event_method, "unknown")
+
+    def _scheduler_cadence_observability_detail(
+        self,
+        trader: Any,
+        ticker: str,
+    ) -> "dict[str, object]":
+        """Expose cycle/market hot-path timing without changing cadence or gates."""
+        ticker_key = ticker.upper()
+        now_mono = time.monotonic()
+        cycle_started = float(getattr(trader, "_cycle_started_monotonic", 0.0) or 0.0)
+        market_started = self._market_evaluation_started_monotonic.get(ticker_key)
+        last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
+        recovery_detail = getattr(trader, "_last_empty_book_recovery_detail", {}).get(ticker_key, {})
+        try:
+            recovery_seconds = float(recovery_detail.get("recovery_wait_seconds", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            recovery_seconds = 0.0
+        detail: "dict[str, object]" = {
+            "scheduler_cadence_source": "run_single_cycle_market_loop",
+            "hot_path_timing_source": "runtime_market_evaluation",
+            "configured_decision_loop_interval_seconds": getattr(trader, "_configured_decision_loop_interval_seconds", None),
+            "intended_decision_loop_target_seconds": getattr(trader, "_intended_decision_loop_target_seconds", 1.0),
+            "effective_outer_loop_interval_seconds": getattr(trader, "_effective_outer_loop_interval_seconds", None),
+            "snapshot_sampling_interval_seconds": getattr(trader, "_snapshot_sampling_interval_seconds", 5.0),
+            "market_discovery_interval_seconds": getattr(trader, "_market_discovery_interval_seconds", 15.0),
+            "outer_loop_poll_interval_seconds": getattr(trader, "_outer_loop_poll_interval_seconds", 0.25),
+            "market_evaluation_asset": ticker_key,
+            "market_evaluation_started_at": self._market_evaluation_started_at_utc.get(ticker_key, ""),
+            "market_sequence_index": self._current_cycle_market_sequence_index.get(ticker_key, 0),
+            "market_sequence_count": self._current_cycle_market_sequence_count.get(
+                ticker_key,
+                int(getattr(trader, "_current_cycle_market_count", 0) or 0),
+            ),
+            "cycle_elapsed_ms_at_market_evaluation": trader._cycle_elapsed_ms(),
+            "empty_book_recovery_duration_ms": int(max(0.0, recovery_seconds) * 1000),
+        }
+        if market_started is not None:
+            detail["market_evaluation_duration_ms"] = int(max(0.0, now_mono - market_started) * 1000)
+            if cycle_started > 0:
+                detail["market_evaluation_started_ms_since_cycle"] = int(
+                    max(0.0, market_started - cycle_started) * 1000
+                )
+        if last_success_mono is not None:
+            candidate_queue_age_ms = int(max(0.0, now_mono - last_success_mono) * 1000)
+            detail.update({
+                "candidate_created_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+                "candidate_enqueue_at": self._last_successful_yes_no_book_at_utc.get(ticker_key, ""),
+                "candidate_dequeue_at": trader._utc_timestamp(),
+                "candidate_queue_age_ms": candidate_queue_age_ms,
+                "hot_path_admission_wait_ms": candidate_queue_age_ms,
+                "candidate_queue_age_source": "last_successful_yes_no_book_to_decision",
+            })
+        detail.update({
+            "candidate_queue_ownership": "implicit_orderbook_refresh_cache",
+            "candidate_revisit_scheduling_source": "scheduled_run_single_cycle",
+            "hot_path_admission_trigger": "scheduled_decision_cycle",
+            "event_vs_polling_classification": "polling_revisit_driven",
+            "executable_liquidity_event_role": "passive_telemetry_only",
+            "executable_liquidity_triggered_hot_path": False,
+            "market_snapshot_decision_pipeline_linkage": "disconnected_passive_snapshot_to_scheduled_decision",
+            "candidate_handoff_boundary": (
+                f"{self._last_orderbook_refresh_source.get(ticker_key, 'unknown')}->scheduled_run_single_cycle"
+            ),
+        })
+        return detail
+
+    def _emit_hybrid_v1_snapshot(
+        self,
+        trader: Any,
+        ticker: str,
+        outcome: Any,
+        timing_payload: "dict[str, object]",
+    ) -> None:
+        """
+        Emits a hybrid observability snapshot combining research and live metrics.
+        Includes Preload Next Market v1 observability fields.
+        Offline-only research evidence — does not affect strategy, risk, or execution.
+        """
+        _next_market = getattr(trader, "_preloaded_next_markets", {}).get(ticker)
+        snapshot_payload = {
+            **timing_payload,
+            "ticker": ticker,
+            "market_id": outcome.market_id,
+            "actual_decision": outcome.decision,
+            "actual_skip_reason": outcome.skip_reason or "",
+            "preload_started_ts": getattr(trader, "_preload_started_ts", 0),
+            "preload_success_ts": getattr(trader, "_preload_success_ts", 0),
+            "preload_failed_reason": getattr(trader, "_preload_failed_reason", None),
+            "preload_lead_seconds": getattr(trader, "_preload_lead_seconds", 0),
+            "preload_book_ready_ts": getattr(trader, "_preload_book_ready_ts", 0),
+            "preloaded_market_id": _next_market.market_id if _next_market else None,
+            "preloaded_condition_id": _next_market.condition_id if _next_market else None,
+            "preloaded_epoch_start_ts": _next_market.epoch_start_ts if _next_market else None,
+            "shadow_inventory": {
+                "theoretical_decision": "HOLD" if outcome.skipped else "WOULD_OPEN",
+                "scope": "shadow_research_v1",
+                "offline_only": True,
+            },
+        }
+        _display = outcome.display or {}
+        snapshot_payload["snapshot_bid"] = float(_display.get("yes_bid", 0.0) or 0.0)
+        snapshot_payload["snapshot_ask"] = float(_display.get("yes_ask", 0.0) or 0.0)
+        snapshot_payload["snapshot_spread"] = float(_display.get("spread", 0.0) or 0.0)
+        snapshot_payload["snapshot_best_bid_size"] = float(_display.get("yes_bid_size", 0.0) or 0.0)
+        snapshot_payload["snapshot_best_ask_size"] = float(_display.get("yes_ask_size", 0.0) or 0.0)
+        snapshot_payload["snapshot_orderbook_source"] = str(_display.get("orderbook_refresh_source", "") or "")
+        snapshot_payload["snapshot_orderbook_age_ms"] = int(_display.get("orderbook_age_ms", 0) or 0)
+        snapshot_payload["snapshot_orderbook_empty_reason"] = str(_display.get("orderbook_readiness_reason", "") or "")
+        try:
+            _resolved_ticker = ticker or trader._ticker_from_market_id(outcome.market_id)
+            _epoch = int(
+                (outcome.display or {}).get(
+                    "market_epoch_start",
+                    (outcome.display or {}).get("epoch_start", (outcome.display or {}).get("epoch_start_ts", 0)),
+                ) or 0
+            )
+            if _epoch > 0:
+                _bucket = trader._phase2_readiness_store().setdefault(
+                    (_resolved_ticker.upper(), _epoch), {}
+                )
+                if not _bucket.get("decision_complete_ts"):
+                    _bucket["decision_complete_ts"] = trader._utc_timestamp()
+                _latency = trader._compute_lifecycle_latency_ms(_bucket)
+                snapshot_payload.update(_latency)
+        except Exception:
+            pass
+        trader._emit_quant_event("log_research_snapshot", snapshot_payload)
+
+    # ------------------------------------------------------------------
     # Batch 3B-1: orderbook refresh timing helpers
     # ------------------------------------------------------------------
 
@@ -197,23 +347,20 @@ class TraderObservabilityHelper:
     ) -> "dict[str, object]":
         """Return orderbook refresh observability payload.
 
-        Reads _last_decision_cycle_monotonic and _cycle_started_at_utc from
-        trader (deferred fields — not yet migrated to helper). Reads all 8
-        moved fields from self.*. Calls trader._orderbook_token_pair_key()
-        for the pair-key computation.
+        Reads _cycle_started_at_utc from trader (permanent on trader).
+        Reads all moved fields (3B-1 and 3B-2) from self.*.
+        Calls trader._orderbook_token_pair_key() for pair-key computation.
         """
         ticker_key = ticker.upper()
         now_mono = time.monotonic()
         last_refresh_mono = self._last_orderbook_refresh_monotonic.get(ticker_key)
         last_success_mono = self._last_successful_yes_no_book_monotonic.get(ticker_key)
-        previous_decision_mono = getattr(trader, "_last_decision_cycle_monotonic", {}).get(ticker_key)
+        previous_decision_mono = self._last_decision_cycle_monotonic.get(ticker_key)
         decision_interval = None
         if record_decision_cycle:
             if previous_decision_mono is not None:
                 decision_interval = round(max(0.0, now_mono - previous_decision_mono), 3)
-            if not hasattr(trader, "_last_decision_cycle_monotonic"):
-                trader._last_decision_cycle_monotonic = {}
-            trader._last_decision_cycle_monotonic[ticker_key] = now_mono
+            self._last_decision_cycle_monotonic[ticker_key] = now_mono
         refresh_age_ms = (
             int(max(0.0, now_mono - last_refresh_mono) * 1000)
             if last_refresh_mono is not None

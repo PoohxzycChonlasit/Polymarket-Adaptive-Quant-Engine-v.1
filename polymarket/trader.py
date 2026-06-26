@@ -467,11 +467,8 @@ class PolymarketTrader:
         # Batch 3B-1: these 8 fields now live in TraderObservabilityHelper;
         # access them via @property shims defined below.
         self._last_quote_lineage_context: dict[str, dict] = {}
-        self._last_decision_cycle_monotonic: dict[str, float] = {}
-        self._market_evaluation_started_monotonic: dict[str, float] = {}
-        self._market_evaluation_started_at_utc: dict[str, str] = {}
-        self._current_cycle_market_sequence_index: dict[str, int] = {}
-        self._current_cycle_market_sequence_count: dict[str, int] = {}
+        # Batch 3B-2: these 5 fields now live in TraderObservabilityHelper;
+        # access via @property shims defined below.
         self._orderbook_warmup_pending_counts: Counter[str] = Counter()
         self._preloaded_token_ids: dict[tuple[str, int], tuple[str, str]] = {}
         self._preloaded_token_meta: dict[tuple[str, int], dict[str, object]] = {}
@@ -794,18 +791,48 @@ class PolymarketTrader:
     def _last_successful_yes_no_book_token_pair_key(self, val: "dict[str, str]") -> None:
         self._get_observability()._last_successful_yes_no_book_token_pair_key = val
 
+    @property
+    def _last_decision_cycle_monotonic(self) -> "dict[str, float]":
+        return self._get_observability()._last_decision_cycle_monotonic
+
+    @_last_decision_cycle_monotonic.setter
+    def _last_decision_cycle_monotonic(self, val: "dict[str, float]") -> None:
+        self._get_observability()._last_decision_cycle_monotonic = val
+
+    @property
+    def _market_evaluation_started_monotonic(self) -> "dict[str, float]":
+        return self._get_observability()._market_evaluation_started_monotonic
+
+    @_market_evaluation_started_monotonic.setter
+    def _market_evaluation_started_monotonic(self, val: "dict[str, float]") -> None:
+        self._get_observability()._market_evaluation_started_monotonic = val
+
+    @property
+    def _market_evaluation_started_at_utc(self) -> "dict[str, str]":
+        return self._get_observability()._market_evaluation_started_at_utc
+
+    @_market_evaluation_started_at_utc.setter
+    def _market_evaluation_started_at_utc(self, val: "dict[str, str]") -> None:
+        self._get_observability()._market_evaluation_started_at_utc = val
+
+    @property
+    def _current_cycle_market_sequence_index(self) -> "dict[str, int]":
+        return self._get_observability()._current_cycle_market_sequence_index
+
+    @_current_cycle_market_sequence_index.setter
+    def _current_cycle_market_sequence_index(self, val: "dict[str, int]") -> None:
+        self._get_observability()._current_cycle_market_sequence_index = val
+
+    @property
+    def _current_cycle_market_sequence_count(self) -> "dict[str, int]":
+        return self._get_observability()._current_cycle_market_sequence_count
+
+    @_current_cycle_market_sequence_count.setter
+    def _current_cycle_market_sequence_count(self, val: "dict[str, int]") -> None:
+        self._get_observability()._current_cycle_market_sequence_count = val
+
     def _event_producer_label(self, event_method: str) -> str:
-        return {
-            "log_market_snapshot": "market_snapshots",
-            "log_decision": "decision_log",
-            "log_execution": "execution_log",
-            "log_risk_event": "risk_log",
-            "log_trade_open": "trade_journal",
-            "log_trade_close": "trade_journal",
-            "log_trade_path_checkpoint": "path_truth",
-            "log_orderbook_lineage_probe": "orderbook_lineage",
-            "log_system_health": "system_health",
-        }.get(event_method, "unknown")
+        return self._get_observability()._event_producer_label(event_method)
 
     def _display_field_present(self, payload: dict[str, object], *fields: str) -> bool:
         return self._presentation.display_field_present(payload, *fields)
@@ -1335,65 +1362,8 @@ class PolymarketTrader:
             self._current_cycle_market_sequence_count[ticker_key] = int(sequence_count)
 
     def _scheduler_cadence_observability_detail(self, ticker: str) -> dict[str, object]:
-        """Expose cycle/market hot-path timing without changing cadence or gates."""
-        ticker_key = ticker.upper()
-        now_mono = time.monotonic()
-        cycle_started = float(getattr(self, "_cycle_started_monotonic", 0.0) or 0.0)
-        market_started = getattr(self, "_market_evaluation_started_monotonic", {}).get(ticker_key)
-        last_success_mono = getattr(self, "_last_successful_yes_no_book_monotonic", {}).get(ticker_key)
-        recovery_detail = getattr(self, "_last_empty_book_recovery_detail", {}).get(ticker_key, {})
-        try:
-            recovery_seconds = float(recovery_detail.get("recovery_wait_seconds", 0.0) or 0.0)
-        except (TypeError, ValueError):
-            recovery_seconds = 0.0
-        detail: dict[str, object] = {
-            "scheduler_cadence_source": "run_single_cycle_market_loop",
-            "hot_path_timing_source": "runtime_market_evaluation",
-            "configured_decision_loop_interval_seconds": getattr(self, "_configured_decision_loop_interval_seconds", None),
-            "intended_decision_loop_target_seconds": getattr(self, "_intended_decision_loop_target_seconds", 1.0),
-            "effective_outer_loop_interval_seconds": getattr(self, "_effective_outer_loop_interval_seconds", None),
-            "snapshot_sampling_interval_seconds": getattr(self, "_snapshot_sampling_interval_seconds", 5.0),
-            "market_discovery_interval_seconds": getattr(self, "_market_discovery_interval_seconds", 15.0),
-            "outer_loop_poll_interval_seconds": getattr(self, "_outer_loop_poll_interval_seconds", 0.25),
-            "market_evaluation_asset": ticker_key,
-            "market_evaluation_started_at": getattr(self, "_market_evaluation_started_at_utc", {}).get(ticker_key, ""),
-            "market_sequence_index": getattr(self, "_current_cycle_market_sequence_index", {}).get(ticker_key, 0),
-            "market_sequence_count": getattr(self, "_current_cycle_market_sequence_count", {}).get(
-                ticker_key,
-                int(getattr(self, "_current_cycle_market_count", 0) or 0),
-            ),
-            "cycle_elapsed_ms_at_market_evaluation": self._cycle_elapsed_ms(),
-            "empty_book_recovery_duration_ms": int(max(0.0, recovery_seconds) * 1000),
-        }
-        if market_started is not None:
-            detail["market_evaluation_duration_ms"] = int(max(0.0, now_mono - market_started) * 1000)
-            if cycle_started > 0:
-                detail["market_evaluation_started_ms_since_cycle"] = int(
-                    max(0.0, market_started - cycle_started) * 1000
-                )
-        if last_success_mono is not None:
-            candidate_queue_age_ms = int(max(0.0, now_mono - last_success_mono) * 1000)
-            detail.update({
-                "candidate_created_at": getattr(self, "_last_successful_yes_no_book_at_utc", {}).get(ticker_key, ""),
-                "candidate_enqueue_at": getattr(self, "_last_successful_yes_no_book_at_utc", {}).get(ticker_key, ""),
-                "candidate_dequeue_at": self._utc_timestamp(),
-                "candidate_queue_age_ms": candidate_queue_age_ms,
-                "hot_path_admission_wait_ms": candidate_queue_age_ms,
-                "candidate_queue_age_source": "last_successful_yes_no_book_to_decision",
-            })
-        detail.update({
-            "candidate_queue_ownership": "implicit_orderbook_refresh_cache",
-            "candidate_revisit_scheduling_source": "scheduled_run_single_cycle",
-            "hot_path_admission_trigger": "scheduled_decision_cycle",
-            "event_vs_polling_classification": "polling_revisit_driven",
-            "executable_liquidity_event_role": "passive_telemetry_only",
-            "executable_liquidity_triggered_hot_path": False,
-            "market_snapshot_decision_pipeline_linkage": "disconnected_passive_snapshot_to_scheduled_decision",
-            "candidate_handoff_boundary": (
-                f"{getattr(self, '_last_orderbook_refresh_source', {}).get(ticker_key, 'unknown')}->scheduled_run_single_cycle"
-            ),
-        })
-        return detail
+        """Proxy: delegate to observability helper, passing self as trader context."""
+        return self._get_observability()._scheduler_cadence_observability_detail(self, ticker)
 
     @staticmethod
     def _orderbook_token_pair_key(
@@ -4410,67 +4380,8 @@ class PolymarketTrader:
                 pass
 
     def _emit_hybrid_v1_snapshot(self, ticker: str, outcome: TradeOutcome, timing_payload: dict[str, object]) -> None:
-        """
-        Emits a hybrid observability snapshot combining research and live metrics.
-        Includes Preload Next Market v1 observability fields.
-        Offline-only research evidence — does not affect strategy, risk, or execution.
-        """
-        _next_market = self._preloaded_next_markets.get(ticker)
-        # Base on timing_payload (decision_diagnostics) so readiness/timing fields are present,
-        # then override with hybrid-specific snapshot keys.
-        snapshot_payload = {
-            **timing_payload,
-            "ticker": ticker,
-            "market_id": outcome.market_id,
-            "actual_decision": outcome.decision,
-            "actual_skip_reason": outcome.skip_reason or "",
-            "preload_started_ts": self._preload_started_ts,
-            "preload_success_ts": self._preload_success_ts,
-            "preload_failed_reason": self._preload_failed_reason,
-            "preload_lead_seconds": self._preload_lead_seconds,
-            "preload_book_ready_ts": self._preload_book_ready_ts,
-            "preloaded_market_id": _next_market.market_id if _next_market else None,
-            "preloaded_condition_id": _next_market.condition_id if _next_market else None,
-            "preloaded_epoch_start_ts": _next_market.epoch_start_ts if _next_market else None,
-            "shadow_inventory": {
-                "theoretical_decision": "HOLD" if outcome.skipped else "WOULD_OPEN",
-                "scope": "shadow_research_v1",
-                "offline_only": True,
-            },
-        }
-        # Orderbook Snapshot Truth Probe v1: raw display-path values at snapshot time.
-        # These let us compare research_log depth against the live display/orderbook path
-        # to determine whether EMPTY depth is a real market condition or a data-path lag.
-        _display = outcome.display or {}
-        snapshot_payload["snapshot_bid"] = float(_display.get("yes_bid", 0.0) or 0.0)
-        snapshot_payload["snapshot_ask"] = float(_display.get("yes_ask", 0.0) or 0.0)
-        snapshot_payload["snapshot_spread"] = float(_display.get("spread", 0.0) or 0.0)
-        snapshot_payload["snapshot_best_bid_size"] = float(_display.get("yes_bid_size", 0.0) or 0.0)
-        snapshot_payload["snapshot_best_ask_size"] = float(_display.get("yes_ask_size", 0.0) or 0.0)
-        snapshot_payload["snapshot_orderbook_source"] = str(_display.get("orderbook_refresh_source", "") or "")
-        snapshot_payload["snapshot_orderbook_age_ms"] = int(_display.get("orderbook_age_ms", 0) or 0)
-        snapshot_payload["snapshot_orderbook_empty_reason"] = str(_display.get("orderbook_readiness_reason", "") or "")
-        # Lifecycle Latency Observatory v1: record decision_complete_ts in bucket then compute ms durations.
-        # Fail-soft — any error silently skips latency fields.
-        try:
-            _resolved_ticker = ticker or self._ticker_from_market_id(outcome.market_id)
-            _epoch = int(
-                (outcome.display or {}).get(
-                    "market_epoch_start",
-                    (outcome.display or {}).get("epoch_start", (outcome.display or {}).get("epoch_start_ts", 0)),
-                ) or 0
-            )
-            if _epoch > 0:
-                _bucket = self._phase2_readiness_store().setdefault(
-                    (_resolved_ticker.upper(), _epoch), {}
-                )
-                if not _bucket.get("decision_complete_ts"):
-                    _bucket["decision_complete_ts"] = self._utc_timestamp()
-                _latency = self._compute_lifecycle_latency_ms(_bucket)
-                snapshot_payload.update(_latency)
-        except Exception:
-            pass
-        self._emit_quant_event("log_research_snapshot", snapshot_payload)
+        """Proxy: delegate to observability helper, passing self as trader context."""
+        self._get_observability()._emit_hybrid_v1_snapshot(self, ticker, outcome, timing_payload)
 
     @staticmethod
     def _build_paper_trade_replay_key(
