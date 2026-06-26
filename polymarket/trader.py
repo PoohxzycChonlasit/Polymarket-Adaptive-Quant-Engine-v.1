@@ -59,6 +59,7 @@ from utils.quant_event_logger import QuantEventLogger
 from utils.telegram_alerts import TelegramAlertLayer, emit_startup_config_telemetry
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
 import polymarket.shadow_telemetry as shadow_telemetry
+from polymarket.trader_presentation import TraderPresentationHelper
 
 
 LOGGER = logging.getLogger(__name__)
@@ -369,6 +370,8 @@ class PolymarketTrader:
     3. If the pipeline approves, build a risk plan and place an order.
        In paper-trading mode the order is logged but never submitted.
     """
+
+    _presentation = TraderPresentationHelper()
 
     def __init__(
         self,
@@ -766,35 +769,7 @@ class PolymarketTrader:
             return None
 
     def _default_observability_health_display_state(self) -> dict[str, object]:
-        return {
-            "jsonl_status": "UNKNOWN",
-            "jsonl_ok": False,
-            "latest_producer": "--",
-            "latest_schema_version": "--",
-            "trace_enrichment_status": "UNKNOWN",
-            "condition_enrichment_status": "UNKNOWN",
-            "trace_id_enrichment_ok": False,
-            "condition_id_enrichment_ok": False,
-            "candidate_trace_id_present": False,
-            "condition_id_present": False,
-            "token_id_present": False,
-            "side_present": False,
-            "event_identity_readiness": "UNKNOWN",
-            "candidate_chain_trace_confidence": "UNKNOWN",
-            "identity_readiness": "UNKNOWN",
-            "model_attempted": "UNKNOWN",
-            "probability_visible": "UNKNOWN",
-            "fair_value_visible": "UNKNOWN",
-            "ev_visible": "UNKNOWN",
-            "dominant_model_gap": "UNKNOWN",
-            "dominant_model_gap_reason": "UNKNOWN",
-            "blocked_before_risk_count": 0,
-            "dominant_pre_risk_cause": "UNKNOWN",
-            "dominant_pre_risk_block_reason": "UNKNOWN",
-            "risk_reachability_status": "UNKNOWN",
-            "risk_serialization_status": "UNKNOWN",
-            "risk_serialization_visibility": "UNKNOWN",
-        }
+        return self._presentation.default_observability_health_display_state()
 
     def dashboard_observability_health_state(self) -> dict[str, object]:
         """Return display-only observability health state for terminal UI surfaces."""
@@ -814,61 +789,23 @@ class PolymarketTrader:
         }.get(event_method, "unknown")
 
     def _display_field_present(self, payload: dict[str, object], *fields: str) -> bool:
-        for field in fields:
-            value = payload.get(field)
-            if value is not None and str(value).strip() not in {"", "--", "None", "UNKNOWN"}:
-                return True
-        return False
+        return self._presentation.display_field_present(payload, *fields)
 
     def _display_visibility_status(self, payload: dict[str, object], *fields: str) -> str:
-        for field in fields:
-            if field not in payload:
-                continue
-            value = payload.get(field)
-            if isinstance(value, bool):
-                return "YES" if value else "NO"
-            if isinstance(value, (int, float)):
-                return "YES" if float(value) != 0.0 else "NO"
-            return "YES" if self._display_field_present(payload, field) else "NO"
-        return "UNKNOWN"
+        return self._presentation.display_visibility_status(payload, *fields)
 
     def _display_identity_readiness(self, payload: dict[str, object]) -> str:
-        explicit = str(payload.get("identity_readiness") or payload.get("candidate_trace_confidence") or "").upper()
-        if explicit in {"DIRECT", "STRONG", "WEAK", "PROXY", "UNKNOWN"}:
-            return explicit
-        has_trace = self._display_field_present(payload, "candidate_trace_id")
-        has_parent = self._display_field_present(payload, "parent_candidate_trace_id")
-        has_market = self._display_field_present(payload, "market_key", "market_slug", "condition_id", "market_id", "source_market_id")
-        has_token = self._display_field_present(payload, "token_id")
-        has_side = self._display_field_present(payload, "side", "outcome", "best_side")
-        has_phase = self._display_field_present(payload, "lifecycle_phase")
-        if has_trace and has_parent and has_market and has_token and has_side and has_phase:
-            return "DIRECT"
-        if has_market and has_token and has_side and has_phase:
-            return "STRONG"
-        if sum((has_market, has_token, has_side, has_phase)) >= 3:
-            return "WEAK"
-        if any((has_trace, has_market, has_token, has_side, has_phase)):
-            return "PROXY"
-        return "UNKNOWN"
+        return self._presentation.display_identity_readiness(payload)
 
     def _display_dominant_model_gap(self, payload: dict[str, object]) -> str:
-        for field in (
-            "dominant_model_gap",
-            "dominant_model_gap_reason",
-            "dominant_model_state_gap",
-            "model_state_gap",
-            "ev_after_spread_null_reason",
-            "true_probability_null_reason",
-            "fair_value_null_reason",
-            "market_price_null_reason",
-        ):
-            value = str(payload.get(field) or "").strip()
-            if value and value not in {"--", "UNKNOWN"}:
-                return value
-        if self._display_visibility_status(payload, "ev_after_spread", "ev") == "YES":
-            return "--"
-        return "UNKNOWN"
+        return self._presentation.display_dominant_model_gap(payload)
+
+    def _event_driven_admission_packet_price_detail(
+        self,
+        ptb_info: object,
+        symbol: str,
+    ) -> dict[str, object]:
+        return self._presentation.event_driven_admission_packet_price_detail(ptb_info, symbol)
 
     def _observability_health_from_payload(
         self,
@@ -5957,32 +5894,16 @@ class PolymarketTrader:
         LOGGER.info("[%s] %s", section, body)
 
     def _momentum_label(self, momentum: float) -> str:
-        if momentum > 0.0005:
-            return "UP"
-        if momentum < -0.0005:
-            return "DOWN"
-        return "FLAT"
+        return self._presentation.momentum_label(momentum)
 
     def _volatility_label(self, volatility: float) -> str:
-        if volatility >= 0.006:
-            return "HIGH"
-        if volatility >= 0.002:
-            return "MEDIUM"
-        return "LOW"
+        return self._presentation.volatility_label(volatility)
 
     def _liquidity_label(self, liquidity: float) -> str:
-        if liquidity >= 100.0:
-            return "GOOD"
-        if liquidity >= 25.0:
-            return "OK"
-        return "WEAK"
+        return self._presentation.liquidity_label(liquidity)
 
     def _edge_label(self, ev: float, min_ev: float) -> str:
-        if ev >= min_ev + 0.02:
-            return "GOOD"
-        if ev >= min_ev:
-            return "OK"
-        return "BAD"
+        return self._presentation.edge_label(ev, min_ev)
 
     def _risk_off(self, daily_drawdown_pct: float) -> bool:
         return daily_drawdown_pct >= float(self._setting("max_daily_drawdown", 0.10))
