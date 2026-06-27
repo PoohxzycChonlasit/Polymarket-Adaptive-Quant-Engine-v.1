@@ -522,7 +522,7 @@
     {
       "priority": 1.9,
       "task_id": "DECISION_ENGINE_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design the FLAOS Decision Engine as the next governance layer after Reasoning Engine.",
@@ -530,6 +530,18 @@
       "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
       "outputs": ["docs/architecture/DECISION_ENGINE_001.md", "docs/reports/DECISION_ENGINE_DESIGN_001.md"],
       "notes": "Next after Reasoning Engine design; design only unless separately scoped."
+    },
+    {
+      "priority": 1.8,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Implement Phase 1 offline Decision Engine validator verifying Safety Memory and graph blast-radius constraints.",
+      "blocked_by": "DECISION_ENGINE_DESIGN_001",
+      "allowed_scope": ["tools/", "docs/reports/", "tests/"],
+      "outputs": ["tools/flaos/decision_validator.py", "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md"],
+      "notes": "Offline validator prototype. Class 4 tooling loop task."
     },
     {
       "priority": 5,
