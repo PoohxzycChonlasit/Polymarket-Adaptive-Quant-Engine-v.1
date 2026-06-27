@@ -1,0 +1,65 @@
+{
+  "$schema": "task_queue_v1",
+  "last_updated": "2026-06-27",
+  "queue": [
+    {
+      "priority": 1,
+      "task_id": "BATCH_3C_GATE_CHECK_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Architecture governance gate check before Batch 3C. Audit _phase2_complete_lifecycle_observability and _phase2_observability_payload for safe extraction boundary.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/orchestration/trader_observability.py",
+        "docs/audits/"
+      ],
+      "outputs": ["docs/audits/BATCH_3C_GATE_CHECK_001.md"],
+      "notes": "Use Role 29 (Architecture Governance). Check active question does not block structural refactor."
+    },
+    {
+      "priority": 2,
+      "task_id": "BATCH_3C_DESIGN_001",
+      "status": "WAITING_FOR_GATE",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design document for Batch 3C extraction — lifecycle observability payload methods.",
+      "blocked_by": "BATCH_3C_GATE_CHECK_001",
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/BATCH_3C_DESIGN_001.md"],
+      "notes": "Use Role 02 (Code Architect). Requires gate PROCEED verdict."
+    },
+    {
+      "priority": 3,
+      "task_id": "BATCH_3C_IMPLEMENTATION_001",
+      "status": "BLOCKED_UNTIL_DESIGN_APPROVAL",
+      "workflow_tier": "GATE",
+      "task_class": 7,
+      "description": "Implement Batch 3C extraction per approved design.",
+      "blocked_by": "BATCH_3C_DESIGN_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/orchestration/trader_observability.py",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md",
+        "docs/reports/BATCH_3C_REVIEW_001.md"
+      ],
+      "notes": "Requires explicit user approval of design before implementation. Minimum evidence grade A (paper run 5+ cycles, JSONL verification)."
+    },
+    {
+      "priority": 4,
+      "task_id": "LONG_RUNTIME_VALIDATION_001",
+      "status": "OPTIONAL",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Extended paper run validation (30+ minutes) to verify memory stability after Batch 3 extractions.",
+      "blocked_by": "BATCH_3C_IMPLEMENTATION_001",
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/LONG_RUNTIME_VALIDATION_001.md"],
+      "notes": "Optional — run when available. Use LOOP tier Class 0. No code changes. Monitor event_stream_file_size growth rate."
+    }
+  ]
+}

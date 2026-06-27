@@ -135,6 +135,29 @@ A loop report must include:
 
 ---
 
+## 9a. Active Workflow State and Task Queue
+
+Two machine-readable files track the current project state and next tasks:
+
+- **`docs/operations/ACTIVE_WORKFLOW_STATE_001.json`** — current truth: last completed task, next task, workflow tier, blocked status, refactor state, recommended read order
+- **`docs/operations/TASK_QUEUE_001.json`** — prioritized queue of next tasks with status, tier, blocked_by, and scope
+
+**Session startup read order (AWE Context Resolver):**
+1. `PROJECT_RULES.md`
+2. `MASTER_AGENT_ROUTER.md`
+3. `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` ← next task lives here
+4. `docs/operations/TASK_QUEUE_001.json` ← queue with priorities
+5. `docs/operations/loop_memory/LOOP_MEMORY_*.json` ← historical evidence
+
+**Source of truth hierarchy:**
+- Active Workflow State = current project truth
+- Task Queue = next-action source
+- Loop Memory = historical evidence (what was done and why)
+
+Update `ACTIVE_WORKFLOW_STATE_001.json` after every completed task and gate check.
+
+---
+
 ## 9b. Loop Memory Policy
 
 After every completed loop, write or append one Loop Memory record:

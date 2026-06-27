@@ -495,6 +495,19 @@ Criteria FAIL detected:
 
 ---
 
+## 15b. Active State and Task Queue Integration
+
+Two operational files provide machine-readable current state (implemented 2026-06-27):
+
+| File | Role in AWE |
+|------|------------|
+| `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` | Context Resolver reads this as step 3 — gives current phase, next task, workflow tier, blocked status |
+| `docs/operations/TASK_QUEUE_001.json` | Commit Planner and Loop Executor consult this for prioritized next actions |
+
+The Active Workflow State is updated by the Commit Planner after every loop that produces a commit. The Task Queue is updated when gate verdicts change task status (e.g., WAITING_FOR_GATE → READY after PROCEED verdict).
+
+---
+
 ## 16. Migration Roadmap
 
 ### Phase 0 (COMPLETE — 2026-06-27)

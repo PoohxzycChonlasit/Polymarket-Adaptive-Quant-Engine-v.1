@@ -1,0 +1,36 @@
+{
+  "$schema": "active_workflow_state_v1",
+  "last_updated": "2026-06-27",
+  "current_phase": "Post-Batch-3B workflow orchestration",
+  "last_completed_task": "AWE_CONTEXT_RESOLVER_SMOKE_TEST_001",
+  "last_commit": "9559fa3",
+  "last_commit_message": "docs: smoke test adaptive context resolver",
+  "next_task": "BATCH_3C_GATE_CHECK_001",
+  "next_workflow_tier": "GATE",
+  "working_tree_expected": "clean",
+  "batch_3c_started": false,
+  "blocked": false,
+  "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001 — blocks strategy/sizer/execution changes; does NOT block structural refactors",
+  "refactor_state": {
+    "trader_py_lines": 12824,
+    "completed_batches": ["Batch-1", "Batch-2A", "Batch-3A", "Batch-3B-1", "Batch-3B-2", "Batch-3B-dedup"],
+    "next_batch": "Batch-3C",
+    "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
+    "last_runtime_refactor_commit": "381cbc4"
+  },
+  "workflow_governance": {
+    "loop_engineering_enabled": true,
+    "loop_memory_operational": true,
+    "awe_design_committed": true,
+    "awe_implemented": false,
+    "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
+  },
+  "recommended_first_reads": [
+    "PROJECT_RULES.md",
+    "MASTER_AGENT_ROUTER.md",
+    "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+    "docs/operations/TASK_QUEUE_001.json",
+    "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+  ],
+  "notes": "Active question open blocks strategy/sizer changes only. Batch 3C structural refactor is eligible after gate check passes."
+}
