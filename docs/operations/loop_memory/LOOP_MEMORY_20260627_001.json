@@ -133,5 +133,33 @@
     "workflow_tier_recommendation": "LOOP",
     "gate_verdict": "PROCEED_BATCH_3C",
     "next_recommendation": "BATCH_3C_DESIGN_001 — design display proxy elimination (Group 1) and static phase2 utility extraction (Group 2). Use LOOP tier. Defer phase2 payload assembly methods to Batch 3D."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "BATCH_3C_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/BATCH_3C_DESIGN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add batch 3C design"],
+    "acceptance_criteria": {
+      "design_covers_group1_display_proxies": true,
+      "design_covers_group2_static_utilities": true,
+      "forbidden_scope_explicitly_enumerated": true,
+      "call_site_audit_complete": true,
+      "no_proxy_stubs_needed_confirmed": true,
+      "no_runtime_files_changed": true
+    },
+    "key_finding": "After dedup fix (6872a07), 4 of 5 display proxy methods have 0 remaining internal call sites — remove entirely. Static phase2 utilities: update 15 call sites to TraderObservabilityHelper._phase2_*() directly, no proxy stubs needed.",
+    "next_recommendation": "BATCH_3C_IMPLEMENTATION_001 — LOOP tier, Grade B/C evidence. Remove 5 display proxy stubs, update 2+15 call sites, add 4 @staticmethod to helper. Rollback: git restore both files."
   }
 ]

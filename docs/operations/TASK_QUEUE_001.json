@@ -21,7 +21,7 @@
     {
       "priority": 2,
       "task_id": "BATCH_3C_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design document for Batch 3C extraction — lifecycle observability payload methods.",
@@ -33,7 +33,7 @@
     {
       "priority": 3,
       "task_id": "BATCH_3C_IMPLEMENTATION_001",
-      "status": "WAITING_FOR_DESIGN_APPROVAL",
+      "status": "READY",
       "workflow_tier": "GATE",
       "task_class": 7,
       "description": "Implement Batch 3C extraction per approved design.",
