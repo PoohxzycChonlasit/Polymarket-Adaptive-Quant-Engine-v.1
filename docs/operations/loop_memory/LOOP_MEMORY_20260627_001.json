@@ -1599,7 +1599,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-runtime-commit"],
+    "commits": ["2dc0cb0"],
     "commit_messages": ["docs: add runtime loop v2 design"],
     "acceptance_criteria": {
       "runtime_lifecycle_defined": true,
