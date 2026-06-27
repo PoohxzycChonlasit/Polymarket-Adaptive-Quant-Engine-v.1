@@ -402,14 +402,26 @@
     {
       "priority": 2.8,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_ENGINE_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design the RKG query engine: blast_radius(), safety_check(), evidence_for_commit(), who_touched(), why_deferred(). Reads REPO_GRAPH_NODES_001.jsonl and REPO_GRAPH_EDGES_001.jsonl.",
       "blocked_by": null,
       "allowed_scope": ["docs/architecture/", "docs/reports/"],
       "outputs": ["docs/architecture/RKG_QUERY_ENGINE_001.md"],
-      "notes": "Design only — no Python yet. Define query schemas and response formats for Planning Engine integration."
+      "notes": "COMPLETED — 8 queries, input/output schemas, safety-first behavior, 5 seeded-graph examples, Execution Contract integration, v1-v5 migration."
+    },
+    {
+      "priority": 2.7,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement RKG v2 query tool: docs/operations/GRAPH_QUERY_TEMPLATE_001.md — Markdown form that AI fills using seeded JSONL to produce structured JSON query outputs. Proves queries work before Python implementation.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/operations/", "docs/reports/"],
+      "outputs": ["docs/operations/GRAPH_QUERY_TEMPLATE_001.md", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001.md"],
+      "notes": "v2 docs-only query tool — no Python. AI reads JSONL, applies query logic manually, outputs structured JSON per query output schema."
     },
     {
       "priority": 5,
