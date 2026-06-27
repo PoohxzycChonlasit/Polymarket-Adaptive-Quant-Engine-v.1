@@ -558,7 +558,7 @@
     {
       "priority": 1.84,
       "task_id": "SUPERVISOR_ENGINE_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design the FLAOS Supervisor Engine coordinating overall audit compliance.",
@@ -566,6 +566,18 @@
       "allowed_scope": ["docs/architecture/", "docs/reports/"],
       "outputs": ["docs/architecture/SUPERVISOR_ENGINE_001.md", "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md"],
       "notes": "Design only. Promoted from Context Builder output targets."
+    },
+    {
+      "priority": 1.83,
+      "task_id": "SUPERVISOR_CHECKLIST_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Create supervisor manual checklist template for auditing state transitions and recording repair operations.",
+      "blocked_by": "SUPERVISOR_ENGINE_DESIGN_001",
+      "allowed_scope": ["docs/operations/", "docs/reports/"],
+      "outputs": ["docs/operations/SUPERVISOR_CHECKLIST_TEMPLATE_001.md", "docs/reports/SUPERVISOR_CHECKLIST_ENABLEMENT_001.md"],
+      "notes": "Class 3 docs housekeeping loop task."
     },
     {
       "priority": 5,
