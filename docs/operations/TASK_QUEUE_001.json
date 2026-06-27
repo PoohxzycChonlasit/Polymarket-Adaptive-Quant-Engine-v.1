@@ -136,7 +136,7 @@
     {
       "priority": 5.0,
       "task_id": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 7,
       "description": "Build runtime session manager coordinator supporting PID lock enforcement, clean teardowns, and automatic output rotation.",
@@ -146,13 +146,25 @@
       "notes": "Critical for process control. Integrates lockfile mechanism."
     },
     {
+      "priority": 5.0,
+      "task_id": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Run short validation (5 cycles) using runtime session coordinator to verify process lock safety, log isolation, and metadata serialization.",
+      "blocked_by": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
+      "allowed_scope": ["docs/reports/", "runtime/"],
+      "outputs": ["docs/reports/RUNTIME_SESSION_MANAGER_VALIDATION_001.md"],
+      "notes": "Ensures no duplicate runs can be spawned under lock control."
+    },
+    {
       "priority": 4.5,
       "task_id": "RUNTIME_LOG_GOVERNANCE_001",
       "status": "WAITING",
       "workflow_tier": "GATE",
       "task_class": 5,
       "description": "Implement log governance layer rate-limiting event stream events and cleaning curses TUI ANSI print streams.",
-      "blocked_by": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
+      "blocked_by": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
       "allowed_scope": ["utils/", "docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_001.md"],
       "notes": "Minimizes disk space overhead from raw curses draw logs."
