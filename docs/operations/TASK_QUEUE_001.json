@@ -160,14 +160,26 @@
     {
       "priority": 4.5,
       "task_id": "RUNTIME_LOG_GOVERNANCE_001",
-      "status": "READY",
+      "status": "SUPERSEDED_BY_GATE",
       "workflow_tier": "GATE",
       "task_class": 7,
       "description": "Implement log governance layer rate-limiting event stream events and cleaning curses TUI ANSI print streams.",
       "blocked_by": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
       "allowed_scope": ["utils/", "docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_001.md"],
-      "notes": "Minimizes disk space overhead from raw curses draw logs."
+      "notes": "Gate check completed in RUNTIME_LOG_GOVERNANCE_GATE_001. Design split into Phase A (offline script) and Phase B (runtime code). See RUNTIME_LOG_GOVERNANCE_GATE_001.md."
+    },
+    {
+      "priority": 4.4,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Design and implement tools/flaos/log_governance.py — Phase A offline script to compress JSONL files, archive logs/.log.N backups, rotate validation_run_output.log. No runtime code changes.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/", "docs/reports/"],
+      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_DESIGN_001.md"],
+      "notes": "URGENCY HIGH — logs/ at 1.6 GB. Phase A offline script can safely reclaim ~1.4 GB without touching trading runtime."
     },
     {
       "priority": 5,
