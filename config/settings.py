@@ -157,6 +157,7 @@ class Settings(BaseSettings):
     arb_entry_min_seconds_remaining: int = 90
     arb_force_cancel_seconds_remaining: int = 60
     arb_leg_fill_timeout_sec: float = 3.0
+    live_fill_timeout_sec: float = 30.0  # seconds to wait for live GTC order fill before cancelling
     arb_second_leg_retry: int = 2
     arb_unwind_on_partial_fill: bool = True
     arb_max_active_markets_small_bankroll: int = 1

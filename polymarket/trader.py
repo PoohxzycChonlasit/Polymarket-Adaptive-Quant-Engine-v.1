@@ -9713,7 +9713,36 @@ class PolymarketTrader:
 
         # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — compute _true_prob before position open so it can be stored in metadata
         _true_prob = probability.p_yes if model_side == "YES" else probability.p_no if model_side == "NO" else None
-        if receipt is not None:
+
+        # For live orders, only open a tracked position when fill is confirmed.
+        # Statuses "live", "open", "pending", "timeout_cancelled", "cancelled", "unknown"
+        # do NOT constitute fill evidence — the order may still be resting on the book.
+        # Paper mode: any non-None receipt is treated as a confirmed fill (simulated).
+        _fill_confirmed_statuses = {"filled", "matched"}
+        _is_fill_confirmed = (
+            self.settings.paper_trading  # paper always confirmed
+            or (receipt is not None and str(receipt.status or "").lower() in _fill_confirmed_statuses)
+        )
+        if not _is_fill_confirmed and receipt is not None and not self.settings.paper_trading:
+            LOGGER.warning(
+                "[LIVE_FILL] Order %s status=%s — fill NOT confirmed; skipping position open. "
+                "Order may still be live on CLOB. Reconciliation will track it.",
+                receipt.order_id,
+                receipt.status,
+            )
+            self._emit_quant_event(
+                "log_execution",
+                {
+                    "event": "live_fill_not_confirmed",
+                    "order_id": receipt.order_id,
+                    "status": receipt.status,
+                    "filled_size": receipt.filled_size,
+                    "remaining_size": receipt.remaining_size,
+                    "mode": self._runtime_mode(),
+                },
+            )
+
+        if receipt is not None and _is_fill_confirmed:
             opened_pos = self.tracker.open_position(
                 symbol=market.market_id,
                 source="polymarket",
@@ -11768,11 +11797,16 @@ class PolymarketTrader:
 
         clob_side = BUY if side == "BUY" else SELL
         try:
+            # Pass live_fill_timeout_sec so wait_for_fill() is called inline.
+            # This ensures position state is updated from actual fill truth,
+            # not just the submission acknowledgement.
+            live_timeout = float(getattr(self.settings, "live_fill_timeout_sec", 30.0))
             receipt = self.client.place_limit_order(
                 token_id=market_id,
                 price=live_limit_price,
                 size=size,
                 side=clob_side,
+                timeout_sec=live_timeout,
             )
             self._log_order_section(
                 order_type="LIMIT_BUY" if side == BUY else "LIMIT_SELL",
