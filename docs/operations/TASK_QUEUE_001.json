@@ -60,6 +60,18 @@
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/LONG_RUNTIME_VALIDATION_001.md"],
       "notes": "Optional — run when available. Use LOOP tier Class 0. No code changes. Monitor event_stream_file_size growth rate."
+    },
+    {
+      "priority": 5,
+      "task_id": "LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001",
+      "status": "FUTURE",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Create v2 Loop Runtime Engine command checklist template for AI to fill before each loop. Formalizes INIT contract declaration.",
+      "blocked_by": "BATCH_3C_IMPLEMENTATION_001",
+      "allowed_scope": ["docs/operations/", "docs/reports/"],
+      "outputs": ["docs/operations/LOOP_CONTRACT_TEMPLATE_001.md"],
+      "notes": "Trigger when 10+ loop memory records exist and repair rate >10%."
     }
   ]
 }

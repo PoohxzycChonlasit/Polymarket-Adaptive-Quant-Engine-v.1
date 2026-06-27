@@ -32,5 +32,11 @@
     "docs/operations/TASK_QUEUE_001.json",
     "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
   ],
+  "loop_runtime_engine": {
+    "version": "v1",
+    "spec": "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
+    "schema_ref": "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
+    "status": "specification_only"
+  },
   "notes": "Active question open blocks strategy/sizer changes only. Batch 3C structural refactor is eligible after gate check passes."
 }

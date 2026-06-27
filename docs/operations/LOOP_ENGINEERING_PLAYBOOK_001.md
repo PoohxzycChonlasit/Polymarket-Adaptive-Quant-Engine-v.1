@@ -135,6 +135,23 @@ A loop report must include:
 
 ---
 
+## 8b. Loop Runtime Engine v1
+
+The Loop Runtime Engine formalizes the state machine underlying every loop. Each loop passes through states: INIT → CONTEXT_LOAD → CLASSIFY → PLAN → EXECUTE → VERIFY → [REPAIR]* → COMMIT → MEMORY_WRITE → STATE_UPDATE → QUEUE_UPDATE → NEXT_OR_STOP.
+
+Full specification: `docs/architecture/LOOP_RUNTIME_ENGINE_V1.md`  
+Schema reference: `docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md`
+
+**At INIT, declare the Loop Contract** (all fields required before execution):
+- `task_id`, `task_class`, `workflow_tier`
+- `allowed_files`, `forbidden_scope`
+- `acceptance_criteria`, `max_repairs`, `evidence_required`
+- `commit_policy`, `memory_policy`, `state_update_policy`, `queue_update_policy`
+
+If any required contract field is missing → STOP_AND_ESCALATE before execution begins.
+
+---
+
 ## 9a. Active Workflow State and Task Queue
 
 Two machine-readable files track the current project state and next tasks:

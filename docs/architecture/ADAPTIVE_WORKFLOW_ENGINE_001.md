@@ -495,6 +495,21 @@ Criteria FAIL detected:
 
 ---
 
+## 14b. Loop Runtime Engine v1
+
+The Loop Runtime Engine (LRE) is the concrete implementation of the Loop Executor component described in §5. It defines a 13-state machine with explicit transition rules, stop conditions, and repair policies.
+
+Full specification: `docs/architecture/LOOP_RUNTIME_ENGINE_V1.md`
+
+Key LRE additions to this AWE design:
+- **Loop Contract** (INIT): formal pre-execution declaration of scope, criteria, repair limit, evidence target
+- **Stop Condition Engine**: 7 hard-stop triggers; forbidden scope violation is always immediate, no repair allowed
+- **Repair Policy Engine**: 8 failure classes with individual repair limits and escalation rules
+- **Commit Engine**: TYPE A/B/C/D/F classification enforced; no TYPE A with TYPE B mix
+- **Analytics Schema**: `loop_analytics_v1` captures repair rates, evidence grades, token savings
+
+---
+
 ## 15b. Active State and Task Queue Integration
 
 Two operational files provide machine-readable current state (implemented 2026-06-27):
