@@ -161,3 +161,42 @@ class ExecutionSnapshot:
     commit_policy: str
     final_output_format: str
     source_files_loaded: list[str]
+
+@dataclass
+class ToolRegistryEntry:
+    tool_id: str
+    category: str
+    purpose: str
+    command_or_action: str
+    risk_level: str
+    read_only: bool
+    writes_files: bool
+    allowed_workflow_tiers: list[str]
+    allowed_roles: list[str]
+    required_inputs: list[str]
+    expected_outputs: list[str]
+    stop_conditions: list[str]
+    evidence_grade: str
+    timeout_seconds: int
+    full_accept_allowed: bool
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "ToolRegistryEntry":
+        return cls(
+            tool_id=d.get("tool_id", ""),
+            category=d.get("category", ""),
+            purpose=d.get("purpose", ""),
+            command_or_action=d.get("command_or_action", ""),
+            risk_level=d.get("risk_level", "NONE"),
+            read_only=bool(d.get("read_only", True)),
+            writes_files=bool(d.get("writes_files", False)),
+            allowed_workflow_tiers=d.get("allowed_workflow_tiers", []),
+            allowed_roles=d.get("allowed_roles", []),
+            required_inputs=d.get("required_inputs", []),
+            expected_outputs=d.get("expected_outputs", []),
+            stop_conditions=d.get("stop_conditions", []),
+            evidence_grade=d.get("evidence_grade", "D"),
+            timeout_seconds=int(d.get("timeout_seconds", 5)),
+            full_accept_allowed=bool(d.get("full_accept_allowed", True)),
+        )
+

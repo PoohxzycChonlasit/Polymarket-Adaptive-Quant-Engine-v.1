@@ -417,5 +417,32 @@
     },
     "repair_note": "Repair 1: Improved pipeline selection specificity scoring — prefers pipelines where tier is primary (first in list) and appears in pipeline_id",
     "next_recommendation": "BATCH_3D_GATE_CHECK_001 — GATE tier. Run python tools/flaos/bootstrap.py before starting to confirm execution snapshot."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "FLAOS_BOOTSTRAP_HARDENING_001",
+    "task_class": 4,
+    "scope": [
+      "tools/flaos/bootstrap.py",
+      "tools/flaos/schemas.py",
+      "tools/flaos/README.md",
+      "tests/test_flaos_bootstrap_hardening.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 2,
+    "evidence_grade": "C",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["tools: harden bootstrap resolver and add unit tests"],
+    "files_changed": 4,
+    "acceptance_criteria": {
+      "diagnose_healthy_exits_0": true,
+      "fatal_errors_trigger_stop_json": true,
+      "semi_critical_loop_memory_stops_on_write_tasks": true,
+      "semi_critical_loop_memory_passes_on_read_tasks": true,
+      "unit_tests_pass": true
+    },
+    "next_recommendation": "BATCH_3D_GATE_CHECK_001 — GATE tier. Run python tools/flaos/bootstrap.py before starting to confirm execution snapshot."
   }
 ]

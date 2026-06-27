@@ -7,22 +7,45 @@
 ## Usage
 
 ```bash
-python tools/flaos/bootstrap.py           # compact JSON to stdout
+python tools/flaos/bootstrap.py           # compact JSON to stdout (default)
 python tools/flaos/bootstrap.py --pretty  # pretty-printed JSON
+python tools/flaos/bootstrap.py --diagnose # health checks and exit status
 ```
 
 ## What it does
 
-1. Loads 6 operational JSON files from `docs/operations/`
-2. Determines the next task from Active Workflow State
-3. Selects the matching Agent Pipeline and Tool Pipeline
-4. Selects skills (auto-prepends `quant_safety_review` for GATE/Class 6-8 tasks)
-5. Merges required tools, memory reads, and stop conditions
-6. Prints a compact `ExecutionSnapshot` JSON to stdout
+1. Loads 7 operational JSON files from `docs/operations/`
+2. Validates JSON structure, required schemas, and configuration integrity
+3. Determines the next task from Active Workflow State
+4. Selects the matching Agent Pipeline and Tool Pipeline
+5. Selects skills (auto-prepends `quant_safety_review` for GATE/Class 2, 6, 7, 8 tasks)
+6. Merges required tools, memory reads, and stop conditions
+7. Prints a compact `ExecutionSnapshot` JSON to stdout
+
+## Diagnose Mode
+
+The `--diagnose` flag performs standard health checks across all operational files without outputting the full `ExecutionSnapshot`. It reports `HEALTHY` or `DEGRADED` (e.g. if the loop memory file is missing or invalid but the next task is a read-only task).
+
+## Fail-Safe Stops
+
+If any critical constraint is violated (e.g., missing required files, malformed JSON, state mismatch, or missing loop memory for write-active tasks), the resolver immediately prints a `STOP_AND_ESCALATE` JSON template and exits with exit code `1` (fail-safe).
+
+```json
+{
+  "status": "STOP_AND_ESCALATE",
+  "error_type": "...",
+  "message": "...",
+  "missing_or_invalid_file": "...",
+  "safe_to_continue": false,
+  "allowed_repair_scope": [ ... ],
+  "recommended_repair_task": "FLAOS_BOOTSTRAP_REPAIR_001",
+  "forbidden_actions": [ ... ]
+}
+```
 
 ## What it does NOT do
 
-- No file writes
+- No file writes (completely read-only)
 - No state or queue mutation
 - No git commits
 - No paper mode execution
@@ -33,6 +56,7 @@ python tools/flaos/bootstrap.py --pretty  # pretty-printed JSON
 | Field | Description |
 |-------|-------------|
 | `task_id` | Next task from active workflow state |
+| `task_class` | Integer task class (0-9) |
 | `workflow_tier` | FAST, LOOP, STANDARD, or GATE |
 | `agent_pipeline_id` | Matched pipeline from AGENT_PIPELINE_001.json |
 | `role_sequence` | Ordered agent roles for this pipeline |
@@ -46,6 +70,11 @@ python tools/flaos/bootstrap.py --pretty  # pretty-printed JSON
 | `stop_conditions` | Merged stop conditions from all sources |
 | `commit_policy` | Commit type constraint |
 | `allowed_scope` | Files/dirs the task may modify |
+| `final_output_format` | Format of output files |
+| `last_loop_id` | Previous loop ID from loop memory |
+| `last_loop_result` | Previous loop result |
+| `current_phase` | Active workflow phase string |
+| `source_files_loaded` | Paths of all files loaded by resolver |
 
 ## Required files
 
@@ -55,8 +84,9 @@ All under `docs/operations/`:
 - `TASK_QUEUE_001.json`
 - `AGENT_PIPELINE_001.json`
 - `TOOL_PIPELINES_001.json`
+- `TOOL_REGISTRY_001.json`
 - `skills/SKILL_REGISTRY_001.json`
-- `loop_memory/LOOP_MEMORY_20260627_001.json`
+- `loop_memory/LOOP_MEMORY_20260627_001.json` (semi-critical)
 
 ## Dependencies
 
