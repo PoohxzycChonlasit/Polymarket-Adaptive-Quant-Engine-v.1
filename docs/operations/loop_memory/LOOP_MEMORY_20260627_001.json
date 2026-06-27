@@ -1531,7 +1531,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-context-commit"],
+    "commits": ["c93700e"],
     "commit_messages": ["docs: add context builder design"],
     "acceptance_criteria": {
       "context_builder_objective_defined": true,
