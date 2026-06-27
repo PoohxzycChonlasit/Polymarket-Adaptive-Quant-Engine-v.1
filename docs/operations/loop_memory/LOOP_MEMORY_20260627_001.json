@@ -548,7 +548,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "C",
-    "commits": ["f3e2dd2", "pending-docs-commit"],
+    "commits": ["f3e2dd2", "605a35d"],
     "commit_messages": [
       "tools: add FLAOS runtime session manager",
       "docs: add runtime session manager report"
