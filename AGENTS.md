@@ -221,6 +221,20 @@ Minimum evidence grade by task class:
 
 ---
 
+## Pipeline Role Execution
+
+In loop mode, a single AI session may sequentially simulate multiple roles from the 29-role system. Rules:
+- Read `docs/operations/AGENT_PIPELINE_001.json` to get the pipeline for the current task
+- Execute each role in `role_sequence` in order
+- Each role output must be **compact** — one paragraph or table, not a full report
+- Each role reads only its declared `required_memory_reads` and uses only its declared `allowed_actions`
+- Role 29 (Architecture Governance) executes first in most pipelines — it enforces forbidden scope
+- Quant Safety Memory is always read by Role 29 before any code change
+
+**High-risk route:** If any execution/risk/sizing/live/wallet keyword appears in task scope → immediately select `HIGH_RISK_STOP_WORKFLOW` → Role 29 produces STOP report → no further actions
+
+---
+
 ## Loop Engineering Mode
 
 For eligible task classes (0, 3, 4, 6-low-risk, 9), the AI may run autonomously through plan → execute → verify → repair (up to 3x) → commit, producing **one consolidated final report** instead of per-step reports.

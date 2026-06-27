@@ -61,6 +61,16 @@ See `REPOSITORY_INTELLIGENCE_ENGINE_001.md` for full spec. Summary:
 
 ---
 
+## 3b. Agent Pipeline (operational — 2026-06-27)
+
+Agent Pipeline spec is now live:
+- **`docs/operations/AGENT_PIPELINE_001.json`** — 9 pipelines with role sequences, responsibilities, allowed/forbidden actions, memory reads, tools, evidence requirements
+- **`docs/architecture/AGENT_PIPELINE_ENGINE_001.md`** — engine design with selection algorithm, role context budgets, memory access policies, Mermaid diagrams
+
+**Quick selection:** task_class + workflow_tier → pipeline_id → role_sequence in order. High-risk triggers always route to HIGH_RISK_STOP_WORKFLOW regardless of task class.
+
+---
+
 ## 4. Tool Registry / Tool Pipeline
 
 See `TOOL_PIPELINE_ENGINE_001.md` for full spec. Summary:

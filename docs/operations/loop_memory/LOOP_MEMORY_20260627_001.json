@@ -297,5 +297,37 @@
       "no_runtime_files_changed": true
     },
     "next_recommendation": "AGENT_PIPELINE_ENABLEMENT_001 — define Agent Pipeline JSON spec for task-type to role mapping. BATCH_3D_GATE_CHECK_001 can run in parallel."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "AGENT_PIPELINE_ENABLEMENT_001",
+    "task_class": 3,
+    "scope": [
+      "docs/operations/AGENT_PIPELINE_001.json",
+      "docs/architecture/AGENT_PIPELINE_ENGINE_001.md",
+      "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md",
+      "MASTER_AGENT_ROUTER.md",
+      "AGENTS.md",
+      "docs/architecture/ADAPTIVE_WORKFLOW_ENGINE_001.md",
+      "docs/architecture/FULL_LOOP_AUTOMATION_OS_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add agent pipeline role scheduler"],
+    "files_changed": 10,
+    "acceptance_criteria": {
+      "9_pipelines_defined_in_json": true,
+      "high_risk_stop_workflow_included": true,
+      "full_accept_never_for_high_risk": true,
+      "role_context_budgets_defined": true,
+      "4_governance_docs_patched": true,
+      "no_runtime_files_changed": true,
+      "no_root_markdown_created": true
+    },
+    "next_recommendation": "BATCH_3D_GATE_CHECK_001 — gate check for _phase2_complete_lifecycle_observability and _phase2_observability_payload. GATE tier, Role 29 + 02."
   }
 ]

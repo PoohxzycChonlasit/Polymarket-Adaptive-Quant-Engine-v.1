@@ -135,6 +135,22 @@ After session ends, produce a RUNTIME_SESSION_REPORT with: run_id, cycles, event
 
 ---
 
+## Agent Pipeline Mode
+
+**Preferred for all loop tasks:** Instead of manually selecting roles, read `docs/operations/AGENT_PIPELINE_001.json` and select the pipeline matching `task_class + workflow_tier`. The pipeline specifies the `role_sequence` — execute roles in order.
+
+Quick lookup:
+- Class 3 docs → `DOCS_LOOP` (roles 24→29)
+- Class 0 health → `HEALTH_CHECK_LOOP` (roles 29→28→11→27→24)
+- Class 6 refactor → `LOW_RISK_REFACTOR_LOOP` (roles 29→02→27→24→29)
+- Class 0 validation → `RUNTIME_VALIDATION_LOOP` (roles 29→28→11→27→24)
+- Class 2/7 gate → `GATE_WORKFLOW` (roles 29→02→27→24)
+- Any high-risk trigger → `HIGH_RISK_STOP_WORKFLOW` (role 29 → STOP)
+
+Quant safety memory (`docs/operations/AI_COGNITION_MEMORY_SCHEMA_001.json`) MUST be read before any pipeline that touches runtime Python files.
+
+---
+
 ## Loop Engineering Mode Routing
 
 **When a task is eligible for loop mode** (Class 0/3/4/6-low/9, scope declared, no high-risk scope):

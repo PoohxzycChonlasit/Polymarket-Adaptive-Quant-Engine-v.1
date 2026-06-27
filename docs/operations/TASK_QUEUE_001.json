@@ -76,7 +76,7 @@
     {
       "priority": 5,
       "task_id": "AGENT_PIPELINE_ENABLEMENT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
       "description": "Define Agent Pipeline JSON spec: task-type to role mapping, context budgets, parallel eligibility. No Python changes.",

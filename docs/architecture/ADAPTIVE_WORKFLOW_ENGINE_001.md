@@ -495,6 +495,24 @@ Criteria FAIL detected:
 
 ---
 
+## 12b. Workflow Selector → Agent Pipeline Mapping
+
+The AWE Workflow Selector (§2) now maps directly to Agent Pipeline IDs:
+
+| AWE Tier | Agent Pipeline | Role sequence |
+|----------|---------------|--------------|
+| FAST (Class 3/9) | DOCS_LOOP | 24→29 |
+| FAST (Class 0 health) | HEALTH_CHECK_LOOP | 29→28→11→27→24 |
+| LOOP (Class 6-low) | LOW_RISK_REFACTOR_LOOP | 29→02→27→24→29 |
+| LOOP (Class 0 validation) | RUNTIME_VALIDATION_LOOP | 29→28→11→27→24 |
+| GATE (Class 2/7) | GATE_WORKFLOW | 29→02→27→24 |
+| Any high-risk trigger | HIGH_RISK_STOP_WORKFLOW | 29→STOP |
+
+Pipeline spec: `docs/operations/AGENT_PIPELINE_001.json`  
+Architecture: `docs/architecture/AGENT_PIPELINE_ENGINE_001.md`
+
+---
+
 ## 14b. Loop Runtime Engine v1
 
 The Loop Runtime Engine (LRE) is the concrete implementation of the Loop Executor component described in §5. It defines a 13-state machine with explicit transition rules, stop conditions, and repair policies.

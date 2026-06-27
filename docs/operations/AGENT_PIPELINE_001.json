@@ -1,0 +1,224 @@
+{
+  "$schema": "agent_pipeline_v1",
+  "version": "1.0.0",
+  "last_updated": "2026-06-27",
+  "role_docs_path": "docs/quant_agent_setup_md/roles/",
+  "tool_pipeline_ref": "docs/operations/TOOL_PIPELINES_001.json",
+  "memory_schema_ref": "docs/operations/AI_COGNITION_MEMORY_SCHEMA_001.json",
+  "selection_algorithm": "match task_class + workflow_tier + risk_keywords → return first matching pipeline_id",
+  "pipelines": [
+    {
+      "pipeline_id": "DOCS_LOOP",
+      "task_classes": [3, 9],
+      "workflow_tiers": ["FAST", "LOOP"],
+      "risk_level": "NONE",
+      "description": "Docs housekeeping: routing, cleaning, governance updates, docs refresh",
+      "role_sequence": ["24_REPOSITORY_LIBRARIAN_AGENT", "29_ARCHITECTURE_GOVERNANCE_AGENT"],
+      "role_responsibilities": {
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Identify target files, route correctly to docs/, verify no root markdown created",
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Final gate check: confirm scope, confirm commit type"
+      },
+      "allowed_actions": ["move files", "edit markdown", "create docs/reports/ files", "git add/commit TYPE C"],
+      "forbidden_actions": ["modify polymarket/", "modify tests/", "modify runtime/", "create root markdown"],
+      "required_tools": ["git_status_short", "root_markdown_check", "git_cached_name_only", "git_commit"],
+      "required_memory_reads": ["quant_safety", "decision"],
+      "required_evidence": "D",
+      "stop_conditions": ["forbidden_file_in_diff", "root_markdown_created", "runtime_data_modified"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — no user approval needed"
+    },
+    {
+      "pipeline_id": "HEALTH_CHECK_LOOP",
+      "task_classes": [0],
+      "workflow_tiers": ["FAST", "LOOP"],
+      "risk_level": "NONE",
+      "description": "Read-only health checks: compile, import, git state",
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "28_RUNTIME_OPERATIONS_AGENT", "11_OBSERVABILITY_INCIDENT_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Verify HEAD matches expected state; check active question",
+        "28_RUNTIME_OPERATIONS_AGENT": "Run compile + import checks; assess runtime readiness",
+        "11_OBSERVABILITY_INCIDENT_AGENT": "Review JSONL shape if applicable",
+        "27_VERIFICATION_OFFICER_AGENT": "Challenge any Grade E claims; enforce evidence minimum",
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Write final report to docs/reports/; update state/queue/memory"
+      },
+      "allowed_actions": ["read files", "run compile/import", "read git log", "write docs/reports/ report"],
+      "forbidden_actions": ["modify any Python file", "modify runtime/", "run live mode"],
+      "required_tools": ["read_active_workflow_state", "git_status_short", "py_compile_runtime", "import_polymarket_trader"],
+      "required_memory_reads": ["quant_safety", "runtime_evidence"],
+      "required_evidence": "B",
+      "stop_conditions": ["compile_error", "import_error", "head_mismatch_with_expected_state"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — read-only, no commit risk"
+    },
+    {
+      "pipeline_id": "LOW_RISK_REFACTOR_LOOP",
+      "task_classes": [6],
+      "workflow_tiers": ["LOOP"],
+      "risk_level": "LOW",
+      "description": "Structural refactors: proxy/shim extraction, static utility migration, display proxy removal",
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "02_CODE_ARCHITECT_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT", "29_ARCHITECTURE_GOVERNANCE_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT (pre)": "Confirm gate PROCEED; verify active question does not block; confirm forbidden scope list",
+        "02_CODE_ARCHITECT_AGENT": "Implement extraction: move methods, update call sites, add proxies/shims",
+        "27_VERIFICATION_OFFICER_AGENT": "Verify compile + tests + forbidden grep; challenge any Grade E claims",
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Write reports to docs/reports/; update state/queue/memory; verify root clean",
+        "29_ARCHITECTURE_GOVERNANCE_AGENT (post)": "Final scope confirmation before commit"
+      },
+      "allowed_actions": ["modify polymarket/trader.py", "modify polymarket/orchestration/trader_observability.py", "run pytest", "run paper mode", "commit TYPE A then TYPE C"],
+      "forbidden_actions": ["modify execution/risk/sizing/reconciliation", "modify _phase4_*", "modify _last_quote_lineage_context", "modify _risk_plan_zero_diagnostics", "modify _diagnostic_*", "create root markdown"],
+      "required_tools": ["py_compile_runtime", "import_polymarket_trader", "pytest_core_suite", "pytest_targeted_suite", "forbidden_scope_diff_check", "high_risk_keyword_check", "full_accept_guard"],
+      "required_memory_reads": ["quant_safety", "failure", "repair", "repository_insight"],
+      "required_evidence": "C",
+      "stop_conditions": ["forbidden_scope_in_diff", "new_test_failure", "high_risk_keyword_found", "attributeerror_in_paper_run"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — Grade C evidence sufficient; Grade A for GATE tier"
+    },
+    {
+      "pipeline_id": "RUNTIME_VALIDATION_LOOP",
+      "task_classes": [0],
+      "workflow_tiers": ["LOOP", "GATE"],
+      "risk_level": "LOW",
+      "description": "Post-commit paper run validation with JSONL field verification",
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "28_RUNTIME_OPERATIONS_AGENT", "11_OBSERVABILITY_INCIDENT_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Verify HEAD; confirm working tree clean; confirm no live trading risk",
+        "28_RUNTIME_OPERATIONS_AGENT": "Launch paper run (timeout 420s); monitor cycles and exit code",
+        "11_OBSERVABILITY_INCIDENT_AGENT": "Scan JSONL event stream; verify field shapes unchanged from pre-commit baseline",
+        "27_VERIFICATION_OFFICER_AGENT": "Verify no AttributeError, no Traceback, STATUS NO LIVE ORDERS",
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Write validation report to docs/reports/; update state/queue/memory"
+      },
+      "allowed_actions": ["run paper mode", "read JSONL files", "write docs/reports/ report", "commit TYPE C"],
+      "forbidden_actions": ["modify any Python file", "run live mode", "modify runtime data"],
+      "required_tools": ["git_status_short", "py_compile_runtime", "import_polymarket_trader", "paper_run_5_cycles", "traceback_check", "no_live_order_check", "jsonl_session_scan", "runtime_exit_code_check"],
+      "required_memory_reads": ["quant_safety", "runtime_evidence"],
+      "required_evidence": "A",
+      "stop_conditions": ["exit_code_not_0", "attributeerror_in_log", "live_orders_detected", "jsonl_field_missing"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — Grade A evidence with paper run"
+    },
+    {
+      "pipeline_id": "GATE_WORKFLOW",
+      "task_classes": [2, 7],
+      "workflow_tiers": ["STANDARD", "GATE"],
+      "risk_level": "MEDIUM",
+      "description": "Gate checks and design documents for refactor batches",
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "02_CODE_ARCHITECT_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Gate check: audit candidate methods, check coupling, assign safe extraction scores, produce PROCEED/STOP verdict",
+        "02_CODE_ARCHITECT_AGENT": "Design document: specify exact files, call sites, proxy strategy, test compatibility",
+        "27_VERIFICATION_OFFICER_AGENT": "Design review: challenge assumptions, check forbidden scope, verify blast radius assessment",
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Write gate check to docs/audits/, design to docs/reports/; update state/queue/memory"
+      },
+      "allowed_actions": ["read trader.py", "grep call sites", "write docs/audits/ and docs/reports/ files", "update state/queue/memory", "commit TYPE C"],
+      "forbidden_actions": ["modify any Python file", "start implementation before design is approved", "create root markdown"],
+      "required_tools": ["read_active_workflow_state", "read_loop_memory", "git_log_recent", "forbidden_scope_diff_check", "write_final_report", "update_active_workflow_state", "update_task_queue"],
+      "required_memory_reads": ["quant_safety", "decision", "repository_insight", "failure"],
+      "required_evidence": "B",
+      "stop_conditions": ["forbidden_scope_requested", "high_risk_method_in_scope", "active_question_blocks_task"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto for gate check — design requires user approval before implementation"
+    },
+    {
+      "pipeline_id": "HIGH_RISK_STOP_WORKFLOW",
+      "task_classes": [7, 8],
+      "workflow_tiers": ["GATE"],
+      "risk_level": "CRITICAL",
+      "description": "Live trading, execution, risk, sizing, wallet, reconciliation, deployment, data deletion — always stops for human",
+      "risk_triggers": [
+        "execution path modification",
+        "risk or sizing logic modification",
+        "live trading commands",
+        "wallet or bankroll mutation",
+        "reconciliation changes",
+        "deployment or push to production",
+        "runtime data deletion",
+        "ambiguous scope with high-risk potential"
+      ],
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Detect risk trigger; produce STOP report explaining why user approval is required; suggest safe next step"
+      },
+      "allowed_actions": ["read files", "write STOP report to docs/reports/", "update state to blocked=true"],
+      "forbidden_actions": ["modify any execution/risk/sizing/live file", "commit runtime changes", "proceed without explicit user authorization"],
+      "required_tools": ["high_risk_keyword_check", "forbidden_scope_diff_check", "write_final_report"],
+      "required_memory_reads": ["quant_safety"],
+      "required_evidence": "D",
+      "stop_conditions": ["ALWAYS — this pipeline always terminates at STOP_AND_REQUEST_USER_APPROVAL"],
+      "compact_output_required": false,
+      "full_accept_policy": "NEVER auto — user must explicitly authorize every Class 8 action"
+    },
+    {
+      "pipeline_id": "REPOSITORY_INTELLIGENCE_LOOP",
+      "task_classes": [0, 3],
+      "workflow_tiers": ["FAST", "LOOP"],
+      "risk_level": "NONE",
+      "description": "Repository inventory, documentation map refresh, root cleanup, file routing",
+      "role_sequence": ["24_REPOSITORY_LIBRARIAN_AGENT", "02_CODE_ARCHITECT_AGENT", "27_VERIFICATION_OFFICER_AGENT", "29_ARCHITECTURE_GOVERNANCE_AGENT"],
+      "role_responsibilities": {
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Inventory files; classify by type; route to correct docs/ subdirectory",
+        "02_CODE_ARCHITECT_AGENT": "Review architectural implications of any structural changes",
+        "27_VERIFICATION_OFFICER_AGENT": "Verify no incorrect file routing; check evidence grade",
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Final approval; update state/queue/memory"
+      },
+      "allowed_actions": ["read file tree", "route docs files", "move markdown with git mv", "write docs/reports/", "commit TYPE C"],
+      "forbidden_actions": ["delete tracked Python files", "move runtime/ data", "create root markdown"],
+      "required_tools": ["git_status_short", "root_markdown_check", "git_diff_name_only", "write_final_report"],
+      "required_memory_reads": ["repository_insight", "quant_safety"],
+      "required_evidence": "B",
+      "stop_conditions": ["python_file_in_diff", "root_markdown_created", "tracked_data_deletion"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — docs routing only"
+    },
+    {
+      "pipeline_id": "TOOL_PIPELINE_LOOP",
+      "task_classes": [3],
+      "workflow_tiers": ["LOOP"],
+      "risk_level": "NONE",
+      "description": "Tool registry and pipeline spec updates — governance and orchestration docs",
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Review tool definitions for safety; ensure full_accept_allowed=false for high-risk tools",
+        "27_VERIFICATION_OFFICER_AGENT": "Verify tool schema completeness; check evidence grades match tier requirements",
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Write specs to docs/operations/; update state/queue/memory"
+      },
+      "allowed_actions": ["create/edit docs/operations/*.json", "write docs/reports/", "commit TYPE C"],
+      "forbidden_actions": ["modify TOOL_REGISTRY to add live trading tools", "set full_accept_allowed=true for high-risk tools"],
+      "required_tools": ["write_final_report", "update_active_workflow_state", "update_task_queue", "append_loop_memory"],
+      "required_memory_reads": ["quant_safety", "tool_usage"],
+      "required_evidence": "D",
+      "stop_conditions": ["high_risk_tool_marked_full_accept_true"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — docs/JSON only"
+    },
+    {
+      "pipeline_id": "COGNITION_MEMORY_LOOP",
+      "task_classes": [2, 3],
+      "workflow_tiers": ["LOOP", "GATE"],
+      "risk_level": "NONE",
+      "description": "AI Cognition Memory schema updates, pre-seeded safety entries, memory record writes",
+      "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT", "27_VERIFICATION_OFFICER_AGENT"],
+      "role_responsibilities": {
+        "29_ARCHITECTURE_GOVERNANCE_AGENT": "Approve new memory entries; ensure quant_safety entries have expires=NEVER",
+        "24_REPOSITORY_LIBRARIAN_AGENT": "Write memory records to docs/operations/cognition_memory/; update schema",
+        "27_VERIFICATION_OFFICER_AGENT": "Verify no raw logs in memory; verify evidence grade matches source"
+      },
+      "allowed_actions": ["write docs/operations/cognition_memory/ JSON files", "update AI_COGNITION_MEMORY_SCHEMA_001.json", "commit TYPE C"],
+      "forbidden_actions": ["store raw paper run logs in memory", "expire quant_safety entries", "store live trading credentials"],
+      "required_tools": ["write_final_report", "append_loop_memory"],
+      "required_memory_reads": ["quant_safety"],
+      "required_evidence": "D",
+      "stop_conditions": ["quant_safety_entry_marked_expiring", "raw_log_in_memory_field"],
+      "compact_output_required": true,
+      "full_accept_policy": "auto — memory schema docs only"
+    }
+  ],
+  "pipeline_selection_algorithm": {
+    "step_1": "Check for high-risk triggers → if found → HIGH_RISK_STOP_WORKFLOW",
+    "step_2": "Match task_class and workflow_tier to pipeline",
+    "step_3": "If multiple matches → select by risk_level (NONE first, then LOW, MEDIUM, CRITICAL)",
+    "step_4": "Read required_memory_reads before executing first role",
+    "step_5": "Execute role_sequence in order; each role reads only its declared inputs",
+    "step_6": "Run required_tools after EXECUTE state per tool pipeline spec",
+    "step_7": "Write memory entries per cognition memory schema after COMMIT"
+  }
+}
