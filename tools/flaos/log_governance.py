@@ -20,10 +20,12 @@ import argparse
 import gzip
 import json
 import os
+import re
 import shutil
 import sys
 import time
 from dataclasses import dataclass, asdict, field
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +40,12 @@ LOG_BACKUP_KEEP = 5         # keep .log.1 through .log.5
 LOG_BACKUP_MIN_AGE_DAYS = 1 # only delete backups older than this
 VALIDATION_LOG_ZERO_AGE_DAYS = 7  # delete 0-byte session logs older than this
 VALIDATION_RUN_ALERT_MB = 50  # alert if validation_run_output.log exceeds this
+SESSION_LOG_RETENTION_DAYS = 7  # delete old session log groups (PID not running + age > this)
+
+# Pattern: polytrade_bot_YYYYMMDD_HHMMSS_PID.log[.N]
+_SESSION_LOG_RE = re.compile(
+    r"^polytrade_bot_(\d{8})_(\d{6})_(\d+)\.log(?:\.(\d+))?$"
+)
 
 
 # ---------------------------------------------------------------------------
@@ -162,6 +170,123 @@ def _collect_compressible_jsonl(event_stream_dir: Path) -> list[Path]:
 
 
 # ---------------------------------------------------------------------------
+# Session log group helpers
+# ---------------------------------------------------------------------------
+
+def _parse_session_log_name(name: str) -> dict[str, Any] | None:
+    """Parse polytrade_bot_YYYYMMDD_HHMMSS_PID.log[.N] → metadata dict or None."""
+    m = _SESSION_LOG_RE.match(name)
+    if not m:
+        return None
+    date_str, time_str, pid_str, rot_str = m.groups()
+    try:
+        session_date = datetime.strptime(date_str, "%Y%m%d").date()
+    except ValueError:
+        return None
+    return {
+        "session_key": f"{date_str}_{time_str}_{pid_str}",
+        "session_date": date_str,
+        "session_time": time_str,
+        "pid": pid_str,
+        "rotation_index": int(rot_str) if rot_str else 0,
+    }
+
+
+def _get_running_pids() -> set[str]:
+    """Return set of string PIDs for currently running processes."""
+    pids: set[str] = set()
+    try:
+        import psutil
+        pids = {str(p.pid) for p in psutil.process_iter()}
+    except ImportError:
+        # psutil not available — use os.kill(pid, 0) probe approach via /proc or fallback
+        # Check common PID range; safe fallback: only exclude current process
+        pids.add(str(os.getpid()))
+        # Try to enumerate PIDs from /proc if on Linux, otherwise probe a range
+        try:
+            if os.path.isdir("/proc"):
+                pids = {e for e in os.listdir("/proc") if e.isdigit()}
+            else:
+                # Windows: use a safe but limited probe
+                for pid in range(1, 65536):
+                    try:
+                        os.kill(pid, 0)
+                        pids.add(str(pid))
+                    except (ProcessLookupError, PermissionError):
+                        pass
+                    except OSError:
+                        pids.add(str(pid))  # exists but no permission = running
+        except (OSError, PermissionError):
+            pass
+    return pids
+
+
+def collect_old_session_log_groups(
+    logs_dir: Path,
+    running_pids: set[str] | None = None,
+    retention_days: int = SESSION_LOG_RETENTION_DAYS,
+    now_utc: date | None = None,
+) -> list[dict[str, Any]]:
+    """Find log file groups for sessions older than retention_days whose PID is not running.
+
+    Returns a list of action dicts (with session metadata) ready for plan/execute.
+    Safety: never marks JSONL as DELETE. Only targets polytrade_bot_*.log[.N] files.
+    """
+    if not logs_dir.exists():
+        return []
+    if now_utc is None:
+        now_utc = datetime.now(timezone.utc).date()
+    if running_pids is None:
+        running_pids = _get_running_pids()
+
+    # Group files by session_key
+    groups: dict[str, list[tuple[Path, dict[str, Any]]]] = {}
+    for f in logs_dir.iterdir():
+        if not f.is_file():
+            continue
+        meta = _parse_session_log_name(f.name)
+        if meta is None:
+            continue
+        key = meta["session_key"]
+        groups.setdefault(key, []).append((f, meta))
+
+    actions: list[dict[str, Any]] = []
+    for key, file_list in groups.items():
+        # All files in group share same session_date and pid
+        meta0 = file_list[0][1]
+        pid = meta0["pid"]
+        session_date_str = meta0["session_date"]
+        try:
+            session_date = datetime.strptime(session_date_str, "%Y%m%d").date()
+        except ValueError:
+            continue
+        age_days = (now_utc - session_date).days
+
+        # Keep if recent or PID still running
+        if age_days <= retention_days:
+            continue
+        if pid in running_pids:
+            continue
+
+        for f, meta in file_list:
+            sz = f.stat().st_size
+            actions.append({
+                "action": "DELETE",
+                "file": str(f),
+                "bytes_before": sz,
+                "bytes_after": 0,
+                "status": "PENDING",
+                "reason": "old_session_group",
+                "session_key": key,
+                "session_date": session_date_str,
+                "pid": pid,
+                "age_days": age_days,
+            })
+
+    return actions
+
+
+# ---------------------------------------------------------------------------
 # Subcommand: inspect
 # ---------------------------------------------------------------------------
 
@@ -183,6 +308,7 @@ def cmd_inspect(root: Path, pretty: bool) -> int:
     backup_candidates = _collect_log_backups(logs_dir)
     zero_logs = _collect_zero_byte_session_logs(validation_dir)
     compressible = _collect_compressible_jsonl(event_stream_dir)
+    session_actions = collect_old_session_log_groups(logs_dir)
 
     logs_stats = _measure(logs_dir)
     event_stats = _measure(event_stream_dir)
@@ -207,6 +333,11 @@ def cmd_inspect(root: Path, pretty: bool) -> int:
                 "delete_candidates": len(backup_candidates),
                 "candidate_bytes": sum(f.stat().st_size for f in backup_candidates),
             },
+            "logs_old_session_groups": {
+                "delete_candidates": len(session_actions),
+                "candidate_bytes": sum(a["bytes_before"] for a in session_actions),
+                "unique_session_keys": len({a["session_key"] for a in session_actions}),
+            },
             "logs_all": logs_stats,
             "runtime_validation_logs": {
                 **valid_stats,
@@ -226,7 +357,7 @@ def cmd_inspect(root: Path, pretty: bool) -> int:
         },
         "active_session_guard": "PASS" if guard_ok else f"BLOCKED — active PIDs: {active_pids}",
         "health_status": health,
-        "recommended_action": "run plan" if backup_candidates or compressible else "no action needed",
+        "recommended_action": "run plan" if (backup_candidates or compressible or session_actions) else "no action needed",
     }
     _print_json(result, pretty)
     return 0
@@ -276,6 +407,12 @@ def cmd_plan(root: Path, pretty: bool) -> int:
             "status": "PENDING",
         })
         total_reclaim += int(sz * 0.85)  # estimate 85% compression
+
+    # Session-age-based cleanup
+    session_group_actions = collect_old_session_log_groups(logs_dir)
+    for sa in session_group_actions:
+        actions.append(sa)
+        total_reclaim += sa["bytes_before"]
 
     if vrun_log.exists() and vrun_log.stat().st_size > VALIDATION_RUN_ALERT_MB * 1_000_000:
         actions.append({
@@ -330,6 +467,11 @@ def cmd_dry_run(root: Path, pretty: bool) -> int:
     for f in _collect_compressible_jsonl(event_stream_dir):
         actions.append({"action": "COMPRESS", "file": str(f), "bytes_before": f.stat().st_size,
                          "status": "DRY_RUN", "reason": "old JSONL — compress only"})
+
+    for sa in collect_old_session_log_groups(logs_dir):
+        status = "DRY_RUN" if guard_ok else "BLOCKED"
+        sa["status"] = status
+        actions.append(sa)
 
     if vrun_log.exists() and vrun_log.stat().st_size > VALIDATION_RUN_ALERT_MB * 1_000_000:
         actions.append({"action": "ALERT", "file": str(vrun_log),
@@ -419,6 +561,25 @@ def cmd_execute(root: Path, confirm: bool, pretty: bool) -> int:
                 gz_path.unlink(missing_ok=True)
             executed.append({"action": "COMPRESS", "file": str(f), "bytes_before": sz,
                               "bytes_after": sz, "status": "FAILED", "error": str(e)})
+        action_count += 1
+
+    # DELETE old session log groups
+    for sa in collect_old_session_log_groups(logs_dir, running_pids=set(_session_guard(root)[1]) or None):
+        if action_count >= MAX_ACTIONS:
+            break
+        f = Path(sa["file"])
+        if not f.exists():
+            continue
+        sz = f.stat().st_size
+        try:
+            f.unlink()
+            sa_result = dict(sa)
+            sa_result.update({"bytes_after": 0, "status": "SUCCESS", "error": None})
+            executed.append(sa_result)
+        except OSError as e:
+            sa_result = dict(sa)
+            sa_result.update({"bytes_after": sz, "status": "FAILED", "error": str(e)})
+            executed.append(sa_result)
         action_count += 1
 
     # ALERT for validation_run_output.log

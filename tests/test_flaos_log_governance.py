@@ -17,11 +17,15 @@ import pytest
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
 
+from datetime import date
+
 from flaos.log_governance import (
     _collect_log_backups,
     _collect_zero_byte_session_logs,
     _collect_compressible_jsonl,
+    _parse_session_log_name,
     _session_guard,
+    collect_old_session_log_groups,
     cmd_inspect,
     cmd_plan,
     cmd_dry_run,
@@ -31,6 +35,7 @@ from flaos.log_governance import (
     LOG_BACKUP_MIN_AGE_DAYS,
     JSONL_COMPRESS_AGE_DAYS,
     MAX_ACTIONS,
+    SESSION_LOG_RETENTION_DAYS,
 )
 
 
@@ -282,6 +287,156 @@ class TestSessionGuard:
 # ---------------------------------------------------------------------------
 # Tests: report
 # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Tests: session log parsing and group collection
+# ---------------------------------------------------------------------------
+
+class TestSessionLogParsing:
+    def test_parse_base_log_filename(self):
+        meta = _parse_session_log_name("polytrade_bot_20260508_234142_15588.log")
+        assert meta is not None
+        assert meta["session_key"] == "20260508_234142_15588"
+        assert meta["session_date"] == "20260508"
+        assert meta["pid"] == "15588"
+        assert meta["rotation_index"] == 0
+
+    def test_parse_rotated_log_filename(self):
+        meta = _parse_session_log_name("polytrade_bot_20260508_234142_15588.log.3")
+        assert meta is not None
+        assert meta["pid"] == "15588"
+        assert meta["rotation_index"] == 3
+
+    def test_malformed_filename_returns_none(self):
+        assert _parse_session_log_name("some_other_file.log") is None
+        assert _parse_session_log_name("polytrade_bot.log") is None
+        assert _parse_session_log_name("") is None
+        assert _parse_session_log_name("polytrade_bot_BADDATE_000000_123.log") is None
+
+
+class TestSessionLogGroupCollection:
+    def _make_session_files(self, logs_dir: Path, date_str: str, time_str: str,
+                             pid: str, rotations: int = 2, content_bytes: int = 100) -> list[Path]:
+        """Create a session log group."""
+        created = []
+        # Base file
+        f = logs_dir / f"polytrade_bot_{date_str}_{time_str}_{pid}.log"
+        _write(f, b"x" * content_bytes)
+        created.append(f)
+        for n in range(1, rotations + 1):
+            fr = logs_dir / f"polytrade_bot_{date_str}_{time_str}_{pid}.log.{n}"
+            _write(fr, b"x" * content_bytes)
+            created.append(fr)
+        return created
+
+    def test_old_non_running_session_is_delete_candidate(self, tmp_path):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        self._make_session_files(logs, "20260101", "120000", "99999")
+        now = date(2026, 6, 27)  # 177 days later
+        actions = collect_old_session_log_groups(
+            logs, running_pids=set(), retention_days=7, now_utc=now
+        )
+        assert len(actions) == 3  # base + 2 rotations
+        assert all(a["action"] == "DELETE" for a in actions)
+        assert all(a["reason"] == "old_session_group" for a in actions)
+
+    def test_recent_session_is_kept(self, tmp_path):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        self._make_session_files(logs, "20260626", "100000", "12345")
+        now = date(2026, 6, 27)  # 1 day later
+        actions = collect_old_session_log_groups(
+            logs, running_pids=set(), retention_days=7, now_utc=now
+        )
+        assert len(actions) == 0  # recent — keep
+
+    def test_running_pid_session_is_kept(self, tmp_path):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        self._make_session_files(logs, "20260101", "120000", "55555")
+        now = date(2026, 6, 27)
+        actions = collect_old_session_log_groups(
+            logs, running_pids={"55555"}, retention_days=7, now_utc=now
+        )
+        assert len(actions) == 0  # PID still running — keep
+
+    def test_action_metadata_includes_session_fields(self, tmp_path):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        self._make_session_files(logs, "20260101", "120000", "77777", rotations=1)
+        now = date(2026, 6, 27)
+        actions = collect_old_session_log_groups(
+            logs, running_pids=set(), retention_days=7, now_utc=now
+        )
+        assert len(actions) == 2
+        for a in actions:
+            assert "session_key" in a
+            assert a["pid"] == "77777"
+            assert a["age_days"] > 7
+            assert a["session_date"] == "20260101"
+
+    def test_plan_includes_session_group_candidates(self, tmp_path, capsys):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        # Create an old session with monkeypatched now
+        self._make_session_files(logs, "20260101", "120000", "88888", rotations=2)
+        # Patch now_utc via collect_old_session_log_groups
+        # We test via cmd_plan which calls collect_old_session_log_groups internally
+        import flaos.log_governance as lg
+        original = lg.collect_old_session_log_groups
+        def patched(ld, running_pids=None, retention_days=7, now_utc=None):
+            return original(ld, running_pids=set(), retention_days=7,
+                           now_utc=date(2026, 6, 27))
+        lg.collect_old_session_log_groups = patched
+        try:
+            rc = cmd_plan(root, pretty=False)
+        finally:
+            lg.collect_old_session_log_groups = original
+        assert rc == 0
+        out = json.loads(capsys.readouterr().out)
+        delete_actions = [a for a in out["actions"] if a["action"] == "DELETE"]
+        session_actions = [a for a in delete_actions if a.get("reason") == "old_session_group"]
+        assert len(session_actions) == 3
+
+    def test_dry_run_with_session_groups_does_not_mutate(self, tmp_path, capsys):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        files = self._make_session_files(logs, "20260101", "120000", "11111")
+        import flaos.log_governance as lg
+        original = lg.collect_old_session_log_groups
+        def patched(ld, running_pids=None, retention_days=7, now_utc=None):
+            return original(ld, running_pids=set(), retention_days=7, now_utc=date(2026, 6, 27))
+        lg.collect_old_session_log_groups = patched
+        try:
+            rc = cmd_dry_run(root, pretty=False)
+        finally:
+            lg.collect_old_session_log_groups = original
+        assert rc == 0
+        for f in files:
+            assert f.exists()  # no mutation
+
+    def test_hard_cap_respected_with_session_groups(self, tmp_path, capsys):
+        root = _make_root(tmp_path)
+        logs = root / "logs"
+        # Create many sessions to exceed cap
+        for i in range(300):
+            pid = str(10000 + i)
+            f = logs / f"polytrade_bot_20260101_120000_{pid}.log"
+            _write(f, b"x")
+        import flaos.log_governance as lg
+        original = lg.collect_old_session_log_groups
+        def patched(ld, running_pids=None, retention_days=7, now_utc=None):
+            return original(ld, running_pids=set(), retention_days=7, now_utc=date(2026, 6, 27))
+        lg.collect_old_session_log_groups = patched
+        try:
+            rc = cmd_execute(root, confirm=True, pretty=False)
+        finally:
+            lg.collect_old_session_log_groups = original
+        assert rc == 0
+        out = json.loads(capsys.readouterr().out)
+        assert out["total_actions"] <= MAX_ACTIONS
+
 
 class TestReport:
     def test_report_returns_current_sizes(self, tmp_path, capsys):
