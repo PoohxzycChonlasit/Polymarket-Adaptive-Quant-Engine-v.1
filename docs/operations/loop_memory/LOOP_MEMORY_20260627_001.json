@@ -433,7 +433,7 @@
     "result": "PASS",
     "repairs": 2,
     "evidence_grade": "C",
-    "commits": ["pending-at-report-time"],
+    "commits": ["530ae50"],
     "commit_messages": ["tools: harden bootstrap resolver and add unit tests"],
     "files_changed": 4,
     "acceptance_criteria": {
