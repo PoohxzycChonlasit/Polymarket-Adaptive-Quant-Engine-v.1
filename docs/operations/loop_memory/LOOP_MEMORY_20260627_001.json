@@ -792,5 +792,37 @@
     "action_count": 800,
     "total_plan_actions_before_cap": 862,
     "next_recommendation": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001 — GATE tier Class 2. Human review of 800 DELETE actions (1.4 GB) before executing. Confirm May 2026 sessions are safe to delete."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001",
+    "task_class": 2,
+    "scope": [
+      "docs/audits/RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add corrected log governance dry-run review"],
+    "acceptance_criteria": {
+      "bootstrap_healthy_after_repair": true,
+      "age_min_gte_8_days": true,
+      "age_violations_zero": true,
+      "jsonl_delete_zero": true,
+      "non_polytrade_delete_zero": true,
+      "session_guard_pass": true,
+      "recoverability_confirmed": true
+    },
+    "estimated_reclaim_bytes": 1411700000,
+    "action_count": 800,
+    "gate_verdict": "PROCEED_RUNTIME_LOG_GOVERNANCE_EXECUTE_AUTHORIZATION",
+    "repair_note": "Bootstrap STOP_AND_ESCALATE: RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001 queue entry missing workflow_tier. Added required fields.",
+    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_EXECUTE_AUTHORIZATION_001 — GATE Class 8. User explicitly authorizes execute --confirm. Permanent deletion of ~1.4 GB of old session logs."
   }
 ]

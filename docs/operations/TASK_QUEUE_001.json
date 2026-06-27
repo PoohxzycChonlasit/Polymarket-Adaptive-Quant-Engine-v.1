@@ -207,12 +207,18 @@
       "priority": 4.1,
       "task_id": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001",
       "status": "DONE",
-      "finding": "Corrected policy adds session-age-based cleanup. Real plan: 862 actions (800 capped), 1,423 MB estimated reclaim."
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Corrected log governance policy — session-age-based cleanup.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
+      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001.md"],
+      "notes": "Corrected policy adds session-age-based cleanup. Real plan: 862 actions (800 capped), 1,423 MB estimated reclaim."
     },
     {
       "priority": 4.05,
       "task_id": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Human review of corrected dry-run plan (800 DELETE actions, 1.4 GB) before executing. Confirm session groups are safe to delete.",
@@ -220,6 +226,18 @@
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001.md"],
       "notes": "Gate review: confirm oldest sessions are from May 2026 (50 days old), PIDs are not running. Authorize execute after review."
+    },
+    {
+      "priority": 4.0,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_EXECUTE_AUTHORIZATION_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 8,
+      "description": "Explicitly authorize log governance execute --confirm after reviewing gate audit. Run plan + dry-run one final time, then execute --confirm if all checks still pass.",
+      "blocked_by": null,
+      "allowed_scope": ["logs/", "docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_001.md"],
+      "notes": "Requires explicit user authorization. Estimated reclaim: ~1.4 GB. Permanent deletion — no rollback. JSONL event stream preserves full trading history."
     },
     {
       "priority": 5,
