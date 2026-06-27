@@ -6921,6 +6921,16 @@ class PolymarketTrader:
                             "mode": self._runtime_mode(),
                         },
                     )
+                    # P0.4: Notify operator of fill confirmation
+                    self._notify_telegram(
+                        "notify_order_filled",
+                        f"Live order filled | id={order_id} filled={round(updated.filled_size, 4)}",
+                        dedup_key=f"order_filled:{order_id}",
+                        order_id=order_id,
+                        status=status,
+                        filled_size=round(float(updated.filled_size), 4),
+                        remaining_size=round(float(updated.remaining_size), 4),
+                    )
                     to_remove.append(order_id)
                     # Position opening is handled by reconcile_live_positions()
                     # which compares CLOB positions against local tracker state.
@@ -6935,6 +6945,14 @@ class PolymarketTrader:
                             "status": status,
                             "mode": self._runtime_mode(),
                         },
+                    )
+                    # P0.4: Notify operator of cancellation/timeout
+                    self._notify_telegram(
+                        "notify_order_cancelled",
+                        f"Live order {status} | id={order_id}",
+                        dedup_key=f"order_cancelled:{order_id}:{status}",
+                        order_id=order_id,
+                        status=status,
                     )
                     to_remove.append(order_id)
                 else:
@@ -7079,6 +7097,30 @@ class PolymarketTrader:
             and state.current_cash_balance >= self.settings.bankroll_floor
             and allowance_status == "OK"
         )
+        # P0.4: Notify operator of startup visibility issues (live mode only)
+        if not self.settings.paper_trading:
+            if allowance_status == "MISSING":
+                self._notify_telegram(
+                    "notify_allowance_missing",
+                    f"USDC allowance missing at startup. Approve CLOB contract before live orders.",
+                    dedup_key="startup_allowance_missing",
+                    allowance_balance=allowance_balance,
+                    allowance_amount=allowance_amount,
+                )
+            if self._connected:
+                try:
+                    sc = self.client.verify_signing_capability()
+                    if sc.get("status") != "OK":
+                        self._notify_telegram(
+                            "notify_signing_not_ready",
+                            f"Live signing not ready: {sc.get('message', 'unknown error')}",
+                            dedup_key="startup_signing_not_ready",
+                            has_signer=sc.get("has_signer"),
+                            has_builder=sc.get("has_builder"),
+                            sig_type=sc.get("sig_type"),
+                        )
+                except Exception as exc:
+                    LOGGER.warning("[SIGNING_CHECK_FAILED] %s", exc)
         LOGGER.info(
             "[LIVE MODE READY] ready=%s wallet_connected=true wallet_address=%s balance_source=%s "
             "cash=$%.4f equity=$%.4f exposure=$%.4f positions_count=%d floor=$%.4f "
@@ -11894,6 +11936,17 @@ class PolymarketTrader:
                     **execution_risk_context,
                     "mode": self._runtime_mode(),
                 },
+            )
+            # P0.4: Notify operator of live order submission
+            self._notify_telegram(
+                "notify_order_submitted",
+                f"Live order submitted | {outcome} {round(receipt.price, 4)} size={round(receipt.size, 4)} status={receipt.status}",
+                dedup_key=f"order_submitted:{receipt.order_id}",
+                order_id=receipt.order_id,
+                status=receipt.status,
+                outcome=outcome,
+                price=round(float(receipt.price), 4),
+                size=round(float(receipt.size), 4),
             )
             self._reconcile_after_order_attempt()
             return receipt

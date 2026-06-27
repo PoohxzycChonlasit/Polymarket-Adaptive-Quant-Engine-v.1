@@ -102,6 +102,39 @@ class TelegramAlertLayer:
         key = self._dedup_key("incident", message, context)
         return self._send_with_cooldown("incident", key, self._format_message("INCIDENT", message, context), context, self.cooldown_seconds)
 
+    # ── Live order observability helpers (P0.4) ────────────────────────────
+    # These are fail-soft and deduped. Telegram failure never blocks runtime.
+
+    def notify_allowance_missing(self, message: str = "", **context: Any) -> AlertResult:
+        """USDC allowance is zero or missing — must approve before live trading."""
+        key = self._dedup_key("allowance_missing", message, context)
+        formatted = self._format_message("ALLOWANCE_MISSING", message or "USDC allowance missing. Approve before live trading.", context)
+        return self._send_with_cooldown("critical", key, formatted, context, self.cooldown_seconds)
+
+    def notify_signing_not_ready(self, message: str = "", **context: Any) -> AlertResult:
+        """Live signing capability check failed — key/builder not loaded."""
+        key = self._dedup_key("signing_not_ready", message, context)
+        formatted = self._format_message("SIGNING_NOT_READY", message or "Live signing not ready. Check private key configuration.", context)
+        return self._send_with_cooldown("critical", key, formatted, context, self.cooldown_seconds)
+
+    def notify_order_submitted(self, message: str = "", **context: Any) -> AlertResult:
+        """Live order submitted to CLOB — not yet confirmed fill."""
+        key = self._dedup_key("order_submitted", message, context)
+        formatted = self._format_message("ORDER_SUBMITTED", message, context)
+        return self._send_with_cooldown("entry", key, formatted, context, self.cooldown_seconds)
+
+    def notify_order_filled(self, message: str = "", **context: Any) -> AlertResult:
+        """Live order confirmed filled."""
+        key = self._dedup_key("order_filled", message, context)
+        formatted = self._format_message("ORDER_FILLED", message, context)
+        return self._send_with_cooldown("entry", key, formatted, context, self.cooldown_seconds)
+
+    def notify_order_cancelled(self, message: str = "", **context: Any) -> AlertResult:
+        """Live order cancelled, timeout-cancelled, or rejected."""
+        key = self._dedup_key("order_cancelled", message, context)
+        formatted = self._format_message("ORDER_CANCELLED", message, context)
+        return self._send_with_cooldown("risk", key, formatted, context, self.cooldown_seconds)
+
     def _send_with_cooldown(
         self,
         route: str,
@@ -952,3 +985,23 @@ def notify_summary(message: str = "", **context: Any) -> AlertResult:
 
 def notify_incident(message: str = "", **context: Any) -> AlertResult:
     return get_telegram_alert_layer().notify_incident(message, **context)
+
+
+def notify_allowance_missing(message: str = "", **context: Any) -> AlertResult:
+    return get_telegram_alert_layer().notify_allowance_missing(message, **context)
+
+
+def notify_signing_not_ready(message: str = "", **context: Any) -> AlertResult:
+    return get_telegram_alert_layer().notify_signing_not_ready(message, **context)
+
+
+def notify_order_submitted(message: str = "", **context: Any) -> AlertResult:
+    return get_telegram_alert_layer().notify_order_submitted(message, **context)
+
+
+def notify_order_filled(message: str = "", **context: Any) -> AlertResult:
+    return get_telegram_alert_layer().notify_order_filled(message, **context)
+
+
+def notify_order_cancelled(message: str = "", **context: Any) -> AlertResult:
+    return get_telegram_alert_layer().notify_order_cancelled(message, **context)

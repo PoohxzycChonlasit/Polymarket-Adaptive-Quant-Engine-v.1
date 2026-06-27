@@ -1797,7 +1797,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "B",
-    "commits": ["pending-at-report-time"],
+    "commits": ["140cce0"],
     "commit_messages": ["docs: add live execution gap analysis"],
     "key_findings": {
       "live_path_structurally_correct": true,
@@ -1809,6 +1809,47 @@
     },
     "gap_verdict": "PROCEED_LIVE_ALLOWANCE_PREFLIGHT_IMPLEMENTATION",
     "p0_files": ["polymarket/client.py", "polymarket/trader.py", "config/settings.py"],
-    "next_recommendation": "LIVE_ALLOWANCE_AND_PREFLIGHT_IMPLEMENTATION_001 — Fix allowance bug, add approve_allowance(), add fill timeout, periodic reconciliation. Verify py-clob-client 0.34.6 set_allowance() first."
+    "next_recommendation": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
+    "task_class": 4,
+    "scope": [
+      "polymarket/trader.py",
+      "utils/telegram_alerts.py",
+      "tests/test_live_telegram_visibility.py",
+      "docs/reports/LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "C",
+    "commits": ["pending-telegram-commit"],
+    "commit_messages": ["feat: add live order signing and telegram visibility"],
+    "acceptance_criteria": {
+      "signing_check_status_visible": true,
+      "notify_allowance_missing_implemented": true,
+      "notify_signing_not_ready_implemented": true,
+      "notify_order_submitted_implemented": true,
+      "notify_order_filled_implemented": true,
+      "notify_order_cancelled_implemented": true,
+      "wired_to_allowance_missing": true,
+      "wired_to_order_submitted": true,
+      "wired_to_order_filled": true,
+      "wired_to_order_cancelled": true,
+      "wired_to_signing_fail": true,
+      "paper_mode_emits_no_live_notifications": true,
+      "fail_soft_swallows_telegram_errors": true,
+      "compile_checks_pass": true,
+      "targeted_tests_pass": true,
+      "regression_tests_pass": true,
+      "bootstrap_healthy": true
+    },
+    "next_recommendation": "LIVE_TRADING_READINESS_FINAL_CHECK_001"
   }
 ]

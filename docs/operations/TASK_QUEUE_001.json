@@ -1053,6 +1053,25 @@
         "docs/reports/LIVE_RECONCILIATION_TIMER_IMPLEMENTATION_001.md"
       ],
       "notes": "COMPLETED — 29+128 tests pass. Pending order tracking and periodic reconciliation working."
+    },
+    {
+      "priority": 4.0,
+      "task_id": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 4,
+      "description": "Add 5 new Telegram helpers, wire to live startup and order lifecycle. Signing and allowance visibility.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "utils/telegram_alerts.py",
+        "polymarket/trader.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001.md"
+      ],
+      "notes": "COMPLETED — 19+128 tests pass. 5 new notify_* methods. Wired to startup/fill/cancel/signing."
     }
   ]
 }

@@ -1,10 +1,10 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-27",
-  "current_phase": "P0.3 reconciliation timer implemented — P0.4 signing validation next",
+  "current_phase": "P0.4 signing and Telegram in progress",
   "last_completed_task": "LIVE_RECONCILIATION_TIMER_IMPLEMENTATION_001",
-  "last_commit": "pending-recon-commit",
-  "last_commit_message": "fix: track pending live orders and reconcile periodically",
+  "last_commit": "pending-telegram-commit",
+  "last_commit_message": "feat: add live order signing and telegram visibility",
   "next_task": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
   "next_workflow_tier": "GATE",
   "working_tree_expected": "clean",
