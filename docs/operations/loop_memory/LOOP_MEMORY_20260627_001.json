@@ -1498,7 +1498,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-design-commit"],
+    "commits": ["97176d5"],
     "commit_messages": ["docs: add decision engine design"],
     "acceptance_criteria": {
       "decision_engine_objective_defined": true,

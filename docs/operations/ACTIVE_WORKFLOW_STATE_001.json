@@ -3,7 +3,7 @@
   "last_updated": "2026-06-27",
   "current_phase": "FLAOS Decision Engine design complete",
   "last_completed_task": "DECISION_ENGINE_DESIGN_001",
-  "last_commit": "pending-design-commit",
+  "last_commit": "97176d5",
   "last_commit_message": "docs: add decision engine design",
   "next_task": "DECISION_ENGINE_PROTOTYPE_001",
   "next_workflow_tier": "LOOP",
