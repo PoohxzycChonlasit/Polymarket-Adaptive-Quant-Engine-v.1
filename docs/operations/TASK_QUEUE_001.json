@@ -350,14 +350,26 @@
     {
       "priority": 3.2,
       "task_id": "EXECUTION_CONTRACT_SMOKE_TEST_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Smoke test the Execution Contract Template by documenting BATCH_3C_IMPLEMENTATION_001 retrospectively. Verifies template captures all required fields accurately.",
       "blocked_by": null,
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/EXECUTION_CONTRACT_SMOKE_TEST_001.md"],
-      "notes": "Class 0 health check — read-only retrospective. Proves template is sufficient before mandating its use."
+      "notes": "COMPLETED — template sufficient. CLASS 6+ mandate recommended. 2 template improvements suggested."
+    },
+    {
+      "priority": 3.1,
+      "task_id": "EXECUTION_CONTRACT_POLICY_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Update PROJECT_RULES.md, AGENTS.md, LOOP_ENGINEERING_PLAYBOOK_001.md to mandate execution contract for CLASS 6+. Add docs/operations/execution_contracts/ to output location policy. Document abbreviated contract for CLASS 0/3/9.",
+      "blocked_by": null,
+      "allowed_scope": ["PROJECT_RULES.md", "AGENTS.md", "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md", "docs/reports/"],
+      "outputs": ["docs/reports/EXECUTION_CONTRACT_POLICY_ENABLEMENT_001.md"],
+      "notes": "Governance only — no Python. Mandates contract use for CLASS 6+ effective immediately."
     },
     {
       "priority": 5,
