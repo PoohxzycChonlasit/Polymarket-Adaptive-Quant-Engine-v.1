@@ -266,14 +266,26 @@
     {
       "priority": 3.8,
       "task_id": "RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
       "description": "Phase A closeout: update CURRENT_PROJECT_STATUS.md with log governance results, save memory records to commit, confirm BATCH_3D is next priority.",
       "blocked_by": null,
       "allowed_scope": ["CURRENT_PROJECT_STATUS.md", "docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001.md"],
-      "notes": "Final Phase A cleanup. After this, BATCH_3D_GATE_CHECK_001 is next refactor priority."
+      "notes": "COMPLETED — CURRENT_PROJECT_STATUS.md updated with Phase A results."
+    },
+    {
+      "priority": 3.7,
+      "task_id": "POST_MAINTENANCE_STRATEGY_REVIEW_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Brief gate review before resuming Batch 3D trader.py refactor. Confirm active question status, confirm no regressions from maintenance sprint, confirm correct next batch scope.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/audits/", "docs/reports/"],
+      "outputs": ["docs/audits/POST_MAINTENANCE_STRATEGY_REVIEW_001.md"],
+      "notes": "Lightweight gate — no implementation. Confirms BATCH_3D scope is still _phase2_complete_lifecycle_observability and _phase2_observability_payload."
     },
     {
       "priority": 5,

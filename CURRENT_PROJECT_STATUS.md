@@ -1,6 +1,6 @@
 # PolyTrade Bot / Polymarket 5M BTC-ETH Quant System - Current Project Status
 
-> Updated: 2026-06-26
+> Updated: 2026-06-27
 > Purpose: Single source of truth for future AI assistants and project work.
 > Important: This project is not confirmed live-trading ready. Do not claim live readiness until orderbook, wallet sync, execution, fill/cancel, allowance, and reconciliation are all proven in terminal/runtime evidence.
 
@@ -120,7 +120,48 @@ Root markdown cleanup completed across two phases:
 
 ### Current HEAD
 
-`9acbda4` — docs: complete root markdown cleanup (2026-06-26)
+`6505296` — docs: add log governance post execution validation (2026-06-27)
+
+---
+
+## 1.8 Runtime Log Governance Phase A — COMPLETE (2026-06-27)
+
+### What was done
+
+The `logs/` directory accumulated **1.6 GB** of session log files from 856 old trading sessions (May–June 2026). A new offline FLAOS maintenance tool (`tools/flaos/log_governance.py`) was designed, implemented, and executed to safely reclaim this space.
+
+**Phase A results:**
+- **Files deleted**: 856 old `polytrade_bot_YYYYMMDD_HHMMSS_PID.log[.N]` session log files
+- **Space reclaimed**: **1,411.7 MB** across two execute passes
+- **`logs/` before**: 1.6 GB → **after: 219 MB**
+- **JSONL event stream files**: **3 files intact, untouched**
+- **Trading/runtime code changed**: **NO — offline tool only**
+- **Bootstrap post-execution**: HEALTHY
+- **Failures**: 0
+
+### Safety gates completed
+
+1. Gate audit (`BATCH_3D_GATE_CHECK_001`-level review) confirmed: age ≥ 8 days, 0 JSONL deletes, 0 non-polytrade files, session guard PASS
+2. User explicitly authorized execute via `RUNTIME_LOG_GOVERNANCE_EXECUTE_AUTHORIZATION_001`
+3. Post-execution validation confirmed JSONL intact and bootstrap HEALTHY
+
+### What is NOT done (Phase B — separate gate required)
+
+- `utils/logger.py` `backupCount` fix to prevent future accumulation — **CLASS 7, separate gate**
+- JSONL compression (files < 3 days old at time of execution) — **Phase C, when JSONL ages**
+
+### FLAOS Tooling Added
+
+| Tool | Location | Purpose |
+|------|----------|---------|
+| `tools/flaos/log_governance.py` | New | inspect / plan / dry-run / execute / report subcommands |
+| `tests/test_flaos_log_governance.py` | New | 28 tests, all pass |
+| `tools/flaos/bootstrap.py` | Updated | Health check, pipeline resolution |
+| `tools/flaos/runtime_session.py` | Pre-existing | Session guard for maintenance ops |
+
+### Next recommended direction
+
+A **POST_MAINTENANCE_STRATEGY_REVIEW_001** gate check is recommended before resuming Batch 3D structural refactoring. The maintenance sprint changed the operational environment; a brief strategy review confirms the correct next refactor scope and evidence posture before continuing `trader.py` decomposition.
 
 ---
 
