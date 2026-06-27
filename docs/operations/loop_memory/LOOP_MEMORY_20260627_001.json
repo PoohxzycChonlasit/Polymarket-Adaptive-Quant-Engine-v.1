@@ -1566,7 +1566,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-supervisor-commit"],
+    "commits": ["633ac1a"],
     "commit_messages": ["docs: add supervisor engine design"],
     "acceptance_criteria": {
       "supervisor_objective_defined": true,
