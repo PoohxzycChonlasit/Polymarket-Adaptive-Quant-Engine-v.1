@@ -171,10 +171,10 @@
     },
     {
       "pipeline_id": "TOOL_PIPELINE_LOOP",
-      "task_classes": [3],
+      "task_classes": [3, 4],
       "workflow_tiers": ["LOOP"],
       "risk_level": "NONE",
-      "description": "Tool registry and pipeline spec updates — governance and orchestration docs",
+      "description": "Tool registry/pipeline spec updates and offline tooling tasks (Class 3 governance docs, Class 4 offline automation scripts)",
       "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT"],
       "role_responsibilities": {
         "29_ARCHITECTURE_GOVERNANCE_AGENT": "Review tool definitions for safety; ensure full_accept_allowed=false for high-risk tools",

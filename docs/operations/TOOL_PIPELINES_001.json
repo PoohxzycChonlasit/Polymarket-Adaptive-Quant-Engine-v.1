@@ -216,6 +216,36 @@
       "commit_policy": "MANUAL_ONLY",
       "compact_output_required": false,
       "notes": "This pipeline always terminates at STOP_AND_ESCALATE. No automated commit permitted. Full human review required for every Class 8 task."
+    },
+    {
+      "pipeline_id": "TOOL_PIPELINE_LOOP",
+      "workflow_tier": "LOOP",
+      "task_classes": [3, 4],
+      "description": "Tool registry/pipeline updates and offline automation tooling (no runtime trading code changes)",
+      "ordered_tool_sequence": [
+        "git_status_short",
+        "root_markdown_check",
+        "forbidden_scope_diff_check",
+        "git_diff_name_only",
+        "full_accept_guard",
+        "write_final_report",
+        "git_cached_name_only",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_evidence": "B",
+      "auto_repair_allowed": true,
+      "max_repairs": 3,
+      "stop_conditions": [
+        "forbidden_file_in_diff",
+        "root_markdown_created",
+        "runtime_data_file_in_diff",
+        "polymarket_import_detected"
+      ],
+      "commit_policy": "TYPE_B_OR_TYPE_C",
+      "compact_output_required": true
     }
   ],
   "safety_policy": {
