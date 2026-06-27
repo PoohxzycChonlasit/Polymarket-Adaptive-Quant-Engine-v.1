@@ -515,7 +515,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "B",
-    "commits": ["pending-strategy-commit"],
+    "commits": ["d40baa0"],
     "commit_messages": ["docs: add post long validation strategy review"],
     "files_changed": 4,
     "acceptance_criteria": {
