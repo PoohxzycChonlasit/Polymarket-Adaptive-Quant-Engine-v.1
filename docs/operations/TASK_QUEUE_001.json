@@ -450,14 +450,26 @@
     {
       "priority": 2.4,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
       "description": "Implement tools/flaos/knowledge_graph.py — Python query tool for blast_radius, safety_check, evidence_for_commit, why_deferred reading seeded JSONL graph files. Stdlib only.",
       "blocked_by": null,
       "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
       "outputs": ["tools/flaos/knowledge_graph.py", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001.md"],
-      "notes": "v3 Python query tool. Reads REPO_GRAPH_NODES_001.jsonl + EDGES. Outputs rkg_query_output_v1 JSON."
+      "notes": "COMPLETED — 5 subcommands, 24 tests, 24/24 pass. Reads seeded JSONL, outputs rkg_query_output_v1 JSON."
+    },
+    {
+      "priority": 2.3,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Smoke test the Python RKG query tool against live graph. Verify all 4 query types return expected results matching manual template smoke test.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001.md"],
+      "notes": "Run: python tools/flaos/knowledge_graph.py safety-check _last_quote_lineage_context etc."
     },
     {
       "priority": 5,
