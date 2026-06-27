@@ -135,6 +135,26 @@ A loop report must include:
 
 ---
 
+## 9b. Loop Memory Policy
+
+After every completed loop, write or append one Loop Memory record:
+
+```
+docs/operations/loop_memory/LOOP_MEMORY_YYYYMMDD_NNN.json
+```
+
+Rules:
+- One JSON object per loop, appended to the daily file as an array element
+- Concise — do not duplicate the full loop report
+- Machine-readable — use the schema in `LOOP_MEMORY_SPEC_001.md`
+- Required: `result`, `repairs`, `evidence_grade`, `commits`, `forbidden_scope_confirmed`
+- Optional: `next_recommendation`, `notes`, `acceptance_criteria`
+- Committed with the loop's final commit (or as a follow-up docs commit)
+
+A future AI session can read the memory file (`cat docs/operations/loop_memory/LOOP_MEMORY_*.json`) to reconstruct recent loop history without reading full reports.
+
+---
+
 ## 10. Token-Saving Policy
 
 | Rule | Detail |
