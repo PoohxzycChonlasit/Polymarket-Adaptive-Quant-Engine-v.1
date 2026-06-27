@@ -249,7 +249,31 @@
       "blocked_by": null,
       "allowed_scope": ["logs/", "docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_002.md"],
-      "notes": "Estimated additional reclaim: ~70-100 MB. Same safety policy applies — session guard required, age >7 days, PID not running."
+      "notes": "Completed — 56 deleted, 88 MB reclaimed. logs/ at 219 MB."
+    },
+    {
+      "priority": 3.85,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Post-Phase-A validation: confirm logs/ at 219 MB, JSONL intact, bootstrap HEALTHY, no trading files changed.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001.md"],
+      "notes": "All checks PASS. Phase A complete."
+    },
+    {
+      "priority": 3.8,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Phase A closeout: update CURRENT_PROJECT_STATUS.md with log governance results, save memory records to commit, confirm BATCH_3D is next priority.",
+      "blocked_by": null,
+      "allowed_scope": ["CURRENT_PROJECT_STATUS.md", "docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001.md"],
+      "notes": "Final Phase A cleanup. After this, BATCH_3D_GATE_CHECK_001 is next refactor priority."
     },
     {
       "priority": 5,
