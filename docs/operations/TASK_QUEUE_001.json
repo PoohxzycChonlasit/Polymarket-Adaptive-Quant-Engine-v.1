@@ -124,7 +124,7 @@
     {
       "priority": 5.5,
       "task_id": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Post-long validation refactor strategy review to align on the next refactoring direction after Batch 3 observability payload deferral.",
@@ -132,6 +132,30 @@
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001.md"],
       "notes": "Reviews project health, log files growth, and maps out target candidates for next phases."
+    },
+    {
+      "priority": 5.0,
+      "task_id": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 7,
+      "description": "Build runtime session manager coordinator supporting PID lock enforcement, clean teardowns, and automatic output rotation.",
+      "blocked_by": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
+      "allowed_scope": ["tools/", "docs/reports/", "utils/"],
+      "outputs": ["tools/runtime_session_coordinator.py", "docs/reports/RUNTIME_SESSION_MANAGER_ENABLEMENT_001.md"],
+      "notes": "Critical for process control. Integrates lockfile mechanism."
+    },
+    {
+      "priority": 4.5,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_001",
+      "status": "WAITING",
+      "workflow_tier": "GATE",
+      "task_class": 5,
+      "description": "Implement log governance layer rate-limiting event stream events and cleaning curses TUI ANSI print streams.",
+      "blocked_by": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
+      "allowed_scope": ["utils/", "docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_001.md"],
+      "notes": "Minimizes disk space overhead from raw curses draw logs."
     },
     {
       "priority": 5,
