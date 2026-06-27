@@ -438,14 +438,26 @@
     {
       "priority": 2.5,
       "task_id": "GRAPH_QUERY_POLICY_ENABLEMENT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
       "description": "Update PROJECT_RULES.md and AGENTS.md to mandate graph query (safety_check minimum) for all CLASS 6+ Execution Contracts. Add GRAPH_QUERY_TEMPLATE_001.md to output location policy.",
       "blocked_by": null,
       "allowed_scope": ["PROJECT_RULES.md", "AGENTS.md", "docs/reports/"],
       "outputs": ["docs/reports/GRAPH_QUERY_POLICY_ENABLEMENT_001.md"],
-      "notes": "Governance only. Mandates safety_check query in contract before any refactor that touches Python files."
+      "notes": "COMPLETED — 5 governance files patched. GRAPH_QUERY_NOT_EXECUTED stop condition added. knowledge_graph_evidence block in contract template."
+    },
+    {
+      "priority": 2.4,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement tools/flaos/knowledge_graph.py — Python query tool for blast_radius, safety_check, evidence_for_commit, why_deferred reading seeded JSONL graph files. Stdlib only.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
+      "outputs": ["tools/flaos/knowledge_graph.py", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001.md"],
+      "notes": "v3 Python query tool. Reads REPO_GRAPH_NODES_001.jsonl + EDGES. Outputs rkg_query_output_v1 JSON."
     },
     {
       "priority": 5,

@@ -221,6 +221,30 @@ Minimum evidence grade by task class:
 
 ---
 
+## Knowledge Graph Query Requirement
+
+For CLASS 6+ tasks, before filling the Execution Contract, AI must query the Runtime Knowledge Graph:
+
+```
+Graph files: docs/operations/knowledge_graph/REPO_GRAPH_NODES_001.jsonl
+             docs/operations/knowledge_graph/REPO_GRAPH_EDGES_001.jsonl
+Query template: docs/operations/GRAPH_QUERY_TEMPLATE_001.md
+Query results: docs/operations/graph_queries/{QUERY_ID}.md
+```
+
+**CLASS 6 minimum:** `safety_check(target)` + `blast_radius(target)` + `evidence_for_commit(prior_commit)`  
+**CLASS 7+ additional:** `why_deferred(target)` + `dependency_tree(target)`
+
+**STOP condition: `GRAPH_QUERY_NOT_EXECUTED`** — Planner refuses to start if `knowledge_graph_evidence` block is missing from the Execution Contract.
+
+**Required contract field:**
+- `safety_findings` — QS rules triggered (or empty list)
+- `blast_radius_score` — LOW/MEDIUM/HIGH
+- `graph_confidence` — 0.0–1.0
+- `graph_timestamp` — ISO date of graph snapshot used
+
+---
+
 ## Execution Contract Requirement
 
 For CLASS 6+ tasks and any task touching Python/runtime/tooling, AI must fill the Execution Contract template before execution begins:

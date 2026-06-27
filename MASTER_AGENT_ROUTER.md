@@ -135,6 +135,22 @@ After session ends, produce a RUNTIME_SESSION_REPORT with: run_id, cycles, event
 
 ---
 
+## Knowledge Graph Query Gate (CLASS 6+)
+
+Before routing any CLASS 6+ task to Agent Pipeline execution, Role 29 must run graph queries:
+
+1. `safety_check(scope)` — load `REPO_GRAPH_NODES_001.jsonl`, check QS-001..010 protects/blocks edges
+2. `blast_radius(primary_target)` — traverse calls/depends_on edges up to depth 3
+3. `evidence_for_commit(last_refactor_commit)` — confirm baseline Grade B+ evidence exists
+
+Results go into `docs/operations/graph_queries/` and are attached to the Execution Contract.
+
+**STOP condition: `GRAPH_QUERY_NOT_EXECUTED`** — Agent Pipeline refuses to execute CLASS 6+ loops without graph evidence block in the contract.
+
+Graph tool: `docs/operations/GRAPH_QUERY_TEMPLATE_001.md`
+
+---
+
 ## Agent Pipeline Mode
 
 **Preferred for all loop tasks:** Instead of manually selecting roles, read `docs/operations/AGENT_PIPELINE_001.json` and select the pipeline matching `task_class + workflow_tier`. The pipeline specifies the `role_sequence` — execute roles in order.

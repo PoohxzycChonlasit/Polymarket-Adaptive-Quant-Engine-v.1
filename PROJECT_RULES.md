@@ -362,6 +362,41 @@ For tooling tasks:
 
 ---
 
+# Knowledge Graph Query Policy
+
+**Effective 2026-06-27.** All Class 6+ tasks must execute Knowledge Graph queries before planning or execution begins. Query results must appear in the Execution Contract.
+
+**Class 6 mandatory queries (minimum):**
+- `safety_check(target)` — surfaces QS-001..010 rules before any refactor
+- `blast_radius(target)` — identifies affected nodes and edge count
+- `evidence_for_commit(prior_commit)` — confirms baseline evidence
+
+**Class 7+ additional mandatory queries:**
+- `why_deferred(target)` — required if target or scope was previously deferred
+- `dependency_tree(target)` — full traversal of call/import dependencies
+
+**Stop condition: `GRAPH_QUERY_NOT_EXECUTED`**  
+The Planner (and Execution Engine) must refuse to begin implementation if the Execution Contract is missing the `graph_query_evidence` block. This is a hard stop — equivalent to a missing gate check.
+
+**Contract field required (Section 11 and Section 16 of Execution Contract):**
+```
+knowledge_graph_evidence:
+  safety_findings:       [list or empty]
+  blast_radius_score:    LOW | MEDIUM | HIGH
+  deferred_history:      [list or "N/A"]
+  commit_evidence_grade: A | B | C | D
+  graph_confidence:      float 0.0-1.0
+  graph_timestamp:       ISO date of graph snapshot
+  graph_query_ids:       [list of QUERY-* ids]
+  stop_condition_triggered: [GRAPH_QUERY_NOT_EXECUTED if missing]
+```
+
+**Graph query tool:** `docs/operations/GRAPH_QUERY_TEMPLATE_001.md`  
+**Seeded graph:** `docs/operations/knowledge_graph/`  
+**Query results location:** `docs/operations/graph_queries/`
+
+---
+
 # Execution Contract Policy
 
 **Effective 2026-06-27.** Before executing any LOOP/STANDARD/GATE task touching Python files, runtime, tooling, or performing destructive operations, the AI must fill the Execution Contract template (`docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md`).

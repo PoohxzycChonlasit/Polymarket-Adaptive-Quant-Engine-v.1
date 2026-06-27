@@ -1283,5 +1283,36 @@
       "template_sufficient": true
     },
     "next_recommendation": "GRAPH_QUERY_POLICY_ENABLEMENT_001 — LOOP tier Class 3. Mandate safety_check query for CLASS 6+ in PROJECT_RULES.md and AGENTS.md."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "GRAPH_QUERY_POLICY_ENABLEMENT_001",
+    "task_class": 3,
+    "scope": [
+      "PROJECT_RULES.md",
+      "AGENTS.md",
+      "MASTER_AGENT_ROUTER.md",
+      "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md",
+      "docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md",
+      "docs/reports/GRAPH_QUERY_POLICY_ENABLEMENT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: enable graph query governance policy"],
+    "acceptance_criteria": {
+      "project_rules_knowledge_graph_section_added": true,
+      "agents_knowledge_graph_section_added": true,
+      "master_router_graph_gate_added": true,
+      "playbook_section_4a_added": true,
+      "contract_template_section_10b_added": true,
+      "stop_condition_graph_query_not_executed_defined": true,
+      "bootstrap_healthy": true,
+      "no_python_changed": true
+    },
+    "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001 — STANDARD tier Class 4. Implement tools/flaos/knowledge_graph.py with blast_radius, safety_check, evidence_for_commit queries."
   }
 ]

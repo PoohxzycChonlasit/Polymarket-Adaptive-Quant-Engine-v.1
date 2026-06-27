@@ -164,6 +164,40 @@ required_memory_reads: [from bootstrap --pretty → required_memory_reads]
 
 ---
 
+## SECTION 10b — KNOWLEDGE GRAPH EVIDENCE (CLASS 6+ MANDATORY)
+
+**Run before filling Section 11. STOP if missing for CLASS 6+.**
+
+```
+graph_query_results_file:  docs/operations/graph_queries/QUERY-YYYYMMDD-{TASK}.md
+
+knowledge_graph_evidence:
+  safety_check_query_id:   [QUERY-* id]
+  safety_findings:         [list of QS-N entries triggered, or empty []]
+  safety_stop_triggered:   [true | false]
+  blast_radius_score:      [LOW | MEDIUM | HIGH | N/A]
+  blast_radius_query_id:   [QUERY-* id]
+  evidence_for_commit_grade: [A | B | C | D]
+  evidence_query_id:       [QUERY-* id]
+  deferred_history:        [list of deferred methods/tasks, or N/A]
+  why_deferred_query_id:   [QUERY-* id or N/A]
+  graph_confidence:        [float 0.0-1.0]
+  graph_timestamp:         [ISO date of SNAP used, e.g. 2026-06-27]
+  graph_query_ids:         [list of all QUERY-* ids executed]
+  stop_condition_triggered: [GRAPH_QUERY_NOT_EXECUTED if block missing for CLASS 6+]
+```
+
+**Abbreviated (CLASS 0/3/9 only):**
+```
+knowledge_graph_evidence:  N/A (docs-only task, no Python scope)
+```
+
+**STOP condition enforcement:**
+- CLASS 6+: If this section is missing or incomplete → `GRAPH_QUERY_NOT_EXECUTED` → Planner refuses to proceed
+- CLASS 7+: `why_deferred` and `dependency_tree` queries also required if scope overlaps previously-deferred methods
+
+---
+
 ## SECTION 11 — REQUIRED TOOLS (ORDERED)
 
 List tools in execution order with expected outcome:

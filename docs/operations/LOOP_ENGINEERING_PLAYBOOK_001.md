@@ -135,6 +135,26 @@ A loop report must include:
 
 ---
 
+## 4a. Knowledge Graph Query Policy (effective 2026-06-27)
+
+**For CLASS 6+ loops touching Python files:** Before declaring the Loop Contract (Section 4 of template), AI must execute graph queries using `docs/operations/GRAPH_QUERY_TEMPLATE_001.md` and attach results to the contract.
+
+**Minimum queries by class:**
+
+| Class | Required queries |
+|-------|-----------------|
+| 6 (low-risk refactor) | safety_check + blast_radius + evidence_for_commit |
+| 7 (feature/implementation) | + why_deferred + dependency_tree |
+| 8 (destructive/live) | All above + authorization_check |
+
+**Stop condition `GRAPH_QUERY_NOT_EXECUTED`:** Loop Engine refuses to proceed with CLASS 6+ execution if `knowledge_graph_evidence` block is missing from the contract.
+
+**Graph files:** `docs/operations/knowledge_graph/`  
+**Query results:** `docs/operations/graph_queries/`  
+**Template:** `docs/operations/GRAPH_QUERY_TEMPLATE_001.md`
+
+---
+
 ## 4b. Execution Contract Policy (effective 2026-06-27)
 
 **Before executing any loop that:** touches Python files, modifies runtime, runs tooling with side effects, or performs destructive operations — the AI must fill the Execution Contract template.
