@@ -33,7 +33,7 @@
     {
       "priority": 3,
       "task_id": "BATCH_3C_IMPLEMENTATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 7,
       "description": "Implement Batch 3C extraction per approved design.",
@@ -51,6 +51,18 @@
     },
     {
       "priority": 4,
+      "task_id": "POST_BATCH_3C_RUNTIME_VALIDATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Post-commit paper mode validation for Batch 3C. Verify display proxy removal and static utility migration did not break telemetry or runtime.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/POST_BATCH_3C_RUNTIME_VALIDATION_001.md"],
+      "notes": "5+ cycles, exit 0, JSONL fields present, 0 AttributeError."
+    },
+    {
+      "priority": 5,
       "task_id": "LONG_RUNTIME_VALIDATION_001",
       "status": "OPTIONAL",
       "workflow_tier": "LOOP",

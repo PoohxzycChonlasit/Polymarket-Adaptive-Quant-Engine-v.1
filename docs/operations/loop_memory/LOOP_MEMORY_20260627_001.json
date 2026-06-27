@@ -161,5 +161,34 @@
     },
     "key_finding": "After dedup fix (6872a07), 4 of 5 display proxy methods have 0 remaining internal call sites — remove entirely. Static phase2 utilities: update 15 call sites to TraderObservabilityHelper._phase2_*() directly, no proxy stubs needed.",
     "next_recommendation": "BATCH_3C_IMPLEMENTATION_001 — LOOP tier, Grade B/C evidence. Remove 5 display proxy stubs, update 2+15 call sites, add 4 @staticmethod to helper. Rollback: git restore both files."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "BATCH_3C_IMPLEMENTATION_001",
+    "task_class": 6,
+    "scope": [
+      "polymarket/trader.py",
+      "polymarket/orchestration/trader_observability.py",
+      "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "C",
+    "commits": ["3c5b781"],
+    "commit_messages": ["refactor: remove trader display proxies and phase2 static utilities"],
+    "files_changed": 2,
+    "net_lines": -10,
+    "acceptance_criteria": {
+      "py_compile_pass": true,
+      "import_ok": true,
+      "zero_new_test_failures": true,
+      "forbidden_scope_grep_empty": true,
+      "trader_py_reduced": true
+    },
+    "trader_py_lines_before": 12824,
+    "trader_py_lines_after": 12775,
+    "next_recommendation": "POST_BATCH_3C_RUNTIME_VALIDATION_001 — LOOP tier Class 0, 5+ cycle paper run, verify JSONL field shape unchanged."
   }
 ]
