@@ -184,7 +184,7 @@
     {
       "priority": 4.3,
       "task_id": "RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
       "description": "Implement tools/flaos/log_governance.py following the design in docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md. Phase A: inspect, plan, dry-run, execute, report subcommands. No runtime trading code changes.",
@@ -192,6 +192,18 @@
       "allowed_scope": ["tools/flaos/", "docs/reports/"],
       "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001.md"],
       "notes": "URGENCY HIGH — logs/ at 1.6 GB. Implement dry-run first policy. Execute only with --confirm flag. Session guard required before DELETE."
+    },
+    {
+      "priority": 4.2,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_DRY_RUN_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Run log_governance.py inspect, plan, and dry-run against real logs/ and runtime/ dirs. Verify expected actions without executing. No file mutations.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_DRY_RUN_001.md"],
+      "notes": "Validate estimated 1.4 GB reclaim. Check no current-day JSONL or active log in DELETE candidates."
     },
     {
       "priority": 5,
