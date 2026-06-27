@@ -278,14 +278,38 @@
     {
       "priority": 3.7,
       "task_id": "POST_MAINTENANCE_STRATEGY_REVIEW_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Brief gate review before resuming Batch 3D trader.py refactor. Confirm active question status, confirm no regressions from maintenance sprint, confirm correct next batch scope.",
       "blocked_by": null,
       "allowed_scope": ["docs/audits/", "docs/reports/"],
       "outputs": ["docs/audits/POST_MAINTENANCE_STRATEGY_REVIEW_001.md"],
-      "notes": "Lightweight gate — no implementation. Confirms BATCH_3D scope is still _phase2_complete_lifecycle_observability and _phase2_observability_payload."
+      "notes": "COMPLETED — verdict: Memory OS V2 Design is primary next. Full Batch 3D (payload methods) remains deferred. Batch 3D mini-gate secondary."
+    },
+    {
+      "priority": 3.6,
+      "task_id": "MEMORY_OS_V2_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design Memory OS v2: JSONL-based typed records per category (decision, failure, repair, runtime_evidence, quant_safety), MEMORY_INDEX.json for O(1) session startup lookup, migration path from daily JSON array.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/architecture/MEMORY_OS_V2_001.md", "docs/reports/MEMORY_OS_V2_DESIGN_001.md"],
+      "notes": "Primary next task per POST_MAINTENANCE_STRATEGY_REVIEW_001. Pure docs/tooling — unblocked by active question."
+    },
+    {
+      "priority": 3.5,
+      "task_id": "EXECUTION_ENGINE_DESIGN_001",
+      "status": "WAITING",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design execution engine for FLAOS full automation. Blocked until LOW_PRICE_TRUTH_RESOLUTION_001 is resolved.",
+      "blocked_by": "LOW_PRICE_TRUTH_RESOLUTION_001",
+      "allowed_scope": ["docs/architecture/", "docs/reports/"],
+      "outputs": ["docs/architecture/EXECUTION_ENGINE_001.md"],
+      "notes": "Deferred — active question blocks execution path analysis."
     },
     {
       "priority": 5,
