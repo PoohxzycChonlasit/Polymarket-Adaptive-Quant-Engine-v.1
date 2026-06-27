@@ -42,7 +42,7 @@ class TraderObservabilityHelper:
 
     def dashboard_observability_health_state(self, trader: Any) -> dict[str, Any]:
         """Return display-only observability health state for terminal UI surfaces."""
-        return dict(getattr(self, "_observability_health_display_state", trader._default_observability_health_display_state()))
+        return dict(getattr(self, "_observability_health_display_state", self._presentation.default_observability_health_display_state()))
 
     def _record_display_trade(
         self,
@@ -79,15 +79,15 @@ class TraderObservabilityHelper:
         jsonl_ok: bool,
     ) -> dict[str, object]:
         schema_version = str(getattr(getattr(trader, "quant_events", None), "schema_version", "") or "--")
-        producer = trader._event_producer_label(event_method)
-        has_trace = trader._display_field_present(payload, "candidate_trace_id")
-        has_condition = trader._display_field_present(payload, "condition_id")
-        has_token = trader._display_field_present(payload, "token_id")
-        has_side = trader._display_field_present(payload, "side", "outcome", "best_side")
-        has_probability = trader._display_visibility_status(payload, "true_probability", "p_yes", "model_p_yes")
-        has_fair_value = trader._display_visibility_status(payload, "fair_value")
-        has_ev = trader._display_visibility_status(payload, "ev_after_spread", "ev")
-        model_attempted = trader._display_visibility_status(
+        producer = self._event_producer_label(event_method)
+        has_trace = self._presentation.display_field_present(payload, "candidate_trace_id")
+        has_condition = self._presentation.display_field_present(payload, "condition_id")
+        has_token = self._presentation.display_field_present(payload, "token_id")
+        has_side = self._presentation.display_field_present(payload, "side", "outcome", "best_side")
+        has_probability = self._presentation.display_visibility_status(payload, "true_probability", "p_yes", "model_p_yes")
+        has_fair_value = self._presentation.display_visibility_status(payload, "fair_value")
+        has_ev = self._presentation.display_visibility_status(payload, "ev_after_spread", "ev")
+        model_attempted = self._presentation.display_visibility_status(
             payload,
             "model_attempted",
             "ev_visibility_attempted",
@@ -122,8 +122,8 @@ class TraderObservabilityHelper:
             or payload.get("skip_reason")
             or "UNKNOWN"
         )
-        model_gap = trader._display_dominant_model_gap(payload)
-        event_identity = trader._display_identity_readiness(payload)
+        model_gap = self._presentation.display_dominant_model_gap(payload)
+        event_identity = self._presentation.display_identity_readiness(payload)
         chain_confidence = str(
             payload.get("candidate_chain_trace_confidence")
             or payload.get("candidate_trace_confidence")
