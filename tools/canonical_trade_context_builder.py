@@ -184,10 +184,97 @@ def load_jsonl_file(path: Path) -> list[dict[str, Any]]:
         pass
     return events
 
+
+# ── Round-number PnL values typical of test/settlement events ─────────────
+_ROUND_PNL_VALUES = {1.0, -1.0, 2.0, -2.0, 0.5, -0.5, 0.25, -0.25, 0.1, -0.1}
+
+_TEST_EXIT_REASONS = frozenset({"test", "test_close", "debug", "synthetic"})
+_SETTLEMENT_EXIT_REASONS = frozenset({"settlement", "binary_settlement", "resolved", "resolution"})
+_FORCED_EXIT_REASONS = frozenset({"emergency_flatten", "forced_exit", "residual_sweep", "session_end"})
+
+
+def _classify_event(
+    row: dict[str, Any],
+    open_event: dict[str, Any] | None,
+    close_event: dict[str, Any] | None,
+) -> str:
+    """Classify a canonical row into one of five event types.
+
+    Classification order (first match wins):
+    1. test_event        — exit_reason is a test marker or PnL is a round test value
+    2. settlement_event  — exit_reason indicates binary market settlement
+    3. forced_exit_legacy — forced closure without entry metadata
+    4. signal_driven_trade — has replay_key, ev, and decision context (usable for backtest)
+    5. unknown_legacy    — everything else (unclassifiable grade D)
+    """
+    exit_reason = str(row.get("exit_reason") or "").lower()
+    pnl = row.get("realized_pnl")
+    has_rkey = bool(row.get("replay_key"))
+    has_ev = row.get("ev") is not None
+    has_open = open_event is not None
+    has_close = close_event is not None
+
+    if exit_reason in _TEST_EXIT_REASONS:
+        return "test_event"
+
+    # Round PnL values with no signal context strongly suggest test/synthetic events
+    if pnl is not None and not has_ev and not has_rkey:
+        try:
+            if abs(round(float(pnl), 2)) in _ROUND_PNL_VALUES:
+                return "test_event"
+        except (TypeError, ValueError):
+            pass
+
+    if exit_reason in _SETTLEMENT_EXIT_REASONS:
+        return "settlement_event"
+
+    if exit_reason in _FORCED_EXIT_REASONS and not has_rkey:
+        return "forced_exit_legacy"
+
+    if has_rkey and has_ev and has_open and has_close:
+        return "signal_driven_trade"
+
+    if has_rkey and has_open and has_close:
+        return "signal_driven_trade_partial"
+
+    return "unknown_legacy"
+
+
+def _diagnose_grade_d(
+    row: dict[str, Any],
+    open_event: dict[str, Any] | None,
+    close_event: dict[str, Any] | None,
+) -> str:
+    """Return a short diagnostic code explaining why a grade D row is unmatched."""
+    has_rkey = bool(row.get("replay_key"))
+    has_pid = bool(row.get("position_id"))
+    exit_reason = str(row.get("exit_reason") or "").lower()
+    classification = row.get("event_classification", "")
+
+    if classification == "test_event":
+        return "test_event_no_signal_context"
+    if classification == "settlement_event":
+        return "settlement_event_no_open_matched"
+    if classification == "forced_exit_legacy":
+        return "forced_exit_no_replay_key"
+
+    if not has_rkey and open_event is None:
+        return "close_only_no_replay_key_legacy_schema"
+    if not has_rkey and close_event is not None:
+        return "close_missing_replay_key_cross_session"
+    if has_rkey and open_event is None:
+        return "close_has_replay_key_open_not_in_date_window"
+    if has_pid and not has_rkey:
+        return "position_id_only_run_id_mismatch"
+
+    return "unmatched_unknown"
+
+
 class CanonicalContextBuilder:
-    def __init__(self, base_dir: Path, dates: list[str]):
+    def __init__(self, base_dir: Path, dates: list[str], *, skip_risk_log: bool = True):
         self.base_dir = base_dir
         self.dates = dates
+        self.skip_risk_log = skip_risk_log
         
         # Loaded events
         self.opens: list[dict[str, Any]] = []
@@ -232,7 +319,8 @@ class CanonicalContextBuilder:
                 elif cat == "execution_log":
                     self.executions.extend(events)
                 elif cat == "risk_log":
-                    self.risks.extend(events)
+                    if not self.skip_risk_log:
+                        self.risks.extend(events)
                 elif cat == "path_truth":
                     self.path_truths.extend(events)
                     
@@ -631,7 +719,16 @@ class CanonicalContextBuilder:
             else:
                 grade = "A"
         row["data_quality_grade"] = grade
-        
+
+        # Event classification — what kind of trade is this?
+        row["event_classification"] = _classify_event(row, open_event, close_event)
+
+        # Grade D diagnosis — why was this row unmatched?
+        if grade == "D":
+            row["grade_d_diagnosis"] = _diagnose_grade_d(row, open_event, close_event)
+        else:
+            row["grade_d_diagnosis"] = None
+
         # Embed MFE/MAE if path truth checkpoints exist
         if path_events:
             row.update(self._compute_path_excursions(path_events, intended_price or fill_price or 0.50, filled_size or intended_size or 0.0))
@@ -692,6 +789,22 @@ class CanonicalContextBuilder:
             "missing_field_rates": missing_rates,
             "data_quality_grade_distribution": dict(grades),
             "join_confidence_distribution": dict(join_confs),
+            "event_classification_distribution": dict(Counter(r.get("event_classification", "unknown") for r in rows)),
+            "grade_d_diagnosis_distribution": dict(Counter(
+                r.get("grade_d_diagnosis", "n/a") for r in rows if r.get("data_quality_grade") == "D"
+            )),
+            "field_availability": {
+                "has_ev": sum(1 for r in rows if r.get("ev") is not None),
+                "has_size_sharp_at_entry": sum(1 for r in rows if r.get("size_sharp_at_entry") is not None),
+                "has_bankroll_rank": sum(1 for r in rows if r.get("bankroll_rank") is not None),
+                "has_replay_key": sum(1 for r in rows if r.get("replay_key")),
+                "has_bankroll": sum(1 for r in rows if r.get("bankroll") is not None),
+                "has_seconds_remaining": sum(1 for r in rows if r.get("seconds_remaining") is not None),
+                "signal_driven_trades": sum(1 for r in rows if r.get("event_classification") in
+                    ("signal_driven_trade", "signal_driven_trade_partial")),
+                "test_events_excluded": sum(1 for r in rows if r.get("event_classification") == "test_event"),
+                "total_rows": total_rows,
+            },
             "pnl_summary": {
                 "total_trades": len(pnls),
                 "win_rate": round(win_rate, 4),
@@ -701,8 +814,37 @@ class CanonicalContextBuilder:
                 "gross_loss": round(sum(losses), 4) if losses else 0.0,
                 "win_count": len(wins),
                 "loss_count": len(losses),
-            }
+            },
+            "signal_driven_pnl_summary": self._compute_signal_pnl(rows),
         }
+
+    def _compute_signal_pnl(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
+        """PnL stats for signal_driven_trade rows only (excludes test/settlement)."""
+        signal_rows = [r for r in rows if r.get("event_classification") in
+                       ("signal_driven_trade", "signal_driven_trade_partial")]
+        pnls = [r["realized_pnl"] for r in signal_rows if r.get("realized_pnl") is not None]
+        if not pnls:
+            return {"total_trades": 0, "win_rate": 0.0, "total_realized_pnl": 0.0}
+        wins = [p for p in pnls if p > 0]
+        losses = [p for p in pnls if p < 0]
+        return {
+            "total_trades": len(pnls),
+            "win_rate": round(len(wins) / len(pnls), 4),
+            "total_realized_pnl": round(sum(pnls), 4),
+            "avg_realized_pnl": round(sum(pnls) / len(pnls), 4),
+            "gross_profit": round(sum(wins), 4) if wins else 0.0,
+            "gross_loss": round(sum(losses), 4) if losses else 0.0,
+            "win_count": len(wins),
+            "loss_count": len(losses),
+            "high_conf_only": {
+                "total": sum(1 for r in signal_rows if r.get("join_confidence") == "HIGH"),
+                "win_rate": round(
+                    sum(1 for r in signal_rows if r.get("join_confidence") == "HIGH" and (r.get("realized_pnl") or 0) > 0) /
+                    max(1, sum(1 for r in signal_rows if r.get("join_confidence") == "HIGH")), 4
+                ),
+            },
+        }
+
 
 def uuid_hash_key(event: dict[str, Any]) -> str:
     # Fallback to hash of event dict representation if replay key is missing
@@ -716,6 +858,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--start-date", help="Range start date YYYY-MM-DD")
     parser.add_argument("--end-date", help="Range end date YYYY-MM-DD")
     parser.add_argument("--pretty", action="store_true", help="Format JSON output with indents")
+    parser.add_argument(
+        "--skip-risk-log",
+        action="store_true",
+        default=True,
+        help="Skip loading risk_log (default: True — risk data is indexed but never used in matching)",
+    )
+    parser.add_argument(
+        "--include-risk-log",
+        action="store_true",
+        help="Force-load risk_log despite large file size (overrides --skip-risk-log)",
+    )
     args = parser.parse_args(argv)
     
     base_dir = Path(args.base_dir)
@@ -741,8 +894,11 @@ def main(argv: list[str] | None = None) -> int:
         print("Error: No dates to process.", file=sys.stderr)
         return 1
         
+    skip_risk = not getattr(args, "include_risk_log", False)
     print(f"Processing {len(dates)} dates: {dates[0]} to {dates[-1]}")
-    builder = CanonicalContextBuilder(base_dir, dates)
+    if skip_risk:
+        print("Note: risk_log skipped (--include-risk-log to force). risk_by_run_id is unused in matching.")
+    builder = CanonicalContextBuilder(base_dir, dates, skip_risk_log=skip_risk)
     builder.load_all()
     rows, summary = builder.compile()
     
