@@ -1034,6 +1034,25 @@
         "docs/reports/LIVE_FILL_LOOP_IMPLEMENTATION_001.md"
       ],
       "notes": "COMPLETED — 19+128 tests pass. fill_confirmed gate added. zero-status bug addressed."
+    },
+    {
+      "priority": 4.1,
+      "task_id": "LIVE_RECONCILIATION_TIMER_IMPLEMENTATION_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 4,
+      "description": "Add _pending_live_orders tracking, _poll_pending_live_orders(), and periodic polling every N cycles. live_reconciliation_interval_cycles setting.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "config/settings.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/LIVE_RECONCILIATION_TIMER_IMPLEMENTATION_001.md"
+      ],
+      "notes": "COMPLETED — 29+128 tests pass. Pending order tracking and periodic reconciliation working."
     }
   ]
 }

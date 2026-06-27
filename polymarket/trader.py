@@ -515,6 +515,9 @@ class PolymarketTrader:
         self._session_start_monotonic: float = time.monotonic()
         self._loop_exception_count: int = 0
         self._cockpit_probe_counts: dict[str, int] = {"zero_size": 0, "cycle_selection": 0}
+        # P0.3 pending live order tracking: order_id → OrderReceipt for orders
+        # submitted but not yet fill-confirmed. Polled each cycle.
+        self._pending_live_orders: dict[str, object] = {}
         self._cycle_started_monotonic = 0.0
         self._cycle_started_at_utc = ""
         self._current_cycle_market_count = 0
@@ -6887,6 +6890,61 @@ class PolymarketTrader:
             )
         return True
 
+    def _poll_pending_live_orders(self) -> None:
+        """Poll pending live orders that were not fill-confirmed at submission time.
+
+        Called each cycle in live mode. Removes terminal orders from the pending
+        dict without modifying position tracker — reconcile_live_positions() handles
+        CLOB truth. This method only clears stale pending entries and emits events.
+        """
+        if self.settings.paper_trading or not self._pending_live_orders:
+            return
+        _fill_confirmed = {"filled", "matched"}
+        _terminal = {"filled", "matched", "cancelled", "canceled",
+                     "timeout_cancelled", "failed", "expired", "rejected"}
+        to_remove: list[str] = []
+        for order_id, orig_receipt in list(self._pending_live_orders.items()):
+            try:
+                updated = self.client.get_order_status(order_id, original=orig_receipt)
+                status = str(updated.status or "").lower()
+                if status in _fill_confirmed:
+                    LOGGER.info("[PENDING_FILL] Order %s now %s filled_size=%.6f",
+                                order_id, status, updated.filled_size)
+                    self._emit_quant_event(
+                        "log_execution",
+                        {
+                            "event": "pending_order_fill_confirmed",
+                            "order_id": order_id,
+                            "status": status,
+                            "filled_size": updated.filled_size,
+                            "remaining_size": updated.remaining_size,
+                            "mode": self._runtime_mode(),
+                        },
+                    )
+                    to_remove.append(order_id)
+                    # Position opening is handled by reconcile_live_positions()
+                    # which compares CLOB positions against local tracker state.
+                elif status in _terminal:
+                    LOGGER.info("[PENDING_TERMINAL] Order %s terminal status=%s",
+                                order_id, status)
+                    self._emit_quant_event(
+                        "log_execution",
+                        {
+                            "event": "pending_order_terminal",
+                            "order_id": order_id,
+                            "status": status,
+                            "mode": self._runtime_mode(),
+                        },
+                    )
+                    to_remove.append(order_id)
+                else:
+                    # Still pending — update stored receipt with latest
+                    self._pending_live_orders[order_id] = updated
+            except Exception as exc:
+                LOGGER.warning("[PENDING_POLL_FAILED] order=%s err=%s", order_id, exc)
+        for order_id in to_remove:
+            self._pending_live_orders.pop(order_id, None)
+
     def _reconcile_after_order_attempt(self) -> None:
         try:
             report = self.reconcile_live_positions()
@@ -9723,7 +9781,11 @@ class PolymarketTrader:
             self.settings.paper_trading  # paper always confirmed
             or (receipt is not None and str(receipt.status or "").lower() in _fill_confirmed_statuses)
         )
+        # Terminal statuses — order is done, no point polling
+        _terminal_statuses = {"filled", "matched", "cancelled", "canceled",
+                              "timeout_cancelled", "failed", "expired", "rejected"}
         if not _is_fill_confirmed and receipt is not None and not self.settings.paper_trading:
+            status_lower = str(receipt.status or "").lower()
             LOGGER.warning(
                 "[LIVE_FILL] Order %s status=%s — fill NOT confirmed; skipping position open. "
                 "Order may still be live on CLOB. Reconciliation will track it.",
@@ -9741,6 +9803,11 @@ class PolymarketTrader:
                     "mode": self._runtime_mode(),
                 },
             )
+            # Track non-terminal pending orders for cross-cycle status polling
+            if status_lower not in _terminal_statuses and receipt.order_id and receipt.order_id != "unknown":
+                self._pending_live_orders[receipt.order_id] = receipt
+                LOGGER.info("[PENDING_ORDER] Tracking order %s (status=%s) for cross-cycle polling",
+                            receipt.order_id, receipt.status)
 
         if receipt is not None and _is_fill_confirmed:
             opened_pos = self.tracker.open_position(
@@ -12478,6 +12545,11 @@ class PolymarketTrader:
 
         self._ensure_connected()
         report = self.reconcile_live_positions()
+        # P0.3: Poll pending live orders each N cycles in live mode
+        if not self.settings.paper_trading:
+            _recon_interval = int(getattr(self.settings, "live_reconciliation_interval_cycles", 5))
+            if _recon_interval > 0 and self._cycle_count % _recon_interval == 0:
+                self._poll_pending_live_orders()
         self._update_bankroll_state(fetch_live_cash=not self.settings.paper_trading)
         self._maybe_emit_risk_state_event(reason="cycle_start")
         self._maybe_emit_system_health(reason="cycle_start")
