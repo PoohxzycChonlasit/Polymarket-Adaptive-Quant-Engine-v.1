@@ -198,10 +198,32 @@ class TestWhyDeferred:
         assert any("BATCH_3D" in n or "PAUSE" in str(out.get("gate_verdict", "")) for n in all_nodes) or \
                out.get("deferred_by") is not None
 
+    def test_why_deferred_batch3d_returns_pause_verdict(self, capsys, graph):
+        cmd_why_deferred(graph, "BATCH_3D_GATE_CHECK_001", pretty=False)
+        out = json.loads(capsys.readouterr().out)
+
+        assert out["status"] in ("PASS", "GATE")
+        assert out["gate_verdict"] == "PAUSE_BATCH_3D_DEFER"
+        assert any("PAUSE_BATCH_3D_DEFER" in json.dumps(item) for item in out["evidence"])
+        assert any("docs/audits/BATCH_3D_GATE_CHECK_001.md" in json.dumps(item) for item in out["evidence"])
+
+    def test_why_deferred_batch3d_returns_deferred_methods(self, capsys, graph):
+        cmd_why_deferred(graph, "BATCH_3D_GATE_CHECK_001", pretty=False)
+        out = json.loads(capsys.readouterr().out)
+
+        assert "_phase2_complete_lifecycle_observability" in out["deferred_methods"]
+        assert "_phase2_observability_payload" in out["deferred_methods"]
+
     def test_why_deferred_missing_target(self, capsys, graph):
         cmd_why_deferred(graph, "nonexistent_task_xyz", pretty=False)
         out = json.loads(capsys.readouterr().out)
         assert out["status"] == "DEGRADED"
+
+    def test_why_deferred_missing_target_returns_degraded(self, capsys, graph):
+        cmd_why_deferred(graph, "missing_deferred_target_zzz", pretty=False)
+        out = json.loads(capsys.readouterr().out)
+        assert out["status"] == "DEGRADED"
+        assert "TARGET_NOT_IN_GRAPH" in out["stop_conditions"]
 
     def test_why_deferred_deferred_method_has_evidence(self, capsys, graph):
         cmd_why_deferred(graph, "_phase2_observability_payload", pretty=False)

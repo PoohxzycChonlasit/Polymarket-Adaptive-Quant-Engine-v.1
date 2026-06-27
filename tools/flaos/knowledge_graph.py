@@ -360,35 +360,79 @@ def cmd_why_deferred(graph: KnowledgeGraph, target: str, pretty: bool) -> int:
     evidence = []
     deferred_info: dict[str, Any] = {}
 
-    # Find deferred_by edges FROM this node or TO this node's methods
-    deferred_edges = [e for e in graph.adj_out.get(target_id, []) if e.get("edge_type") == "deferred_by"]
-    # Also check if this is a task node with deferred methods
-    if not deferred_edges and node.get("node_type") == "task":
-        deferred_edges = [e for e in graph.edges if e.get("edge_type") == "deferred_by"
-                         and e.get("to_node") in graph.adj_in.get(target_id, [])]
+    def add_unique(items: list[str], item: str | None) -> None:
+        if item and item not in items:
+            items.append(item)
 
+    def display_name(node_id: str) -> str:
+        graph_node = graph.nodes.get(node_id, {})
+        return graph_node.get("name") or node_id.rsplit(".", 1)[-1].split(":", 1)[-1]
+
+    suffix = target_id.split(":", 1)[-1]
+    audit_ids: list[str] = []
+    deferred_edges: list[dict[str, Any]] = []
+
+    if node.get("node_type") == "audit":
+        add_unique(audit_ids, target_id)
+
+    audit_guess = f"audit:{suffix}"
+    if audit_guess in graph.nodes:
+        add_unique(audit_ids, audit_guess)
+
+    # Gather direct deferral edges for function targets and audit-linked task targets.
+    for edge in graph.edges:
+        if edge.get("edge_type") != "deferred_by":
+            continue
+        from_node = edge.get("from_node", "")
+        to_node = edge.get("to_node", "")
+        if from_node == target_id or to_node == target_id or to_node in audit_ids:
+            deferred_edges.append(edge)
+            add_unique(audit_ids, to_node if graph.nodes.get(to_node, {}).get("node_type") == "audit" else None)
+
+    # Once an audit is identified, include all methods deferred by that audit.
+    for audit_id in list(audit_ids):
+        for edge in graph.adj_in.get(audit_id, []):
+            if edge.get("edge_type") == "deferred_by" and edge not in deferred_edges:
+                deferred_edges.append(edge)
+
+    deferred_methods = []
+    deferred_method_nodes = []
     for edge in deferred_edges:
         audit_id = edge.get("to_node", "")
         audit_node = graph.nodes.get(audit_id, {})
-        deferred_info["deferred_by"] = audit_id
-        deferred_info["gate_verdict"] = audit_node.get("verdict", "UNKNOWN")
-        evidence.append({"node_id": audit_id, "grade": audit_node.get("evidence_grade", "B"),
-                         "description": f"Gate verdict: {audit_node.get('verdict', 'UNKNOWN')}"})
-        affected_nodes.append(audit_id)
-        affected_edges.append(edge.get("edge_id", ""))
+        method_id = edge.get("from_node", "")
+        add_unique(deferred_method_nodes, method_id)
+        add_unique(deferred_methods, display_name(method_id))
+        add_unique(affected_nodes, method_id)
+        add_unique(affected_nodes, audit_id)
+        add_unique(affected_edges, edge.get("edge_id", ""))
+        if audit_node.get("node_type") == "audit":
+            add_unique(audit_ids, audit_id)
+
+    for audit_id in audit_ids:
+        audit_node = graph.nodes.get(audit_id, {})
+        if not audit_node:
+            continue
+        verdict = audit_node.get("verdict", "UNKNOWN")
+        deferred_info.setdefault("deferred_by", audit_id)
+        deferred_info.setdefault("gate_verdict", verdict)
+        evidence.append({
+            "node_id": audit_id,
+            "grade": audit_node.get("evidence_grade", "B"),
+            "type": "audit",
+            "description": f"Gate verdict: {verdict}",
+            "path": audit_node.get("path", ""),
+        })
 
     # Find QS blocks edges to deferred methods
     safety_findings = graph.safety_check(target_id)
 
-    # If this is a task, also find methods deferred through it
-    deferred_methods = []
-    if node.get("node_type") == "task":
-        for e in graph.edges:
-            if e.get("edge_type") == "deferred_by" and e.get("to_node", "").endswith(target_id.split(":")[-1]):
-                deferred_methods.append(e.get("from_node"))
     deferred_info["deferred_methods"] = deferred_methods
+    deferred_info["deferred_method_nodes"] = deferred_method_nodes
+    if audit_ids:
+        deferred_info["deferred_by_nodes"] = audit_ids
 
-    status = "PASS" if (deferred_info or safety_findings) else "DEGRADED"
+    status = "PASS" if (audit_ids or deferred_methods or safety_findings) else "DEGRADED"
     result = _output("why_deferred", target, status, safety_findings, affected_nodes, affected_edges,
                      evidence, "GATE", [], 0.9, False, deferred_info)
     _print(result, pretty)
