@@ -130,9 +130,15 @@ class TelegramAlertLayer:
         return self._send_with_cooldown("entry", key, formatted, context, self.cooldown_seconds)
 
     def notify_order_cancelled(self, message: str = "", **context: Any) -> AlertResult:
-        """Live order cancelled, timeout-cancelled, or rejected."""
+        """Live order cancelled or rejected (non-timeout terminal states)."""
         key = self._dedup_key("order_cancelled", message, context)
         formatted = self._format_message("ORDER_CANCELLED", message, context)
+        return self._send_with_cooldown("risk", key, formatted, context, self.cooldown_seconds)
+
+    def notify_order_timeout_cancelled(self, message: str = "", **context: Any) -> AlertResult:
+        """Live order cancelled because it timed out waiting for a fill."""
+        key = self._dedup_key("order_timeout_cancelled", message, context)
+        formatted = self._format_message("ORDER_TIMEOUT_CANCELLED", message, context)
         return self._send_with_cooldown("risk", key, formatted, context, self.cooldown_seconds)
 
     def _send_with_cooldown(
@@ -1005,3 +1011,7 @@ def notify_order_filled(message: str = "", **context: Any) -> AlertResult:
 
 def notify_order_cancelled(message: str = "", **context: Any) -> AlertResult:
     return get_telegram_alert_layer().notify_order_cancelled(message, **context)
+
+
+def notify_order_timeout_cancelled(message: str = "", **context: Any) -> AlertResult:
+    return get_telegram_alert_layer().notify_order_timeout_cancelled(message, **context)

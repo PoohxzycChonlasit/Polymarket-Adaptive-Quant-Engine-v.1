@@ -7250,14 +7250,23 @@ class PolymarketTrader:
                             "mode": self._runtime_mode(),
                         },
                     )
-                    # P0.4: Notify operator of cancellation/timeout
-                    self._notify_telegram(
-                        "notify_order_cancelled",
-                        f"Live order {status} | id={order_id}",
-                        dedup_key=f"order_cancelled:{order_id}:{status}",
-                        order_id=order_id,
-                        status=status,
-                    )
+                    # P0.4: Notify operator — distinct helper for timeout_cancelled
+                    if status == "timeout_cancelled":
+                        self._notify_telegram(
+                            "notify_order_timeout_cancelled",
+                            f"Live order timeout_cancelled | id={order_id}",
+                            dedup_key=f"order_timeout_cancelled:{order_id}",
+                            order_id=order_id,
+                            status=status,
+                        )
+                    else:
+                        self._notify_telegram(
+                            "notify_order_cancelled",
+                            f"Live order {status} | id={order_id}",
+                            dedup_key=f"order_cancelled:{order_id}:{status}",
+                            order_id=order_id,
+                            status=status,
+                        )
                     to_remove.append(order_id)
                 else:
                     # Still pending — update stored receipt with latest
@@ -8602,6 +8611,15 @@ class PolymarketTrader:
             allowance_balance,
             report["wallet"]["approve_required"],
             report["wallet"]["readiness_status"],
+        )
+        _sc = signing_check
+        LOGGER.info(
+            "[VERIFY SIGNING] status=%s | has_signer=%s | has_builder=%s | signature_type=%s | message=%s",
+            _sc.get("status", "UNKNOWN"),
+            _sc.get("has_signer", False),
+            _sc.get("has_builder", False),
+            _sc.get("sig_type", actual_sig_type),
+            _sc.get("message", "signing check not run"),
         )
 
         fetched_cash = 0.0

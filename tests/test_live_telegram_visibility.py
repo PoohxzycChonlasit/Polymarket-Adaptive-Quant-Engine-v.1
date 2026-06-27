@@ -30,6 +30,7 @@ from utils.telegram_alerts import (
     notify_order_submitted,
     notify_order_filled,
     notify_order_cancelled,
+    notify_order_timeout_cancelled,
 )
 
 
@@ -77,10 +78,16 @@ class TestNewMethodsExist:
         layer = TelegramAlertLayer()
         assert hasattr(layer, "notify_order_cancelled")
 
+    def test_notify_order_timeout_cancelled_exists(self):
+        layer = TelegramAlertLayer()
+        assert hasattr(layer, "notify_order_timeout_cancelled")
+        assert callable(layer.notify_order_timeout_cancelled)
+
     def test_module_level_helpers_exist(self):
         from utils import telegram_alerts as ta
         for fn in ("notify_allowance_missing", "notify_signing_not_ready",
-                   "notify_order_submitted", "notify_order_filled", "notify_order_cancelled"):
+                   "notify_order_submitted", "notify_order_filled",
+                   "notify_order_cancelled", "notify_order_timeout_cancelled"):
             assert hasattr(ta, fn) and callable(getattr(ta, fn))
 
 
@@ -114,6 +121,10 @@ class TestNewMethodsReturnAlertResult:
 
     def test_order_cancelled_no_notifier(self):
         result = self._layer_no_notifier().notify_order_cancelled("test")
+        assert isinstance(result, AlertResult)
+
+    def test_order_timeout_cancelled_no_notifier(self):
+        result = self._layer_no_notifier().notify_order_timeout_cancelled("test")
         assert isinstance(result, AlertResult)
 
 
@@ -161,7 +172,7 @@ class TestTelegramWiring:
                         if c[0][0] == "notify_order_cancelled"]
         assert len(notify_calls) == 1
 
-    def test_poll_timeout_cancelled_calls_notify_order_cancelled(self):
+    def test_poll_timeout_cancelled_calls_notify_order_timeout_cancelled(self):
         from polymarket.trader import PolymarketTrader
         trader = self._make_trader(paper=False)
         tc = FakeReceipt(order_id="ord_tc", status="timeout_cancelled", filled_size=0.0)
@@ -170,9 +181,13 @@ class TestTelegramWiring:
 
         PolymarketTrader._poll_pending_live_orders(trader)
 
-        notify_calls = [c for c in trader._notify_telegram.call_args_list
-                        if c[0][0] == "notify_order_cancelled"]
-        assert len(notify_calls) == 1
+        # timeout_cancelled must call notify_order_timeout_cancelled, NOT notify_order_cancelled
+        timeout_calls = [c for c in trader._notify_telegram.call_args_list
+                         if c[0][0] == "notify_order_timeout_cancelled"]
+        assert len(timeout_calls) == 1
+        cancelled_calls = [c for c in trader._notify_telegram.call_args_list
+                           if c[0][0] == "notify_order_cancelled"]
+        assert len(cancelled_calls) == 0
 
     def test_paper_mode_poll_skips_all_notifications(self):
         from polymarket.trader import PolymarketTrader
