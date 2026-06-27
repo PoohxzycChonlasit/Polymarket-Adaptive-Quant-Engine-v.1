@@ -230,14 +230,26 @@
     {
       "priority": 4.0,
       "task_id": "RUNTIME_LOG_GOVERNANCE_EXECUTE_AUTHORIZATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 8,
       "description": "Explicitly authorize log governance execute --confirm after reviewing gate audit. Run plan + dry-run one final time, then execute --confirm if all checks still pass.",
       "blocked_by": null,
       "allowed_scope": ["logs/", "docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_001.md"],
-      "notes": "Requires explicit user authorization. Estimated reclaim: ~1.4 GB. Permanent deletion — no rollback. JSONL event stream preserves full trading history."
+      "notes": "COMPLETED — 800 deleted, 1,323.7 MB reclaimed, 0 failures. logs/ reduced from 1.6 GB to 303 MB."
+    },
+    {
+      "priority": 3.9,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_EXECUTE_002",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Run second execute pass to clean remaining 56 session log groups not covered by 800-action cap in execute 001.",
+      "blocked_by": null,
+      "allowed_scope": ["logs/", "docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_002.md"],
+      "notes": "Estimated additional reclaim: ~70-100 MB. Same safety policy applies — session guard required, age >7 days, PID not running."
     },
     {
       "priority": 5,
