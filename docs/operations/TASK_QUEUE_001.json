@@ -618,14 +618,26 @@
     {
       "priority": 1.0,
       "task_id": "MARKET_STATE_CLASSIFIER_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
-      "task_class": 7,
-      "description": "Implement the Market State Classifier algorithm to identify volatility and trend regimes.",
+      "task_class": 2,
+      "description": "Design Market State Classifier v1 specifying volatility and trend regimes.",
       "blocked_by": "LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001",
-      "allowed_scope": ["polymarket/", "docs/reports/", "tests/"],
-      "outputs": ["polymarket/regime_diagnostics.py", "docs/reports/MARKET_STATE_CLASSIFIER_001.md"],
-      "notes": "First Quant Runtime feature task. STANDARD tier."
+      "allowed_scope": ["docs/audits/", "docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/audits/MARKET_STATE_CLASSIFIER_GATE_001.md", "docs/architecture/MARKET_STATE_CLASSIFIER_001.md", "docs/reports/MARKET_STATE_CLASSIFIER_DESIGN_001.md"],
+      "notes": "First Quant Runtime design task."
+    },
+    {
+      "priority": 0.9,
+      "task_id": "MARKET_STATE_CLASSIFIER_OBSERVABILITY_IMPLEMENTATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "Implement passive telemetry fields for liquidity, price standard deviation, and book imbalance.",
+      "blocked_by": "MARKET_STATE_CLASSIFIER_001",
+      "allowed_scope": ["tools/", "docs/reports/", "tests/", "utils/"],
+      "outputs": ["docs/reports/MARKET_STATE_CLASSIFIER_OBSERVABILITY_IMPLEMENTATION_001.md"],
+      "notes": "Class 5 passive observability loop task."
     }
   ]
 }
