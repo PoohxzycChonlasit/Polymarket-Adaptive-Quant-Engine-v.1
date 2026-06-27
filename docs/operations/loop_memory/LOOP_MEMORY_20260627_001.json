@@ -739,5 +739,29 @@
       "jsonl_never_deleted_tested": true
     },
     "next_recommendation": "RUNTIME_LOG_GOVERNANCE_DRY_RUN_001 — LOOP tier Class 0. Run inspect + plan + dry-run against real logs/ to validate expected actions before execute."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_LOG_GOVERNANCE_DRY_RUN_001",
+    "task_class": 0,
+    "scope": ["docs/reports/RUNTIME_LOG_GOVERNANCE_DRY_RUN_001.md"],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add runtime log governance dry run"],
+    "acceptance_criteria": {
+      "bootstrap_healthy": true,
+      "session_guard_pass": true,
+      "all_commands_ran_read_only": true,
+      "no_real_files_mutated": true,
+      "policy_mismatch_documented": true
+    },
+    "key_finding": "0 DELETE candidates — N>5 policy does not match actual structure (max N=5). Log volume from 299 old session groups. Session-age-based cleanup needed. Estimated reclaim after correction: ~1.6 GB.",
+    "estimated_reclaim_bytes": 0,
+    "action_count": 0,
+    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001 — LOOP tier Class 4. Add session-age cleanup to log_governance.py. Parse PID+date from filename; delete groups where age > 7 days AND PID not running."
   }
 ]

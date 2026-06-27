@@ -196,14 +196,24 @@
     {
       "priority": 4.2,
       "task_id": "RUNTIME_LOG_GOVERNANCE_DRY_RUN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Run log_governance.py inspect, plan, and dry-run against real logs/ and runtime/ dirs. Verify expected actions without executing. No file mutations.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_DRY_RUN_001.md"],
-      "notes": "Validate estimated 1.4 GB reclaim. Check no current-day JSONL or active log in DELETE candidates."
+      "finding": "0 DELETE candidates — N>5 policy does not match actual structure (max N=5). Session-age-based cleanup needed."
+    },
+    {
+      "priority": 4.1,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Update log_governance.py to add session-age-based cleanup: parse session PID+date from log filename, delete groups where session > 7 days old AND PID not running. Estimated reclaim: ~1.6 GB.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
+      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001.md"],
+      "notes": "Small code change: one new collector function + patch to cmd_plan/cmd_execute. Update tests with session fixture. URGENCY HIGH."
     },
     {
       "priority": 5,
