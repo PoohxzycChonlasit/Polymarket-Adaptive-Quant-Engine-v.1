@@ -56,5 +56,28 @@
       "no_root_markdown_created": true
     },
     "next_recommendation": "Loop memory enablement task is next. Then Batch 3C gate check."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "LOOP_SYSTEM_SMOKE_TEST_001",
+    "task_class": 3,
+    "scope": [
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json",
+      "docs/reports/LOOP_SYSTEM_SMOKE_TEST_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: smoke test loop memory workflow"],
+    "acceptance_criteria": {
+      "memory_sufficient_without_full_reports": true,
+      "all_context_recovered_from_json": true,
+      "no_runtime_files_changed": true,
+      "no_root_markdown_created": true
+    },
+    "next_recommendation": "Use loop memory as first-read context for future safe workflow tasks. Proceed to Batch 3C gate check."
   }
 ]
