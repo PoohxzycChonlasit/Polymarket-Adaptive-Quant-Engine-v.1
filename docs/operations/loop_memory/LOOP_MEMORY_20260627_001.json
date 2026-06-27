@@ -1731,7 +1731,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "A",
-    "commits": ["pending-readiness-commit"],
+    "commits": ["679abda"],
     "commit_messages": ["docs: add live trading readiness gate"],
     "acceptance_criteria": {
       "bootstrap_healthy": true,
