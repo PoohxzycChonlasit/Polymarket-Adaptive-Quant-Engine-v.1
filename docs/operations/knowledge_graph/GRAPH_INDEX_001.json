@@ -44,7 +44,7 @@
     "reads": 1
   },
   "safety_rules_count": 10,
-  "permanent_methods_count": 16,
+  "permanent_methods_count": 6,
   "deferred_methods_count": 2,
   "extracted_methods_count": 12,
   "nodes_by_id": {
@@ -356,7 +356,7 @@
     },
     "commit:e76581fb": {
       "node_type": "commit",
-      "name": "commit:e76581fb",
+      "name": null,
       "tags": [
         "batch_1",
         "presentation"
@@ -365,7 +365,7 @@
     },
     "commit:c3b2bd2": {
       "node_type": "commit",
-      "name": "commit:c3b2bd2",
+      "name": null,
       "tags": [
         "batch_2a",
         "lifecycle"
@@ -374,7 +374,7 @@
     },
     "commit:3c24111": {
       "node_type": "commit",
-      "name": "commit:3c24111",
+      "name": null,
       "tags": [
         "batch_3a",
         "observability"
@@ -383,7 +383,7 @@
     },
     "commit:a491820": {
       "node_type": "commit",
-      "name": "commit:a491820",
+      "name": null,
       "tags": [
         "batch_3b1"
       ],
@@ -391,7 +391,7 @@
     },
     "commit:381cbc4": {
       "node_type": "commit",
-      "name": "commit:381cbc4",
+      "name": null,
       "tags": [
         "batch_3b2"
       ],
@@ -399,7 +399,7 @@
     },
     "commit:6872a07": {
       "node_type": "commit",
-      "name": "commit:6872a07",
+      "name": null,
       "tags": [
         "batch_3b_dedup"
       ],
@@ -407,7 +407,7 @@
     },
     "commit:3c5b781": {
       "node_type": "commit",
-      "name": "commit:3c5b781",
+      "name": null,
       "tags": [
         "batch_3c"
       ],
@@ -415,7 +415,7 @@
     },
     "task:BATCH_3D_GATE_CHECK_001": {
       "node_type": "task",
-      "name": "task:BATCH_3D_GATE_CHECK_001",
+      "name": null,
       "tags": [
         "batch_3d",
         "gate_check",
@@ -425,7 +425,7 @@
     },
     "task:RUNTIME_LOG_GOVERNANCE_EXECUTE_001": {
       "node_type": "task",
-      "name": "task:RUNTIME_LOG_GOVERNANCE_EXECUTE_001",
+      "name": null,
       "tags": [
         "maintenance",
         "log_governance"
@@ -443,7 +443,7 @@
     },
     "rtval:POST_BATCH_3B1": {
       "node_type": "runtime_validation",
-      "name": "rtval:POST_BATCH_3B1",
+      "name": null,
       "tags": [
         "batch_3b1",
         "validated"
@@ -452,7 +452,7 @@
     },
     "rtval:POST_BATCH_3B2": {
       "node_type": "runtime_validation",
-      "name": "rtval:POST_BATCH_3B2",
+      "name": null,
       "tags": [
         "batch_3b2",
         "validated"
@@ -461,7 +461,7 @@
     },
     "rtval:POST_BATCH_3C": {
       "node_type": "runtime_validation",
-      "name": "rtval:POST_BATCH_3C",
+      "name": null,
       "tags": [
         "batch_3c",
         "validated"
@@ -613,7 +613,7 @@
     },
     "role:29_ARCHITECTURE_GOVERNANCE": {
       "node_type": "agent_role",
-      "name": "role:29_ARCHITECTURE_GOVERNANCE",
+      "name": null,
       "tags": [
         "agent_role"
       ],
@@ -621,7 +621,7 @@
     },
     "role:02_CODE_ARCHITECT": {
       "node_type": "agent_role",
-      "name": "role:02_CODE_ARCHITECT",
+      "name": null,
       "tags": [
         "agent_role"
       ],
@@ -629,7 +629,7 @@
     },
     "mem:LOOP_MEMORY_2026-06-27": {
       "node_type": "memory_entry",
-      "name": "mem:LOOP_MEMORY_2026-06-27",
+      "name": null,
       "tags": [
         "loop_memory",
         "v2"

@@ -498,14 +498,26 @@
     {
       "priority": 2.1,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
       "description": "Fix known Runtime Knowledge Graph health seed limitations: orphan placeholder extracted_to edges and permanent-node protection coverage.",
       "blocked_by": null,
       "allowed_scope": ["docs/operations/knowledge_graph/", "tests/", "docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001.md"],
-      "notes": "Next after smoke test retry. Known orphan edges: E032, E033, E034, E035."
+      "notes": "COMPLETED - graph-health now HEALTHY; orphaned_edges=0; permanent_nodes_with_protection=6/6."
+    },
+    {
+      "priority": 2.0,
+      "task_id": "REASONING_ENGINE_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design the reasoning engine after RKG Python tool and graph seed health are ready.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/architecture/", "docs/reports/"],
+      "outputs": ["docs/architecture/REASONING_ENGINE_001.md", "docs/reports/REASONING_ENGINE_DESIGN_001.md"],
+      "notes": "Next after RKG graph-health fix."
     },
     {
       "priority": 5,

@@ -42,7 +42,7 @@
   },
   "coverage": {
     "safety_rules_mapped": 10,
-    "permanent_methods": 6,
+    "permanent_methods": 5,
     "permanent_fields": 1,
     "deferred_methods": 2,
     "extracted_methods_batch_3b1": 2,
@@ -56,7 +56,13 @@
     "qs_001_to_010_all_have_protects_edge": true,
     "deferred_methods_have_deferred_by_edge": true,
     "extracted_methods_have_extracted_to_edge": true,
-    "all_commits_have_validated_by_or_implemented_by": true
+    "all_commits_have_validated_by_or_implemented_by": true,
+    "status": "HEALTHY",
+    "orphaned_edges": 0,
+    "all_edge_nodes_resolve": true,
+    "permanent_nodes": 6,
+    "permanent_nodes_with_protection": 6,
+    "permanent_nodes_have_protection": true
   },
   "evidence_grade_distribution": {
     "B": 25,
