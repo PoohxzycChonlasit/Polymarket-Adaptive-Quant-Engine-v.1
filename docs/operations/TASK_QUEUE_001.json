@@ -486,14 +486,26 @@
     {
       "priority": 2.2,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Retry Python RKG smoke test after why-deferred parity fix. Verify all four query outputs match manual graph query template.",
       "blocked_by": null,
       "allowed_scope": ["docs/reports/", "docs/operations/graph_queries/"],
       "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001.md"],
-      "notes": "Next task after eb4f1ff why-deferred parity fix."
+      "notes": "COMPLETED - 4/4 decision-bearing queries pass. graph-health remains DEGRADED only for known orphan seed edges."
+    },
+    {
+      "priority": 2.1,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Fix known Runtime Knowledge Graph health seed limitations: orphan placeholder extracted_to edges and permanent-node protection coverage.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/operations/knowledge_graph/", "tests/", "docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001.md"],
+      "notes": "Next after smoke test retry. Known orphan edges: E032, E033, E034, E035."
     },
     {
       "priority": 5,

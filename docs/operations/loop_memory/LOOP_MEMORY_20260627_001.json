@@ -1375,6 +1375,42 @@
       "no_runtime_files_changed": true
     },
     "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001",
+    "task_class": 0,
+    "scope": [
+      "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json",
+      "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add RKG Python tool smoke test retry report"],
+    "queries_passed": 4,
+    "decision_bearing_queries": [
+      "safety-check _last_quote_lineage_context",
+      "why-deferred BATCH_3D_GATE_CHECK_001",
+      "evidence-for-commit 3c5b781",
+      "blast-radius TraderObservabilityHelper"
+    ],
+    "graph_health": "DEGRADED_KNOWN_SEED_LIMITATION",
+    "known_orphan_edges": ["E032", "E033", "E034", "E035"],
+    "acceptance_criteria": {
+      "bootstrap_diagnose_healthy": true,
+      "bootstrap_pretty_points_to_retry": true,
+      "four_of_four_decision_queries_pass": true,
+      "why_deferred_parity_fixed": true,
+      "graph_health_degraded_only_known_orphan_edges": true,
+      "no_runtime_files_changed": true
+    },
+    "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001"
   }
-
 ]
