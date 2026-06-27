@@ -426,14 +426,26 @@
     {
       "priority": 2.6,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Smoke test: execute all 4 template query examples against live seeded graph JSONL. Verify outputs match expected results. Proves template usable before mandating for CLASS 6+ contracts.",
       "blocked_by": null,
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001.md"],
-      "notes": "Class 0 read-only. No file mutations. Read REPO_GRAPH_NODES_001.jsonl + EDGES, execute 4 queries, compare to template examples."
+      "notes": "COMPLETED — 4/4 queries matched. Template sufficient. Contract-ready attachment blocks verified."
+    },
+    {
+      "priority": 2.5,
+      "task_id": "GRAPH_QUERY_POLICY_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Update PROJECT_RULES.md and AGENTS.md to mandate graph query (safety_check minimum) for all CLASS 6+ Execution Contracts. Add GRAPH_QUERY_TEMPLATE_001.md to output location policy.",
+      "blocked_by": null,
+      "allowed_scope": ["PROJECT_RULES.md", "AGENTS.md", "docs/reports/"],
+      "outputs": ["docs/reports/GRAPH_QUERY_POLICY_ENABLEMENT_001.md"],
+      "notes": "Governance only. Mandates safety_check query in contract before any refactor that touches Python files."
     },
     {
       "priority": 5,

@@ -1256,5 +1256,32 @@
       "no_python_implemented": true
     },
     "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001 — LOOP tier Class 0. Execute 4 template queries against live seeded JSONL to verify outputs."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001",
+    "task_class": 0,
+    "scope": [
+      "docs/operations/graph_queries/GRAPH_QUERY_SMOKE_TEST_RESULTS_001.md",
+      "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: smoke test runtime knowledge graph queries"],
+    "graph_query_smoke_test_passed": true,
+    "acceptance_criteria": {
+      "4_of_4_queries_matched_expected": true,
+      "safety_check_q1_stop_confirmed": true,
+      "why_deferred_q2_pause_confirmed": true,
+      "evidence_q3_grade_a_confirmed": true,
+      "blast_radius_q4_no_qs_violations": true,
+      "contract_attachments_all_valid": true,
+      "template_sufficient": true
+    },
+    "next_recommendation": "GRAPH_QUERY_POLICY_ENABLEMENT_001 — LOOP tier Class 3. Mandate safety_check query for CLASS 6+ in PROJECT_RULES.md and AGENTS.md."
   }
 ]
