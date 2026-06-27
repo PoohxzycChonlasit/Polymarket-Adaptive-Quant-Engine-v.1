@@ -515,8 +515,11 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "B",
-    "commits": ["d40baa0"],
-    "commit_messages": ["docs: add post long validation strategy review"],
+    "commits": ["d40baa0", "549eff1"],
+    "commit_messages": [
+      "docs: add post long validation strategy review",
+      "docs: set next workflow tier to STANDARD to support feature gate"
+    ],
     "files_changed": 4,
     "acceptance_criteria": {
       "long_validation_evidence_reviewed": true,
