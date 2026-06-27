@@ -112,7 +112,7 @@
     {
       "priority": 6,
       "task_id": "LONG_RUNTIME_VALIDATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Extended paper run validation (30+ minutes) to verify memory stability after Batch 3 extractions.",
@@ -120,6 +120,18 @@
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/LONG_RUNTIME_VALIDATION_001.md"],
       "notes": "Optional — run when available. Use LOOP tier Class 0. No code changes. Monitor event_stream_file_size growth rate."
+    },
+    {
+      "priority": 5.5,
+      "task_id": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Post-long validation refactor strategy review to align on the next refactoring direction after Batch 3 observability payload deferral.",
+      "blocked_by": "LONG_RUNTIME_VALIDATION_001",
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001.md"],
+      "notes": "Reviews project health, log files growth, and maps out target candidates for next phases."
     },
     {
       "priority": 5,
