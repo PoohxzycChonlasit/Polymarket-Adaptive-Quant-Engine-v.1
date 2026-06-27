@@ -1670,7 +1670,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-freeze-commit"],
+    "commits": ["190b840"],
     "commit_messages": ["docs: freeze flaos foundation v1"],
     "acceptance_criteria": {
       "flaos_foundation_v1_report_produced": true,
