@@ -34,9 +34,7 @@ from config.settings import Settings
 def test_settings_default_caps():
     """Verify settings default safety values are as expected."""
     # Test setting construction
-    settings = Settings.model_validate({
-        "paper_trading": True, # keep validation simple
-    })
+    settings = Settings(_env_file=None)
     assert settings.live_kill_switch_file == "runtime/KILL_SWITCH"
     assert settings.live_max_order_usd == 5.0
     assert settings.live_max_daily_loss_usd == 3.0

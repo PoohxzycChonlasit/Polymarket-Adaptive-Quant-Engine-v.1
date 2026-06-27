@@ -8493,15 +8493,26 @@ class PolymarketTrader:
             self._connected = False
             add_warning("auth_failed", required=True)
 
+        sig_type = self.settings.polymarket_signature_type
+        is_proxy = bool(self.settings.polymarket_proxy_wallet) or sig_type in (1, 2)
+        wallet_type = "PROXY" if is_proxy else "EOA"
+        actual_sig_type = 2 if self.settings.polymarket_proxy_wallet else sig_type
+        balance_source = "CLOB_COLLATERAL" if is_proxy else "ERC20_ALLOWANCE"
+
         allowance_status = "UNKNOWN"
         allowance_balance = 0.0
         allowance_amount = 0.0
+        _min_live_bet = float(getattr(self.settings, "micro_survival_min_position_size", 0.10))
+
         if self._connected:
             try:
                 allowance = self.client.get_balance_allowance(side=BUY)
                 allowance_balance = float(allowance.get("balance", 0.0) or 0.0)
                 allowance_amount = float(allowance.get("allowance", 0.0) or 0.0)
-                allowance_status = "OK" if allowance_amount > 0 or allowance_balance <= 0 else "MISSING"
+                if is_proxy:
+                    allowance_status = "OK" if allowance_balance >= _min_live_bet else "MISSING"
+                else:
+                    allowance_status = "OK" if allowance_amount > 0 or allowance_balance <= 0 else "MISSING"
                 if allowance_status == "MISSING":
                     add_warning("missing_allowance", required=True)
             except Exception:
@@ -8538,12 +8549,10 @@ class PolymarketTrader:
         # ── Enhanced allowance check using structured status ──────────────────
         allowance_detail: dict[str, object] = {}
         signing_check: dict[str, object] = {}
-        # Derive minimum needed from micro-tier min_bet setting
-        _min_live_bet = float(getattr(self.settings, "micro_survival_min_position_size", 0.10))
         if self._connected:
             try:
                 allowance_detail = self.client.check_allowance_status(needed=_min_live_bet)
-                if allowance_detail.get("status") != "OK":
+                if allowance_detail.get("status") not in ("OK", "OK_PROXY_COLLATERAL"):
                     add_warning("missing_allowance", required=True)
                 signing_check = self.client.verify_signing_capability()
                 if signing_check.get("status") != "OK":
@@ -8552,7 +8561,7 @@ class PolymarketTrader:
                 LOGGER.warning("[VERIFY] enhanced allowance/signing check failed: %s", exc)
 
         # Build manual approval instructions surfaced to operator
-        _allowance_ok = allowance_detail.get("status") == "OK"
+        _allowance_ok = allowance_detail.get("status") in ("OK", "OK_PROXY_COLLATERAL")
         _approve_instruction = (
             "USDC allowance is sufficient — no action required."
             if _allowance_ok
@@ -8577,7 +8586,23 @@ class PolymarketTrader:
             "signing_check": signing_check,
             "approve_required": allowance_detail.get("approve_required", allowance_status == "MISSING"),
             "approve_instruction": _approve_instruction,
+            "wallet_type": wallet_type,
+            "signature_type": actual_sig_type,
+            "balance_source": balance_source,
+            "collateral_balance": allowance_balance,
+            "readiness_status": allowance_detail.get("status", "UNKNOWN"),
         }
+
+        LOGGER.info(
+            "[VERIFY ALLOWANCE METADATA] wallet_type=%s | signature_type=%s | balance_source=%s | allowance=%.4f | collateral_balance=%.4f | approve_required=%s | readiness_status=%s",
+            wallet_type,
+            actual_sig_type,
+            balance_source,
+            allowance_amount,
+            allowance_balance,
+            report["wallet"]["approve_required"],
+            report["wallet"]["readiness_status"],
+        )
 
         fetched_cash = 0.0
         balance_source = "unverified"

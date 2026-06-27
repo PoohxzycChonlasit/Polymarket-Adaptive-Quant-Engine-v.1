@@ -1,29 +1,30 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001 complete - observability-only implementation ready for validation gate",
-    "last_completed_task":  "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001",
-    "last_commit":  "pending-at-report-time",
+    "current_phase":  "MICRO_LIVE_1USD_SUPERVISED_RUN_001 complete - supervised micro-live run completed, verified connectivity and telemetry",
+    "last_completed_task":  "MICRO_LIVE_1USD_SUPERVISED_RUN_001",
+    "last_commit":  "ed14faa51b7dd196fcd6041a274446f57e457c8d",
     "last_commit_message":  "feat: add observability-only size sharp engine",
-    "next_task":  "SIZE_SHARP_ENGINE_VALIDATION_GATE_001",
+    "next_task":  "QUANT_INTELLIGENCE_ENGINE_OFFLINE_BUILDER_001",
     "next_workflow_tier":  "STANDARD",
-    "working_tree_expected":  "dirty_candidate_ready_for_merge_review",
+    "working_tree_expected":  "clean",
     "batch_3c_started":  true,
     "blocked":  false,
     "active_question_status":  "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
     "refactor_state":  {
-                           "trader_py_lines":  12824,
+                           "trader_py_lines":  13467,
                            "completed_batches":  [
                                                      "Batch-1",
                                                      "Batch-2A",
                                                      "Batch-3A",
                                                      "Batch-3B-1",
                                                      "Batch-3B-2",
-                                                     "Batch-3B-dedup"
+                                                     "Batch-3B-dedup",
+                                                     "Batch-3C-observability"
                                                  ],
-                           "next_batch":  "Batch-3C",
+                           "next_batch":  "Batch-3D-risk-budget",
                            "architecture_master_plan":  "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
-                           "last_runtime_refactor_commit":  "381cbc4"
+                           "last_runtime_refactor_commit":  "ed14faa51b7dd196fcd6041a274446f57e457c8d"
                        },
     "workflow_governance":  {
                                 "loop_engineering_enabled":  true,
@@ -63,5 +64,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Size Sharp v1 implemented as observability-only scoring. It emits passive evaluation telemetry, carries fields into trade metadata/open/close, and compiles canonical builder fields. No risk, sizing, execution, order intent, dashboard, Telegram, replay policy, or live behavior changes. Report: docs/reports/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001.md"
+    "notes":  "Manual allowance approval check complete. Identified proxy wallet microstructure: since Signature Type 2 (Polymarket Proxy Wallet) holds funds directly in the CLOB exchange vault as collateral, standard ERC20 allowance is 0.00. The preflight check flags missing_allowance as a false positive. Verdict set to GO_WITH_WARNING."
 }

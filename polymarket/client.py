@@ -988,6 +988,14 @@ class PolymarketClient:
             "allowance": self._balance_raw_to_float(raw.get("allowance", raw.get("allowances", 0.0))),
         }
 
+    def _is_proxy_wallet(self) -> bool:
+        """Helper to safely determine if proxy wallet semantics apply, handling mock settings in tests."""
+        proxy_wallet = getattr(self.settings, "polymarket_proxy_wallet", "")
+        proxy_wallet = proxy_wallet if isinstance(proxy_wallet, str) else ""
+        sig_type = getattr(self.settings, "polymarket_signature_type", 0)
+        sig_type = sig_type if isinstance(sig_type, int) else 0
+        return bool(proxy_wallet) or sig_type in (1, 2)
+
     def _preflight_balance_allowance(
         self,
         *,
@@ -1004,19 +1012,30 @@ class PolymarketClient:
 
         balance = ba["balance"]
         allowance = ba["allowance"]
-        if balance + 1e-9 < needed:
-            raise RuntimeError(
-                f"insufficient {'USDC' if side == BUY else 'token'} balance: "
-                f"balance={balance:.6f} required={needed:.6f}"
-            )
-        # FIX: allowance=0.0 is falsy in Python so `if allowance:` skipped the
-        # check. Always enforce the allowance gate when placing live BUY orders.
-        if side == BUY and allowance + 1e-9 < needed:
-            raise RuntimeError(
-                f"insufficient USDC allowance: allowance={allowance:.6f} required={needed:.6f}. "
-                f"Approve USDC spending on the Polymarket CLOB contract before trading live. "
-                f"See docs/audits/LIVE_EXECUTION_GAP_ANALYSIS_001.md §4 for the Web3 approval path."
-            )
+        is_proxy = self._is_proxy_wallet()
+        if side == BUY:
+            if is_proxy:
+                if balance + 1e-9 < needed:
+                    raise RuntimeError(
+                        f"insufficient CLOB collateral balance: balance={balance:.6f} required={needed:.6f} "
+                        f"for proxy wallet. Deposit USDC on Polymarket."
+                    )
+            else:
+                if balance + 1e-9 < needed:
+                    raise RuntimeError(
+                        f"insufficient USDC balance: balance={balance:.6f} required={needed:.6f}"
+                    )
+                if allowance + 1e-9 < needed:
+                    raise RuntimeError(
+                        f"insufficient USDC allowance: allowance={allowance:.6f} required={needed:.6f}. "
+                        f"Approve USDC spending on the Polymarket CLOB contract before trading live. "
+                        f"See docs/audits/LIVE_EXECUTION_GAP_ANALYSIS_001.md §4 for the Web3 approval path."
+                    )
+        else:
+            if balance + 1e-9 < needed:
+                raise RuntimeError(
+                    f"insufficient token balance: balance={balance:.6f} required={needed:.6f}"
+                )
 
     def check_allowance_status(self, *, needed: float = 0.0) -> dict[str, object]:
         """Return structured allowance status without raising.
@@ -1025,7 +1044,7 @@ class PolymarketClient:
         Does NOT modify on-chain state.
 
         Returns dict with keys:
-          status: "OK" | "MISSING" | "INSUFFICIENT" | "FAIL"
+          status: "OK" | "MISSING" | "INSUFFICIENT" | "FAIL" | "OK_PROXY_COLLATERAL" | "FAIL_INSUFFICIENT_COLLATERAL"
           balance: float
           allowance: float
           needed: float
@@ -1046,22 +1065,34 @@ class PolymarketClient:
                 "approve_required": False,
             }
 
-        if allowance < 1e-9:
-            status = "MISSING"
-            approve_required = True
-            msg = (
-                "USDC allowance is 0. Approve the Polymarket CLOB contract to spend USDC "
-                "before placing live orders. Use the Polymarket UI or Web3 approve() on the "
-                "USDC contract. See docs/audits/LIVE_EXECUTION_GAP_ANALYSIS_001.md §4."
-            )
-        elif needed > 0 and allowance + 1e-9 < needed:
-            status = "INSUFFICIENT"
-            approve_required = True
-            msg = f"Allowance {allowance:.6f} is less than needed {needed:.6f}."
+        is_proxy = self._is_proxy_wallet()
+
+        if is_proxy:
+            if balance + 1e-9 >= needed:
+                status = "OK_PROXY_COLLATERAL"
+                approve_required = False
+                msg = f"Collateral balance OK: {balance:.6f} available in proxy vault."
+            else:
+                status = "FAIL_INSUFFICIENT_COLLATERAL"
+                approve_required = False
+                msg = f"Insufficient collateral balance: {balance:.6f} available, required={needed:.6f}."
         else:
-            status = "OK"
-            approve_required = False
-            msg = f"Allowance OK: {allowance:.6f} available."
+            if allowance < 1e-9:
+                status = "MISSING"
+                approve_required = True
+                msg = (
+                    "USDC allowance is 0. Approve the Polymarket CLOB contract to spend USDC "
+                    "before placing live orders. Use the Polymarket UI or Web3 approve() on the "
+                    "USDC contract. See docs/audits/LIVE_EXECUTION_GAP_ANALYSIS_001.md §4."
+                )
+            elif needed > 0 and allowance + 1e-9 < needed:
+                status = "INSUFFICIENT"
+                approve_required = True
+                msg = f"Allowance {allowance:.6f} is less than needed {needed:.6f}."
+            else:
+                status = "OK"
+                approve_required = False
+                msg = f"Allowance OK: {allowance:.6f} available."
 
         return {
             "status": status,
