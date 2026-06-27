@@ -5,7 +5,7 @@
     {
       "priority": 1,
       "task_id": "BATCH_3C_GATE_CHECK_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Architecture governance gate check before Batch 3C. Audit _phase2_complete_lifecycle_observability and _phase2_observability_payload for safe extraction boundary.",
@@ -21,7 +21,7 @@
     {
       "priority": 2,
       "task_id": "BATCH_3C_DESIGN_001",
-      "status": "WAITING_FOR_GATE",
+      "status": "READY",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design document for Batch 3C extraction — lifecycle observability payload methods.",
@@ -33,7 +33,7 @@
     {
       "priority": 3,
       "task_id": "BATCH_3C_IMPLEMENTATION_001",
-      "status": "BLOCKED_UNTIL_DESIGN_APPROVAL",
+      "status": "WAITING_FOR_DESIGN_APPROVAL",
       "workflow_tier": "GATE",
       "task_class": 7,
       "description": "Implement Batch 3C extraction per approved design.",

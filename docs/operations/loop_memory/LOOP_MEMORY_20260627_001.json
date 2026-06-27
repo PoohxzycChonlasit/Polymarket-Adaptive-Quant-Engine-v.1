@@ -105,5 +105,33 @@
     },
     "workflow_tier_recommendation": "GATE",
     "next_recommendation": "BATCH_3C_GATE_CHECK_001 — use GATE tier. Batch 3C likely touches phase2 lifecycle payload assembly in trader.py."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "BATCH_3C_GATE_CHECK_001",
+    "task_class": 2,
+    "scope": [
+      "docs/audits/BATCH_3C_GATE_CHECK_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add batch 3C gate check"],
+    "acceptance_criteria": {
+      "candidate_matrix_complete": true,
+      "recommended_scope_bounded": true,
+      "forbidden_scope_enumerated": true,
+      "state_and_queue_updated": true,
+      "no_runtime_files_changed": true
+    },
+    "workflow_tier_recommendation": "LOOP",
+    "gate_verdict": "PROCEED_BATCH_3C",
+    "next_recommendation": "BATCH_3C_DESIGN_001 — design display proxy elimination (Group 1) and static phase2 utility extraction (Group 2). Use LOOP tier. Defer phase2 payload assembly methods to Batch 3D."
   }
 ]
