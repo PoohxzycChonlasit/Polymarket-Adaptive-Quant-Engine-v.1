@@ -702,9 +702,6 @@ class PolymarketTrader:
     def _init_telegram_alert_layer(self) -> TelegramAlertLayer | None:
          return self._lifecycle.init_telegram_alert_layer(self)
 
-    def _default_observability_health_display_state(self) -> dict[str, object]:
-        return self._presentation.default_observability_health_display_state()
-
     def dashboard_observability_health_state(self) -> dict[str, object]:
         """Return display-only observability health state for terminal UI surfaces."""
         return self._observability.dashboard_observability_health_state(self)
@@ -833,18 +830,6 @@ class PolymarketTrader:
 
     def _event_producer_label(self, event_method: str) -> str:
         return self._get_observability()._event_producer_label(event_method)
-
-    def _display_field_present(self, payload: dict[str, object], *fields: str) -> bool:
-        return self._presentation.display_field_present(payload, *fields)
-
-    def _display_visibility_status(self, payload: dict[str, object], *fields: str) -> str:
-        return self._presentation.display_visibility_status(payload, *fields)
-
-    def _display_identity_readiness(self, payload: dict[str, object]) -> str:
-        return self._presentation.display_identity_readiness(payload)
-
-    def _display_dominant_model_gap(self, payload: dict[str, object]) -> str:
-        return self._presentation.display_dominant_model_gap(payload)
 
     def _event_driven_admission_packet_price_detail(
         self,
@@ -1144,7 +1129,7 @@ class PolymarketTrader:
                 copied = True
         epoch_start = self._diagnostic_int(enriched.get("market_epoch_start") or parent.get("market_epoch_start") or parent.get("epoch_start") or parent.get("epoch_start_ts")) or 0
         if not enriched.get("decision_id") and source_market and ticker:
-            enriched["decision_id"] = self._phase2_candidate_hash(
+            enriched["decision_id"] = TraderObservabilityHelper._phase2_candidate_hash(
                 "decision",
                 source_market,
                 ticker,
@@ -1193,7 +1178,7 @@ class PolymarketTrader:
     def _emit_quant_event(self, event_method: str, payload: dict[str, object] | None = None) -> bool:
         logger = getattr(self, "quant_events", None)
         if logger is None:
-            state = self._default_observability_health_display_state()
+            state = self._presentation.default_observability_health_display_state()
             state["jsonl_status"] = "UNKNOWN"
             self._observability._observability_health_display_state = state
             return False
@@ -1241,7 +1226,7 @@ class PolymarketTrader:
             return emitted
         except Exception as exc:
             LOGGER.warning("[OBSERVABILITY] quant event failed | method=%s error=%s", event_method, exc)
-            state = self._default_observability_health_display_state()
+            state = self._presentation.default_observability_health_display_state()
             state["jsonl_status"] = "WARN"
             state["jsonl_ok"] = False
             state["latest_producer"] = self._event_producer_label(event_method)
@@ -1890,12 +1875,6 @@ class PolymarketTrader:
             return "FINAL_DERISK"
         return "CLOSED_OR_UNSAFE"
 
-    @staticmethod
-    def _phase2_candidate_hash(prefix: str, *parts: object) -> str:
-        raw = "|".join(str(part or "") for part in parts)
-        digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
-        return f"{prefix}_{digest}"
-
     def _phase2_readiness_store(self) -> dict[tuple[str, int], dict[str, object]]:
         store = getattr(self, "_market_readiness_timestamps", None)
         if not isinstance(store, dict):
@@ -2339,10 +2318,6 @@ class PolymarketTrader:
             "target_exposure": float(max(exposure_after, 0.0)),
         }
 
-    @staticmethod
-    def _phase2_value_available(value: object) -> bool:
-        return value is not None and value != ""
-
     def _phase2_ev_null_reason(
         self,
         *,
@@ -2492,10 +2467,10 @@ class PolymarketTrader:
         liquidity_state: object = "",
         spread_normalized: object = None,
     ) -> dict[str, object]:
-        fair_value_available = self._phase2_value_available(fair_value)
-        market_price_available = self._phase2_value_available(market_price)
-        true_probability_available = self._phase2_value_available(true_probability)
-        ev_after_spread_available = self._phase2_value_available(ev_after_spread)
+        fair_value_available = TraderObservabilityHelper._phase2_value_available(fair_value)
+        market_price_available = TraderObservabilityHelper._phase2_value_available(market_price)
+        true_probability_available = TraderObservabilityHelper._phase2_value_available(true_probability)
+        ev_after_spread_available = TraderObservabilityHelper._phase2_value_available(ev_after_spread)
         probability_available = fair_value_available or true_probability_available
 
         skip_text = str(skip_reason or "").lower()
@@ -2593,30 +2568,6 @@ class PolymarketTrader:
                 ev_available=ev_after_spread_available,
             )
         return detail
-
-    @staticmethod
-    def _phase2_iso_from_epoch(epoch_start: int, offset_seconds: int) -> str:
-        if epoch_start <= 0:
-            return ""
-        try:
-            return datetime.fromtimestamp(epoch_start + offset_seconds, UTC).isoformat().replace("+00:00", "Z")
-        except (OSError, OverflowError, ValueError):
-            return ""
-
-    @staticmethod
-    def _phase2_phase_offsets(lifecycle_phase: str) -> tuple[int, int | None]:
-        phase = str(lifecycle_phase or "").upper()
-        if phase == "OPENING_SCAN":
-            return 0, 35
-        if phase == "ACTIVE_INVENTORY_TRADING":
-            return 35, 240
-        if phase == "PROFIT_MANAGEMENT":
-            return 240, 270
-        if phase == "FINAL_DERISK":
-            return 270, 300
-        if phase == "CLOSED_OR_UNSAFE":
-            return 300, None
-        return 0, None
 
     def _phase2_orderbook_state_classification(self, payload: dict[str, object]) -> str:
         authoritative_available, _source = self._phase2_authoritative_orderbook_availability(payload)
@@ -2926,7 +2877,7 @@ class PolymarketTrader:
             or ""
         ).strip()
         skipped = bool(payload.get("skipped")) or str(payload.get("decision") or "").lower() in {"skip", "skipped"}
-        ev_available = bool(payload.get("ev_after_spread_available")) or self._phase2_value_available(payload.get("ev_after_spread"))
+        ev_available = bool(payload.get("ev_after_spread_available")) or TraderObservabilityHelper._phase2_value_available(payload.get("ev_after_spread"))
         model_output_ready = bool(payload.get("true_probability_available")) or bool(payload.get("fair_value_available"))
         probability_stage = str(payload.get("probability_model_stage") or "").lower()
         ev_stage = str(payload.get("ev_calculation_stage") or "").lower()
@@ -3020,13 +2971,13 @@ class PolymarketTrader:
         side = str(detail.get("side") or detail.get("best_side") or detail.get("outcome") or detail.get("decision") or "UNKNOWN").upper()
         epoch_start = self._diagnostic_int(detail.get("market_epoch_start") or detail.get("epoch_start") or detail.get("epoch_start_ts")) or 0
         if not detail.get("candidate_id"):
-            detail["candidate_id"] = self._phase2_candidate_hash("candidate", market_id, ticker, side, epoch_start)
+            detail["candidate_id"] = TraderObservabilityHelper._phase2_candidate_hash("candidate", market_id, ticker, side, epoch_start)
         if not detail.get("signal_id"):
-            detail["signal_id"] = self._phase2_candidate_hash("signal", market_id, ticker, side, epoch_start)
+            detail["signal_id"] = TraderObservabilityHelper._phase2_candidate_hash("signal", market_id, ticker, side, epoch_start)
 
-        start_offset, end_offset = self._phase2_phase_offsets(lifecycle_phase)
-        entered_at = self._phase2_iso_from_epoch(epoch_start, start_offset)
-        exited_at = self._phase2_iso_from_epoch(epoch_start, end_offset) if end_offset is not None else ""
+        start_offset, end_offset = TraderObservabilityHelper._phase2_phase_offsets(lifecycle_phase)
+        entered_at = TraderObservabilityHelper._phase2_iso_from_epoch(epoch_start, start_offset)
+        exited_at = TraderObservabilityHelper._phase2_iso_from_epoch(epoch_start, end_offset) if end_offset is not None else ""
         detail.setdefault("lifecycle_phase_entered_at", entered_at or None)
         detail.setdefault("lifecycle_phase_exited_at", exited_at or None)
         if not detail.get("lifecycle_phase_transition_reason"):
@@ -3168,8 +3119,8 @@ class PolymarketTrader:
         cached_market_slug = str(cached_meta.get("slug", "") or cached_meta.get("market_slug", "") or "")
         token_handoff_source = "cached_market_token_meta" if cached_yes_token_id and cached_no_token_id else "not_available"
         lifecycle_phase = self._phase2_lifecycle_phase(seconds_remaining)
-        candidate_id = self._phase2_candidate_hash("candidate", market_id, ticker_key, side, epoch_start_int)
-        signal_id = self._phase2_candidate_hash("signal", market_id, ticker_key, side, epoch_start_int)
+        candidate_id = TraderObservabilityHelper._phase2_candidate_hash("candidate", market_id, ticker_key, side, epoch_start_int)
+        signal_id = TraderObservabilityHelper._phase2_candidate_hash("signal", market_id, ticker_key, side, epoch_start_int)
         market_key = (ticker_key, epoch_start_int)
         first_seen_remaining = getattr(self, "_market_first_seen_seconds_remaining", {}).get(market_key)
         if first_seen_remaining is None:
@@ -3239,8 +3190,8 @@ class PolymarketTrader:
         readiness_state = self._phase2_market_readiness_state(payload, orderbook_state)
         payload.setdefault("market_readiness_state", readiness_state)
         model_output_ready = (
-            self._phase2_value_available(fair_value)
-            or self._phase2_value_available(true_probability)
+            TraderObservabilityHelper._phase2_value_available(fair_value)
+            or TraderObservabilityHelper._phase2_value_available(true_probability)
         )
         payload.update(
             self._phase2_model_activation_detail(
@@ -3659,7 +3610,7 @@ class PolymarketTrader:
             spread_normalized=display.get("spread_normalized"),
             risk_plan=outcome.risk_plan,
         )
-        decision_id = self._phase2_candidate_hash(
+        decision_id = TraderObservabilityHelper._phase2_candidate_hash(
             "decision",
             outcome.market_id,
             (ticker or self._ticker_from_market_id(outcome.market_id) or "UNKNOWN").upper(),
@@ -3958,7 +3909,7 @@ class PolymarketTrader:
         ).items():
             if payload.get(key) in (None, ""):
                 payload[key] = value
-        if not bool(payload.get("ev_after_spread_available")) and not self._phase2_value_available(payload.get("ev_after_spread")):
+        if not bool(payload.get("ev_after_spread_available")) and not TraderObservabilityHelper._phase2_value_available(payload.get("ev_after_spread")):
             ev_stage = str(payload.get("ev_calculation_stage") or "").lower()
             probability_stage = str(payload.get("probability_model_stage") or "").lower()
             if probability_stage == "pre_model_skip":
@@ -3977,10 +3928,10 @@ class PolymarketTrader:
         payload["yes_no_token_pair_present"] = bool(yes_token_present and no_token_present)
         if payload["yes_no_token_pair_present"] and str(payload.get("decision_token_handoff_source") or "not_available") == "not_available":
             payload["decision_token_handoff_source"] = "decision_payload_or_cache"
-        yes_bid_present = self._phase2_value_available(payload.get("yes_bid"))
-        yes_ask_present = self._phase2_value_available(payload.get("yes_ask"))
-        no_bid_present = self._phase2_value_available(payload.get("no_bid"))
-        no_ask_present = self._phase2_value_available(payload.get("no_ask"))
+        yes_bid_present = TraderObservabilityHelper._phase2_value_available(payload.get("yes_bid"))
+        yes_ask_present = TraderObservabilityHelper._phase2_value_available(payload.get("yes_ask"))
+        no_bid_present = TraderObservabilityHelper._phase2_value_available(payload.get("no_bid"))
+        no_ask_present = TraderObservabilityHelper._phase2_value_available(payload.get("no_ask"))
         serialized_executable_book = bool(
             yes_bid_present and yes_ask_present and no_bid_present and no_ask_present
         )
@@ -4056,8 +4007,8 @@ class PolymarketTrader:
             bool(payload.get("model_attempted"))
             or bool(payload.get("fair_value_available"))
             or bool(payload.get("true_probability_available"))
-            or self._phase2_value_available(payload.get("fair_value"))
-            or self._phase2_value_available(payload.get("true_probability"))
+            or TraderObservabilityHelper._phase2_value_available(payload.get("fair_value"))
+            or TraderObservabilityHelper._phase2_value_available(payload.get("true_probability"))
         )
         payload.update(
             self._phase2_model_activation_detail(
@@ -4619,7 +4570,7 @@ class PolymarketTrader:
 
         def first_available(*values: object) -> object:
             for value in values:
-                if self._phase2_value_available(value):
+                if TraderObservabilityHelper._phase2_value_available(value):
                     return value
             return None
 
@@ -4659,7 +4610,7 @@ class PolymarketTrader:
         )
         selected_confidence = first_available(confidence, model_context.get("confidence"))
         model_output_visible = any(
-            self._phase2_value_available(value)
+            TraderObservabilityHelper._phase2_value_available(value)
             for value in (selected_probability, selected_fair_value, model_p_yes, model_p_no)
         )
         phase2_detail = self._phase2_observability_payload(
@@ -4687,14 +4638,14 @@ class PolymarketTrader:
                 "model_output_missing_reason": "",
                 "model_handoff_stage": "MODEL_OUTPUT_SERIALIZED",
             })
-        if self._phase2_value_available(model_p_yes):
+        if TraderObservabilityHelper._phase2_value_available(model_p_yes):
             phase2_detail.update({
                 "p_yes": model_p_yes,
                 "model_p_yes": model_p_yes,
                 "model_probability_yes": model_p_yes,
                 "fair_value_yes": first_available(model_context.get("fair_value_yes"), model_p_yes),
             })
-        if self._phase2_value_available(model_p_no):
+        if TraderObservabilityHelper._phase2_value_available(model_p_no):
             phase2_detail.update({
                 "p_no": model_p_no,
                 "model_p_no": model_p_no,
@@ -5414,7 +5365,7 @@ class PolymarketTrader:
         side = str(values.get("side") or values.get("best_side") or values.get("outcome") or detail.get("side") or "")
         market_price = values.get("market_price", values.get("ask_price", values.get("entry_price")))
         current_model_output_visible = any(
-            self._phase2_value_available(values.get(key))
+            TraderObservabilityHelper._phase2_value_available(values.get(key))
             for key in (
                 "p_yes",
                 "p_no",
@@ -5463,14 +5414,14 @@ class PolymarketTrader:
             detail["model_p_yes"] = values["p_yes"]
         if "p_no" in values:
             detail["model_p_no"] = values["p_no"]
-        model_output_visible = self._phase2_value_available(model_p_yes) or self._phase2_value_available(model_p_no)
+        model_output_visible = TraderObservabilityHelper._phase2_value_available(model_p_yes) or TraderObservabilityHelper._phase2_value_available(model_p_no)
         detail["probability_model_called"] = bool(detail.get("probability_model_called")) or current_model_called
         detail["probability_model_output_visible"] = bool(model_output_visible)
         if model_output_visible:
-            if self._phase2_value_available(model_p_yes):
+            if TraderObservabilityHelper._phase2_value_available(model_p_yes):
                 detail["model_probability_yes"] = model_p_yes
                 detail["fair_value_yes"] = model_p_yes
-            if self._phase2_value_available(model_p_no):
+            if TraderObservabilityHelper._phase2_value_available(model_p_no):
                 detail["model_probability_no"] = model_p_no
                 detail["fair_value_no"] = model_p_no
             detail["model_attempted"] = True

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import time
 from collections import deque
@@ -430,3 +431,41 @@ class TraderObservabilityHelper:
             ),
             "executable_book_last_seen_age_ms": executable_age_ms,
         }
+
+    # ------------------------------------------------------------------
+    # Batch 3C: static phase2 utility methods (moved from trader.py)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _phase2_candidate_hash(prefix: str, *parts: object) -> str:
+        raw = "|".join(str(part or "") for part in parts)
+        digest = hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+        return f"{prefix}_{digest}"
+
+    @staticmethod
+    def _phase2_value_available(value: object) -> bool:
+        return value is not None and value != ""
+
+    @staticmethod
+    def _phase2_iso_from_epoch(epoch_start: int, offset_seconds: int) -> str:
+        if epoch_start <= 0:
+            return ""
+        try:
+            return datetime.fromtimestamp(epoch_start + offset_seconds, UTC).isoformat().replace("+00:00", "Z")
+        except (OSError, OverflowError, ValueError):
+            return ""
+
+    @staticmethod
+    def _phase2_phase_offsets(lifecycle_phase: str) -> "tuple[int, int | None]":
+        phase = str(lifecycle_phase or "").upper()
+        if phase == "OPENING_SCAN":
+            return 0, 35
+        if phase == "ACTIVE_INVENTORY_TRADING":
+            return 35, 240
+        if phase == "PROFIT_MANAGEMENT":
+            return 240, 270
+        if phase == "FINAL_DERISK":
+            return 270, 300
+        if phase == "CLOSED_OR_UNSAFE":
+            return 300, None
+        return 0, None
