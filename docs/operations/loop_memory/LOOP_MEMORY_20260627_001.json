@@ -1700,7 +1700,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-classifier-commit"],
+    "commits": ["91c4f6b"],
     "commit_messages": ["docs: add market state classifier design"],
     "acceptance_criteria": {
       "classification_objective_defined": true,
