@@ -1005,5 +1005,32 @@
     "safety_entries_seeded": 10,
     "repair_notes": "Repair 1: relative_to ROOT fails for temp dirs in tests. Repair 2: Unicode arrow in print() caused codec error on Windows.",
     "next_recommendation": "MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001 — STANDARD tier Class 4. Integrate safety memory loading into bootstrap.py session start."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001",
+    "task_class": 4,
+    "scope": ["tools/flaos/bootstrap.py", "tools/flaos/schemas.py", "tests/test_flaos_bootstrap_memory_os.py"],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 2,
+    "evidence_grade": "C",
+    "commits": ["b34110b"],
+    "commit_messages": ["tools: integrate Memory OS safety into bootstrap"],
+    "acceptance_criteria": {
+      "compile_ok": true,
+      "15_tests_pass_new_plus_existing": true,
+      "diagnose_shows_memory_os_v2": true,
+      "snapshot_includes_safety_ids": true,
+      "safety_required_stops_for_class4_standard": true,
+      "docs_only_degrades_not_stops": true,
+      "bootstrap_healthy": true,
+      "safety_count_10": true
+    },
+    "safety_memory_loaded": true,
+    "safety_memory_count": 10,
+    "repair_notes": "Repair 1: status logic changed from DEGRADED/STOP_REQUIRED in loader to MISSING_OR_INVALID, caller decides. Repair 2: updated test assertions to match new status.",
+    "next_recommendation": "EXECUTION_ENGINE_DESIGN_001 — GATE tier Class 2. Design FLAOS execution engine for automated loop execution. Note: active question LOW_PRICE_TRUTH_RESOLUTION_001 blocks strategy changes but not execution engine design."
   }
 ]

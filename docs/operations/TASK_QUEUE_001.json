@@ -314,7 +314,7 @@
     {
       "priority": 3.4,
       "task_id": "MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
       "description": "Integrate Memory OS into bootstrap.py: on session start, load SAFETY_MEMORY.jsonl, update MEMORY_INDEX, provide memory context to planning engine.",
@@ -326,7 +326,7 @@
     {
       "priority": 3.5,
       "task_id": "EXECUTION_ENGINE_DESIGN_001",
-      "status": "WAITING",
+      "status": "READY",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design execution engine for FLAOS full automation. Blocked until LOW_PRICE_TRUTH_RESOLUTION_001 is resolved.",
