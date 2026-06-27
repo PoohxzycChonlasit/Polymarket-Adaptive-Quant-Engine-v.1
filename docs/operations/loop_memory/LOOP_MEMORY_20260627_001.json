@@ -1229,5 +1229,32 @@
       "migration_v1_to_v5": true
     },
     "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001 — STANDARD tier Class 4. Create GRAPH_QUERY_TEMPLATE_001.md (v2 docs-only query form)."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001",
+    "task_class": 4,
+    "scope": [
+      "docs/operations/GRAPH_QUERY_TEMPLATE_001.md",
+      "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add runtime knowledge graph query template"],
+    "acceptance_criteria": {
+      "17_sections_complete": true,
+      "4_example_fills_complete": true,
+      "blast_radius_example": true,
+      "safety_check_example": true,
+      "why_deferred_example": true,
+      "evidence_for_commit_example": true,
+      "execution_contract_attachment_in_section_16": true,
+      "no_python_implemented": true
+    },
+    "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001 — LOOP tier Class 0. Execute 4 template queries against live seeded JSONL to verify outputs."
   }
 ]

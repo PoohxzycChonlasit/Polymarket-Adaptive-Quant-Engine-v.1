@@ -414,14 +414,26 @@
     {
       "priority": 2.7,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
       "description": "Implement RKG v2 query tool: docs/operations/GRAPH_QUERY_TEMPLATE_001.md — Markdown form that AI fills using seeded JSONL to produce structured JSON query outputs. Proves queries work before Python implementation.",
       "blocked_by": null,
       "allowed_scope": ["docs/operations/", "docs/reports/"],
       "outputs": ["docs/operations/GRAPH_QUERY_TEMPLATE_001.md", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001.md"],
-      "notes": "v2 docs-only query tool — no Python. AI reads JSONL, applies query logic manually, outputs structured JSON per query output schema."
+      "notes": "COMPLETED — 17-section template + 4 example fills (blast_radius, safety_check, why_deferred, evidence_for_commit). Section 16 produces Execution Contract attachment."
+    },
+    {
+      "priority": 2.6,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Smoke test: execute all 4 template query examples against live seeded graph JSONL. Verify outputs match expected results. Proves template usable before mandating for CLASS 6+ contracts.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001.md"],
+      "notes": "Class 0 read-only. No file mutations. Read REPO_GRAPH_NODES_001.jsonl + EDGES, execute 4 queries, compare to template examples."
     },
     {
       "priority": 5,
