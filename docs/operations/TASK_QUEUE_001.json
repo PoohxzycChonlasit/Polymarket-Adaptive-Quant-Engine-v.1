@@ -594,14 +594,26 @@
     {
       "priority": 4.9,
       "task_id": "LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
       "description": "Implement v2 Loop Runtime Engine Python coordinator script integrating Context Builder, Decision, and Supervisor.",
       "blocked_by": "LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001",
-      "allowed_scope": ["tools/", "docs/reports/", "tests/"],
-      "outputs": ["tools/flaos/loop_runtime.py", "docs/reports/LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001.md"],
+      "allowed_scope": ["tools/", "docs/reports/", "tests/", "docs/operations/"],
+      "outputs": ["docs/operations/LOOP_RUNTIME_ENGINE_V2_CHECKLIST_001.md", "docs/reports/LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001.md"],
       "notes": "Loop runtime integration script. Class 4 tooling loop task."
+    },
+    {
+      "priority": 4.8,
+      "task_id": "LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Run a smoke test validation of the v2 Loop Runtime Engine against a mock task pipeline.",
+      "blocked_by": "LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001",
+      "allowed_scope": ["tools/", "docs/reports/", "tests/"],
+      "outputs": ["docs/reports/LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001.md"],
+      "notes": "Class 4 tooling smoke test task."
     }
   ]
 }
