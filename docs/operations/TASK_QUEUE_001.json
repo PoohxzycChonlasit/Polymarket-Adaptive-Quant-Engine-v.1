@@ -148,7 +148,7 @@
     {
       "priority": 5.0,
       "task_id": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Run short validation (5 cycles) using runtime session coordinator to verify process lock safety, log isolation, and metadata serialization.",
@@ -160,7 +160,7 @@
     {
       "priority": 4.5,
       "task_id": "RUNTIME_LOG_GOVERNANCE_001",
-      "status": "WAITING",
+      "status": "READY",
       "workflow_tier": "GATE",
       "task_class": 5,
       "description": "Implement log governance layer rate-limiting event stream events and cleaning curses TUI ANSI print streams.",
