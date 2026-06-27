@@ -628,6 +628,30 @@
       "notes": "First Quant Runtime design task."
     },
     {
+      "priority": 0.95,
+      "task_id": "LIVE_TRADING_READINESS_GATE_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Assess live trading readiness gate before entering micro-live trading.",
+      "blocked_by": "MARKET_STATE_CLASSIFIER_001",
+      "allowed_scope": ["docs/audits/", "docs/operations/", "docs/reports/"],
+      "outputs": ["docs/audits/LIVE_TRADING_READINESS_GATE_001.md"],
+      "notes": "Live readiness gate check. Design/Audit only."
+    },
+    {
+      "priority": 0.93,
+      "task_id": "MICRO_LIVE_SAFETY_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design manual operator kill switch file-trigger and absolute USD-denominated limits.",
+      "blocked_by": "LIVE_TRADING_READINESS_GATE_001",
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/architecture/MICRO_LIVE_SAFETY_001.md", "docs/reports/MICRO_LIVE_SAFETY_DESIGN_001.md"],
+      "notes": "Safety enhancement design for micro-live trading."
+    },
+    {
       "priority": 0.9,
       "task_id": "MARKET_STATE_CLASSIFIER_OBSERVABILITY_IMPLEMENTATION_001",
       "status": "READY",
