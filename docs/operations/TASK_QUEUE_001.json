@@ -88,7 +88,7 @@
     {
       "priority": 6,
       "task_id": "SKILL_REGISTRY_ENABLEMENT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
       "description": "Create docs/operations/skills/SKILL_REGISTRY_001.json with 8 initial skills as machine-readable JSON. No Python changes.",

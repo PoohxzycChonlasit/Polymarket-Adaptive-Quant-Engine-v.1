@@ -1,0 +1,353 @@
+{
+  "$schema": "skill_registry_v1",
+  "version": "1.0.0",
+  "last_updated": "2026-06-27",
+  "spec_ref": "docs/architecture/SKILL_ENGINE_001.md",
+  "auto_prepend_rule": "quant_safety_review is automatically prepended for any task touching Python files, trading logic, runtime validation, risk/sizing/execution/reconciliation, wallet/bankroll, live trading, or runtime data deletion",
+  "skills": [
+    {
+      "skill_id": "quant_safety_review",
+      "version": "1.0",
+      "category": "safety",
+      "purpose": "Review task scope against known quant safety constraints before any code change. Must always run first for Python-touching tasks.",
+      "applicable_task_classes": [0, 2, 3, 6, 7, 8],
+      "workflow_tiers": ["FAST", "LOOP", "STANDARD", "GATE"],
+      "auto_prepend_triggers": [
+        "python_files_in_scope",
+        "trading_logic_in_scope",
+        "risk_or_sizing_in_scope",
+        "execution_path_in_scope",
+        "wallet_or_bankroll_in_scope",
+        "live_trading_keyword",
+        "runtime_data_deletion"
+      ],
+      "required_agent_pipeline": "any — role 29_ARCHITECTURE_GOVERNANCE_AGENT always executes this skill",
+      "required_tool_pipeline": "any",
+      "required_tools": ["forbidden_scope_diff_check", "high_risk_keyword_check"],
+      "required_memory_reads": ["quant_safety"],
+      "required_memory_writes": ["quant_safety"],
+      "evidence_required": "B",
+      "stop_conditions": [
+        "CRITICAL quant_safety entry found in scope",
+        "is_permanent=true method in allowed_files",
+        "execution_path method in scope",
+        "live_trading trigger detected"
+      ],
+      "allowed_file_scopes": ["any — read only"],
+      "forbidden_file_scopes": ["none — this skill only reads"],
+      "full_accept_allowed": false,
+      "compact_output_required": true,
+      "repair_policy": "not applicable — this is a gate skill; STOP if any violation found",
+      "skill_output_contract": {
+        "verdict": "SAFE | BLOCKED",
+        "violations_found": "array of quant_safety entry IDs that overlap scope",
+        "safe_to_proceed": "boolean"
+      }
+    },
+    {
+      "skill_id": "forbidden_scope_check",
+      "version": "1.0",
+      "category": "safety",
+      "purpose": "Detect forbidden files or methods in git diff. Immediate stop if found.",
+      "applicable_task_classes": [0, 2, 3, 6, 7],
+      "workflow_tiers": ["LOOP", "STANDARD", "GATE"],
+      "auto_prepend_triggers": [],
+      "required_agent_pipeline": "any — role 27_VERIFICATION_OFFICER_AGENT typically executes",
+      "required_tool_pipeline": "any",
+      "required_tools": ["forbidden_scope_diff_check", "high_risk_keyword_check", "root_markdown_check"],
+      "required_memory_reads": ["quant_safety"],
+      "required_memory_writes": [],
+      "evidence_required": "B",
+      "stop_conditions": [
+        "forbidden_pattern_in_diff",
+        "root_markdown_created",
+        "live_trading_keyword_in_diff",
+        "runtime_data_deletion_in_diff"
+      ],
+      "allowed_file_scopes": ["any — read only, git diff only"],
+      "forbidden_file_scopes": ["none — this skill only reads diff"],
+      "full_accept_allowed": true,
+      "compact_output_required": true,
+      "repair_policy": "0 repairs — scope violations are not repairable within the loop",
+      "skill_output_contract": {
+        "verdict": "CLEAN | VIOLATION",
+        "violation_files": "array of file paths that triggered stop",
+        "violation_patterns": "array of forbidden patterns matched"
+      }
+    },
+    {
+      "skill_id": "gate_check",
+      "version": "1.0",
+      "category": "governance",
+      "purpose": "Perform architecture governance gate check for a refactor batch. Audit candidate methods, score coupling, produce PROCEED/PAUSE/STOP verdict.",
+      "applicable_task_classes": [2],
+      "workflow_tiers": ["GATE"],
+      "auto_prepend_triggers": [],
+      "required_agent_pipeline": "GATE_WORKFLOW",
+      "required_tool_pipeline": "GATE_WORKFLOW",
+      "required_tools": [
+        "read_active_workflow_state",
+        "read_loop_memory",
+        "read_git_log",
+        "forbidden_scope_diff_check",
+        "write_final_report",
+        "update_active_workflow_state",
+        "update_task_queue",
+        "append_loop_memory"
+      ],
+      "required_memory_reads": ["quant_safety", "decision", "repository_insight", "failure"],
+      "required_memory_writes": ["decision"],
+      "evidence_required": "B",
+      "stop_conditions": [
+        "forbidden_scope_requested_in_candidate",
+        "high_risk_method_in_scope",
+        "active_question_blocks_task_domain"
+      ],
+      "allowed_file_scopes": ["polymarket/trader.py (read only)", "docs/audits/", "docs/reports/", "docs/operations/"],
+      "forbidden_file_scopes": ["polymarket/trader.py (write)", "tests/", "runtime/", "dashboard/"],
+      "full_accept_allowed": false,
+      "compact_output_required": true,
+      "repair_policy": "0 repairs — gate check is read-only; if analysis fails, produce STOP verdict",
+      "skill_output_contract": {
+        "gate_verdict": "PROCEED | PAUSE | STOP",
+        "candidate_matrix": "table of candidates with safe extraction scores",
+        "recommended_scope": "list of approved methods/fields",
+        "forbidden_scope_confirmation": "list of permanently forbidden items confirmed untouched",
+        "next_recommended_task": "string"
+      }
+    },
+    {
+      "skill_id": "low_risk_refactor",
+      "version": "1.0",
+      "category": "verification",
+      "purpose": "Implement a low-risk structural refactor: move methods to helper, update call sites, add proxy/shim stubs. Requires prior gate check.",
+      "applicable_task_classes": [6],
+      "workflow_tiers": ["LOOP"],
+      "auto_prepend_triggers": ["python_files_in_scope"],
+      "required_agent_pipeline": "LOW_RISK_REFACTOR_LOOP",
+      "required_tool_pipeline": "LOW_RISK_REFACTOR_LOOP",
+      "required_tools": [
+        "py_compile_runtime",
+        "import_polymarket_trader",
+        "pytest_core_suite",
+        "pytest_targeted_suite",
+        "forbidden_scope_diff_check",
+        "high_risk_keyword_check",
+        "git_diff_name_only",
+        "full_accept_guard",
+        "write_final_report",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_memory_reads": ["quant_safety", "failure", "repair", "repository_insight"],
+      "required_memory_writes": ["decision", "repository_insight", "repair"],
+      "evidence_required": "C",
+      "stop_conditions": [
+        "forbidden_scope_in_diff",
+        "new_test_failure_vs_baseline",
+        "high_risk_keyword_found",
+        "attributeerror_in_paper_run",
+        "is_permanent_method_in_scope"
+      ],
+      "allowed_file_scopes": [
+        "polymarket/trader.py",
+        "polymarket/orchestration/trader_observability.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "forbidden_file_scopes": [
+        "_phase4_build_quote_lineage",
+        "_phase4_quote_lineage_carry",
+        "_last_quote_lineage_context",
+        "_risk_plan_zero_diagnostics",
+        "_diagnostic_float",
+        "_diagnostic_int",
+        "execution/risk/sizing/reconciliation logic",
+        "dashboard/",
+        "runtime/research_exports/"
+      ],
+      "full_accept_allowed": true,
+      "compact_output_required": true,
+      "repair_policy": "up to 3 repairs; repair scope must stay within allowed_file_scopes",
+      "skill_output_contract": {
+        "files_changed": "array",
+        "methods_moved": "array",
+        "call_sites_updated": "int",
+        "proxy_stubs_added": "int",
+        "test_result": "N/N passed, M failed",
+        "net_line_change": "int (negative = reduction in trader.py)"
+      }
+    },
+    {
+      "skill_id": "runtime_validation",
+      "version": "1.0",
+      "category": "validation",
+      "purpose": "Validate runtime behavior via paper mode run. Verify JSONL telemetry fields unchanged. Produce Grade A evidence.",
+      "applicable_task_classes": [0],
+      "workflow_tiers": ["LOOP", "GATE"],
+      "auto_prepend_triggers": [],
+      "required_agent_pipeline": "RUNTIME_VALIDATION_LOOP",
+      "required_tool_pipeline": "RUNTIME_VALIDATION_LOOP",
+      "required_tools": [
+        "py_compile_runtime",
+        "import_polymarket_trader",
+        "file_size_check",
+        "paper_run_5_cycles",
+        "runtime_exit_code_check",
+        "traceback_check",
+        "no_live_order_check",
+        "jsonl_session_scan",
+        "full_accept_guard",
+        "write_final_report",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_memory_reads": ["quant_safety", "runtime_evidence"],
+      "required_memory_writes": ["runtime_evidence"],
+      "evidence_required": "A",
+      "stop_conditions": [
+        "exit_code_not_0_or_124",
+        "attributeerror_in_log",
+        "traceback_in_log",
+        "live_orders_detected",
+        "jsonl_field_missing_from_expected_set"
+      ],
+      "allowed_file_scopes": ["docs/reports/", "docs/operations/ (state/queue/memory only)"],
+      "forbidden_file_scopes": ["any Python file modification", "runtime/ data modification"],
+      "full_accept_allowed": true,
+      "compact_output_required": true,
+      "repair_policy": "0 repairs — runtime failures require investigation before re-running",
+      "skill_output_contract": {
+        "pid": "int",
+        "cycles_completed": "int",
+        "exit_code": "int",
+        "attributeerror_count": 0,
+        "jsonl_fields_verified": "array of field names with event counts",
+        "runtime_verdict": "VALIDATED | REGRESSION | INCONCLUSIVE"
+      }
+    },
+    {
+      "skill_id": "docs_housekeeping",
+      "version": "1.0",
+      "category": "housekeeping",
+      "purpose": "Route markdown files to correct docs/ subdirectories, update state/queue/memory, write consolidated report.",
+      "applicable_task_classes": [3, 9],
+      "workflow_tiers": ["FAST", "LOOP"],
+      "auto_prepend_triggers": [],
+      "required_agent_pipeline": "DOCS_LOOP",
+      "required_tool_pipeline": "DOCS_LOOP",
+      "required_tools": [
+        "git_status_short",
+        "root_markdown_check",
+        "git_diff_name_only",
+        "write_final_report",
+        "git_cached_name_only",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_memory_reads": ["quant_safety"],
+      "required_memory_writes": [],
+      "evidence_required": "D",
+      "stop_conditions": [
+        "python_file_in_diff",
+        "root_markdown_created",
+        "runtime_data_file_in_diff"
+      ],
+      "allowed_file_scopes": [
+        "docs/architecture/",
+        "docs/audits/",
+        "docs/reports/",
+        "docs/research/",
+        "docs/operations/",
+        "FILE_INDEX.md",
+        "DOCUMENTATION_MAP.md"
+      ],
+      "forbidden_file_scopes": ["polymarket/", "tests/", "runtime/", "dashboard/", "config/"],
+      "full_accept_allowed": true,
+      "compact_output_required": true,
+      "repair_policy": "up to 3 repairs; must stay within allowed_file_scopes",
+      "skill_output_contract": {
+        "files_moved": "int",
+        "files_created": "int",
+        "root_md_remaining": "int (target: 0 non-entrypoints)",
+        "commit_type": "TYPE_C"
+      }
+    },
+    {
+      "skill_id": "repository_audit",
+      "version": "1.0",
+      "category": "intelligence",
+      "purpose": "Inventory repository files, classify by type, check docs structure, identify drift from expected state.",
+      "applicable_task_classes": [0, 3],
+      "workflow_tiers": ["FAST", "LOOP"],
+      "auto_prepend_triggers": [],
+      "required_agent_pipeline": "REPOSITORY_INTELLIGENCE_LOOP",
+      "required_tool_pipeline": "DOCS_LOOP",
+      "required_tools": [
+        "read_active_workflow_state",
+        "read_git_log",
+        "git_status_short",
+        "root_markdown_check",
+        "write_final_report"
+      ],
+      "required_memory_reads": ["repository_insight", "quant_safety"],
+      "required_memory_writes": ["repository_insight"],
+      "evidence_required": "B",
+      "stop_conditions": [
+        "python_file_in_diff",
+        "tracked_data_deletion",
+        "root_markdown_created"
+      ],
+      "allowed_file_scopes": ["docs/", "docs/reports/", "docs/operations/ (state/queue/memory only)"],
+      "forbidden_file_scopes": ["polymarket/", "tests/", "runtime/", "dashboard/"],
+      "full_accept_allowed": true,
+      "compact_output_required": true,
+      "repair_policy": "up to 2 repairs — re-classify files if routing was wrong",
+      "skill_output_contract": {
+        "files_inventoried": "int",
+        "files_misrouted": "int",
+        "root_md_non_entrypoints": "int",
+        "docs_subdirectory_counts": "object with counts per docs/ dir",
+        "drift_detected": "boolean"
+      }
+    },
+    {
+      "skill_id": "jsonl_evidence_scan",
+      "version": "1.0",
+      "category": "validation",
+      "purpose": "Scan JSONL event stream for session events. Verify telemetry fields present and correctly shaped. Produce Grade A evidence.",
+      "applicable_task_classes": [0],
+      "workflow_tiers": ["LOOP", "GATE"],
+      "auto_prepend_triggers": [],
+      "required_agent_pipeline": "RUNTIME_VALIDATION_LOOP",
+      "required_tool_pipeline": "RUNTIME_VALIDATION_LOOP",
+      "required_tools": ["jsonl_session_scan"],
+      "required_memory_reads": ["quant_safety", "runtime_evidence", "tool_usage"],
+      "required_memory_writes": ["runtime_evidence", "tool_usage"],
+      "evidence_required": "A",
+      "stop_conditions": [
+        "expected_field_missing",
+        "event_count_zero_for_expected_field",
+        "session_pid_not_found_in_stream"
+      ],
+      "allowed_file_scopes": ["runtime/event_stream/ (read only)"],
+      "forbidden_file_scopes": ["any write to event stream"],
+      "full_accept_allowed": true,
+      "compact_output_required": true,
+      "repair_policy": "0 repairs — JSONL field absence is a finding, not a repairable error",
+      "skill_output_contract": {
+        "session_pid": "int",
+        "total_events": "int",
+        "field_counts": "object: field_name → event_count",
+        "missing_fields": "array",
+        "verdict": "PASS | FAIL"
+      }
+    }
+  ]
+}

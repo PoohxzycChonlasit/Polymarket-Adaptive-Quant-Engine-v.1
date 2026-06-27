@@ -125,6 +125,16 @@ docs/operations/skills/
 
 ---
 
+## 6b. Operational Registry (created 2026-06-27)
+
+The skill registry is now operational at:
+
+**`docs/operations/skills/SKILL_REGISTRY_001.json`** — 8 skills with full field schemas: skill_id, version, purpose, task_classes, workflow_tiers, agent_pipeline, tool_pipeline, required_tools, memory_reads/writes, evidence_required, stop_conditions, allowed/forbidden scopes, full_accept_allowed, repair_policy, skill_output_contract.
+
+**Auto-prepend rule embedded in registry:** `quant_safety_review` automatically prepends for any task touching Python files, trading logic, risk/sizing/execution, wallet/bankroll, live trading, or runtime data deletion.
+
+---
+
 ## 7. Skill Selection Rules
 
 ```
