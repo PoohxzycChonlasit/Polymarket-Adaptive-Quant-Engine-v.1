@@ -52,7 +52,7 @@
     {
       "priority": 4,
       "task_id": "POST_BATCH_3C_RUNTIME_VALIDATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Post-commit paper mode validation for Batch 3C. Verify display proxy removal and static utility migration did not break telemetry or runtime.",
