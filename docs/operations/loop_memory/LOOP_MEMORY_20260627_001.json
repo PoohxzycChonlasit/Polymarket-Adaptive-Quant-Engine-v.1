@@ -385,5 +385,37 @@
       "no_root_markdown_created": true
     },
     "next_recommendation": "BATCH_3D_GATE_CHECK_001 — GATE tier, role 29→02→27→24 per GATE_WORKFLOW pipeline. Gate check for _phase2_complete_lifecycle_observability and _phase2_observability_payload."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "FLAOS_RUNTIME_BOOTSTRAP_TOOLS_001",
+    "task_class": 4,
+    "scope": [
+      "tools/flaos/__init__.py",
+      "tools/flaos/schemas.py",
+      "tools/flaos/bootstrap.py",
+      "tools/flaos/README.md",
+      "docs/reports/FLAOS_RUNTIME_BOOTSTRAP_TOOLS_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["tools: add FLAOS bootstrap context resolver"],
+    "files_changed": 5,
+    "acceptance_criteria": {
+      "bootstrap_exits_0": true,
+      "task_id_BATCH_3D_GATE_CHECK_001": true,
+      "workflow_tier_GATE": true,
+      "agent_pipeline_GATE_WORKFLOW": true,
+      "skills_include_quant_safety_review_and_gate_check": true,
+      "no_runtime_files_modified": true,
+      "no_file_writes_by_tool": true,
+      "no_polymarket_import": true
+    },
+    "repair_note": "Repair 1: Improved pipeline selection specificity scoring — prefers pipelines where tier is primary (first in list) and appears in pipeline_id",
+    "next_recommendation": "BATCH_3D_GATE_CHECK_001 — GATE tier. Run python tools/flaos/bootstrap.py before starting to confirm execution snapshot."
   }
 ]
