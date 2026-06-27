@@ -578,8 +578,12 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "A",
-    "commits": ["ae03508"],
-    "commit_messages": ["docs: add runtime session manager validation"],
+    "commits": ["ae03508", "71a4a1c", "edbb552"],
+    "commit_messages": [
+      "docs: add runtime session manager validation",
+      "docs: finalize validation commit hashes",
+      "docs: correct log governance task class to 7"
+    ],
     "files_changed": 4,
     "acceptance_criteria": {
       "unique_stdout_stderr_paths_verified": true,
@@ -588,6 +592,6 @@
       "duplicate_process_guard_fails_on_run": true,
       "cleanup_leaves_logs_intact": true
     },
-    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_001 — GATE tier Class 5. Implement log governance."
+    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_001 — GATE tier Class 7. Implement log governance."
   }
 ]
