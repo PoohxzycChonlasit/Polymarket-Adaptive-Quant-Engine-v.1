@@ -1338,5 +1338,43 @@
       "evidence_for_commit_3c5b781_pass": true
     },
     "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001 — LOOP tier Class 0. Verify CLI queries match manual template results."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_KNOWLEDGE_GRAPH_WHY_DEFERRED_QUERY_PARITY_FIX_001",
+    "task_class": 4,
+    "scope": [
+      "tools/flaos/knowledge_graph.py",
+      "tests/test_flaos_knowledge_graph.py",
+      "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_WHY_DEFERRED_QUERY_PARITY_FIX_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "C",
+    "commits": ["eb4f1ff", "pending-at-report-time"],
+    "commit_messages": [
+      "tools: fix RKG why-deferred query parity",
+      "docs: add RKG why-deferred parity fix report"
+    ],
+    "root_cause": "query traversal and audit-node handling bug; seed data already contained PAUSE_BATCH_3D_DEFER and deferred_by method edges",
+    "acceptance_criteria": {
+      "pytest_passed_27": true,
+      "py_compile_passed": true,
+      "why_deferred_returns_pause_batch_3d_defer": true,
+      "why_deferred_returns_two_deferred_methods": true,
+      "why_deferred_includes_audit_evidence_path": true,
+      "execution_contract_attachment_populated": true,
+      "safety_check_qs003_still_passes": true,
+      "bootstrap_healthy": true,
+      "graph_seed_data_unchanged": true,
+      "no_runtime_files_changed": true
+    },
+    "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001"
   }
+
 ]

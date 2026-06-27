@@ -462,14 +462,38 @@
     {
       "priority": 2.3,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Smoke test the Python RKG query tool against live graph. Verify all 4 query types return expected results matching manual template smoke test.",
       "blocked_by": null,
       "allowed_scope": ["docs/reports/"],
       "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001.md"],
-      "notes": "Run: python tools/flaos/knowledge_graph.py safety-check _last_quote_lineage_context etc."
+      "notes": "Completed; found why-deferred parity gap. Retry queued after parity fix."
+    },
+    {
+      "priority": 2.25,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_WHY_DEFERRED_QUERY_PARITY_FIX_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Fix Python Runtime Knowledge Graph why-deferred query parity for Batch 3D gate check.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/knowledge_graph.py", "tests/test_flaos_knowledge_graph.py", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_WHY_DEFERRED_QUERY_PARITY_FIX_001.md"],
+      "notes": "COMPLETED - why-deferred now returns PAUSE_BATCH_3D_DEFER, deferred methods, audit evidence path, and contract attachment."
+    },
+    {
+      "priority": 2.2,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Retry Python RKG smoke test after why-deferred parity fix. Verify all four query outputs match manual graph query template.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/", "docs/operations/graph_queries/"],
+      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001.md"],
+      "notes": "Next task after eb4f1ff why-deferred parity fix."
     },
     {
       "priority": 5,
