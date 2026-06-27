@@ -63,6 +63,30 @@
     },
     {
       "priority": 5,
+      "task_id": "TOOL_PIPELINE_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Create Tool Registry JSON and Tool Pipeline spec JSON files. Formalizes current manual verification into a checkable schema. No Python changes.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/operations/", "docs/reports/"],
+      "outputs": ["docs/operations/TOOL_REGISTRY_001.json", "docs/operations/TOOL_PIPELINES_001.json"],
+      "notes": "Phase 2 of FLAOS migration. See TOOL_PIPELINE_ENGINE_001.md for schema."
+    },
+    {
+      "priority": 5,
+      "task_id": "BATCH_3D_GATE_CHECK_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Gate check for Batch 3D: _phase2_complete_lifecycle_observability and _phase2_observability_payload extraction.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/audits/"],
+      "outputs": ["docs/audits/BATCH_3D_GATE_CHECK_001.md"],
+      "notes": "Can run in parallel with TOOL_PIPELINE_ENABLEMENT_001."
+    },
+    {
+      "priority": 6,
       "task_id": "LONG_RUNTIME_VALIDATION_001",
       "status": "OPTIONAL",
       "workflow_tier": "LOOP",
