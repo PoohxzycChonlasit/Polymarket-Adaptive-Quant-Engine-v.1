@@ -1123,9 +1123,76 @@ class PolymarketClient:
                        f"Note: create_order not called — full signing test requires live token_id.",
         }
 
-    # ------------------------------------------------------------------
-    # Order flow
-    # ------------------------------------------------------------------
+    def check_live_credential_readiness(self) -> dict[str, object]:
+        """Validate all required live credentials structurally without making any network call.
+
+        Checks that:
+        - polymarket_private_key is non-empty
+        - polymarket_funder is non-empty
+        - polymarket_api_key is non-empty
+        - polymarket_api_secret is non-empty
+        - polymarket_api_passphrase is non-empty
+        - polymarket_signature_type is in {0, 1, 2}
+
+        Returns dict with keys:
+          status: "OK" | "FAIL"
+          failures: list[str] — names of missing/invalid credentials
+          instructions: str — human-readable remediation message
+          approve_required: bool — True if USDC allowance may also need approval (always True in FAIL)
+        """
+        failures: list[str] = []
+
+        def _secret(val: object) -> str:
+            if val is None:
+                return ""
+            if hasattr(val, "get_secret_value"):
+                try:
+                    return str(val.get_secret_value())
+                except Exception:
+                    return ""
+            return str(val)
+
+        if not _secret(self.settings.polymarket_private_key):
+            failures.append("POLYMARKET_PRIVATE_KEY")
+        if not getattr(self.settings, "polymarket_funder", ""):
+            failures.append("POLYMARKET_FUNDER")
+        if not getattr(self.settings, "polymarket_api_key", ""):
+            failures.append("POLYMARKET_API_KEY")
+        if not _secret(getattr(self.settings, "polymarket_api_secret", None)):
+            failures.append("POLYMARKET_API_SECRET")
+        if not getattr(self.settings, "polymarket_api_passphrase", ""):
+            failures.append("POLYMARKET_API_PASSPHRASE")
+        sig_type = getattr(self.settings, "polymarket_signature_type", 0)
+        if sig_type not in (0, 1, 2):
+            failures.append(f"POLYMARKET_SIGNATURE_TYPE={sig_type} (must be 0, 1, or 2)")
+
+        if failures:
+            instructions = (
+                "Live credential validation FAILED. Fix the following in your .env file:\n"
+                + "\n".join(f"  - {f} is missing or invalid" for f in failures)
+                + "\nAfter setting all credentials, also ensure USDC allowance is approved:\n"
+                + "  Go to Polymarket UI → Settings → Approve USDC spending for the CLOB contract.\n"
+                + "  Then rerun: python main.py --mode verify"
+            )
+            return {
+                "status": "FAIL",
+                "failures": failures,
+                "instructions": instructions,
+                "approve_required": True,
+            }
+
+        return {
+            "status": "OK",
+            "failures": [],
+            "instructions": (
+                "All live credentials present. "
+                "Ensure USDC allowance is approved in Polymarket UI before placing live orders. "
+                "Rerun: python main.py --mode verify"
+            ),
+            "approve_required": False,
+        }
+
+
 
     def place_limit_order(
         self,

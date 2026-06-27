@@ -1221,10 +1221,24 @@ def run_verify_mode() -> int:
         api.get("api_secret", "MISSING"),
     )
 
+    credentials = report.get("credentials", {})
+    cred_status = credentials.get("status", "UNKNOWN")
+    cred_failures = credentials.get("failures") or []
+    cred_instructions = credentials.get("instructions", "")
+    LOGGER.info(
+        "[VERIFY CREDENTIALS]\nstatus=%s failures=%s",
+        cred_status,
+        ", ".join(str(f) for f in cred_failures) if cred_failures else "none",
+    )
+    if cred_status != "OK" and cred_instructions:
+        LOGGER.warning("[VERIFY CREDENTIALS] %s", cred_instructions)
+
     wallet = report["wallet"]
     verify_wallet = env_report["wallet"]
+    approve_instruction = wallet.get("approve_instruction", "")
     LOGGER.info(
-        "[VERIFY WALLET]\nconfigured=%s derived=%s match=%s network=%s chain_id=%s rpc=%s signer=%s allowance=%s",
+        "[VERIFY WALLET]\nconfigured=%s derived=%s match=%s network=%s chain_id=%s rpc=%s"
+        " signer=%s allowance=%s allowance_balance=%.4f allowance_amount=%.4f allowance_needed=%.4f approve_required=%s",
         _mask_secret(verify_wallet.get("configured", "")),
         _mask_secret(verify_wallet.get("derived", "")) if verify_wallet.get("derived") else verify_wallet.get("derived_status", "--"),
         verify_wallet.get("match", "UNKNOWN"),
@@ -1233,7 +1247,14 @@ def run_verify_mode() -> int:
         verify_wallet.get("rpc_status", "--"),
         wallet.get("signer", "FAIL"),
         wallet.get("allowance", "UNKNOWN"),
+        float(wallet.get("allowance_balance") or 0.0),
+        float(wallet.get("allowance_amount") or 0.0),
+        float(wallet.get("allowance_needed") or 0.0),
+        wallet.get("approve_required", "UNKNOWN"),
     )
+    if approve_instruction:
+        log_fn = LOGGER.warning if wallet.get("approve_required") else LOGGER.info
+        log_fn("[VERIFY ALLOWANCE] %s", approve_instruction)
 
     balance = report["balance"]
     LOGGER.info(

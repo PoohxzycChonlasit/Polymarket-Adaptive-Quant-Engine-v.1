@@ -8212,17 +8212,54 @@ class PolymarketTrader:
             "latency_ms": latency_ms,
             "websocket": websocket_status,
         }
-        # Enhanced allowance check using structured status
+
+        # ── Structural credential check (no network call) ─────────────────────
+        credential_check: dict[str, object] = {}
+        try:
+            credential_check = self.client.check_live_credential_readiness()
+            if credential_check.get("status") != "OK":
+                for failure in (credential_check.get("failures") or []):
+                    add_warning(f"missing_credential:{failure}", required=True)
+        except Exception as exc:
+            LOGGER.warning("[VERIFY] credential readiness check failed: %s", exc)
+            credential_check = {
+                "status": "FAIL",
+                "failures": ["check_failed"],
+                "instructions": str(exc),
+                "approve_required": True,
+            }
+
+        report["credentials"] = credential_check
+
+        # ── Enhanced allowance check using structured status ──────────────────
         allowance_detail: dict[str, object] = {}
         signing_check: dict[str, object] = {}
+        # Derive minimum needed from micro-tier min_bet setting
+        _min_live_bet = float(getattr(self.settings, "micro_survival_min_position_size", 0.10))
         if self._connected:
             try:
-                allowance_detail = self.client.check_allowance_status()
+                allowance_detail = self.client.check_allowance_status(needed=_min_live_bet)
+                if allowance_detail.get("status") != "OK":
+                    add_warning("missing_allowance", required=True)
                 signing_check = self.client.verify_signing_capability()
                 if signing_check.get("status") != "OK":
                     add_warning("signing_capability_failed", required=False)
             except Exception as exc:
                 LOGGER.warning("[VERIFY] enhanced allowance/signing check failed: %s", exc)
+
+        # Build manual approval instructions surfaced to operator
+        _allowance_ok = allowance_detail.get("status") == "OK"
+        _approve_instruction = (
+            "USDC allowance is sufficient — no action required."
+            if _allowance_ok
+            else (
+                "ACTION REQUIRED: Approve USDC allowance manually before placing live orders.\n"
+                "  1. Go to https://polymarket.com → Settings → Deposit/Approve\n"
+                "  2. Approve USDC spending for the Polymarket CLOB contract on Polygon\n"
+                "  3. Then rerun: python main.py --mode verify\n"
+                "  Automated Web3 approve() is not implemented — manual UI step is required."
+            )
+        )
 
         report["wallet"] = {
             "address": wallet_address or "--",
@@ -8231,9 +8268,11 @@ class PolymarketTrader:
             "allowance": allowance_status,
             "allowance_balance": allowance_balance,
             "allowance_amount": allowance_amount,
+            "allowance_needed": _min_live_bet,
             "allowance_detail": allowance_detail,
             "signing_check": signing_check,
             "approve_required": allowance_detail.get("approve_required", allowance_status == "MISSING"),
+            "approve_instruction": _approve_instruction,
         }
 
         fetched_cash = 0.0

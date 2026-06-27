@@ -443,9 +443,32 @@ class Settings(BaseSettings):
                 raise ValueError(
                     "POLYMARKET_FUNDER must be set in .env when PAPER_TRADING=false"
                 )
+            if not self.polymarket_api_key:
+                raise ValueError(
+                    "POLYMARKET_API_KEY must be set in .env when PAPER_TRADING=false"
+                )
+            api_secret = (
+                self.polymarket_api_secret.get_secret_value()
+                if self.polymarket_api_secret is not None
+                else ""
+            )
+            if not api_secret:
+                raise ValueError(
+                    "POLYMARKET_API_SECRET must be set in .env when PAPER_TRADING=false"
+                )
+            if not self.polymarket_api_passphrase:
+                raise ValueError(
+                    "POLYMARKET_API_PASSPHRASE must be set in .env when PAPER_TRADING=false"
+                )
+            if self.polymarket_signature_type not in (0, 1, 2):
+                raise ValueError(
+                    f"POLYMARKET_SIGNATURE_TYPE={self.polymarket_signature_type} is invalid. "
+                    "Must be 0 (EOA), 1 (gnosis-safe proxy), or 2 (polymarket proxy wallet)."
+                )
         return self
 
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
+
