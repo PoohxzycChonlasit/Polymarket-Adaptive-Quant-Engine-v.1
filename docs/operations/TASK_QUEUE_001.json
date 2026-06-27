@@ -582,14 +582,26 @@
     {
       "priority": 5,
       "task_id": "LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001",
-      "status": "FUTURE",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
-      "description": "Create v2 Loop Runtime Engine command checklist template for AI to fill before each loop. Formalizes INIT contract declaration.",
-      "blocked_by": "BATCH_3C_IMPLEMENTATION_001",
-      "allowed_scope": ["docs/operations/", "docs/reports/"],
-      "outputs": ["docs/operations/LOOP_CONTRACT_TEMPLATE_001.md"],
-      "notes": "Trigger when 10+ loop memory records exist and repair rate >10%."
+      "description": "Create v2 Loop Runtime Engine design specifying the unified execution lifecycle.",
+      "blocked_by": "SUPERVISOR_ENGINE_DESIGN_001",
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/architecture/LOOP_RUNTIME_ENGINE_001.md", "docs/reports/LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001.md"],
+      "notes": "Transition FLAOS into a unified execution lifecycle design."
+    },
+    {
+      "priority": 4.9,
+      "task_id": "LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Implement v2 Loop Runtime Engine Python coordinator script integrating Context Builder, Decision, and Supervisor.",
+      "blocked_by": "LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001",
+      "allowed_scope": ["tools/", "docs/reports/", "tests/"],
+      "outputs": ["tools/flaos/loop_runtime.py", "docs/reports/LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001.md"],
+      "notes": "Loop runtime integration script. Class 4 tooling loop task."
     }
   ]
 }
