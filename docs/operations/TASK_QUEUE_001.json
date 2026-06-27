@@ -100,7 +100,7 @@
     {
       "priority": 7,
       "task_id": "BATCH_3D_GATE_CHECK_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Gate check for Batch 3D: _phase2_complete_lifecycle_observability and _phase2_observability_payload extraction.",
@@ -112,7 +112,7 @@
     {
       "priority": 6,
       "task_id": "LONG_RUNTIME_VALIDATION_001",
-      "status": "OPTIONAL",
+      "status": "READY",
       "workflow_tier": "LOOP",
       "task_class": 0,
       "description": "Extended paper run validation (30+ minutes) to verify memory stability after Batch 3 extractions.",
