@@ -7,7 +7,10 @@
     {
       "pipeline_id": "DOCS_LOOP",
       "workflow_tier": "FAST",
-      "task_classes": [3, 9],
+      "task_classes": [
+        3,
+        9
+      ],
       "description": "Docs-only loops: housekeeping, routing, governance updates",
       "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 3: 24_REPOSITORY_LIBRARIAN or 01_PROJECT_MANAGER",
       "ordered_tool_sequence": [
@@ -39,7 +42,9 @@
     {
       "pipeline_id": "HEALTH_CHECK_LOOP",
       "workflow_tier": "FAST",
-      "task_classes": [0],
+      "task_classes": [
+        0
+      ],
       "description": "Read-only health checks: compile, import, git state, JSONL",
       "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 0: 28_RUNTIME_OPERATIONS or ALL",
       "ordered_tool_sequence": [
@@ -68,7 +73,9 @@
     {
       "pipeline_id": "LOW_RISK_REFACTOR_LOOP",
       "workflow_tier": "LOOP",
-      "task_classes": [6],
+      "task_classes": [
+        6
+      ],
       "description": "Low-risk structural refactors: proxy/shim/static utility extraction",
       "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 6-low: 02_CODE_ARCHITECT + 07_TEST_CI",
       "ordered_tool_sequence": [
@@ -107,7 +114,9 @@
     {
       "pipeline_id": "RUNTIME_VALIDATION_LOOP",
       "workflow_tier": "LOOP",
-      "task_classes": [0],
+      "task_classes": [
+        0
+      ],
       "description": "Post-commit runtime validation with paper run and JSONL verification",
       "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 0: 28_RUNTIME_OPERATIONS",
       "ordered_tool_sequence": [
@@ -146,7 +155,10 @@
     {
       "pipeline_id": "GATE_WORKFLOW",
       "workflow_tier": "GATE",
-      "task_classes": [2, 7],
+      "task_classes": [
+        2,
+        7
+      ],
       "description": "High-stakes gate check + design + implementation workflow",
       "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 7: 29_ARCHITECTURE_GOVERNANCE + 02_CODE_ARCHITECT + 07_TEST_CI",
       "ordered_tool_sequence": [
@@ -194,7 +206,9 @@
     {
       "pipeline_id": "HIGH_RISK_STOP_WORKFLOW",
       "workflow_tier": "GATE",
-      "task_classes": [8],
+      "task_classes": [
+        8
+      ],
       "description": "Live trading / execution / risk changes — always stops for human review",
       "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 8: MANUAL ONLY",
       "ordered_tool_sequence": [
@@ -219,8 +233,11 @@
     },
     {
       "pipeline_id": "TOOL_PIPELINE_LOOP",
-      "workflow_tier": "STANDARD",
-      "task_classes": [3, 4],
+      "workflow_tier": "GATE",
+      "task_classes": [
+        3,
+        4
+      ],
       "description": "Tool registry/pipeline updates and offline automation tooling (no runtime trading code changes)",
       "ordered_tool_sequence": [
         "git_status_short",

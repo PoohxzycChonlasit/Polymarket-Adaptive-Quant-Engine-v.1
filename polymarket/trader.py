@@ -8112,6 +8112,18 @@ class PolymarketTrader:
             "latency_ms": latency_ms,
             "websocket": websocket_status,
         }
+        # Enhanced allowance check using structured status
+        allowance_detail: dict[str, object] = {}
+        signing_check: dict[str, object] = {}
+        if self._connected:
+            try:
+                allowance_detail = self.client.check_allowance_status()
+                signing_check = self.client.verify_signing_capability()
+                if signing_check.get("status") != "OK":
+                    add_warning("signing_capability_failed", required=False)
+            except Exception as exc:
+                LOGGER.warning("[VERIFY] enhanced allowance/signing check failed: %s", exc)
+
         report["wallet"] = {
             "address": wallet_address or "--",
             "chain": f"Polygon:{self.settings.polymarket_chain_id}",
@@ -8119,6 +8131,9 @@ class PolymarketTrader:
             "allowance": allowance_status,
             "allowance_balance": allowance_balance,
             "allowance_amount": allowance_amount,
+            "allowance_detail": allowance_detail,
+            "signing_check": signing_check,
+            "approve_required": allowance_detail.get("approve_required", allowance_status == "MISSING"),
         }
 
         fetched_cash = 0.0

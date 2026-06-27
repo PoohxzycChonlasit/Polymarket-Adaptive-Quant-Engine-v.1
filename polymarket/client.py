@@ -1009,10 +1009,119 @@ class PolymarketClient:
                 f"insufficient {'USDC' if side == BUY else 'token'} balance: "
                 f"balance={balance:.6f} required={needed:.6f}"
             )
-        if allowance and allowance + 1e-9 < needed:
+        # FIX: allowance=0.0 is falsy in Python so `if allowance:` skipped the
+        # check. Always enforce the allowance gate when placing live BUY orders.
+        if side == BUY and allowance + 1e-9 < needed:
             raise RuntimeError(
-                f"insufficient allowance: allowance={allowance:.6f} required={needed:.6f}"
+                f"insufficient USDC allowance: allowance={allowance:.6f} required={needed:.6f}. "
+                f"Approve USDC spending on the Polymarket CLOB contract before trading live. "
+                f"See docs/audits/LIVE_EXECUTION_GAP_ANALYSIS_001.md §4 for the Web3 approval path."
             )
+
+    def check_allowance_status(self, *, needed: float = 0.0) -> dict[str, object]:
+        """Return structured allowance status without raising.
+
+        Reads current USDC balance and allowance from the CLOB indexer.
+        Does NOT modify on-chain state.
+
+        Returns dict with keys:
+          status: "OK" | "MISSING" | "INSUFFICIENT" | "FAIL"
+          balance: float
+          allowance: float
+          needed: float
+          message: str
+          approve_required: bool
+        """
+        try:
+            ba = self.get_balance_allowance(side=BUY)
+            balance = float(ba.get("balance", 0.0) or 0.0)
+            allowance = float(ba.get("allowance", 0.0) or 0.0)
+        except Exception as exc:
+            return {
+                "status": "FAIL",
+                "balance": 0.0,
+                "allowance": 0.0,
+                "needed": needed,
+                "message": f"Failed to fetch balance/allowance: {exc}",
+                "approve_required": False,
+            }
+
+        if allowance < 1e-9:
+            status = "MISSING"
+            approve_required = True
+            msg = (
+                "USDC allowance is 0. Approve the Polymarket CLOB contract to spend USDC "
+                "before placing live orders. Use the Polymarket UI or Web3 approve() on the "
+                "USDC contract. See docs/audits/LIVE_EXECUTION_GAP_ANALYSIS_001.md §4."
+            )
+        elif needed > 0 and allowance + 1e-9 < needed:
+            status = "INSUFFICIENT"
+            approve_required = True
+            msg = f"Allowance {allowance:.6f} is less than needed {needed:.6f}."
+        else:
+            status = "OK"
+            approve_required = False
+            msg = f"Allowance OK: {allowance:.6f} available."
+
+        return {
+            "status": status,
+            "balance": balance,
+            "allowance": allowance,
+            "needed": needed,
+            "message": msg,
+            "approve_required": approve_required,
+        }
+
+    def verify_signing_capability(self) -> dict[str, object]:
+        """Verify that the CLOB client can sign orders without posting anything.
+
+        Checks that:
+        - L1 auth credentials are set (API key, signer, builder)
+        - The signer is not None (private key loaded correctly)
+        - The order builder has a valid signature type
+
+        Does NOT call create_order (which requires a real token_id for tick size)
+        and does NOT post any order.
+
+        Returns dict with keys:
+          status: "OK" | "FAIL"
+          has_signer: bool
+          has_builder: bool
+          sig_type: int | None
+          message: str
+        """
+        try:
+            client = self._require_clob()
+        except Exception as exc:
+            return {"status": "FAIL", "has_signer": False, "has_builder": False,
+                    "sig_type": None, "message": f"CLOB client not connected: {exc}"}
+
+        has_signer = getattr(client, "signer", None) is not None
+        has_builder = getattr(client, "builder", None) is not None
+        sig_type: int | None = None
+        if has_builder:
+            try:
+                sig_type = int(client.builder.sig_type)
+            except Exception:
+                pass
+
+        if not has_signer:
+            return {"status": "FAIL", "has_signer": False, "has_builder": has_builder,
+                    "sig_type": sig_type,
+                    "message": "Signer is None — private key not loaded or invalid."}
+        if not has_builder:
+            return {"status": "FAIL", "has_signer": True, "has_builder": False,
+                    "sig_type": sig_type,
+                    "message": "Order builder is None — connect() may have failed partially."}
+
+        return {
+            "status": "OK",
+            "has_signer": True,
+            "has_builder": True,
+            "sig_type": sig_type,
+            "message": f"Signing capability confirmed (sig_type={sig_type}). "
+                       f"Note: create_order not called — full signing test requires live token_id.",
+        }
 
     # ------------------------------------------------------------------
     # Order flow

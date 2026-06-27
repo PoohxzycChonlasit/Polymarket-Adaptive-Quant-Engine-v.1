@@ -15,7 +15,9 @@
         "polymarket/orchestration/trader_observability.py",
         "docs/audits/"
       ],
-      "outputs": ["docs/audits/BATCH_3C_GATE_CHECK_001.md"],
+      "outputs": [
+        "docs/audits/BATCH_3C_GATE_CHECK_001.md"
+      ],
       "notes": "Use Role 29 (Architecture Governance). Check active question does not block structural refactor."
     },
     {
@@ -26,8 +28,12 @@
       "task_class": 2,
       "description": "Design document for Batch 3C extraction — lifecycle observability payload methods.",
       "blocked_by": "BATCH_3C_GATE_CHECK_001",
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/BATCH_3C_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/BATCH_3C_DESIGN_001.md"
+      ],
       "notes": "Use Role 02 (Code Architect). Requires gate PROCEED verdict."
     },
     {
@@ -57,8 +63,12 @@
       "task_class": 0,
       "description": "Post-commit paper mode validation for Batch 3C. Verify display proxy removal and static utility migration did not break telemetry or runtime.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/POST_BATCH_3C_RUNTIME_VALIDATION_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/POST_BATCH_3C_RUNTIME_VALIDATION_001.md"
+      ],
       "notes": "5+ cycles, exit 0, JSONL fields present, 0 AttributeError."
     },
     {
@@ -69,8 +79,14 @@
       "task_class": 3,
       "description": "Create Tool Registry JSON and Tool Pipeline spec JSON files. Formalizes current manual verification into a checkable schema. No Python changes.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/", "docs/reports/"],
-      "outputs": ["docs/operations/TOOL_REGISTRY_001.json", "docs/operations/TOOL_PIPELINES_001.json"],
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/TOOL_REGISTRY_001.json",
+        "docs/operations/TOOL_PIPELINES_001.json"
+      ],
       "notes": "Phase 2 of FLAOS migration. See TOOL_PIPELINE_ENGINE_001.md for schema."
     },
     {
@@ -81,8 +97,14 @@
       "task_class": 3,
       "description": "Define Agent Pipeline JSON spec: task-type to role mapping, context budgets, parallel eligibility. No Python changes.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/", "docs/architecture/", "docs/reports/"],
-      "outputs": ["docs/operations/AGENT_PIPELINE_001.json"],
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/architecture/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/AGENT_PIPELINE_001.json"
+      ],
       "notes": "Phase 3 FLAOS migration — completes automated role selection framework."
     },
     {
@@ -93,8 +115,13 @@
       "task_class": 3,
       "description": "Create docs/operations/skills/SKILL_REGISTRY_001.json with 8 initial skills as machine-readable JSON. No Python changes.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/skills/", "docs/reports/"],
-      "outputs": ["docs/operations/skills/SKILL_REGISTRY_001.json"],
+      "allowed_scope": [
+        "docs/operations/skills/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/skills/SKILL_REGISTRY_001.json"
+      ],
       "notes": "Phase 2 Skill Engine. See SKILL_ENGINE_001.md for 8 skill examples and registry schema."
     },
     {
@@ -105,8 +132,12 @@
       "task_class": 2,
       "description": "Gate check for Batch 3D: _phase2_complete_lifecycle_observability and _phase2_observability_payload extraction.",
       "blocked_by": null,
-      "allowed_scope": ["docs/audits/"],
-      "outputs": ["docs/audits/BATCH_3D_GATE_CHECK_001.md"],
+      "allowed_scope": [
+        "docs/audits/"
+      ],
+      "outputs": [
+        "docs/audits/BATCH_3D_GATE_CHECK_001.md"
+      ],
       "notes": "Can run in parallel with SKILL_REGISTRY_ENABLEMENT_001."
     },
     {
@@ -117,8 +148,12 @@
       "task_class": 0,
       "description": "Extended paper run validation (30+ minutes) to verify memory stability after Batch 3 extractions.",
       "blocked_by": "BATCH_3C_IMPLEMENTATION_001",
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/LONG_RUNTIME_VALIDATION_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/LONG_RUNTIME_VALIDATION_001.md"
+      ],
       "notes": "Optional — run when available. Use LOOP tier Class 0. No code changes. Monitor event_stream_file_size growth rate."
     },
     {
@@ -129,8 +164,12 @@
       "task_class": 2,
       "description": "Post-long validation refactor strategy review to align on the next refactoring direction after Batch 3 observability payload deferral.",
       "blocked_by": "LONG_RUNTIME_VALIDATION_001",
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001.md"
+      ],
       "notes": "Reviews project health, log files growth, and maps out target candidates for next phases."
     },
     {
@@ -141,8 +180,15 @@
       "task_class": 7,
       "description": "Build runtime session manager coordinator supporting PID lock enforcement, clean teardowns, and automatic output rotation.",
       "blocked_by": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
-      "allowed_scope": ["tools/", "docs/reports/", "utils/"],
-      "outputs": ["tools/runtime_session_coordinator.py", "docs/reports/RUNTIME_SESSION_MANAGER_ENABLEMENT_001.md"],
+      "allowed_scope": [
+        "tools/",
+        "docs/reports/",
+        "utils/"
+      ],
+      "outputs": [
+        "tools/runtime_session_coordinator.py",
+        "docs/reports/RUNTIME_SESSION_MANAGER_ENABLEMENT_001.md"
+      ],
       "notes": "Critical for process control. Integrates lockfile mechanism."
     },
     {
@@ -153,8 +199,13 @@
       "task_class": 0,
       "description": "Run short validation (5 cycles) using runtime session coordinator to verify process lock safety, log isolation, and metadata serialization.",
       "blocked_by": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
-      "allowed_scope": ["docs/reports/", "runtime/"],
-      "outputs": ["docs/reports/RUNTIME_SESSION_MANAGER_VALIDATION_001.md"],
+      "allowed_scope": [
+        "docs/reports/",
+        "runtime/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_SESSION_MANAGER_VALIDATION_001.md"
+      ],
       "notes": "Ensures no duplicate runs can be spawned under lock control."
     },
     {
@@ -165,8 +216,13 @@
       "task_class": 7,
       "description": "Implement log governance layer rate-limiting event stream events and cleaning curses TUI ANSI print streams.",
       "blocked_by": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
-      "allowed_scope": ["utils/", "docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_001.md"],
+      "allowed_scope": [
+        "utils/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_001.md"
+      ],
       "notes": "Gate check completed in RUNTIME_LOG_GOVERNANCE_GATE_001. Design split into Phase A (offline script) and Phase B (runtime code). See RUNTIME_LOG_GOVERNANCE_GATE_001.md."
     },
     {
@@ -177,8 +233,14 @@
       "task_class": 4,
       "description": "Design Phase A offline log governance script. Architecture at docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md",
       "blocked_by": null,
-      "allowed_scope": ["docs/architecture/", "docs/reports/"],
-      "outputs": ["docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md", "docs/reports/RUNTIME_LOG_GOVERNANCE_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md",
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_DESIGN_001.md"
+      ],
       "notes": "Design complete. 5 subcommands, dry-run-first policy, 12-section spec. Implementation is next task."
     },
     {
@@ -189,8 +251,14 @@
       "task_class": 4,
       "description": "Implement tools/flaos/log_governance.py following the design in docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md. Phase A: inspect, plan, dry-run, execute, report subcommands. No runtime trading code changes.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/", "docs/reports/"],
-      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001.md"],
+      "allowed_scope": [
+        "tools/flaos/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/flaos/log_governance.py",
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001.md"
+      ],
       "notes": "URGENCY HIGH — logs/ at 1.6 GB. Implement dry-run first policy. Execute only with --confirm flag. Session guard required before DELETE."
     },
     {
@@ -211,8 +279,15 @@
       "task_class": 4,
       "description": "Corrected log governance policy — session-age-based cleanup.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
-      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001.md"],
+      "allowed_scope": [
+        "tools/flaos/",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/flaos/log_governance.py",
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001.md"
+      ],
       "notes": "Corrected policy adds session-age-based cleanup. Real plan: 862 actions (800 capped), 1,423 MB estimated reclaim."
     },
     {
@@ -223,8 +298,12 @@
       "task_class": 2,
       "description": "Human review of corrected dry-run plan (800 DELETE actions, 1.4 GB) before executing. Confirm session groups are safe to delete.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001.md"
+      ],
       "notes": "Gate review: confirm oldest sessions are from May 2026 (50 days old), PIDs are not running. Authorize execute after review."
     },
     {
@@ -235,8 +314,13 @@
       "task_class": 8,
       "description": "Explicitly authorize log governance execute --confirm after reviewing gate audit. Run plan + dry-run one final time, then execute --confirm if all checks still pass.",
       "blocked_by": null,
-      "allowed_scope": ["logs/", "docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_001.md"],
+      "allowed_scope": [
+        "logs/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_001.md"
+      ],
       "notes": "COMPLETED — 800 deleted, 1,323.7 MB reclaimed, 0 failures. logs/ reduced from 1.6 GB to 303 MB."
     },
     {
@@ -247,8 +331,13 @@
       "task_class": 4,
       "description": "Run second execute pass to clean remaining 56 session log groups not covered by 800-action cap in execute 001.",
       "blocked_by": null,
-      "allowed_scope": ["logs/", "docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_002.md"],
+      "allowed_scope": [
+        "logs/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_002.md"
+      ],
       "notes": "Completed — 56 deleted, 88 MB reclaimed. logs/ at 219 MB."
     },
     {
@@ -259,8 +348,12 @@
       "task_class": 0,
       "description": "Post-Phase-A validation: confirm logs/ at 219 MB, JSONL intact, bootstrap HEALTHY, no trading files changed.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001.md"
+      ],
       "notes": "All checks PASS. Phase A complete."
     },
     {
@@ -271,8 +364,13 @@
       "task_class": 3,
       "description": "Phase A closeout: update CURRENT_PROJECT_STATUS.md with log governance results, save memory records to commit, confirm BATCH_3D is next priority.",
       "blocked_by": null,
-      "allowed_scope": ["CURRENT_PROJECT_STATUS.md", "docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001.md"],
+      "allowed_scope": [
+        "CURRENT_PROJECT_STATUS.md",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001.md"
+      ],
       "notes": "COMPLETED — CURRENT_PROJECT_STATUS.md updated with Phase A results."
     },
     {
@@ -283,8 +381,13 @@
       "task_class": 2,
       "description": "Brief gate review before resuming Batch 3D trader.py refactor. Confirm active question status, confirm no regressions from maintenance sprint, confirm correct next batch scope.",
       "blocked_by": null,
-      "allowed_scope": ["docs/audits/", "docs/reports/"],
-      "outputs": ["docs/audits/POST_MAINTENANCE_STRATEGY_REVIEW_001.md"],
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/audits/POST_MAINTENANCE_STRATEGY_REVIEW_001.md"
+      ],
       "notes": "COMPLETED — verdict: Memory OS V2 Design is primary next. Full Batch 3D (payload methods) remains deferred. Batch 3D mini-gate secondary."
     },
     {
@@ -295,8 +398,15 @@
       "task_class": 2,
       "description": "Design Memory OS v2: JSONL-based typed records per category (decision, failure, repair, runtime_evidence, quant_safety), MEMORY_INDEX.json for O(1) session startup lookup, migration path from daily JSON array.",
       "blocked_by": null,
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/architecture/MEMORY_OS_V2_001.md", "docs/reports/MEMORY_OS_V2_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/MEMORY_OS_V2_001.md",
+        "docs/reports/MEMORY_OS_V2_DESIGN_001.md"
+      ],
       "notes": "COMPLETED — 45-section design, 20 memory layers, JSONL format, Memory Index, Memory Graph, migration plan v2a-v4."
     },
     {
@@ -307,8 +417,17 @@
       "task_class": 4,
       "description": "Implement Memory OS V2: tools/flaos/memory_migrate.py (v1 JSON → JSONL), tools/flaos/memory_os.py (read/write/query/validate CLI), MEMORY_INDEX.json, SAFETY_MEMORY.jsonl pre-seeded with QS-001 to QS-010.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/", "docs/operations/memory/", "tests/"],
-      "outputs": ["tools/flaos/memory_migrate.py", "tools/flaos/memory_os.py", "docs/operations/memory/MEMORY_INDEX.json", "docs/operations/memory/safety/SAFETY_MEMORY.jsonl"],
+      "allowed_scope": [
+        "tools/flaos/",
+        "docs/operations/memory/",
+        "tests/"
+      ],
+      "outputs": [
+        "tools/flaos/memory_migrate.py",
+        "tools/flaos/memory_os.py",
+        "docs/operations/memory/MEMORY_INDEX.json",
+        "docs/operations/memory/safety/SAFETY_MEMORY.jsonl"
+      ],
       "notes": "COMPLETED — 23/23 tests pass. 35 loop entries migrated, 10 QS entries seeded, MEMORY_INDEX_001.json created."
     },
     {
@@ -319,8 +438,16 @@
       "task_class": 4,
       "description": "Integrate Memory OS into bootstrap.py: on session start, load SAFETY_MEMORY.jsonl, update MEMORY_INDEX, provide memory context to planning engine.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/", "tests/", "docs/operations/memory/", "docs/reports/"],
-      "outputs": ["tools/flaos/bootstrap.py (updated)", "docs/reports/MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001.md"],
+      "allowed_scope": [
+        "tools/flaos/",
+        "tests/",
+        "docs/operations/memory/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/flaos/bootstrap.py (updated)",
+        "docs/reports/MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001.md"
+      ],
       "notes": "Integrate memory_os.py into bootstrap context load. Safety memory always loaded first."
     },
     {
@@ -331,8 +458,13 @@
       "task_class": 2,
       "description": "Design execution engine for FLAOS full automation. Blocked until LOW_PRICE_TRUTH_RESOLUTION_001 is resolved.",
       "blocked_by": "LOW_PRICE_TRUTH_RESOLUTION_001",
-      "allowed_scope": ["docs/architecture/", "docs/reports/"],
-      "outputs": ["docs/architecture/EXECUTION_ENGINE_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/architecture/EXECUTION_ENGINE_001.md"
+      ],
       "notes": "COMPLETED — 15-section design. ExecutionContract, ToolExecutionResult, Evidence Collector, Repair Loop, Commit Engine, Memory OS integration, v1-v5 migration roadmap."
     },
     {
@@ -343,8 +475,13 @@
       "task_class": 4,
       "description": "Implement Execution Engine v2 (checklist executor): create docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md that AI fills before each loop to formalize INIT contract declaration.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/", "docs/reports/"],
-      "outputs": ["docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md"],
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md"
+      ],
       "notes": "COMPLETED — 20-section template with 3 examples (docs/refactor/destructive). Connects to bootstrap, Memory OS, safety memory."
     },
     {
@@ -355,8 +492,12 @@
       "task_class": 0,
       "description": "Smoke test the Execution Contract Template by documenting BATCH_3C_IMPLEMENTATION_001 retrospectively. Verifies template captures all required fields accurately.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/EXECUTION_CONTRACT_SMOKE_TEST_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/EXECUTION_CONTRACT_SMOKE_TEST_001.md"
+      ],
       "notes": "COMPLETED — template sufficient. CLASS 6+ mandate recommended. 2 template improvements suggested."
     },
     {
@@ -367,8 +508,15 @@
       "task_class": 3,
       "description": "Update PROJECT_RULES.md, AGENTS.md, LOOP_ENGINEERING_PLAYBOOK_001.md to mandate execution contract for CLASS 6+. Add docs/operations/execution_contracts/ to output location policy. Document abbreviated contract for CLASS 0/3/9.",
       "blocked_by": null,
-      "allowed_scope": ["PROJECT_RULES.md", "AGENTS.md", "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md", "docs/reports/"],
-      "outputs": ["docs/reports/EXECUTION_CONTRACT_POLICY_ENABLEMENT_001.md"],
+      "allowed_scope": [
+        "PROJECT_RULES.md",
+        "AGENTS.md",
+        "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/EXECUTION_CONTRACT_POLICY_ENABLEMENT_001.md"
+      ],
       "notes": "COMPLETED — policy added to PROJECT_RULES.md, AGENTS.md, Playbook. Template patched v2.1 with evidence_baseline and trader_py_lines_before."
     },
     {
@@ -379,8 +527,15 @@
       "task_class": 2,
       "description": "Design the Runtime Knowledge Graph: seed graph of trader.py method ownership, extraction history, permanent methods, proxy chains, and test coverage. Operationalizes REPOSITORY_GRAPH_ENGINE_001.md v2.",
       "blocked_by": null,
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/memory/repository/"],
-      "outputs": ["docs/operations/memory/repository/REPO_MEMORY.jsonl", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/memory/repository/"
+      ],
+      "outputs": [
+        "docs/operations/memory/repository/REPO_MEMORY.jsonl",
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_DESIGN_001.md"
+      ],
       "notes": "COMPLETED — 14-section design, 23 node types, 24 edge types, 5 schemas, 6 query examples, 3 Mermaid, v1-v5 migration."
     },
     {
@@ -391,7 +546,10 @@
       "task_class": 4,
       "description": "Create seed JSONL files: REPO_GRAPH_NODES.jsonl (QS-001..010 safety nodes + Batch 3 extraction history) and REPO_GRAPH_EDGES.jsonl (protects, extracted_to, deferred_by edges). No Python tooling yet.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/memory/repository/", "docs/reports/"],
+      "allowed_scope": [
+        "docs/operations/memory/repository/",
+        "docs/reports/"
+      ],
       "outputs": [
         "docs/operations/memory/repository/REPO_GRAPH_NODES.jsonl",
         "docs/operations/memory/repository/REPO_GRAPH_EDGES.jsonl",
@@ -407,8 +565,13 @@
       "task_class": 2,
       "description": "Design the RKG query engine: blast_radius(), safety_check(), evidence_for_commit(), who_touched(), why_deferred(). Reads REPO_GRAPH_NODES_001.jsonl and REPO_GRAPH_EDGES_001.jsonl.",
       "blocked_by": null,
-      "allowed_scope": ["docs/architecture/", "docs/reports/"],
-      "outputs": ["docs/architecture/RKG_QUERY_ENGINE_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/architecture/RKG_QUERY_ENGINE_001.md"
+      ],
       "notes": "COMPLETED — 8 queries, input/output schemas, safety-first behavior, 5 seeded-graph examples, Execution Contract integration, v1-v5 migration."
     },
     {
@@ -419,8 +582,14 @@
       "task_class": 4,
       "description": "Implement RKG v2 query tool: docs/operations/GRAPH_QUERY_TEMPLATE_001.md — Markdown form that AI fills using seeded JSONL to produce structured JSON query outputs. Proves queries work before Python implementation.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/", "docs/reports/"],
-      "outputs": ["docs/operations/GRAPH_QUERY_TEMPLATE_001.md", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001.md"],
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/GRAPH_QUERY_TEMPLATE_001.md",
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001.md"
+      ],
       "notes": "COMPLETED — 17-section template + 4 example fills (blast_radius, safety_check, why_deferred, evidence_for_commit). Section 16 produces Execution Contract attachment."
     },
     {
@@ -431,8 +600,12 @@
       "task_class": 0,
       "description": "Smoke test: execute all 4 template query examples against live seeded graph JSONL. Verify outputs match expected results. Proves template usable before mandating for CLASS 6+ contracts.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001.md"
+      ],
       "notes": "COMPLETED — 4/4 queries matched. Template sufficient. Contract-ready attachment blocks verified."
     },
     {
@@ -443,8 +616,14 @@
       "task_class": 3,
       "description": "Update PROJECT_RULES.md and AGENTS.md to mandate graph query (safety_check minimum) for all CLASS 6+ Execution Contracts. Add GRAPH_QUERY_TEMPLATE_001.md to output location policy.",
       "blocked_by": null,
-      "allowed_scope": ["PROJECT_RULES.md", "AGENTS.md", "docs/reports/"],
-      "outputs": ["docs/reports/GRAPH_QUERY_POLICY_ENABLEMENT_001.md"],
+      "allowed_scope": [
+        "PROJECT_RULES.md",
+        "AGENTS.md",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/GRAPH_QUERY_POLICY_ENABLEMENT_001.md"
+      ],
       "notes": "COMPLETED — 5 governance files patched. GRAPH_QUERY_NOT_EXECUTED stop condition added. knowledge_graph_evidence block in contract template."
     },
     {
@@ -455,8 +634,15 @@
       "task_class": 4,
       "description": "Implement tools/flaos/knowledge_graph.py — Python query tool for blast_radius, safety_check, evidence_for_commit, why_deferred reading seeded JSONL graph files. Stdlib only.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
-      "outputs": ["tools/flaos/knowledge_graph.py", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001.md"],
+      "allowed_scope": [
+        "tools/flaos/",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/flaos/knowledge_graph.py",
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001.md"
+      ],
       "notes": "COMPLETED — 5 subcommands, 24 tests, 24/24 pass. Reads seeded JSONL, outputs rkg_query_output_v1 JSON."
     },
     {
@@ -467,8 +653,12 @@
       "task_class": 0,
       "description": "Smoke test the Python RKG query tool against live graph. Verify all 4 query types return expected results matching manual template smoke test.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001.md"],
+      "allowed_scope": [
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001.md"
+      ],
       "notes": "Completed; found why-deferred parity gap. Retry queued after parity fix."
     },
     {
@@ -479,8 +669,15 @@
       "task_class": 4,
       "description": "Fix Python Runtime Knowledge Graph why-deferred query parity for Batch 3D gate check.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/knowledge_graph.py", "tests/test_flaos_knowledge_graph.py", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_WHY_DEFERRED_QUERY_PARITY_FIX_001.md"],
+      "allowed_scope": [
+        "tools/flaos/knowledge_graph.py",
+        "tests/test_flaos_knowledge_graph.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_WHY_DEFERRED_QUERY_PARITY_FIX_001.md"
+      ],
       "notes": "COMPLETED - why-deferred now returns PAUSE_BATCH_3D_DEFER, deferred methods, audit evidence path, and contract attachment."
     },
     {
@@ -491,8 +688,13 @@
       "task_class": 0,
       "description": "Retry Python RKG smoke test after why-deferred parity fix. Verify all four query outputs match manual graph query template.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/", "docs/operations/graph_queries/"],
-      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001.md"],
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/graph_queries/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_RETRY_001.md"
+      ],
       "notes": "COMPLETED - 4/4 decision-bearing queries pass. graph-health remains DEGRADED only for known orphan seed edges."
     },
     {
@@ -503,8 +705,14 @@
       "task_class": 4,
       "description": "Fix known Runtime Knowledge Graph health seed limitations: orphan placeholder extracted_to edges and permanent-node protection coverage.",
       "blocked_by": null,
-      "allowed_scope": ["docs/operations/knowledge_graph/", "tests/", "docs/reports/"],
-      "outputs": ["docs/reports/RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001.md"],
+      "allowed_scope": [
+        "docs/operations/knowledge_graph/",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_GRAPH_HEALTH_FIX_001.md"
+      ],
       "notes": "COMPLETED - graph-health now HEALTHY; orphaned_edges=0; permanent_nodes_with_protection=6/6."
     },
     {
@@ -515,8 +723,14 @@
       "task_class": 2,
       "description": "Design the reasoning engine after RKG Python tool and graph seed health are ready.",
       "blocked_by": null,
-      "allowed_scope": ["docs/architecture/", "docs/reports/"],
-      "outputs": ["docs/architecture/REASONING_ENGINE_001.md", "docs/reports/REASONING_ENGINE_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/architecture/REASONING_ENGINE_001.md",
+        "docs/reports/REASONING_ENGINE_DESIGN_001.md"
+      ],
       "notes": "COMPLETED - v1 design connects Memory OS V2, Safety Memory, RKG, Planning Engine, and Execution Contract into pre-execution reasoning."
     },
     {
@@ -527,8 +741,15 @@
       "task_class": 2,
       "description": "Design the FLAOS Decision Engine as the next governance layer after Reasoning Engine.",
       "blocked_by": "REASONING_ENGINE_DESIGN_001",
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/architecture/DECISION_ENGINE_001.md", "docs/reports/DECISION_ENGINE_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/DECISION_ENGINE_001.md",
+        "docs/reports/DECISION_ENGINE_DESIGN_001.md"
+      ],
       "notes": "Next after Reasoning Engine design; design only unless separately scoped."
     },
     {
@@ -539,8 +760,15 @@
       "task_class": 4,
       "description": "Implement Phase 1 offline Decision Engine validator verifying Safety Memory and graph blast-radius constraints.",
       "blocked_by": "DECISION_ENGINE_DESIGN_001",
-      "allowed_scope": ["tools/", "docs/reports/", "tests/"],
-      "outputs": ["tools/flaos/decision_validator.py", "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md"],
+      "allowed_scope": [
+        "tools/",
+        "docs/reports/",
+        "tests/"
+      ],
+      "outputs": [
+        "tools/flaos/decision_validator.py",
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md"
+      ],
       "notes": "Offline validator prototype. Class 4 tooling loop task."
     },
     {
@@ -551,8 +779,15 @@
       "task_class": 2,
       "description": "Design the FLAOS Context Builder compiling all metadata before decision runs.",
       "blocked_by": "DECISION_ENGINE_DESIGN_001",
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/architecture/CONTEXT_BUILDER_001.md", "docs/reports/CONTEXT_BUILDER_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/CONTEXT_BUILDER_001.md",
+        "docs/reports/CONTEXT_BUILDER_DESIGN_001.md"
+      ],
       "notes": "Compiles ContextBundle mapping all parameters and health targets."
     },
     {
@@ -563,8 +798,14 @@
       "task_class": 2,
       "description": "Design the FLAOS Supervisor Engine coordinating overall audit compliance.",
       "blocked_by": "CONTEXT_BUILDER_DESIGN_001",
-      "allowed_scope": ["docs/architecture/", "docs/reports/"],
-      "outputs": ["docs/architecture/SUPERVISOR_ENGINE_001.md", "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/architecture/SUPERVISOR_ENGINE_001.md",
+        "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md"
+      ],
       "notes": "Design only. Promoted from Context Builder output targets."
     },
     {
@@ -575,8 +816,14 @@
       "task_class": 3,
       "description": "Create supervisor manual checklist template for auditing state transitions and recording repair operations.",
       "blocked_by": "SUPERVISOR_ENGINE_DESIGN_001",
-      "allowed_scope": ["docs/operations/", "docs/reports/"],
-      "outputs": ["docs/operations/SUPERVISOR_CHECKLIST_TEMPLATE_001.md", "docs/reports/SUPERVISOR_CHECKLIST_ENABLEMENT_001.md"],
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/SUPERVISOR_CHECKLIST_TEMPLATE_001.md",
+        "docs/reports/SUPERVISOR_CHECKLIST_ENABLEMENT_001.md"
+      ],
       "notes": "Class 3 docs housekeeping loop task."
     },
     {
@@ -587,8 +834,15 @@
       "task_class": 3,
       "description": "Create v2 Loop Runtime Engine design specifying the unified execution lifecycle.",
       "blocked_by": "SUPERVISOR_ENGINE_DESIGN_001",
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/architecture/LOOP_RUNTIME_ENGINE_001.md", "docs/reports/LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/LOOP_RUNTIME_ENGINE_001.md",
+        "docs/reports/LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001.md"
+      ],
       "notes": "Transition FLAOS into a unified execution lifecycle design."
     },
     {
@@ -599,8 +853,16 @@
       "task_class": 4,
       "description": "Implement v2 Loop Runtime Engine Python coordinator script integrating Context Builder, Decision, and Supervisor.",
       "blocked_by": "LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001",
-      "allowed_scope": ["tools/", "docs/reports/", "tests/", "docs/operations/"],
-      "outputs": ["docs/operations/LOOP_RUNTIME_ENGINE_V2_CHECKLIST_001.md", "docs/reports/LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001.md"],
+      "allowed_scope": [
+        "tools/",
+        "docs/reports/",
+        "tests/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/operations/LOOP_RUNTIME_ENGINE_V2_CHECKLIST_001.md",
+        "docs/reports/LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001.md"
+      ],
       "notes": "Loop runtime integration script. Class 4 tooling loop task."
     },
     {
@@ -611,8 +873,14 @@
       "task_class": 4,
       "description": "Run a smoke test validation of the v2 Loop Runtime Engine against a mock task pipeline.",
       "blocked_by": "LOOP_RUNTIME_ENGINE_V2_INTEGRATION_001",
-      "allowed_scope": ["tools/", "docs/reports/", "tests/"],
-      "outputs": ["docs/reports/LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001.md"],
+      "allowed_scope": [
+        "tools/",
+        "docs/reports/",
+        "tests/"
+      ],
+      "outputs": [
+        "docs/reports/LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001.md"
+      ],
       "notes": "Class 4 tooling smoke test task."
     },
     {
@@ -623,8 +891,17 @@
       "task_class": 2,
       "description": "Design Market State Classifier v1 specifying volatility and trend regimes.",
       "blocked_by": "LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001",
-      "allowed_scope": ["docs/audits/", "docs/architecture/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/audits/MARKET_STATE_CLASSIFIER_GATE_001.md", "docs/architecture/MARKET_STATE_CLASSIFIER_001.md", "docs/reports/MARKET_STATE_CLASSIFIER_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/audits/MARKET_STATE_CLASSIFIER_GATE_001.md",
+        "docs/architecture/MARKET_STATE_CLASSIFIER_001.md",
+        "docs/reports/MARKET_STATE_CLASSIFIER_DESIGN_001.md"
+      ],
       "notes": "First Quant Runtime design task."
     },
     {
@@ -635,8 +912,14 @@
       "task_class": 2,
       "description": "Assess live trading readiness gate before entering micro-live trading.",
       "blocked_by": "MARKET_STATE_CLASSIFIER_001",
-      "allowed_scope": ["docs/audits/", "docs/operations/", "docs/reports/"],
-      "outputs": ["docs/audits/LIVE_TRADING_READINESS_GATE_001.md"],
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/audits/LIVE_TRADING_READINESS_GATE_001.md"
+      ],
       "notes": "Live readiness gate check. Design/Audit only."
     },
     {
@@ -647,8 +930,15 @@
       "task_class": 2,
       "description": "Scan and analyze the repository to audit project runtime reality.",
       "blocked_by": "LIVE_TRADING_READINESS_GATE_001",
-      "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/audits/PROJECT_RUNTIME_REALITY_AUDIT_001.md", "docs/reports/PROJECT_RUNTIME_REALITY_AUDIT_001.md"],
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/audits/PROJECT_RUNTIME_REALITY_AUDIT_001.md",
+        "docs/reports/PROJECT_RUNTIME_REALITY_AUDIT_001.md"
+      ],
       "notes": "Project runtime reality audit. Design/Audit only."
     },
     {
@@ -659,8 +949,14 @@
       "task_class": 2,
       "description": "Audit the rich paper log datasets for baseline backtest/expectancy validation.",
       "blocked_by": "PROJECT_RUNTIME_REALITY_AUDIT_001",
-      "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/audits/DATA_BACKTEST_INVENTORY_AUDIT_001.md"],
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/audits/DATA_BACKTEST_INVENTORY_AUDIT_001.md"
+      ],
       "notes": "Expectancy and backtest inventory validation. Design/Audit only."
     },
     {
@@ -671,8 +967,15 @@
       "task_class": 2,
       "description": "Design manual operator kill switch file-trigger and absolute USD-denominated limits.",
       "blocked_by": "LIVE_TRADING_READINESS_GATE_001",
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/architecture/MICRO_LIVE_SAFETY_001.md", "docs/reports/MICRO_LIVE_SAFETY_DESIGN_001.md"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/MICRO_LIVE_SAFETY_001.md",
+        "docs/reports/MICRO_LIVE_SAFETY_DESIGN_001.md"
+      ],
       "notes": "Safety enhancement design for micro-live trading."
     },
     {
@@ -683,9 +986,35 @@
       "task_class": 5,
       "description": "Implement passive telemetry fields for liquidity, price standard deviation, and book imbalance.",
       "blocked_by": "MARKET_STATE_CLASSIFIER_001",
-      "allowed_scope": ["tools/", "docs/reports/", "tests/", "utils/"],
-      "outputs": ["docs/reports/MARKET_STATE_CLASSIFIER_OBSERVABILITY_IMPLEMENTATION_001.md"],
+      "allowed_scope": [
+        "tools/",
+        "docs/reports/",
+        "tests/",
+        "utils/"
+      ],
+      "outputs": [
+        "docs/reports/MARKET_STATE_CLASSIFIER_OBSERVABILITY_IMPLEMENTATION_001.md"
+      ],
       "notes": "Class 5 passive observability loop task."
+    },
+    {
+      "priority": 4.3,
+      "task_id": "LIVE_ALLOWANCE_AND_PREFLIGHT_IMPLEMENTATION_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 4,
+      "description": "Fix zero-allowance preflight bug, add check_allowance_status(), verify_signing_capability(). Document Web3 approve_allowance path.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "polymarket/client.py",
+        "polymarket/trader.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/LIVE_ALLOWANCE_AND_PREFLIGHT_IMPLEMENTATION_001.md"
+      ],
+      "notes": "COMPLETED — 17 new tests pass, 128 regression tests pass. Zero-allowance bug fixed. approve_allowance requires Web3 (STOP condition hit — documented)."
     }
   ]
 }
