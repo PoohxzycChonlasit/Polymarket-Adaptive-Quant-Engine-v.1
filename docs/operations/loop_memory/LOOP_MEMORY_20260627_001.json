@@ -1765,7 +1765,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "B",
-    "commits": ["pending-reality-commit"],
+    "commits": ["059e387"],
     "commit_messages": ["docs: add project runtime reality audit"],
     "acceptance_criteria": {
       "bootstrap_healthy": true,
