@@ -386,7 +386,7 @@
     {
       "priority": 2.9,
       "task_id": "RUNTIME_KNOWLEDGE_GRAPH_SEED_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
       "description": "Create seed JSONL files: REPO_GRAPH_NODES.jsonl (QS-001..010 safety nodes + Batch 3 extraction history) and REPO_GRAPH_EDGES.jsonl (protects, extracted_to, deferred_by edges). No Python tooling yet.",
@@ -397,7 +397,19 @@
         "docs/operations/memory/repository/REPO_GRAPH_EDGES.jsonl",
         "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_SEED_001.md"
       ],
-      "notes": "Pure JSONL authoring following RKG node/edge schemas. Seed: QS rules as safety_rule nodes, Batch 3A/3B/3C extracted methods as function nodes, permanent flags, BATCH_3D defer edges."
+      "notes": "COMPLETED — 66 nodes, 45 edges, 17 node types, 14 edge types. All QS entries have protects/blocks edges. Batch 3 extraction history seeded."
+    },
+    {
+      "priority": 2.8,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_QUERY_ENGINE_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design the RKG query engine: blast_radius(), safety_check(), evidence_for_commit(), who_touched(), why_deferred(). Reads REPO_GRAPH_NODES_001.jsonl and REPO_GRAPH_EDGES_001.jsonl.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/architecture/", "docs/reports/"],
+      "outputs": ["docs/architecture/RKG_QUERY_ENGINE_001.md"],
+      "notes": "Design only — no Python yet. Define query schemas and response formats for Planning Engine integration."
     },
     {
       "priority": 5,

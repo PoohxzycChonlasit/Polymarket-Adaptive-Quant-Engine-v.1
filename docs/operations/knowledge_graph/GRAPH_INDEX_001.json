@@ -1,0 +1,640 @@
+{
+  "$schema": "graph_index_v1",
+  "generated_at": "2026-06-27T00:00:00Z",
+  "snapshot_id": "SNAP-20260627-001",
+  "node_file": "docs/operations/knowledge_graph/REPO_GRAPH_NODES_001.jsonl",
+  "edge_file": "docs/operations/knowledge_graph/REPO_GRAPH_EDGES_001.jsonl",
+  "total_nodes": 66,
+  "total_edges": 45,
+  "node_types": {
+    "safety_rule": 10,
+    "file": 4,
+    "class": 4,
+    "function": 15,
+    "field": 1,
+    "commit": 7,
+    "task": 2,
+    "audit": 1,
+    "runtime_validation": 3,
+    "runtime_event": 4,
+    "jsonl_field": 4,
+    "decision": 4,
+    "report": 2,
+    "quant_question": 1,
+    "maintenance_action": 1,
+    "agent_role": 2,
+    "memory_entry": 1
+  },
+  "edge_types": {
+    "protects": 8,
+    "blocks": 3,
+    "owns": 6,
+    "extracted_to": 6,
+    "proxied_by": 2,
+    "deferred_by": 2,
+    "implemented_by": 2,
+    "validated_by": 3,
+    "generated_report": 2,
+    "emits": 2,
+    "requires_safety_memory": 2,
+    "has_memory_entry": 1,
+    "migrated_in_batch": 2,
+    "depends_on": 2,
+    "writes": 1,
+    "reads": 1
+  },
+  "safety_rules_count": 10,
+  "permanent_methods_count": 16,
+  "deferred_methods_count": 2,
+  "extracted_methods_count": 12,
+  "nodes_by_id": {
+    "qs:QS-001": {
+      "node_type": "safety_rule",
+      "name": "QS-001",
+      "tags": [
+        "permanent",
+        "execution_path"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-002": {
+      "node_type": "safety_rule",
+      "name": "QS-002",
+      "tags": [
+        "permanent",
+        "execution_path"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-003": {
+      "node_type": "safety_rule",
+      "name": "QS-003",
+      "tags": [
+        "permanent",
+        "execution_path"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-004": {
+      "node_type": "safety_rule",
+      "name": "QS-004",
+      "tags": [
+        "permanent",
+        "risk_coupled"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-005": {
+      "node_type": "safety_rule",
+      "name": "QS-005",
+      "tags": [
+        "permanent",
+        "blast_radius"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-006": {
+      "node_type": "safety_rule",
+      "name": "QS-006",
+      "tags": [
+        "permanent",
+        "blast_radius"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-007": {
+      "node_type": "safety_rule",
+      "name": "QS-007",
+      "tags": [
+        "live_trading",
+        "never_automate"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-008": {
+      "node_type": "safety_rule",
+      "name": "QS-008",
+      "tags": [
+        "env_flag",
+        "live_risk"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-009": {
+      "node_type": "safety_rule",
+      "name": "QS-009",
+      "tags": [
+        "runtime_data",
+        "never_delete_auto"
+      ],
+      "confidence": 1.0
+    },
+    "qs:QS-010": {
+      "node_type": "safety_rule",
+      "name": "QS-010",
+      "tags": [
+        "execution",
+        "risk",
+        "sizing"
+      ],
+      "confidence": 1.0
+    },
+    "file:polymarket/trader.py": {
+      "node_type": "file",
+      "name": "trader.py",
+      "tags": [
+        "runtime",
+        "decomposition_in_progress"
+      ],
+      "confidence": 1.0
+    },
+    "file:polymarket/orchestration/trader_observability.py": {
+      "node_type": "file",
+      "name": "trader_observability.py",
+      "tags": [
+        "helper",
+        "observability"
+      ],
+      "confidence": 1.0
+    },
+    "file:polymarket/orchestration/trader_lifecycle.py": {
+      "node_type": "file",
+      "name": "trader_lifecycle.py",
+      "tags": [
+        "helper",
+        "lifecycle"
+      ],
+      "confidence": 1.0
+    },
+    "file:polymarket/trader_presentation.py": {
+      "node_type": "file",
+      "name": "trader_presentation.py",
+      "tags": [
+        "helper",
+        "presentation"
+      ],
+      "confidence": 1.0
+    },
+    "class:PolymarketTrader": {
+      "node_type": "class",
+      "name": "PolymarketTrader",
+      "tags": [
+        "core_trader"
+      ],
+      "confidence": 1.0
+    },
+    "class:TraderObservabilityHelper": {
+      "node_type": "class",
+      "name": "TraderObservabilityHelper",
+      "tags": [
+        "helper",
+        "observability"
+      ],
+      "confidence": 1.0
+    },
+    "class:TraderLifecycleHelper": {
+      "node_type": "class",
+      "name": "TraderLifecycleHelper",
+      "tags": [
+        "helper",
+        "lifecycle"
+      ],
+      "confidence": 1.0
+    },
+    "class:TraderPresentationHelper": {
+      "node_type": "class",
+      "name": "TraderPresentationHelper",
+      "tags": [
+        "helper",
+        "presentation"
+      ],
+      "confidence": 1.0
+    },
+    "fn:trader._phase4_build_quote_lineage": {
+      "node_type": "function",
+      "name": "_phase4_build_quote_lineage",
+      "tags": [
+        "permanent",
+        "execution_path"
+      ],
+      "confidence": 1.0
+    },
+    "fn:trader._phase4_quote_lineage_carry": {
+      "node_type": "function",
+      "name": "_phase4_quote_lineage_carry",
+      "tags": [
+        "permanent",
+        "execution_path"
+      ],
+      "confidence": 1.0
+    },
+    "fn:trader._risk_plan_zero_diagnostics": {
+      "node_type": "function",
+      "name": "_risk_plan_zero_diagnostics",
+      "tags": [
+        "permanent",
+        "risk_coupled"
+      ],
+      "confidence": 1.0
+    },
+    "fn:trader._diagnostic_float": {
+      "node_type": "function",
+      "name": "_diagnostic_float",
+      "tags": [
+        "permanent",
+        "blast_radius"
+      ],
+      "confidence": 1.0
+    },
+    "fn:trader._diagnostic_int": {
+      "node_type": "function",
+      "name": "_diagnostic_int",
+      "tags": [
+        "permanent",
+        "blast_radius"
+      ],
+      "confidence": 1.0
+    },
+    "field:trader._last_quote_lineage_context": {
+      "node_type": "field",
+      "name": "_last_quote_lineage_context",
+      "tags": [
+        "permanent",
+        "execution_path"
+      ],
+      "confidence": 1.0
+    },
+    "fn:trader._phase2_complete_lifecycle_observability": {
+      "node_type": "function",
+      "name": "_phase2_complete_lifecycle_observability",
+      "tags": [
+        "deferred_batch_3d",
+        "observability"
+      ],
+      "confidence": 0.9
+    },
+    "fn:trader._phase2_observability_payload": {
+      "node_type": "function",
+      "name": "_phase2_observability_payload",
+      "tags": [
+        "deferred_batch_3d",
+        "observability"
+      ],
+      "confidence": 0.9
+    },
+    "fn:helper._mark_orderbook_refresh": {
+      "node_type": "function",
+      "name": "_mark_orderbook_refresh",
+      "tags": [
+        "batch_3b1",
+        "observability"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._orderbook_refresh_observability_detail": {
+      "node_type": "function",
+      "name": "_orderbook_refresh_observability_detail",
+      "tags": [
+        "batch_3b1",
+        "observability"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._scheduler_cadence_observability_detail": {
+      "node_type": "function",
+      "name": "_scheduler_cadence_observability_detail",
+      "tags": [
+        "batch_3b2",
+        "cadence"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._emit_hybrid_v1_snapshot": {
+      "node_type": "function",
+      "name": "_emit_hybrid_v1_snapshot",
+      "tags": [
+        "batch_3b2",
+        "hybrid"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._phase2_candidate_hash": {
+      "node_type": "function",
+      "name": "_phase2_candidate_hash",
+      "tags": [
+        "batch_3c",
+        "static_utility"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._phase2_value_available": {
+      "node_type": "function",
+      "name": "_phase2_value_available",
+      "tags": [
+        "batch_3c",
+        "static_utility"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._phase2_iso_from_epoch": {
+      "node_type": "function",
+      "name": "_phase2_iso_from_epoch",
+      "tags": [
+        "batch_3c",
+        "static_utility"
+      ],
+      "confidence": 1.0
+    },
+    "fn:helper._phase2_phase_offsets": {
+      "node_type": "function",
+      "name": "_phase2_phase_offsets",
+      "tags": [
+        "batch_3c",
+        "static_utility"
+      ],
+      "confidence": 1.0
+    },
+    "commit:e76581fb": {
+      "node_type": "commit",
+      "name": "commit:e76581fb",
+      "tags": [
+        "batch_1",
+        "presentation"
+      ],
+      "confidence": 1.0
+    },
+    "commit:c3b2bd2": {
+      "node_type": "commit",
+      "name": "commit:c3b2bd2",
+      "tags": [
+        "batch_2a",
+        "lifecycle"
+      ],
+      "confidence": 1.0
+    },
+    "commit:3c24111": {
+      "node_type": "commit",
+      "name": "commit:3c24111",
+      "tags": [
+        "batch_3a",
+        "observability"
+      ],
+      "confidence": 1.0
+    },
+    "commit:a491820": {
+      "node_type": "commit",
+      "name": "commit:a491820",
+      "tags": [
+        "batch_3b1"
+      ],
+      "confidence": 1.0
+    },
+    "commit:381cbc4": {
+      "node_type": "commit",
+      "name": "commit:381cbc4",
+      "tags": [
+        "batch_3b2"
+      ],
+      "confidence": 1.0
+    },
+    "commit:6872a07": {
+      "node_type": "commit",
+      "name": "commit:6872a07",
+      "tags": [
+        "batch_3b_dedup"
+      ],
+      "confidence": 1.0
+    },
+    "commit:3c5b781": {
+      "node_type": "commit",
+      "name": "commit:3c5b781",
+      "tags": [
+        "batch_3c"
+      ],
+      "confidence": 1.0
+    },
+    "task:BATCH_3D_GATE_CHECK_001": {
+      "node_type": "task",
+      "name": "task:BATCH_3D_GATE_CHECK_001",
+      "tags": [
+        "batch_3d",
+        "gate_check",
+        "deferred"
+      ],
+      "confidence": 1.0
+    },
+    "task:RUNTIME_LOG_GOVERNANCE_EXECUTE_001": {
+      "node_type": "task",
+      "name": "task:RUNTIME_LOG_GOVERNANCE_EXECUTE_001",
+      "tags": [
+        "maintenance",
+        "log_governance"
+      ],
+      "confidence": 1.0
+    },
+    "audit:BATCH_3D_GATE_CHECK_001": {
+      "node_type": "audit",
+      "name": "BATCH_3D_GATE_CHECK_001",
+      "tags": [
+        "batch_3d",
+        "gate_check"
+      ],
+      "confidence": 1.0
+    },
+    "rtval:POST_BATCH_3B1": {
+      "node_type": "runtime_validation",
+      "name": "rtval:POST_BATCH_3B1",
+      "tags": [
+        "batch_3b1",
+        "validated"
+      ],
+      "confidence": 1.0
+    },
+    "rtval:POST_BATCH_3B2": {
+      "node_type": "runtime_validation",
+      "name": "rtval:POST_BATCH_3B2",
+      "tags": [
+        "batch_3b2",
+        "validated"
+      ],
+      "confidence": 1.0
+    },
+    "rtval:POST_BATCH_3C": {
+      "node_type": "runtime_validation",
+      "name": "rtval:POST_BATCH_3C",
+      "tags": [
+        "batch_3c",
+        "validated"
+      ],
+      "confidence": 1.0
+    },
+    "event:go_no_go_decision_v1": {
+      "node_type": "runtime_event",
+      "name": "go_no_go_decision_v1",
+      "tags": [
+        "jsonl",
+        "decision"
+      ],
+      "confidence": 1.0
+    },
+    "event:orderbook_state_changed_v1": {
+      "node_type": "runtime_event",
+      "name": "orderbook_state_changed_v1",
+      "tags": [
+        "jsonl",
+        "orderbook"
+      ],
+      "confidence": 1.0
+    },
+    "event:candidate_rejected_v1": {
+      "node_type": "runtime_event",
+      "name": "candidate_rejected_v1",
+      "tags": [
+        "jsonl",
+        "candidate"
+      ],
+      "confidence": 1.0
+    },
+    "event:runtime_heartbeat_v1": {
+      "node_type": "runtime_event",
+      "name": "runtime_heartbeat_v1",
+      "tags": [
+        "jsonl",
+        "heartbeat"
+      ],
+      "confidence": 1.0
+    },
+    "jfield:orderbook_refresh_source": {
+      "node_type": "jsonl_field",
+      "name": "orderbook_refresh_source",
+      "tags": [
+        "jsonl_field",
+        "batch_3b1"
+      ],
+      "confidence": 1.0
+    },
+    "jfield:market_evaluation_duration_ms": {
+      "node_type": "jsonl_field",
+      "name": "market_evaluation_duration_ms",
+      "tags": [
+        "jsonl_field",
+        "batch_3b2"
+      ],
+      "confidence": 1.0
+    },
+    "jfield:decision_cycle_interval_seconds": {
+      "node_type": "jsonl_field",
+      "name": "decision_cycle_interval_seconds",
+      "tags": [
+        "jsonl_field",
+        "batch_3b2"
+      ],
+      "confidence": 1.0
+    },
+    "jfield:orderbook_snapshot_age_ms_at_decision": {
+      "node_type": "jsonl_field",
+      "name": "orderbook_snapshot_age_ms_at_decision",
+      "tags": [
+        "jsonl_field",
+        "batch_3b1"
+      ],
+      "confidence": 1.0
+    },
+    "system:Memory_OS_V2": {
+      "node_type": "decision",
+      "name": "Memory_OS_V2",
+      "tags": [
+        "memory_os",
+        "flaos"
+      ],
+      "confidence": 1.0
+    },
+    "system:Execution_Engine": {
+      "node_type": "decision",
+      "name": "Execution_Engine_V2",
+      "tags": [
+        "execution_engine",
+        "flaos"
+      ],
+      "confidence": 1.0
+    },
+    "system:Planning_Engine": {
+      "node_type": "decision",
+      "name": "Planning_Engine_V1",
+      "tags": [
+        "planning_engine",
+        "flaos"
+      ],
+      "confidence": 1.0
+    },
+    "system:Runtime_Knowledge_Graph": {
+      "node_type": "decision",
+      "name": "Runtime_Knowledge_Graph_V1",
+      "tags": [
+        "knowledge_graph",
+        "flaos"
+      ],
+      "confidence": 1.0
+    },
+    "report:TRADER_REFACTOR_BATCH_003C_REPORT": {
+      "node_type": "report",
+      "name": "TRADER_REFACTOR_BATCH_003C_REPORT.md",
+      "tags": [
+        "batch_3c",
+        "report"
+      ],
+      "confidence": 1.0
+    },
+    "report:POST_BATCH_3C_RUNTIME_VALIDATION_001": {
+      "node_type": "report",
+      "name": "POST_BATCH_3C_RUNTIME_VALIDATION_001.md",
+      "tags": [
+        "batch_3c",
+        "validation"
+      ],
+      "confidence": 1.0
+    },
+    "qq:LOW_PRICE_TRUTH_RESOLUTION_001": {
+      "node_type": "quant_question",
+      "name": "LOW_PRICE_TRUTH_RESOLUTION_001",
+      "tags": [
+        "active_question"
+      ],
+      "confidence": 1.0
+    },
+    "maint:LOG_GOVERNANCE_PHASE_A": {
+      "node_type": "maintenance_action",
+      "name": "Log_Governance_Phase_A",
+      "tags": [
+        "maintenance",
+        "log_governance"
+      ],
+      "confidence": 1.0
+    },
+    "role:29_ARCHITECTURE_GOVERNANCE": {
+      "node_type": "agent_role",
+      "name": "role:29_ARCHITECTURE_GOVERNANCE",
+      "tags": [
+        "agent_role"
+      ],
+      "confidence": 1.0
+    },
+    "role:02_CODE_ARCHITECT": {
+      "node_type": "agent_role",
+      "name": "role:02_CODE_ARCHITECT",
+      "tags": [
+        "agent_role"
+      ],
+      "confidence": 1.0
+    },
+    "mem:LOOP_MEMORY_2026-06-27": {
+      "node_type": "memory_entry",
+      "name": "mem:LOOP_MEMORY_2026-06-27",
+      "tags": [
+        "loop_memory",
+        "v2"
+      ],
+      "confidence": 1.0
+    }
+  }
+}

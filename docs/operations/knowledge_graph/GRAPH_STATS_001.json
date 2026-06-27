@@ -1,0 +1,67 @@
+{
+  "$schema": "graph_stats_v1",
+  "generated_at": "2026-06-27T00:00:00Z",
+  "total_nodes": 66,
+  "total_edges": 45,
+  "node_type_breakdown": {
+    "safety_rule": 10,
+    "file": 4,
+    "class": 4,
+    "function": 15,
+    "field": 1,
+    "commit": 7,
+    "task": 2,
+    "audit": 1,
+    "runtime_validation": 3,
+    "runtime_event": 4,
+    "jsonl_field": 4,
+    "decision": 4,
+    "report": 2,
+    "quant_question": 1,
+    "maintenance_action": 1,
+    "agent_role": 2,
+    "memory_entry": 1
+  },
+  "edge_type_breakdown": {
+    "protects": 8,
+    "blocks": 3,
+    "owns": 6,
+    "extracted_to": 6,
+    "proxied_by": 2,
+    "deferred_by": 2,
+    "implemented_by": 2,
+    "validated_by": 3,
+    "generated_report": 2,
+    "emits": 2,
+    "requires_safety_memory": 2,
+    "has_memory_entry": 1,
+    "migrated_in_batch": 2,
+    "depends_on": 2,
+    "writes": 1,
+    "reads": 1
+  },
+  "coverage": {
+    "safety_rules_mapped": 10,
+    "permanent_methods": 6,
+    "permanent_fields": 1,
+    "deferred_methods": 2,
+    "extracted_methods_batch_3b1": 2,
+    "extracted_methods_batch_3b2": 2,
+    "extracted_methods_batch_3c": 4,
+    "commits_seeded": 7,
+    "runtime_validations": 3,
+    "jsonl_fields": 4
+  },
+  "graph_health": {
+    "qs_001_to_010_all_have_protects_edge": true,
+    "deferred_methods_have_deferred_by_edge": true,
+    "extracted_methods_have_extracted_to_edge": true,
+    "all_commits_have_validated_by_or_implemented_by": true
+  },
+  "evidence_grade_distribution": {
+    "B": 25,
+    "A": 33,
+    "C": 5,
+    "D": 3
+  }
+}
