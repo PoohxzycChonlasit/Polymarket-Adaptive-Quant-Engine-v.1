@@ -947,5 +947,31 @@
       "primary_next_task_justified": true
     },
     "next_recommendation": "MEMORY_OS_V2_DESIGN_001 — GATE tier Class 2. Design JSONL-based typed memory records, MEMORY_INDEX.json, migration path from daily JSON array."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "MEMORY_OS_V2_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/MEMORY_OS_V2_001.md",
+      "docs/reports/MEMORY_OS_V2_DESIGN_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add memory os v2 design"],
+    "acceptance_criteria": {
+      "20_memory_layers_designed": true,
+      "jsonl_format_replacing_json_array": true,
+      "memory_index_with_line_offset": true,
+      "safety_memory_permanent_never_expire": true,
+      "migration_plan_v2a_to_v4": true,
+      "mermaid_diagrams_included": true,
+      "verification_plan_included": true
+    },
+    "next_recommendation": "MEMORY_OS_V2_IMPLEMENTATION_001 — LOOP tier Class 4. Implement memory_migrate.py, memory_os.py, MEMORY_INDEX.json, SAFETY_MEMORY.jsonl with QS-001 to QS-010."
   }
 ]

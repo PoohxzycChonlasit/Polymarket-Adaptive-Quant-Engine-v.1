@@ -290,14 +290,26 @@
     {
       "priority": 3.6,
       "task_id": "MEMORY_OS_V2_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design Memory OS v2: JSONL-based typed records per category (decision, failure, repair, runtime_evidence, quant_safety), MEMORY_INDEX.json for O(1) session startup lookup, migration path from daily JSON array.",
       "blocked_by": null,
       "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
       "outputs": ["docs/architecture/MEMORY_OS_V2_001.md", "docs/reports/MEMORY_OS_V2_DESIGN_001.md"],
-      "notes": "Primary next task per POST_MAINTENANCE_STRATEGY_REVIEW_001. Pure docs/tooling — unblocked by active question."
+      "notes": "COMPLETED — 45-section design, 20 memory layers, JSONL format, Memory Index, Memory Graph, migration plan v2a-v4."
+    },
+    {
+      "priority": 3.5,
+      "task_id": "MEMORY_OS_V2_IMPLEMENTATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Implement Memory OS V2: tools/flaos/memory_migrate.py (v1 JSON → JSONL), tools/flaos/memory_os.py (read/write/query/validate CLI), MEMORY_INDEX.json, SAFETY_MEMORY.jsonl pre-seeded with QS-001 to QS-010.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/", "docs/operations/memory/", "tests/"],
+      "outputs": ["tools/flaos/memory_migrate.py", "tools/flaos/memory_os.py", "docs/operations/memory/MEMORY_INDEX.json", "docs/operations/memory/safety/SAFETY_MEMORY.jsonl"],
+      "notes": "Stdlib only. No polymarket imports. Migration is non-destructive (v1 files kept for 30 days). Start with safety memory seed."
     },
     {
       "priority": 3.5,
