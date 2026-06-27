@@ -1631,7 +1631,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "D",
-    "commits": ["pending-integration-commit"],
+    "commits": ["4cda7a1"],
     "commit_messages": ["docs: add loop runtime v2 checklist"],
     "acceptance_criteria": {
       "init_verifications_detailed": true,
