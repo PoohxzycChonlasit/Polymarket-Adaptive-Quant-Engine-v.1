@@ -302,14 +302,26 @@
     {
       "priority": 3.5,
       "task_id": "MEMORY_OS_V2_IMPLEMENTATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
       "description": "Implement Memory OS V2: tools/flaos/memory_migrate.py (v1 JSON → JSONL), tools/flaos/memory_os.py (read/write/query/validate CLI), MEMORY_INDEX.json, SAFETY_MEMORY.jsonl pre-seeded with QS-001 to QS-010.",
       "blocked_by": null,
       "allowed_scope": ["tools/flaos/", "docs/operations/memory/", "tests/"],
       "outputs": ["tools/flaos/memory_migrate.py", "tools/flaos/memory_os.py", "docs/operations/memory/MEMORY_INDEX.json", "docs/operations/memory/safety/SAFETY_MEMORY.jsonl"],
-      "notes": "Stdlib only. No polymarket imports. Migration is non-destructive (v1 files kept for 30 days). Start with safety memory seed."
+      "notes": "COMPLETED — 23/23 tests pass. 35 loop entries migrated, 10 QS entries seeded, MEMORY_INDEX_001.json created."
+    },
+    {
+      "priority": 3.4,
+      "task_id": "MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Integrate Memory OS into bootstrap.py: on session start, load SAFETY_MEMORY.jsonl, update MEMORY_INDEX, provide memory context to planning engine.",
+      "blocked_by": null,
+      "allowed_scope": ["tools/flaos/", "tests/", "docs/operations/memory/", "docs/reports/"],
+      "outputs": ["tools/flaos/bootstrap.py (updated)", "docs/reports/MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001.md"],
+      "notes": "Integrate memory_os.py into bootstrap context load. Safety memory always loaded first."
     },
     {
       "priority": 3.5,

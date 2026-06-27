@@ -1,0 +1,754 @@
+{
+  "$schema": "memory_index_v2",
+  "last_updated": "2026-06-27T12:19:59.996604+00:00",
+  "entry_count": 45,
+  "entries": {
+    "LOOP-LOOP_ENGINEERING_ENABLEMENT_001": {
+      "memory_id": "LOOP-LOOP_ENGINEERING_ENABLEMENT_001",
+      "memory_type": "loop",
+      "task_id": "LOOP_ENGINEERING_ENABLEMENT_001",
+      "summary": "LOOP_ENGINEERING_ENABLEMENT_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 0
+    },
+    "LOOP-FILE_INDEX_DOCUMENTATION_MAP_REFRESH_LOOP_001": {
+      "memory_id": "LOOP-FILE_INDEX_DOCUMENTATION_MAP_REFRESH_LOOP_001",
+      "memory_type": "loop",
+      "task_id": "FILE_INDEX_DOCUMENTATION_MAP_REFRESH_LOOP_001",
+      "summary": "FILE_INDEX_DOCUMENTATION_MAP_REFRESH_LOOP_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 1759
+    },
+    "LOOP-LOOP_SYSTEM_SMOKE_TEST_001": {
+      "memory_id": "LOOP-LOOP_SYSTEM_SMOKE_TEST_001",
+      "memory_type": "loop",
+      "task_id": "LOOP_SYSTEM_SMOKE_TEST_001",
+      "summary": "LOOP_SYSTEM_SMOKE_TEST_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 3518
+    },
+    "LOOP-AWE_CONTEXT_RESOLVER_SMOKE_TEST_001": {
+      "memory_id": "LOOP-AWE_CONTEXT_RESOLVER_SMOKE_TEST_001",
+      "memory_type": "loop",
+      "task_id": "AWE_CONTEXT_RESOLVER_SMOKE_TEST_001",
+      "summary": "AWE_CONTEXT_RESOLVER_SMOKE_TEST_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 5134
+    },
+    "LOOP-BATCH_3C_GATE_CHECK_001": {
+      "memory_id": "LOOP-BATCH_3C_GATE_CHECK_001",
+      "memory_type": "loop",
+      "task_id": "BATCH_3C_GATE_CHECK_001",
+      "summary": "BATCH_3C_GATE_CHECK_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 6986
+    },
+    "LOOP-BATCH_3C_DESIGN_001": {
+      "memory_id": "LOOP-BATCH_3C_DESIGN_001",
+      "memory_type": "loop",
+      "task_id": "BATCH_3C_DESIGN_001",
+      "summary": "BATCH_3C_DESIGN_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 8996
+    },
+    "LOOP-BATCH_3C_IMPLEMENTATION_001": {
+      "memory_id": "LOOP-BATCH_3C_IMPLEMENTATION_001",
+      "memory_type": "loop",
+      "task_id": "BATCH_3C_IMPLEMENTATION_001",
+      "summary": "BATCH_3C_IMPLEMENTATION_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "C",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 11226
+    },
+    "LOOP-POST_BATCH_3C_RUNTIME_VALIDATION_001": {
+      "memory_id": "LOOP-POST_BATCH_3C_RUNTIME_VALIDATION_001",
+      "memory_type": "loop",
+      "task_id": "POST_BATCH_3C_RUNTIME_VALIDATION_001",
+      "summary": "POST_BATCH_3C_RUNTIME_VALIDATION_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "A",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 13005
+    },
+    "LOOP-MASTER_FULL_LOOP_AUTOMATION_OS_DESIGN_001": {
+      "memory_id": "LOOP-MASTER_FULL_LOOP_AUTOMATION_OS_DESIGN_001",
+      "memory_type": "loop",
+      "task_id": "MASTER_FULL_LOOP_AUTOMATION_OS_DESIGN_001",
+      "summary": "MASTER_FULL_LOOP_AUTOMATION_OS_DESIGN_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 14681
+    },
+    "LOOP-TOOL_PIPELINE_ENABLEMENT_001": {
+      "memory_id": "LOOP-TOOL_PIPELINE_ENABLEMENT_001",
+      "memory_type": "loop",
+      "task_id": "TOOL_PIPELINE_ENABLEMENT_001",
+      "summary": "TOOL_PIPELINE_ENABLEMENT_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 16827
+    },
+    "LOOP-AI_COGNITION_MEMORY_ENGINE_001": {
+      "memory_id": "LOOP-AI_COGNITION_MEMORY_ENGINE_001",
+      "memory_type": "loop",
+      "task_id": "AI_COGNITION_MEMORY_ENGINE_001",
+      "summary": "AI_COGNITION_MEMORY_ENGINE_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 18780
+    },
+    "LOOP-AGENT_PIPELINE_ENABLEMENT_001": {
+      "memory_id": "LOOP-AGENT_PIPELINE_ENABLEMENT_001",
+      "memory_type": "loop",
+      "task_id": "AGENT_PIPELINE_ENABLEMENT_001",
+      "summary": "AGENT_PIPELINE_ENABLEMENT_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 20747
+    },
+    "LOOP-PLANNING_SKILL_REPOSITORY_GRAPH_DESIGN_001": {
+      "memory_id": "LOOP-PLANNING_SKILL_REPOSITORY_GRAPH_DESIGN_001",
+      "memory_type": "loop",
+      "task_id": "PLANNING_SKILL_REPOSITORY_GRAPH_DESIGN_001",
+      "summary": "PLANNING_SKILL_REPOSITORY_GRAPH_DESIGN_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 22950
+    },
+    "LOOP-SKILL_REGISTRY_ENABLEMENT_001": {
+      "memory_id": "LOOP-SKILL_REGISTRY_ENABLEMENT_001",
+      "memory_type": "loop",
+      "task_id": "SKILL_REGISTRY_ENABLEMENT_001",
+      "summary": "SKILL_REGISTRY_ENABLEMENT_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 25066
+    },
+    "LOOP-FLAOS_RUNTIME_BOOTSTRAP_TOOLS_001": {
+      "memory_id": "LOOP-FLAOS_RUNTIME_BOOTSTRAP_TOOLS_001",
+      "memory_type": "loop",
+      "task_id": "FLAOS_RUNTIME_BOOTSTRAP_TOOLS_001",
+      "summary": "FLAOS_RUNTIME_BOOTSTRAP_TOOLS_001: PASS (repairs=1)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 27052
+    },
+    "LOOP-FLAOS_BOOTSTRAP_HARDENING_001": {
+      "memory_id": "LOOP-FLAOS_BOOTSTRAP_HARDENING_001",
+      "memory_type": "loop",
+      "task_id": "FLAOS_BOOTSTRAP_HARDENING_001",
+      "summary": "FLAOS_BOOTSTRAP_HARDENING_001: PASS (repairs=2)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "C",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 29176
+    },
+    "LOOP-BATCH_3D_GATE_CHECK_001": {
+      "memory_id": "LOOP-BATCH_3D_GATE_CHECK_001",
+      "memory_type": "loop",
+      "task_id": "BATCH_3D_GATE_CHECK_001",
+      "summary": "BATCH_3D_GATE_CHECK_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 30938
+    },
+    "LOOP-LONG_RUNTIME_VALIDATION_001": {
+      "memory_id": "LOOP-LONG_RUNTIME_VALIDATION_001",
+      "memory_type": "loop",
+      "task_id": "LONG_RUNTIME_VALIDATION_001",
+      "summary": "LONG_RUNTIME_VALIDATION_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "A",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 32766
+    },
+    "LOOP-POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001": {
+      "memory_id": "LOOP-POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
+      "memory_type": "loop",
+      "task_id": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
+      "summary": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 34563
+    },
+    "LOOP-RUNTIME_SESSION_MANAGER_ENABLEMENT_001": {
+      "memory_id": "LOOP-RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
+      "summary": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "C",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 36619
+    },
+    "LOOP-RUNTIME_SESSION_MANAGER_VALIDATION_001": {
+      "memory_id": "LOOP-RUNTIME_SESSION_MANAGER_VALIDATION_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
+      "summary": "RUNTIME_SESSION_MANAGER_VALIDATION_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "A",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 38874
+    },
+    "LOOP-SESSION_GOVERNANCE_CLEANUP_001": {
+      "memory_id": "LOOP-SESSION_GOVERNANCE_CLEANUP_001",
+      "memory_type": "loop",
+      "task_id": "SESSION_GOVERNANCE_CLEANUP_001",
+      "summary": "SESSION_GOVERNANCE_CLEANUP_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 40886
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_GATE_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_GATE_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_GATE_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_GATE_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 42730
+    },
+    "LOOP-MAINTENANCE_HEALTH_ENGINE_DESIGN_001": {
+      "memory_id": "LOOP-MAINTENANCE_HEALTH_ENGINE_DESIGN_001",
+      "memory_type": "loop",
+      "task_id": "MAINTENANCE_HEALTH_ENGINE_DESIGN_001",
+      "summary": "MAINTENANCE_HEALTH_ENGINE_DESIGN_001: PASS (repairs=1)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 44931
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_DESIGN_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_DESIGN_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_DESIGN_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_DESIGN_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 47100
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001: PASS (repairs=1)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "C",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 49004
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_DRY_RUN_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_DRY_RUN_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_DRY_RUN_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_DRY_RUN_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 51121
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "C",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 53139
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001: PASS (repairs=1)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 55068
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_EXECUTE_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_EXECUTE_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_EXECUTE_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_EXECUTE_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "A",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 57542
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_EXECUTE_002": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_EXECUTE_002",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_EXECUTE_002",
+      "summary": "RUNTIME_LOG_GOVERNANCE_EXECUTE_002: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "A",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 59355
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001: PASS (repairs=1)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 61071
+    },
+    "LOOP-RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001": {
+      "memory_id": "LOOP-RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001",
+      "memory_type": "loop",
+      "task_id": "RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001",
+      "summary": "RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 63058
+    },
+    "LOOP-POST_MAINTENANCE_STRATEGY_REVIEW_001": {
+      "memory_id": "LOOP-POST_MAINTENANCE_STRATEGY_REVIEW_001",
+      "memory_type": "loop",
+      "task_id": "POST_MAINTENANCE_STRATEGY_REVIEW_001",
+      "summary": "POST_MAINTENANCE_STRATEGY_REVIEW_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 64918
+    },
+    "LOOP-MEMORY_OS_V2_DESIGN_001": {
+      "memory_id": "LOOP-MEMORY_OS_V2_DESIGN_001",
+      "memory_type": "loop",
+      "task_id": "MEMORY_OS_V2_DESIGN_001",
+      "summary": "MEMORY_OS_V2_DESIGN_001: PASS (repairs=0)",
+      "tags": [
+        "migrated_from_v1"
+      ],
+      "importance": 0.7,
+      "confidence": 0.9,
+      "evidence_level": "D",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+      "byte_offset": 66779
+    },
+    "QS-001": {
+      "memory_id": "QS-001",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "_phase4_build_quote_lineage is PERMANENT — called from live order submission path",
+      "tags": [
+        "permanent",
+        "execution_path",
+        "never_extract"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 0
+    },
+    "QS-002": {
+      "memory_id": "QS-002",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "_phase4_quote_lineage_carry is PERMANENT — execution path",
+      "tags": [
+        "permanent",
+        "execution_path",
+        "never_extract"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 834
+    },
+    "QS-003": {
+      "memory_id": "QS-003",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "_last_quote_lineage_context is PERMANENT — written from execution path",
+      "tags": [
+        "permanent",
+        "execution_path",
+        "never_extract"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 1587
+    },
+    "QS-004": {
+      "memory_id": "QS-004",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "_risk_plan_zero_diagnostics is PERMANENT — risk-coupled, cyclical back-coupling if moved",
+      "tags": [
+        "permanent",
+        "risk_coupled",
+        "never_extract"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 2339
+    },
+    "QS-005": {
+      "memory_id": "QS-005",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "_diagnostic_float is PERMANENT — 99+ core math paths, maximum blast radius",
+      "tags": [
+        "permanent",
+        "blast_radius",
+        "never_extract"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 3101
+    },
+    "QS-006": {
+      "memory_id": "QS-006",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "_diagnostic_int is PERMANENT — same as QS-005",
+      "tags": [
+        "permanent",
+        "blast_radius",
+        "never_extract"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 3844
+    },
+    "QS-007": {
+      "memory_id": "QS-007",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "Live trading commands require explicit user authorization — never automate",
+      "tags": [
+        "live_trading",
+        "never_automate",
+        "requires_explicit_auth"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 4510
+    },
+    "QS-008": {
+      "memory_id": "QS-008",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": ".env live flags — treat as live-risk if PAPER_TRADING=false or DRY_RUN=false",
+      "tags": [
+        "env_flag",
+        "live_risk",
+        "never_change"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 5274
+    },
+    "QS-009": {
+      "memory_id": "QS-009",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "Runtime data deletion requires explicit authorization — never from automated loops",
+      "tags": [
+        "runtime_data",
+        "never_delete_auto"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 5994
+    },
+    "QS-010": {
+      "memory_id": "QS-010",
+      "memory_type": "safety",
+      "task_id": "",
+      "summary": "Execution/risk/sizing/reconciliation/wallet changes require Class 7-8 gate and explicit authorization",
+      "tags": [
+        "execution",
+        "risk",
+        "sizing",
+        "reconciliation",
+        "never_automate"
+      ],
+      "importance": 1.0,
+      "confidence": 1.0,
+      "evidence_level": "B",
+      "created_at": "2026-06-27T00:00:00Z",
+      "expires": null,
+      "file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+      "byte_offset": 6775
+    }
+  },
+  "latest_loop_file": "docs\\operations\\memory\\loop\\2026\\06\\2026-06-27.jsonl",
+  "latest_loop_count": 35,
+  "safety_memory_file": "docs\\operations\\memory\\safety\\SAFETY_MEMORY.jsonl",
+  "open_quant_questions": [
+    "LOW_PRICE_TRUTH_RESOLUTION_001"
+  ]
+}
