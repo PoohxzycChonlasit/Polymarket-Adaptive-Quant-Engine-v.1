@@ -1,0 +1,330 @@
+{
+  "schema": "rkg_python_tool_smoke_outputs_v1",
+  "task_id": "RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_SMOKE_TEST_001",
+  "created_at_utc": "2026-06-27T13:39:51.780061+00:00",
+  "commands": [
+    {
+      "label": "graph-health",
+      "command": ".venv\\Scripts\\python.exe tools/flaos/knowledge_graph.py graph-health",
+      "returncode": 0,
+      "stdout": "{\"$schema\": \"rkg_health_v1\", \"status\": \"DEGRADED\", \"total_nodes\": 66, \"total_edges\": 45, \"node_types\": {\"safety_rule\": 10, \"file\": 4, \"class\": 4, \"function\": 15, \"field\": 1, \"commit\": 7, \"task\": 2, \"audit\": 1, \"runtime_validation\": 3, \"runtime_event\": 4, \"jsonl_field\": 4, \"decision\": 4, \"report\": 2, \"quant_question\": 1, \"maintenance_action\": 1, \"agent_role\": 2, \"memory_entry\": 1}, \"edge_types\": {\"protects\": 8, \"blocks\": 3, \"owns\": 6, \"extracted_to\": 6, \"proxied_by\": 2, \"deferred_by\": 2, \"implemented_by\": 2, \"validated_by\": 3, \"generated_report\": 2, \"emits\": 2, \"requires_safety_memory\": 2, \"has_memory_entry\": 1, \"migrated_in_batch\": 2, \"depends_on\": 2, \"writes\": 1, \"reads\": 1}, \"orphaned_edges\": 4, \"qs_rules_complete\": true, \"qs_rule_count\": 10, \"permanent_nodes\": 16, \"permanent_nodes_with_protection\": 6, \"graph_health_checks\": {\"all_edge_nodes_resolve\": false, \"qs_001_to_010_all_present\": true, \"permanent_nodes_have_protection\": false}}",
+      "stderr": "",
+      "json_parse_ok": true,
+      "schema": "rkg_health_v1",
+      "schema_ok": true,
+      "parsed": {
+        "$schema": "rkg_health_v1",
+        "status": "DEGRADED",
+        "total_nodes": 66,
+        "total_edges": 45,
+        "node_types": {
+          "safety_rule": 10,
+          "file": 4,
+          "class": 4,
+          "function": 15,
+          "field": 1,
+          "commit": 7,
+          "task": 2,
+          "audit": 1,
+          "runtime_validation": 3,
+          "runtime_event": 4,
+          "jsonl_field": 4,
+          "decision": 4,
+          "report": 2,
+          "quant_question": 1,
+          "maintenance_action": 1,
+          "agent_role": 2,
+          "memory_entry": 1
+        },
+        "edge_types": {
+          "protects": 8,
+          "blocks": 3,
+          "owns": 6,
+          "extracted_to": 6,
+          "proxied_by": 2,
+          "deferred_by": 2,
+          "implemented_by": 2,
+          "validated_by": 3,
+          "generated_report": 2,
+          "emits": 2,
+          "requires_safety_memory": 2,
+          "has_memory_entry": 1,
+          "migrated_in_batch": 2,
+          "depends_on": 2,
+          "writes": 1,
+          "reads": 1
+        },
+        "orphaned_edges": 4,
+        "qs_rules_complete": true,
+        "qs_rule_count": 10,
+        "permanent_nodes": 16,
+        "permanent_nodes_with_protection": 6,
+        "graph_health_checks": {
+          "all_edge_nodes_resolve": false,
+          "qs_001_to_010_all_present": true,
+          "permanent_nodes_have_protection": false
+        }
+      },
+      "parse_error": null,
+      "schema_field": "$schema"
+    },
+    {
+      "label": "safety-check",
+      "command": ".venv\\Scripts\\python.exe tools/flaos/knowledge_graph.py safety-check _last_quote_lineage_context",
+      "returncode": 0,
+      "stdout": "{\"$schema\": \"rkg_query_output_v1\", \"query_type\": \"safety_check\", \"target\": \"_last_quote_lineage_context\", \"status\": \"STOP_REQUIRED\", \"safety_findings\": [{\"rule\": \"PERMANENT_FLAG\", \"reason\": \"written from _phase4_build_quote_lineage (execution path)\", \"severity\": \"CRITICAL\", \"source\": \"node_flag\"}, {\"rule\": \"QS-003\", \"reason\": \"_last_quote_lineage_context PERMANENT \u2014 execution write\", \"severity\": \"CRITICAL\", \"edge_type\": \"protects\", \"edge_id\": \"E003\", \"source\": \"graph_edge\"}], \"affected_nodes\": [\"field:trader._last_quote_lineage_context\", \"PERMANENT_FLAG\", \"QS-003\"], \"affected_edges\": [\"E003\"], \"evidence\": [{\"description\": \"\", \"grade\": \"B\"}], \"recommended_workflow_tier\": \"GATE\", \"stop_conditions\": [\"QS_CRITICAL_FOUND\"], \"confidence\": 1.0, \"fallback_required\": false, \"execution_contract_attachment\": {\"graph_query_type\": \"safety_check\", \"graph_confidence\": 1.0, \"safety_findings_count\": 2, \"safety_findings\": [\"PERMANENT_FLAG: written from _phase4_build_quote_lineage (execution path)\", \"QS-003: _last_quote_lineage_context PERMANENT \u2014 execution write\"], \"affected_nodes_count\": 3, \"affected_edges_count\": 1, \"blast_radius_score\": \"MEDIUM\", \"recommended_workflow_tier\": \"GATE\", \"fallback_required\": false, \"status\": \"STOP_REQUIRED\"}}",
+      "stderr": "",
+      "json_parse_ok": true,
+      "schema": "rkg_query_output_v1",
+      "schema_ok": true,
+      "parsed": {
+        "$schema": "rkg_query_output_v1",
+        "query_type": "safety_check",
+        "target": "_last_quote_lineage_context",
+        "status": "STOP_REQUIRED",
+        "safety_findings": [
+          {
+            "rule": "PERMANENT_FLAG",
+            "reason": "written from _phase4_build_quote_lineage (execution path)",
+            "severity": "CRITICAL",
+            "source": "node_flag"
+          },
+          {
+            "rule": "QS-003",
+            "reason": "_last_quote_lineage_context PERMANENT \u2014 execution write",
+            "severity": "CRITICAL",
+            "edge_type": "protects",
+            "edge_id": "E003",
+            "source": "graph_edge"
+          }
+        ],
+        "affected_nodes": [
+          "field:trader._last_quote_lineage_context",
+          "PERMANENT_FLAG",
+          "QS-003"
+        ],
+        "affected_edges": [
+          "E003"
+        ],
+        "evidence": [
+          {
+            "description": "",
+            "grade": "B"
+          }
+        ],
+        "recommended_workflow_tier": "GATE",
+        "stop_conditions": [
+          "QS_CRITICAL_FOUND"
+        ],
+        "confidence": 1.0,
+        "fallback_required": false,
+        "execution_contract_attachment": {
+          "graph_query_type": "safety_check",
+          "graph_confidence": 1.0,
+          "safety_findings_count": 2,
+          "safety_findings": [
+            "PERMANENT_FLAG: written from _phase4_build_quote_lineage (execution path)",
+            "QS-003: _last_quote_lineage_context PERMANENT \u2014 execution write"
+          ],
+          "affected_nodes_count": 3,
+          "affected_edges_count": 1,
+          "blast_radius_score": "MEDIUM",
+          "recommended_workflow_tier": "GATE",
+          "fallback_required": false,
+          "status": "STOP_REQUIRED"
+        }
+      },
+      "parse_error": null,
+      "schema_field": "$schema"
+    },
+    {
+      "label": "why-deferred",
+      "command": ".venv\\Scripts\\python.exe tools/flaos/knowledge_graph.py why-deferred BATCH_3D_GATE_CHECK_001",
+      "returncode": 0,
+      "stdout": "{\"$schema\": \"rkg_query_output_v1\", \"query_type\": \"why_deferred\", \"target\": \"BATCH_3D_GATE_CHECK_001\", \"status\": \"PASS\", \"safety_findings\": [], \"affected_nodes\": [\"audit:BATCH_3D_GATE_CHECK_001\"], \"affected_edges\": [], \"evidence\": [], \"recommended_workflow_tier\": \"GATE\", \"stop_conditions\": [], \"confidence\": 0.9, \"fallback_required\": false, \"execution_contract_attachment\": {\"graph_query_type\": \"why_deferred\", \"graph_confidence\": 0.9, \"safety_findings_count\": 0, \"safety_findings\": [], \"affected_nodes_count\": 1, \"affected_edges_count\": 0, \"blast_radius_score\": \"LOW\", \"recommended_workflow_tier\": \"GATE\", \"fallback_required\": false, \"status\": \"PASS\"}, \"deferred_methods\": []}",
+      "stderr": "",
+      "json_parse_ok": true,
+      "schema": "rkg_query_output_v1",
+      "schema_ok": true,
+      "parsed": {
+        "$schema": "rkg_query_output_v1",
+        "query_type": "why_deferred",
+        "target": "BATCH_3D_GATE_CHECK_001",
+        "status": "PASS",
+        "safety_findings": [],
+        "affected_nodes": [
+          "audit:BATCH_3D_GATE_CHECK_001"
+        ],
+        "affected_edges": [],
+        "evidence": [],
+        "recommended_workflow_tier": "GATE",
+        "stop_conditions": [],
+        "confidence": 0.9,
+        "fallback_required": false,
+        "execution_contract_attachment": {
+          "graph_query_type": "why_deferred",
+          "graph_confidence": 0.9,
+          "safety_findings_count": 0,
+          "safety_findings": [],
+          "affected_nodes_count": 1,
+          "affected_edges_count": 0,
+          "blast_radius_score": "LOW",
+          "recommended_workflow_tier": "GATE",
+          "fallback_required": false,
+          "status": "PASS"
+        },
+        "deferred_methods": []
+      },
+      "parse_error": null,
+      "schema_field": "$schema"
+    },
+    {
+      "label": "evidence-for-commit",
+      "command": ".venv\\Scripts\\python.exe tools/flaos/knowledge_graph.py evidence-for-commit 3c5b781",
+      "returncode": 0,
+      "stdout": "{\"$schema\": \"rkg_query_output_v1\", \"query_type\": \"evidence_for_commit\", \"target\": \"3c5b781\", \"status\": \"PASS\", \"safety_findings\": [], \"affected_nodes\": [\"report:TRADER_REFACTOR_BATCH_003C_REPORT\", \"rtval:POST_BATCH_3C\"], \"affected_edges\": [\"E080\", \"E072\"], \"evidence\": [{\"node_id\": \"report:TRADER_REFACTOR_BATCH_003C_REPORT\", \"grade\": \"C\", \"type\": \"report\", \"description\": \"TRADER_REFACTOR_BATCH_003C_REPORT.md\"}, {\"node_id\": \"rtval:POST_BATCH_3C\", \"grade\": \"A\", \"type\": \"runtime_validation\", \"description\": \"cycles=7, exit=0, jsonl_events=56\"}], \"recommended_workflow_tier\": \"LOOP\", \"stop_conditions\": [], \"confidence\": 1.0, \"fallback_required\": false, \"execution_contract_attachment\": {\"graph_query_type\": \"evidence_for_commit\", \"graph_confidence\": 1.0, \"safety_findings_count\": 0, \"safety_findings\": [], \"affected_nodes_count\": 2, \"affected_edges_count\": 2, \"blast_radius_score\": \"LOW\", \"recommended_workflow_tier\": \"LOOP\", \"fallback_required\": false, \"status\": \"PASS\"}, \"batch\": \"Batch-3C\", \"aggregate_grade\": \"A\", \"message\": \"refactor: remove trader display proxies and phase2 static utilities\"}",
+      "stderr": "",
+      "json_parse_ok": true,
+      "schema": "rkg_query_output_v1",
+      "schema_ok": true,
+      "parsed": {
+        "$schema": "rkg_query_output_v1",
+        "query_type": "evidence_for_commit",
+        "target": "3c5b781",
+        "status": "PASS",
+        "safety_findings": [],
+        "affected_nodes": [
+          "report:TRADER_REFACTOR_BATCH_003C_REPORT",
+          "rtval:POST_BATCH_3C"
+        ],
+        "affected_edges": [
+          "E080",
+          "E072"
+        ],
+        "evidence": [
+          {
+            "node_id": "report:TRADER_REFACTOR_BATCH_003C_REPORT",
+            "grade": "C",
+            "type": "report",
+            "description": "TRADER_REFACTOR_BATCH_003C_REPORT.md"
+          },
+          {
+            "node_id": "rtval:POST_BATCH_3C",
+            "grade": "A",
+            "type": "runtime_validation",
+            "description": "cycles=7, exit=0, jsonl_events=56"
+          }
+        ],
+        "recommended_workflow_tier": "LOOP",
+        "stop_conditions": [],
+        "confidence": 1.0,
+        "fallback_required": false,
+        "execution_contract_attachment": {
+          "graph_query_type": "evidence_for_commit",
+          "graph_confidence": 1.0,
+          "safety_findings_count": 0,
+          "safety_findings": [],
+          "affected_nodes_count": 2,
+          "affected_edges_count": 2,
+          "blast_radius_score": "LOW",
+          "recommended_workflow_tier": "LOOP",
+          "fallback_required": false,
+          "status": "PASS"
+        },
+        "batch": "Batch-3C",
+        "aggregate_grade": "A",
+        "message": "refactor: remove trader display proxies and phase2 static utilities"
+      },
+      "parse_error": null,
+      "schema_field": "$schema"
+    },
+    {
+      "label": "blast-radius",
+      "command": ".venv\\Scripts\\python.exe tools/flaos/knowledge_graph.py blast-radius TraderObservabilityHelper",
+      "returncode": 0,
+      "stdout": "{\"$schema\": \"rkg_query_output_v1\", \"query_type\": \"blast_radius\", \"target\": \"TraderObservabilityHelper\", \"status\": \"PASS\", \"safety_findings\": [], \"affected_nodes\": [\"fn:helper._mark_orderbook_refresh\", \"fn:helper._scheduler_cadence_observability_detail\", \"commit:a491820\", \"jfield:market_evaluation_duration_ms\", \"mem:LOOP_MEMORY_2026-06-27\", \"jfield:orderbook_refresh_source\", \"rtval:POST_BATCH_3C\", \"fn:helper._phase2_candidate_hash\", \"commit:3c5b781\", \"report:TRADER_REFACTOR_BATCH_003C_REPORT\", \"rtval:POST_BATCH_3B1\"], \"affected_edges\": [\"E023\", \"E024\", \"E025\", \"E091\", \"E121\", \"E090\", \"E120\", \"E070\", \"E072\", \"E080\", \"E110\"], \"evidence\": [], \"recommended_workflow_tier\": \"GATE\", \"stop_conditions\": [], \"confidence\": 0.9, \"fallback_required\": false, \"execution_contract_attachment\": {\"graph_query_type\": \"blast_radius\", \"graph_confidence\": 0.9, \"safety_findings_count\": 0, \"safety_findings\": [], \"affected_nodes_count\": 11, \"affected_edges_count\": 11, \"blast_radius_score\": \"HIGH\", \"recommended_workflow_tier\": \"GATE\", \"fallback_required\": false, \"status\": \"PASS\"}, \"is_permanent\": false, \"is_deferred\": false, \"safe_extraction_score\": null, \"deferred_batch\": null}",
+      "stderr": "",
+      "json_parse_ok": true,
+      "schema": "rkg_query_output_v1",
+      "schema_ok": true,
+      "parsed": {
+        "$schema": "rkg_query_output_v1",
+        "query_type": "blast_radius",
+        "target": "TraderObservabilityHelper",
+        "status": "PASS",
+        "safety_findings": [],
+        "affected_nodes": [
+          "fn:helper._mark_orderbook_refresh",
+          "fn:helper._scheduler_cadence_observability_detail",
+          "commit:a491820",
+          "jfield:market_evaluation_duration_ms",
+          "mem:LOOP_MEMORY_2026-06-27",
+          "jfield:orderbook_refresh_source",
+          "rtval:POST_BATCH_3C",
+          "fn:helper._phase2_candidate_hash",
+          "commit:3c5b781",
+          "report:TRADER_REFACTOR_BATCH_003C_REPORT",
+          "rtval:POST_BATCH_3B1"
+        ],
+        "affected_edges": [
+          "E023",
+          "E024",
+          "E025",
+          "E091",
+          "E121",
+          "E090",
+          "E120",
+          "E070",
+          "E072",
+          "E080",
+          "E110"
+        ],
+        "evidence": [],
+        "recommended_workflow_tier": "GATE",
+        "stop_conditions": [],
+        "confidence": 0.9,
+        "fallback_required": false,
+        "execution_contract_attachment": {
+          "graph_query_type": "blast_radius",
+          "graph_confidence": 0.9,
+          "safety_findings_count": 0,
+          "safety_findings": [],
+          "affected_nodes_count": 11,
+          "affected_edges_count": 11,
+          "blast_radius_score": "HIGH",
+          "recommended_workflow_tier": "GATE",
+          "fallback_required": false,
+          "status": "PASS"
+        },
+        "is_permanent": false,
+        "is_deferred": false,
+        "safe_extraction_score": null,
+        "deferred_batch": null
+      },
+      "parse_error": null,
+      "schema_field": "$schema"
+    }
+  ],
+  "validations": {
+    "all_returncode_zero": true,
+    "all_outputs_parse_json": true,
+    "graph_health_schema_rkg_health_v1": true,
+    "query_outputs_schema_rkg_query_output_v1": true,
+    "safety_check_stop_required": true,
+    "safety_check_includes_qs_003": true,
+    "why_deferred_includes_pause_batch_3d_defer": false,
+    "why_deferred_deferred_methods_count": 0,
+    "evidence_for_commit_includes_batch_3c": true,
+    "blast_radius_includes_trader_observability_helper": true,
+    "blast_radius_includes_runtime_evidence": true,
+    "graph_health_degraded_known_seed_limitation": true,
+    "queries_passed": 3,
+    "execution_contract_ready": false
+  },
+  "graph_health_note": "DEGRADED accepted as known seed limitation from orphaned placeholder edges if only degradation cause matches seeded graph limitation.",
+  "validation_updated_at_utc": "2026-06-27T13:41:03.915074+00:00",
+  "supplemental_diagnostic": {
+    "command": ".venv\\Scripts\\python.exe tools/flaos/knowledge_graph.py why-deferred task:BATCH_3D_GATE_CHECK_001",
+    "result_summary": "Prefixed task target returns deferred_methods but still does not include PAUSE_BATCH_3D_DEFER evidence in the required query-output shape. Required unprefixed command remains the decision-bearing smoke-test result."
+  }
+}
