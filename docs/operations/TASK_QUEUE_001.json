@@ -640,6 +640,30 @@
       "notes": "Live readiness gate check. Design/Audit only."
     },
     {
+      "priority": 0.94,
+      "task_id": "PROJECT_RUNTIME_REALITY_AUDIT_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Scan and analyze the repository to audit project runtime reality.",
+      "blocked_by": "LIVE_TRADING_READINESS_GATE_001",
+      "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/audits/PROJECT_RUNTIME_REALITY_AUDIT_001.md", "docs/reports/PROJECT_RUNTIME_REALITY_AUDIT_001.md"],
+      "notes": "Project runtime reality audit. Design/Audit only."
+    },
+    {
+      "priority": 0.935,
+      "task_id": "DATA_BACKTEST_INVENTORY_AUDIT_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Audit the rich paper log datasets for baseline backtest/expectancy validation.",
+      "blocked_by": "PROJECT_RUNTIME_REALITY_AUDIT_001",
+      "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/audits/DATA_BACKTEST_INVENTORY_AUDIT_001.md"],
+      "notes": "Expectancy and backtest inventory validation. Design/Audit only."
+    },
+    {
       "priority": 0.93,
       "task_id": "MICRO_LIVE_SAFETY_DESIGN_001",
       "status": "READY",
