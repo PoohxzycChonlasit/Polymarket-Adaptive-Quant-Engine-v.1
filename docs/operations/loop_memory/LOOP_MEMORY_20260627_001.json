@@ -578,7 +578,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "A",
-    "commits": ["pending-validation-commit"],
+    "commits": ["ae03508"],
     "commit_messages": ["docs: add runtime session manager validation"],
     "files_changed": 4,
     "acceptance_criteria": {
