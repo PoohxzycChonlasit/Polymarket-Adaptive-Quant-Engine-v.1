@@ -326,14 +326,26 @@
     {
       "priority": 3.5,
       "task_id": "EXECUTION_ENGINE_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design execution engine for FLAOS full automation. Blocked until LOW_PRICE_TRUTH_RESOLUTION_001 is resolved.",
       "blocked_by": "LOW_PRICE_TRUTH_RESOLUTION_001",
       "allowed_scope": ["docs/architecture/", "docs/reports/"],
       "outputs": ["docs/architecture/EXECUTION_ENGINE_001.md"],
-      "notes": "Deferred — active question blocks execution path analysis."
+      "notes": "COMPLETED — 15-section design. ExecutionContract, ToolExecutionResult, Evidence Collector, Repair Loop, Commit Engine, Memory OS integration, v1-v5 migration roadmap."
+    },
+    {
+      "priority": 3.3,
+      "task_id": "EXECUTION_ENGINE_IMPLEMENTATION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement Execution Engine v2 (checklist executor): create docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md that AI fills before each loop to formalize INIT contract declaration.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/operations/", "docs/reports/"],
+      "outputs": ["docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md"],
+      "notes": "v2 is Markdown template only — no Python. Formalizes contract declaration. v3 (Python executor) follows after v2 is proven."
     },
     {
       "priority": 5,
