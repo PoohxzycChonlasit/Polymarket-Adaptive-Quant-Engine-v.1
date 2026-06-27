@@ -135,6 +135,23 @@ After session ends, produce a RUNTIME_SESSION_REPORT with: run_id, cycles, event
 
 ---
 
+## Loop Engineering Mode Routing
+
+**When a task is eligible for loop mode** (Class 0/3/4/6-low/9, scope declared, no high-risk scope):
+- AI executes autonomously: plan → execute → verify → repair (≤3) → commit
+- Produces **one consolidated final report** — no intermediate reports per step
+- Token-saving rules apply: summarize results, use tables, no log pastes
+- Stop and escalate if forbidden scope is touched or 3 repairs exhausted
+
+**When loop mode is forbidden** (Class 7/8, or any task touching execution/risk/sizing/live):
+- Requires gate → design → user approval → implementation → validation — each with its own document
+- No autonomous repair permitted
+- All evidence must meet Grade A/B/C minimum
+
+See `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md` for complete rules and examples.
+
+---
+
 ## Repository Output Location Rule
 
 Before any `.md` deliverable is written, the task must declare its destination under `docs/`. Root markdown creation (except for designated entrypoints and `AI_HANDOFF_*.md`) is a policy violation.

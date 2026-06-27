@@ -334,6 +334,26 @@ Before editing:
 
 ---
 
+# Loop Engineering Mode
+
+For eligible task classes (0, 3, 4, 9, and low-risk 6), AI may execute a complete plan → execute → verify → repair → commit cycle autonomously, producing one consolidated final report instead of intermediate step reports. See `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md` for full rules.
+
+**Allowed in loop mode:** docs housekeeping, structural refactors with declared scope, runtime validations, environment tasks, offline tooling.
+
+**Forbidden in loop mode:** execution/risk/sizing/live-trading changes (Class 7/8), any task touching `_risk_plan_zero_diagnostics` / `_diagnostic_float` / `_diagnostic_int` / live order paths.
+
+**Token-saving rules (apply in all modes, enforced in loop mode):**
+- Do not paste full logs — summarize (`"7 cycles, exit 0, 0 errors"`)
+- Report command results as tables, not raw output
+- Include only failing test names + error snippets, not full output
+- Do not write duplicate reports
+- Do not create root markdown
+- One consolidated report per logical unit of work
+
+**Loop stop conditions:** compile failure outside scope, forbidden scope modified, test regression outside scope, `AttributeError` in paper run, 3 repair attempts exhausted.
+
+---
+
 # Development Workflow
 
 Before editing:

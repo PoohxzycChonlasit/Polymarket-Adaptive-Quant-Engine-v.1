@@ -221,6 +221,32 @@ Minimum evidence grade by task class:
 
 ---
 
+## Loop Engineering Mode
+
+For eligible task classes (0, 3, 4, 6-low-risk, 9), the AI may run autonomously through plan → execute → verify → repair (up to 3x) → commit, producing **one consolidated final report** instead of per-step reports.
+
+**Loop mode is allowed when:**
+- Scope is explicitly declared before starting
+- No execution, risk, sizing, live-trading, or strategy logic is involved
+- Max 3 repair attempts per loop
+- Final report written to `docs/reports/` or `docs/audits/` (never root)
+
+**Loop mode is forbidden for:**
+- Class 7 (feature), Class 8 (live risk)
+- Any task touching `_risk_plan_zero_diagnostics`, `_diagnostic_float`, `_diagnostic_int`
+- Execution path, reconciliation, live order calls
+- Tasks where scope was not pre-declared
+
+**Token-saving rules (apply in ALL modes):**
+- Summarize command results; do not paste full logs
+- Use evidence tables, not raw output
+- One report per logical unit of work — no duplicate reports
+- No root markdown creation
+
+Full rules: `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md`
+
+---
+
 ## Repository Output Location Policy
 
 **The repository root is reserved only for designated permanent entrypoints. Never create new `.md` files in root.**
