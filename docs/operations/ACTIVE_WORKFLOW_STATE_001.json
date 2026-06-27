@@ -6,7 +6,7 @@
   "last_commit": "d40baa0",
   "last_commit_message": "docs: add post long validation strategy review",
   "next_task": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
-  "next_workflow_tier": "LOOP",
+  "next_workflow_tier": "STANDARD",
   "working_tree_expected": "clean",
   "batch_3c_started": true,
   "blocked": false,

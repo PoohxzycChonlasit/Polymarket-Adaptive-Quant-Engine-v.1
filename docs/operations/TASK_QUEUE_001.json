@@ -137,7 +137,7 @@
       "priority": 5.0,
       "task_id": "RUNTIME_SESSION_MANAGER_ENABLEMENT_001",
       "status": "READY",
-      "workflow_tier": "LOOP",
+      "workflow_tier": "STANDARD",
       "task_class": 7,
       "description": "Build runtime session manager coordinator supporting PID lock enforcement, clean teardowns, and automatic output rotation.",
       "blocked_by": "POST_LONG_VALIDATION_REFACTOR_STRATEGY_REVIEW_001",
