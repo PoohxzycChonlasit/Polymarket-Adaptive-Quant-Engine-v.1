@@ -338,14 +338,26 @@
     {
       "priority": 3.3,
       "task_id": "EXECUTION_ENGINE_IMPLEMENTATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
       "description": "Implement Execution Engine v2 (checklist executor): create docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md that AI fills before each loop to formalize INIT contract declaration.",
       "blocked_by": null,
       "allowed_scope": ["docs/operations/", "docs/reports/"],
       "outputs": ["docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md"],
-      "notes": "v2 is Markdown template only — no Python. Formalizes contract declaration. v3 (Python executor) follows after v2 is proven."
+      "notes": "COMPLETED — 20-section template with 3 examples (docs/refactor/destructive). Connects to bootstrap, Memory OS, safety memory."
+    },
+    {
+      "priority": 3.2,
+      "task_id": "EXECUTION_CONTRACT_SMOKE_TEST_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 0,
+      "description": "Smoke test the Execution Contract Template by documenting BATCH_3C_IMPLEMENTATION_001 retrospectively. Verifies template captures all required fields accurately.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/EXECUTION_CONTRACT_SMOKE_TEST_001.md"],
+      "notes": "Class 0 health check — read-only retrospective. Proves template is sufficient before mandating its use."
     },
     {
       "priority": 5,
