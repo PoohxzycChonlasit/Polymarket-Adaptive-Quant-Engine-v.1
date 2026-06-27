@@ -460,7 +460,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "B",
-    "commits": ["pending-gatecheck-commit"],
+    "commits": ["a12883e"],
     "commit_messages": ["docs: add batch 3D gate check"],
     "files_changed": 4,
     "acceptance_criteria": {
