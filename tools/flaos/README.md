@@ -91,3 +91,58 @@ All under `docs/operations/`:
 ## Dependencies
 
 Python 3.10+ standard library only. No pip install required.
+
+---
+
+# FLAOS Runtime Session Manager
+
+**Tooling script to coordinate and safe-guard paper runtime sessions.**
+
+## Usage
+
+```bash
+python tools/flaos/runtime_session.py --help
+```
+
+### Subcommands
+
+#### 1. create
+Creates a session metadata JSON but does NOT launch runtime. Rejects live mode.
+```bash
+python tools/flaos/runtime_session.py create --task-id <task_id> --mode paper
+```
+
+#### 2. status
+Queries the status of a specific session, confirming elapsed time and process health.
+```bash
+python tools/flaos/runtime_session.py status --session-id <session_id>
+```
+
+#### 3. detect
+Returns a JSON-formatted list of active processes running `main.py --mode paper`.
+```bash
+python tools/flaos/runtime_session.py detect
+```
+
+#### 4. guard
+Fails (returns exit code `1`) if an active paper runtime is already running.
+```bash
+python tools/flaos/runtime_session.py guard
+```
+
+#### 5. cleanup
+Updates status of a session to `COMPLETED`, `TERMINATED`, or `UNKNOWN`. Pass `--terminate` to forcefully kill process trees.
+```bash
+python tools/flaos/runtime_session.py cleanup --session-id <session_id> [--terminate]
+```
+
+#### 6. launch
+Asynchronously spawns a paper mode run with unique log filenames, after confirming the guard check passes.
+```bash
+python tools/flaos/runtime_session.py launch --task-id <task_id> --mode paper
+```
+
+## Session Directories
+- **Log Files:** `runtime/validation/session_<session_id>_stdout.log` and `session_<session_id>_stderr.log`
+- **Metadata Files:** `runtime/sessions/session_<session_id>.json`
+
