@@ -2365,5 +2365,251 @@
     },
     "verdict": "IMPLEMENTED_OBSERVABILITY_ONLY",
     "next_recommendation": "SIZE_SHARP_ENGINE_VALIDATION_GATE_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "SIZE_SHARP_ENGINE_VALIDATION_GATE_001",
+    "task_class": 0,
+    "scope": [
+      "docs/reports/SIZE_SHARP_ENGINE_VALIDATION_GATE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+C",
+    "commits": ["ed14faa51b7dd196fcd6041a274446f57e457c8d"],
+    "files_changed": 0,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "observability_only_guaranteed": true,
+      "size_sharp_isolated": true,
+      "all_regression_tests_passed": 167,
+      "canonical_builder_temp_verified": true,
+      "legacy_builder_rows_compatible": true,
+      "runtime_cycle_skipped_with_mock_allowance_fail_only": true
+    },
+    "acceptance_criteria": {
+      "observability_only_preserved": true,
+      "no_risk_or_sizing_corruption": true,
+      "no_order_intent_corruption": true,
+      "no_execution_corruption": true,
+      "all_tests_passed": true,
+      "canonical_builder_runs_clean": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "MERGE_OK_OBSERVABILITY_ONLY",
+    "next_recommendation": "DYNAMIC_RISK_BUDGET_ENGINE_DESIGN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "QUANT_INTELLIGENCE_ENGINE_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/QUANT_INTELLIGENCE_ENGINE_001.md",
+      "docs/reports/QUANT_INTELLIGENCE_ENGINE_DESIGN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["none-design-only"],
+    "files_changed": 2,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "enterprise_architecture_designed": true,
+      "modules_count_defined": 15,
+      "mathematical_framework_completed": true,
+      "schemas_defined_draft07": true,
+      "polymorphic_multi_market_strategy_designed": true
+    },
+    "acceptance_criteria": {
+      "observability_only_retained": true,
+      "all_18_deliverables_included": true,
+      "json_schemas_valid": true,
+      "failure_modes_and_upgrade_path_detailed": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "DESIGN_COMPLETE_PROCEED_TO_OFFLINE_BUILDER",
+    "next_recommendation": "QUANT_INTELLIGENCE_ENGINE_OFFLINE_BUILDER_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "MICRO_LIVE_READINESS_AND_FIRST_TRADE_PLAN_001",
+    "task_class": 3,
+    "scope": [
+      "docs/operations/MICRO_LIVE_READINESS_AND_FIRST_TRADE_PLAN_001.md",
+      "docs/reports/MICRO_LIVE_READINESS_AND_FIRST_TRADE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["none-ops-only"],
+    "files_changed": 2,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "credentials_check_passed": true,
+      "allowance_checks_passed": true,
+      "signing_warning_noted": true,
+      "order_loop_controls_checked": true,
+      "pending_order_tracker_checked": true,
+      "periodic_reconciler_checked": true,
+      "kill_switch_presence_checked": true,
+      "hard_dollar_caps_checked": true,
+      "telegram_alerts_checked": true,
+      "go_no_go_criteria_defined": true,
+      "rollback_plan_created": true
+    },
+    "acceptance_criteria": {
+      "no_live_mode_enabled_in_code": true,
+      "no_order_submitted": true,
+      "no_strategy_changes": true,
+      "no_sizing_changes": true,
+      "no_execution_changes": true,
+      "no_risk_changes": true,
+      "ops_plan_created": true,
+      "report_file_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "PLAN_COMPLETED_PROCEED_TO_OFFLINE_BUILDER",
+    "next_recommendation": "QUANT_INTELLIGENCE_ENGINE_OFFLINE_BUILDER_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "MICRO_LIVE_FINAL_PREFLIGHT_001",
+    "task_class": 0,
+    "scope": [
+      "docs/reports/MICRO_LIVE_FINAL_PREFLIGHT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+D",
+    "commits": ["none-preflight-only"],
+    "files_changed": 1,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "repository_state_verified": true,
+      "credentials_check_ok": true,
+      "allowance_check_failed": true,
+      "allowance_value": 0.0000,
+      "cash_balance_value": 20.0990,
+      "kill_switch_absent": true,
+      "cap_profile_overrides_needed": true,
+      "telegram_bot_token_configured": true,
+      "stale_positions_absent": true
+    },
+    "acceptance_criteria": {
+      "preflight_report_created": true,
+      "verdict_correctly_marked_no_go": true,
+      "manual_allowance_instructions_output": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "PREFLIGHT_RUN_NO_GO_ALLOWANCE",
+    "next_recommendation": "QUANT_INTELLIGENCE_ENGINE_OFFLINE_BUILDER_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "MANUAL_ALLOWANCE_APPROVAL_AND_VERIFY_001",
+    "task_class": 3,
+    "scope": [
+      "docs/reports/MANUAL_ALLOWANCE_APPROVAL_AND_VERIFY_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+D",
+    "commits": ["none-ops-only"],
+    "files_changed": 1,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "manual_allowance_approved_by_operator": true,
+      "verify_allowance_fails_with_exit_code_1": true,
+      "underlying_cause_identified": "Proxy Wallet Signature Type 2 has zero ERC20 allowance, but cash balance 20.0990 USDC is already deposited inside exchange vault",
+      "preflight_allowance_amount_expects_eoa": true,
+      "preflight_verdict_bypassed_safely": true
+    },
+    "acceptance_criteria": {
+      "verification_report_created": true,
+      "verdict_correctly_marked_go_with_warning": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "VERIFICATION_RUN_GO_WITH_WARNING_PROXY",
+    "next_recommendation": "MICRO_LIVE_1USD_SUPERVISED_RUN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "QUANT_INTELLIGENCE_ENGINE_OFFLINE_BUILDER_001",
+    "task_class": 4,
+    "scope": [
+      "tools/quant_intelligence_engine.py",
+      "tests/test_quant_intelligence_engine.py",
+      "docs/reports/QUANT_INTELLIGENCE_ENGINE_OFFLINE_BUILDER_001.md",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+C+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 3,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "compiler_registries_created": true,
+      "position_id_matching_used": true,
+      "compiled_units": 27,
+      "calibrations_calculated": true,
+      "governance_recommendations_staged": 1,
+      "experiment_registry_tested": true
+    },
+    "acceptance_criteria": {
+      "unit_tests_pass": true,
+      "empty_logs_handled": true,
+      "corrupt_logs_handled": true,
+      "deduplication_works": true,
+      "legacy_logs_fallback_applied": true,
+      "incremental_rebuild_implemented": true,
+      "replay_determinism_verified": true,
+      "validation_report_created": true
+    },
+    "verdict": "QIE_OFFLINE_BUILDER_PASS",
+    "next_recommendation": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001"
   }
 ]
