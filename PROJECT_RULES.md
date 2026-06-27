@@ -334,6 +334,34 @@ Before editing:
 
 ---
 
+# Session Artifact Policy
+
+- AI handoff and session summary markdown files must NEVER remain in the repository root.
+- Handoffs must live under `docs/handoffs/`.
+- Reports must live under `docs/reports/`.
+- Audits must live under `docs/audits/`.
+- If a root handoff is found, move it with `git mv` and commit in the next cleanup batch.
+- Root entrypoint files (PROJECT_RULES.md, AGENTS.md, CLAUDE.md, README.md, etc.) are the only markdown permitted in root.
+
+---
+
+# Commit Consolidation Policy
+
+For docs-only tasks:
+- Prefer one consolidated commit per logical task unit.
+- Report + state + queue + memory should be committed together in a single TYPE C commit.
+- Avoid extra "finalize" or "resync" commits unless a commit SHA must be corrected post-hoc.
+
+For validation tasks:
+- Validation report + state + queue + memory: one commit.
+- Do not create separate commit reports unless explicitly requested.
+
+For tooling tasks:
+- One TYPE B tooling commit, one TYPE C docs/state commit is acceptable.
+- Never mix TYPE A runtime Python with TYPE B or TYPE C in the same commit.
+
+---
+
 # Loop Engineering Mode
 
 For eligible task classes (0, 3, 4, 9, and low-risk 6), AI may execute a complete plan → execute → verify → repair → commit cycle autonomously, producing one consolidated final report instead of intermediate step reports. See `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md` for full rules.

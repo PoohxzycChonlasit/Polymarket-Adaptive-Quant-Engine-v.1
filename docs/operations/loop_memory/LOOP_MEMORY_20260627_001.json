@@ -593,5 +593,33 @@
       "cleanup_leaves_logs_intact": true
     },
     "next_recommendation": "RUNTIME_LOG_GOVERNANCE_001 — GATE tier Class 7. Implement log governance."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "SESSION_GOVERNANCE_CLEANUP_001",
+    "task_class": 3,
+    "scope": [
+      "AI_HANDOFF_20260627_1615.md",
+      "docs/handoffs/AI_HANDOFF_20260627_1615.md",
+      "PROJECT_RULES.md",
+      "docs/reports/SESSION_GOVERNANCE_CLEANUP_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: clean up session governance artifacts"],
+    "acceptance_criteria": {
+      "root_handoff_removed": true,
+      "handoff_moved_to_docs_handoffs": true,
+      "project_rules_session_artifact_policy_added": true,
+      "project_rules_commit_consolidation_policy_added": true,
+      "bootstrap_healthy_confirmed": true,
+      "next_task_remains_runtime_log_governance": true,
+      "no_runtime_files_changed": true
+    },
+    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_001 — GATE tier Class 7. Implement log retention and governance."
   }
 ]
