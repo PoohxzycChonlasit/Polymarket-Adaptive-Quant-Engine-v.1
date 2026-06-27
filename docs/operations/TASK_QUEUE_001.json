@@ -162,7 +162,7 @@
       "task_id": "RUNTIME_LOG_GOVERNANCE_001",
       "status": "READY",
       "workflow_tier": "GATE",
-      "task_class": 5,
+      "task_class": 7,
       "description": "Implement log governance layer rate-limiting event stream events and cleaning curses TUI ANSI print streams.",
       "blocked_by": "RUNTIME_SESSION_MANAGER_VALIDATION_001",
       "allowed_scope": ["utils/", "docs/reports/"],
