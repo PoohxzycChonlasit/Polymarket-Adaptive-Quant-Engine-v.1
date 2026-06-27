@@ -34,6 +34,14 @@ FILES = {
     "loop_memory": ROOT / "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json",
 }
 
+# Memory OS V2 paths (optional — degrade gracefully if missing)
+MEMORY_INDEX_PATH = ROOT / "docs/operations/memory/MEMORY_INDEX_001.json"
+SAFETY_MEMORY_PATH = ROOT / "docs/operations/memory/safety/SAFETY_MEMORY.jsonl"
+
+# Task classes / tiers requiring safety memory
+SAFETY_MEMORY_REQUIRED_TASK_CLASSES = {4, 6, 7, 8}
+SAFETY_MEMORY_REQUIRED_TIERS = {"GATE", "STANDARD"}
+
 # High-risk trigger keywords — any task scope containing these routes to HIGH_RISK_STOP_WORKFLOW
 HIGH_RISK_TRIGGERS = {
     "execution", "live_trading", "live order", "place_order", "wallet",
@@ -424,6 +432,53 @@ def _last_loop_entry(memory_data: list) -> dict | None:
 
 
 # ---------------------------------------------------------------------------
+# Memory OS V2 — safety memory loader
+# ---------------------------------------------------------------------------
+
+def _load_safety_memory() -> tuple[bool, bool, list[str], str]:
+    """Load MEMORY_INDEX and SAFETY_MEMORY.jsonl.
+
+    Returns (index_loaded, safety_loaded, safety_ids, status).
+    status: "LOADED" | "DEGRADED" | "STOP_REQUIRED"
+    """
+    index_loaded = False
+    safety_loaded = False
+    safety_ids: list[str] = []
+
+    # Load Memory Index (optional — degrade if missing)
+    if MEMORY_INDEX_PATH.exists():
+        try:
+            idx = json.loads(MEMORY_INDEX_PATH.read_text(encoding="utf-8"))
+            if isinstance(idx, dict):
+                index_loaded = True
+        except (json.JSONDecodeError, IOError):
+            pass
+
+    # Load Safety Memory JSONL
+    if SAFETY_MEMORY_PATH.exists():
+        try:
+            for line in SAFETY_MEMORY_PATH.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                rec = json.loads(line)
+                mid = rec.get("memory_id", "")
+                if mid:
+                    safety_ids.append(mid)
+            safety_loaded = True
+        except (json.JSONDecodeError, IOError):
+            safety_loaded = False
+
+    if safety_loaded and safety_ids:
+        status = "LOADED"
+    else:
+        # File missing or invalid — caller decides DEGRADED vs STOP based on safety_required
+        status = "MISSING_OR_INVALID"
+
+    return index_loaded, safety_loaded, safety_ids, status
+
+
+# ---------------------------------------------------------------------------
 # Main snapshot resolver
 # ---------------------------------------------------------------------------
 
@@ -501,6 +556,29 @@ def build_snapshot(pretty: bool = False, diagnose: bool = False) -> int:
             message=f"Loop memory file is missing or invalid, required for write task '{next_task_id}' (class {task_class})",
             missing_or_invalid_file=loop_memory_path.name
         )
+
+    # 4.5 Load Memory OS V2 safety memory
+    index_loaded, safety_loaded, safety_ids, safety_status = _load_safety_memory()
+    safety_required = (
+        task_class in SAFETY_MEMORY_REQUIRED_TASK_CLASSES
+        or workflow_tier in SAFETY_MEMORY_REQUIRED_TIERS
+    )
+    # Resolve final status: LOADED | DEGRADED | STOP_REQUIRED
+    if safety_status == "LOADED":
+        final_safety_status = "LOADED"
+    elif safety_required:
+        final_safety_status = "STOP_REQUIRED"
+        _fail_safe_stop(
+            error_type="SAFETY_MEMORY_REQUIRED_BUT_INVALID",
+            message=(
+                f"Safety memory is required for task_class={task_class} / tier='{workflow_tier}' "
+                f"but SAFETY_MEMORY.jsonl is missing or invalid."
+            ),
+            missing_or_invalid_file="docs/operations/memory/safety/SAFETY_MEMORY.jsonl"
+        )
+    else:
+        final_safety_status = "DEGRADED"
+    safety_status = final_safety_status
 
     # 5. Resolve pipelines
     agent_pipeline = _select_agent_pipeline(agent_pipeline_data, task_class, workflow_tier)
@@ -587,7 +665,14 @@ def build_snapshot(pretty: bool = False, diagnose: bool = False) -> int:
                 "tool_pipeline_resolved": True,
                 "skills_valid": True,
                 "tools_registered": True,
-                "loop_memory_status": "OK" if loop_memory_valid else "DEGRADED"
+                "loop_memory_status": "OK" if loop_memory_valid else "DEGRADED",
+                "memory_os_v2": {
+                    "memory_index_loaded": index_loaded,
+                    "safety_memory_loaded": safety_loaded,
+                    "safety_memory_count": len(safety_ids),
+                    "safety_memory_status": safety_status,
+                    "safety_memory_required": safety_required,
+                }
             }
         }
         print(json.dumps(health_report, indent=2 if pretty else None))
@@ -614,6 +699,13 @@ def build_snapshot(pretty: bool = False, diagnose: bool = False) -> int:
         "last_loop_result": last_result,
         "current_phase": state.get("current_phase", ""),
         "source_files_loaded": [str(p.relative_to(ROOT)).replace('\\', '/') for p in FILES.values()],
+        "memory_os_v2_enabled": True,
+        "memory_index_loaded": index_loaded,
+        "safety_memory_loaded": safety_loaded,
+        "safety_memory_count": len(safety_ids),
+        "safety_memory_ids": safety_ids,
+        "safety_memory_required": safety_required,
+        "safety_memory_status": safety_status,
     }
 
     print(json.dumps(snapshot, indent=2 if pretty else None))

@@ -161,6 +161,14 @@ class ExecutionSnapshot:
     commit_policy: str
     final_output_format: str
     source_files_loaded: list[str]
+    # Memory OS V2 fields (added MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001)
+    memory_os_v2_enabled: bool = False
+    memory_index_loaded: bool = False
+    safety_memory_loaded: bool = False
+    safety_memory_count: int = 0
+    safety_memory_ids: "list[str]" = None  # type: ignore[assignment]
+    safety_memory_required: bool = False
+    safety_memory_status: str = "DEGRADED"
 
 @dataclass
 class ToolRegistryEntry:
