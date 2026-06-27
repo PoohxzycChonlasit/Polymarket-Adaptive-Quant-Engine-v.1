@@ -544,6 +544,30 @@
       "notes": "Offline validator prototype. Class 4 tooling loop task."
     },
     {
+      "priority": 1.85,
+      "task_id": "CONTEXT_BUILDER_DESIGN_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design the FLAOS Context Builder compiling all metadata before decision runs.",
+      "blocked_by": "DECISION_ENGINE_DESIGN_001",
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/architecture/CONTEXT_BUILDER_001.md", "docs/reports/CONTEXT_BUILDER_DESIGN_001.md"],
+      "notes": "Compiles ContextBundle mapping all parameters and health targets."
+    },
+    {
+      "priority": 1.84,
+      "task_id": "SUPERVISOR_ENGINE_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design the FLAOS Supervisor Engine coordinating overall audit compliance.",
+      "blocked_by": "CONTEXT_BUILDER_DESIGN_001",
+      "allowed_scope": ["docs/architecture/", "docs/reports/"],
+      "outputs": ["docs/architecture/SUPERVISOR_ENGINE_001.md", "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md"],
+      "notes": "Design only. Promoted from Context Builder output targets."
+    },
+    {
       "priority": 5,
       "task_id": "LOOP_RUNTIME_ENGINE_V2_ENABLEMENT_001",
       "status": "FUTURE",
