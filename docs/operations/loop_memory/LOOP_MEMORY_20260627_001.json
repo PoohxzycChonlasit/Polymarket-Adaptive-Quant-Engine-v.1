@@ -79,5 +79,31 @@
       "no_root_markdown_created": true
     },
     "next_recommendation": "Use loop memory as first-read context for future safe workflow tasks. Proceed to Batch 3C gate check."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "AWE_CONTEXT_RESOLVER_SMOKE_TEST_001",
+    "task_class": 3,
+    "scope": [
+      "docs/reports/AWE_CONTEXT_RESOLVER_SMOKE_TEST_001.md",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: smoke test adaptive context resolver"],
+    "acceptance_criteria": {
+      "context_resolved_without_long_reports": true,
+      "memory_sufficient_for_task_routing": true,
+      "git_log_sufficient_for_refactor_state": true,
+      "batch_3c_tier_identified_correctly": true,
+      "no_runtime_files_changed": true,
+      "no_root_markdown_created": true
+    },
+    "workflow_tier_recommendation": "GATE",
+    "next_recommendation": "BATCH_3C_GATE_CHECK_001 — use GATE tier. Batch 3C likely touches phase2 lifecycle payload assembly in trader.py."
   }
 ]
