@@ -510,14 +510,26 @@
     {
       "priority": 2.0,
       "task_id": "REASONING_ENGINE_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
       "description": "Design the reasoning engine after RKG Python tool and graph seed health are ready.",
       "blocked_by": null,
       "allowed_scope": ["docs/architecture/", "docs/reports/"],
       "outputs": ["docs/architecture/REASONING_ENGINE_001.md", "docs/reports/REASONING_ENGINE_DESIGN_001.md"],
-      "notes": "Next after RKG graph-health fix."
+      "notes": "COMPLETED - v1 design connects Memory OS V2, Safety Memory, RKG, Planning Engine, and Execution Contract into pre-execution reasoning."
+    },
+    {
+      "priority": 1.9,
+      "task_id": "DECISION_ENGINE_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design the FLAOS Decision Engine as the next governance layer after Reasoning Engine.",
+      "blocked_by": "REASONING_ENGINE_DESIGN_001",
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/architecture/DECISION_ENGINE_001.md", "docs/reports/DECISION_ENGINE_DESIGN_001.md"],
+      "notes": "Next after Reasoning Engine design; design only unless separately scoped."
     },
     {
       "priority": 5,
