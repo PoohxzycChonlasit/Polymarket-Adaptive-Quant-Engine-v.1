@@ -135,6 +135,29 @@ A loop report must include:
 
 ---
 
+## 4b. Execution Contract Policy (effective 2026-06-27)
+
+**Before executing any loop that:** touches Python files, modifies runtime, runs tooling with side effects, or performs destructive operations — the AI must fill the Execution Contract template.
+
+**Template location:** `docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md`  
+**Contract save path:** `docs/operations/execution_contracts/{TASK_ID}_CONTRACT_001.md`
+
+**Full contract (all 20 sections) required for:**
+- Loop tier STANDARD or GATE
+- Task class 6, 7, or 8
+- Any loop touching `polymarket/`, `utils/`, `tools/flaos/` Python files
+- Destructive maintenance (`execute --confirm`, file deletion)
+
+**Abbreviated contract (Sections 1, 2, 7, 13, 18, 19 only) allowed for:**
+- FAST tier, CLASS 0/3/9
+- Docs-only loops with no Python side effects
+
+**CLASS 8 loops require Section 16** (Human Authorization) to be filled and confirmed before any destructive action.
+
+**Stop condition:** If a full contract is required but not declared → treat as STOP_AND_ESCALATE.
+
+---
+
 ## 8b. Loop Runtime Engine v1
 
 The Loop Runtime Engine formalizes the state machine underlying every loop. Each loop passes through states: INIT → CONTEXT_LOAD → CLASSIFY → PLAN → EXECUTE → VERIFY → [REPAIR]* → COMMIT → MEMORY_WRITE → STATE_UPDATE → QUEUE_UPDATE → NEXT_OR_STOP.

@@ -1113,5 +1113,36 @@
       "bootstrap_healthy": true
     },
     "next_recommendation": "EXECUTION_CONTRACT_POLICY_ENABLEMENT_001 — LOOP tier Class 3. Mandate contract for CLASS 6+ in PROJECT_RULES.md and AGENTS.md."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "EXECUTION_CONTRACT_POLICY_ENABLEMENT_001",
+    "task_class": 3,
+    "scope": [
+      "PROJECT_RULES.md",
+      "AGENTS.md",
+      "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md",
+      "docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md",
+      "docs/reports/EXECUTION_CONTRACT_POLICY_ENABLEMENT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: enable execution contract policy"],
+    "execution_contract_policy_enabled": true,
+    "acceptance_criteria": {
+      "project_rules_updated": true,
+      "agents_updated": true,
+      "playbook_updated": true,
+      "template_patched_v2_1": true,
+      "evidence_baseline_added": true,
+      "trader_py_lines_before_added": true,
+      "no_python_changed": true,
+      "bootstrap_healthy": true
+    },
+    "next_recommendation": "RUNTIME_KNOWLEDGE_GRAPH_DESIGN_001 — GATE tier Class 2. Seed repository graph with permanent methods and Batch 3 extraction history."
   }
 ]

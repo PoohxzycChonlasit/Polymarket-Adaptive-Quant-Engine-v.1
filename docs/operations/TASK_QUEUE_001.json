@@ -362,14 +362,26 @@
     {
       "priority": 3.1,
       "task_id": "EXECUTION_CONTRACT_POLICY_ENABLEMENT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
       "description": "Update PROJECT_RULES.md, AGENTS.md, LOOP_ENGINEERING_PLAYBOOK_001.md to mandate execution contract for CLASS 6+. Add docs/operations/execution_contracts/ to output location policy. Document abbreviated contract for CLASS 0/3/9.",
       "blocked_by": null,
       "allowed_scope": ["PROJECT_RULES.md", "AGENTS.md", "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md", "docs/reports/"],
       "outputs": ["docs/reports/EXECUTION_CONTRACT_POLICY_ENABLEMENT_001.md"],
-      "notes": "Governance only — no Python. Mandates contract use for CLASS 6+ effective immediately."
+      "notes": "COMPLETED — policy added to PROJECT_RULES.md, AGENTS.md, Playbook. Template patched v2.1 with evidence_baseline and trader_py_lines_before."
+    },
+    {
+      "priority": 3.0,
+      "task_id": "RUNTIME_KNOWLEDGE_GRAPH_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Design the Runtime Knowledge Graph: seed graph of trader.py method ownership, extraction history, permanent methods, proxy chains, and test coverage. Operationalizes REPOSITORY_GRAPH_ENGINE_001.md v2.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/memory/repository/"],
+      "outputs": ["docs/operations/memory/repository/REPO_MEMORY.jsonl", "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_DESIGN_001.md"],
+      "notes": "Priority: creates REPO_GRAPH_SEED_001.json with known permanent methods (QS-001..006) and Batch 3 extraction history. No Python parsing yet."
     },
     {
       "priority": 5,

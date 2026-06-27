@@ -221,6 +221,24 @@ Minimum evidence grade by task class:
 
 ---
 
+## Execution Contract Requirement
+
+For CLASS 6+ tasks and any task touching Python/runtime/tooling, AI must fill the Execution Contract template before execution begins:
+
+```
+docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md
+→ save filled contract to:
+docs/operations/execution_contracts/{TASK_ID}_CONTRACT_001.md
+```
+
+**Full contract required:** CLASS 6/7/8, STANDARD/GATE tier, any Python/runtime/tooling/destructive task.  
+**Abbreviated contract (Sections 1/2/7/13/18/19):** CLASS 0/3/9 read-only and docs-only tasks.  
+**CLASS 8 additionally requires:** Section 16 (human authorization, exact scope, irreversibility statement).
+
+**Contract must be filled BEFORE implementation begins.** No `execute --confirm`, no Python file commits, no paper runs until contract is declared.
+
+---
+
 ## Pipeline Role Execution
 
 In loop mode, a single AI session may sequentially simulate multiple roles from the 29-role system. Rules:

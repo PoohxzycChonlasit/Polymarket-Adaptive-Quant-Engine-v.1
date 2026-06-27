@@ -1,6 +1,6 @@
 # EXECUTION CONTRACT TEMPLATE v2
 
-**Schema:** `execution_contract_v2`  
+**Schema:** `execution_contract_v2.1`  
 **Purpose:** AI agents must fill this contract before executing any LOOP/STANDARD/GATE task. The filled contract becomes the audit record for the loop.  
 **Usage:** Copy this template, fill all required fields, then execute according to the declared scope.
 
@@ -41,6 +41,10 @@ task_id:           [e.g. BATCH_3C_IMPLEMENTATION_001]
 task_class:        [int 0-9]
 description:       [one sentence from task queue]
 source_task:       [TASK_QUEUE entry that declared this task]
+
+# For refactor tasks touching trader.py:
+trader_py_lines_before:  [wc -l polymarket/trader.py — measure before any edit]
+expected_line_delta:     [negative = reduction, positive = increase]
 ```
 
 ---
@@ -172,6 +176,12 @@ List tools in execution order with expected outcome:
 
 **Minimum evidence required:** `[from bootstrap → required_evidence]`  
 **Current evidence grade at start:** D
+
+```
+# For test suites — record baseline before any changes:
+evidence_baseline_test_count: [N — from pytest -q before edits]
+evidence_baseline_failures:   [M pre-existing failures — do not count as regressions]
+```
 
 ---
 

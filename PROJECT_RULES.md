@@ -362,6 +362,32 @@ For tooling tasks:
 
 ---
 
+# Execution Contract Policy
+
+**Effective 2026-06-27.** Before executing any LOOP/STANDARD/GATE task touching Python files, runtime, tooling, or performing destructive operations, the AI must fill the Execution Contract template (`docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md`).
+
+**Full contract required for:**
+- Task class 6, 7, 8 (refactor, feature, live risk)
+- STANDARD or GATE workflow tier
+- Any task touching Python files (`polymarket/`, `utils/`, `tools/`)
+- Any destructive maintenance (delete, compress, rotate files)
+- Long paper validation runs (execute --confirm equivalent)
+
+**Abbreviated contract allowed for (Sections 1, 2, 7, 13, 18, 19 only):**
+- Task class 0 (read-only health checks)
+- Task class 3 (docs housekeeping without Python)
+- Task class 9 (environment diagnostics, read-only)
+
+**Class 8 must additionally include:**
+- Section 16: explicit human authorization with exact scope, max action count, irreversibility statement
+- No live trading unless separately authorized
+
+**Contract must be completed BEFORE:** implementation begins, `execute --confirm` is run, any runtime refactor commit.
+
+**Contract location:** `docs/operations/execution_contracts/{TASK_ID}_CONTRACT_001.md`
+
+---
+
 # Loop Engineering Mode
 
 For eligible task classes (0, 3, 4, 9, and low-risk 6), AI may execute a complete plan → execute → verify → repair → commit cycle autonomously, producing one consolidated final report instead of intermediate step reports. See `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md` for full rules.
