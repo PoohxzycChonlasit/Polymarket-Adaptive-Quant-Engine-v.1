@@ -206,14 +206,20 @@
     {
       "priority": 4.1,
       "task_id": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001",
+      "status": "DONE",
+      "finding": "Corrected policy adds session-age-based cleanup. Real plan: 862 actions (800 capped), 1,423 MB estimated reclaim."
+    },
+    {
+      "priority": 4.05,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001",
       "status": "READY",
-      "workflow_tier": "LOOP",
-      "task_class": 4,
-      "description": "Update log_governance.py to add session-age-based cleanup: parse session PID+date from log filename, delete groups where session > 7 days old AND PID not running. Estimated reclaim: ~1.6 GB.",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Human review of corrected dry-run plan (800 DELETE actions, 1.4 GB) before executing. Confirm session groups are safe to delete.",
       "blocked_by": null,
-      "allowed_scope": ["tools/flaos/", "tests/", "docs/reports/"],
-      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001.md"],
-      "notes": "Small code change: one new collector function + patch to cmd_plan/cmd_execute. Update tests with session fixture. URGENCY HIGH."
+      "allowed_scope": ["docs/reports/"],
+      "outputs": ["docs/reports/RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001.md"],
+      "notes": "Gate review: confirm oldest sessions are from May 2026 (50 days old), PIDs are not running. Authorize execute after review."
     },
     {
       "priority": 5,

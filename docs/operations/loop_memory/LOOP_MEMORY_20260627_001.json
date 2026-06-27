@@ -763,5 +763,34 @@
     "estimated_reclaim_bytes": 0,
     "action_count": 0,
     "next_recommendation": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001 — LOOP tier Class 4. Add session-age cleanup to log_governance.py. Parse PID+date from filename; delete groups where age > 7 days AND PID not running."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_LOG_GOVERNANCE_POLICY_CORRECTION_001",
+    "task_class": 4,
+    "scope": [
+      "tools/flaos/log_governance.py",
+      "tests/test_flaos_log_governance.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "C",
+    "commits": ["e4c62db"],
+    "commit_messages": ["tools: add session log retention policy"],
+    "acceptance_criteria": {
+      "compile_ok": true,
+      "28_tests_pass": true,
+      "real_plan_finds_candidates": true,
+      "dry_run_0_mutations": true,
+      "jsonl_never_deleted": true,
+      "hard_cap_respected": true,
+      "session_metadata_in_actions": true
+    },
+    "estimated_reclaim_bytes": 1423600000,
+    "action_count": 800,
+    "total_plan_actions_before_cap": 862,
+    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_CORRECTED_DRY_RUN_REVIEW_001 — GATE tier Class 2. Human review of 800 DELETE actions (1.4 GB) before executing. Confirm May 2026 sessions are safe to delete."
   }
 ]
