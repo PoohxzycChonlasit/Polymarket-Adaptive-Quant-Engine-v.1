@@ -606,7 +606,7 @@
     {
       "priority": 4.8,
       "task_id": "LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
       "description": "Run a smoke test validation of the v2 Loop Runtime Engine against a mock task pipeline.",
@@ -614,6 +614,18 @@
       "allowed_scope": ["tools/", "docs/reports/", "tests/"],
       "outputs": ["docs/reports/LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001.md"],
       "notes": "Class 4 tooling smoke test task."
+    },
+    {
+      "priority": 1.0,
+      "task_id": "MARKET_STATE_CLASSIFIER_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 7,
+      "description": "Implement the Market State Classifier algorithm to identify volatility and trend regimes.",
+      "blocked_by": "LOOP_RUNTIME_ENGINE_V2_SMOKE_TEST_001",
+      "allowed_scope": ["polymarket/", "docs/reports/", "tests/"],
+      "outputs": ["polymarket/regime_diagnostics.py", "docs/reports/MARKET_STATE_CLASSIFIER_001.md"],
+      "notes": "First Quant Runtime feature task. STANDARD tier."
     }
   ]
 }
