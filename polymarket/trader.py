@@ -4,6 +4,8 @@ import logging
 import time
 import json
 import hashlib
+import os
+import sys
 from collections import Counter, deque
 from dataclasses import dataclass, asdict, field
 from datetime import UTC, datetime
@@ -29,6 +31,7 @@ from polymarket.position_manager import PositionManagerInput, PositionState, man
 from polymarket.probability_model import ProbabilityModelInput, estimate_probability
 from polymarket.regime_diagnostics import classify_market_regime, classify_market_regime_from_payload
 from polymarket.signal import BACKTEST_WIN_RATE, SignalResult, compute_realtime_signal
+from polymarket.size_sharp_engine import SizeSharpEngine, SizeSharpInput, SizeSharpResult
 from polymarket.trade_frequency import frequency_multiplier_for_tier
 from polymarket.trend_runner import TrendRunnerInput, evaluate_trend_entry
 from polymarket.virtual_ptb import VirtualPriceToBeatTracker
@@ -40,6 +43,7 @@ from polymarket.bankroll_tiers import (
     get_bankroll_tier,
     get_tier_config,
 )
+from polymarket.bankroll_rank_engine import BankrollRankEngine
 from polymarket.risk_modes import (
     RiskMode,
     RiskModeDecision,
@@ -274,6 +278,11 @@ class BankrollState:
     bankroll_risk_profile: str = ""
     bankroll_tier_locked: bool = False
     bankroll_hysteresis_active: bool = False
+    capital_score: float = 1.0
+    capital_state: str = "HEALTHY"
+    promotion_candidate: bool = False
+    demotion_candidate: bool = False
+    expected_risk_profile: str = "MODERATE"
 
     def __post_init__(self) -> None:
         if self.equity <= 0:
@@ -392,6 +401,8 @@ class PolymarketTrader:
             kelly_fraction_cap=self.settings.kelly_fraction_cap,
         )
         self.tracker = tracker or PositionTracker(settings=self.settings)
+        self._load_position_tracker_state()
+        self.size_sharp_engine = SizeSharpEngine()
         self.ptb_tracker = VirtualPriceToBeatTracker()
         self._connected = False
         # Tracking to ensure exactly 1 bet per asset per 5-min window
@@ -461,6 +472,7 @@ class PolymarketTrader:
                 or 0.05
             ),
         )
+        self.bankroll_rank_engine = BankrollRankEngine()
         self._last_bankroll_rank_lock_log = ""
         self.last_quant_details: dict[str, dict[str, object]] = {}
         self._last_orderbook_age_ms: dict[str, int] = {}
@@ -562,6 +574,179 @@ class PolymarketTrader:
 
     def _runtime_mode(self) -> str:
         return "paper" if self.settings.paper_trading else "live"
+
+    def _position_tracker_state_path(self) -> Path:
+        return Path("runtime/position_tracker_state.json")
+
+    def _position_tracker_persistence_enabled(self) -> bool:
+        return "PYTEST_CURRENT_TEST" not in os.environ and "unittest" not in sys.modules
+
+    def _load_position_tracker_state(self) -> None:
+        if not self._position_tracker_persistence_enabled():
+            return
+        path = self._position_tracker_state_path()
+        if not path.is_file():
+            return
+        try:
+            self.tracker.load_state(path)
+        except Exception as exc:
+            LOGGER.warning("Failed to load position tracker state: %s", exc)
+
+    def _save_position_tracker_state(self, *, reason: str) -> None:
+        if not self._position_tracker_persistence_enabled():
+            return
+        try:
+            self.tracker.save_state(self._position_tracker_state_path())
+        except Exception as exc:
+            LOGGER.warning("Failed to save position tracker state after %s: %s", reason, exc)
+
+    def _open_tracked_position(self, **kwargs):
+        position = self.tracker.open_position(**kwargs)
+        self._save_position_tracker_state(reason="open_position")
+        return position
+
+    def _close_tracked_position(self, position_id: str, exit_price: float, reason: str = "manual"):
+        position = self.tracker.close_position(position_id, exit_price, reason=reason)
+        if position is not None:
+            self._save_position_tracker_state(reason="close_position")
+        return position
+
+    @staticmethod
+    def _size_sharp_metadata(result: SizeSharpResult | dict[str, object] | None) -> dict[str, object]:
+        if result is None:
+            return {
+                "size_sharp_close_carry_status": "missing_not_scored",
+            }
+        payload = result.as_dict() if hasattr(result, "as_dict") else dict(result)
+        return {
+            "size_sharp_at_entry": payload.get("size_sharp"),
+            "size_sharp_bucket": payload.get("size_sharp_bucket"),
+            "size_sharp_deployment_state": payload.get("deployment_state"),
+            "size_sharp_limiting_factor": payload.get("limiting_factor"),
+            "size_sharp_confidence_grade": payload.get("confidence_grade"),
+            "size_sharp_component_scores": payload.get("component_scores") or {},
+            "size_sharp_penalties": payload.get("penalties") or {},
+            "size_sharp_boosts": payload.get("boosts") or {},
+            "size_sharp_hard_caps": payload.get("hard_caps") or [],
+            "size_sharp_missing_inputs": payload.get("missing_inputs") or [],
+            "size_sharp_schema_version": payload.get("schema_version") or "size_sharp_v1",
+        }
+
+    @staticmethod
+    def _size_sharp_close_carry(metadata: dict | None) -> dict[str, object]:
+        if not isinstance(metadata, dict):
+            return {"size_sharp_close_carry_status": "missing_legacy_metadata"}
+        keys = (
+            "size_sharp_at_entry",
+            "size_sharp_bucket",
+            "size_sharp_deployment_state",
+            "size_sharp_limiting_factor",
+            "size_sharp_confidence_grade",
+            "size_sharp_component_scores",
+            "size_sharp_penalties",
+            "size_sharp_boosts",
+            "size_sharp_hard_caps",
+            "size_sharp_missing_inputs",
+            "size_sharp_schema_version",
+        )
+        carried = {key: metadata.get(key) for key in keys}
+        if carried.get("size_sharp_at_entry") is None and carried.get("size_sharp_bucket") in {None, ""}:
+            carried["size_sharp_close_carry_status"] = "missing_legacy_metadata"
+        else:
+            carried["size_sharp_close_carry_status"] = "carried"
+        return carried
+
+    def _evaluate_size_sharp_observability(
+        self,
+        *,
+        ticker: str,
+        market_id: str,
+        side: str,
+        probability: object = None,
+        fair_value: object = None,
+        ev: object = None,
+        ev_after_spread: object = None,
+        confidence: object = None,
+        spread: object = None,
+        depth_usd: object = None,
+        quote_age_ms: object = None,
+        fill_probability: object = None,
+        slippage_risk: object = None,
+        regime: object = None,
+        volatility: object = None,
+        lifecycle_phase: object = None,
+        seconds_remaining: object = None,
+        current_exposure: object = None,
+        market_exposure: object = None,
+        open_position_count: object = None,
+        bankroll_rank: object = None,
+        capital_score: object = None,
+        capital_state: object = None,
+        risk_mode: object = None,
+        alternative_candidate_count: object = None,
+        best_alternative_ev_after_spread: object = None,
+        recent_rejected_opportunity_count: object = None,
+        recent_rejected_best_ev_after_spread: object = None,
+        candidate_rank_in_cycle: object = None,
+        candidate_trace_id: object = None,
+        paper_trade_replay_key: object = None,
+    ) -> SizeSharpResult:
+        def as_float(value: object) -> float | None:
+            if value is None or value == "":
+                return None
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+
+        def as_int(value: object) -> int | None:
+            converted = as_float(value)
+            return int(converted) if converted is not None else None
+
+        result = self.size_sharp_engine.evaluate(
+            SizeSharpInput(
+                probability=as_float(probability),
+                fair_value=as_float(fair_value),
+                ev=as_float(ev),
+                ev_after_spread=as_float(ev_after_spread),
+                confidence=as_float(confidence),
+                spread=as_float(spread),
+                depth_usd=as_float(depth_usd),
+                quote_age_ms=as_int(quote_age_ms),
+                fill_probability=as_float(fill_probability),
+                slippage_risk=as_float(slippage_risk),
+                regime=str(regime) if regime not in {None, ""} else None,
+                volatility=as_float(volatility),
+                lifecycle_phase=str(lifecycle_phase) if lifecycle_phase not in {None, ""} else None,
+                seconds_remaining=as_int(seconds_remaining),
+                current_exposure=as_float(current_exposure),
+                market_exposure=as_float(market_exposure),
+                open_position_count=as_int(open_position_count),
+                bankroll_rank=as_float(bankroll_rank),
+                capital_score=as_float(capital_score),
+                capital_state=str(capital_state) if capital_state not in {None, ""} else None,
+                risk_mode=str(risk_mode) if risk_mode not in {None, ""} else None,
+                alternative_candidate_count=as_int(alternative_candidate_count),
+                best_alternative_ev_after_spread=as_float(best_alternative_ev_after_spread),
+                recent_rejected_opportunity_count=as_int(recent_rejected_opportunity_count),
+                recent_rejected_best_ev_after_spread=as_float(recent_rejected_best_ev_after_spread),
+                candidate_rank_in_cycle=as_int(candidate_rank_in_cycle),
+            )
+        )
+        payload = {
+            "event_type": "log_size_sharp_evaluation",
+            "schema_version": result.schema_version,
+            "ticker": str(ticker or "").upper(),
+            "asset": str(ticker or "").upper(),
+            "market_id": market_id,
+            "side": side,
+            "outcome": side,
+            "candidate_trace_id": candidate_trace_id,
+            "paper_trade_replay_key": paper_trade_replay_key,
+            **result.as_dict(),
+        }
+        self._emit_quant_event("log_size_sharp_evaluation", payload)
+        return result
 
     def run_ghost_position_sentinel(self, runtime_owner: Any | None = None) -> None:
         """Sentinel to scan and quarantine ghost paper positions on startup."""
@@ -1187,9 +1372,15 @@ class PolymarketTrader:
             return False
         try:
             logger.mode = self._runtime_mode()
-            method = getattr(logger, event_method)
+            method = getattr(logger, event_method, None)
+            if method is None and event_method == "log_size_sharp_evaluation":
+                method = getattr(logger, "log_research_snapshot")
+            elif method is None:
+                raise AttributeError(event_method)
             producer_label = self._event_producer_label(event_method)
             raw_payload = dict(payload or {})
+            if event_method == "log_size_sharp_evaluation":
+                raw_payload.setdefault("observability_event_type", "log_size_sharp_evaluation")
             raw_payload.setdefault("producer_event_type", producer_label)
             raw_payload.setdefault("producer", producer_label)
             if event_method == "log_execution":
@@ -4484,6 +4675,20 @@ class PolymarketTrader:
         signal_reason: object = None,
         strategy_signal_name: object = None,
         strategy_signal_reason: object = None,
+        bankroll_tier_id: object = None,
+        bankroll_family: object = None,
+        risk_mode: object = None,
+        risk_budget: object = None,
+        current_exposure: object = None,
+        target_exposure: object = None,
+        notional_size: object = None,
+        seconds_remaining: object = None,
+        capital_score: object = None,
+        capital_state: object = None,
+        promotion_candidate: object = None,
+        demotion_candidate: object = None,
+        expected_risk_profile: object = None,
+        size_sharp_result: object = None,
     ) -> dict[str, object]:
         paper_trade_replay_key = self._build_paper_trade_replay_key(
             condition_id=condition_id,
@@ -4520,7 +4725,7 @@ class PolymarketTrader:
             "entry_probability": float(true_probability) if true_probability is not None else (float(quant_details.get("true_probability")) if quant_details.get("true_probability") is not None else None),
             "selected_side": str(outcome or ""),
         }
-        return {
+        metadata = {
             "strategy": strategy,
             "signal_strategy": signal_strategy,
             "token_id": token_id,
@@ -4539,7 +4744,26 @@ class PolymarketTrader:
             "strategy_signal_name": strategy_signal_name,
             "strategy_signal_reason": strategy_signal_reason,
             "entry_attribution": entry_attribution,
+            "bankroll_tier_id": bankroll_tier_id,
+            "bankroll_family": bankroll_family,
+            "risk_mode": risk_mode,
+            "risk_budget": risk_budget,
+            "current_exposure": current_exposure,
+            "target_exposure": target_exposure,
+            "notional_size": notional_size,
+            "seconds_remaining": seconds_remaining,
+            "true_probability": true_probability,
+            "fair_value": fair_value,
+            "capital_score": capital_score,
+            "capital_state": capital_state,
+            "promotion_candidate": promotion_candidate,
+            "demotion_candidate": demotion_candidate,
+            "expected_risk_profile": expected_risk_profile,
         }
+        if size_sharp_result is None:
+            size_sharp_result = quant_details.get("size_sharp_result")
+        metadata.update(self._size_sharp_metadata(size_sharp_result))
+        return metadata
 
     def _emit_trade_opened_event(
         self,
@@ -4701,6 +4925,7 @@ class PolymarketTrader:
                 "expected_value": selected_ev,
                 "ev": selected_ev,
                 "confidence": selected_confidence,
+                **self._size_sharp_metadata(model_context.get("size_sharp_result")),
                 # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
                 **self._build_entry_model_truth_envelope(
                     true_probability=selected_probability,
@@ -4779,6 +5004,7 @@ class PolymarketTrader:
             _entry_price: float | None = float(getattr(position, "entry_price", None) or 0.0) or None
         except Exception:
             _entry_price = None
+        # Flattened carry-forward metadata fields for analytical readiness
         close_payload = {
             "position_id": getattr(position, "position_id", ""),
             "market_id": getattr(position, "symbol", ""),
@@ -4803,10 +5029,33 @@ class PolymarketTrader:
             "paper_trade_replay_key": paper_trade_replay_key,
             "candidate_peak_favorable": None,
             "candidate_peak_adverse": None,
-            "signal_name": metadata.get("signal_name"),
-            "signal_reason": metadata.get("signal_reason"),
-            "strategy_signal_name": metadata.get("strategy_signal_name"),
-            "strategy_signal_reason": metadata.get("strategy_signal_reason"),
+            
+            # Backfilled analytical metadata
+            "true_probability": metadata.get("true_probability") if isinstance(metadata, dict) else None,
+            "fair_value": metadata.get("fair_value") if isinstance(metadata, dict) else None,
+            "ev": metadata.get("entry_ev") if isinstance(metadata, dict) else None,
+            "ev_after_spread": metadata.get("entry_ev") if isinstance(metadata, dict) else None,
+            "confidence": metadata.get("confidence") if isinstance(metadata, dict) else None,
+            "signal_name": metadata.get("signal_name") if isinstance(metadata, dict) else None,
+            "signal_reason": metadata.get("signal_reason") if isinstance(metadata, dict) else None,
+            "strategy_signal_name": metadata.get("strategy_signal_name") if isinstance(metadata, dict) else None,
+            "strategy_signal_reason": metadata.get("strategy_signal_reason") if isinstance(metadata, dict) else None,
+            "lifecycle_phase": metadata.get("lifecycle_phase") if isinstance(metadata, dict) else None,
+            "seconds_remaining": metadata.get("seconds_remaining") if isinstance(metadata, dict) else None,
+            "bankroll_tier_id": metadata.get("bankroll_tier_id") if isinstance(metadata, dict) else None,
+            "bankroll_family": metadata.get("bankroll_family") if isinstance(metadata, dict) else None,
+            "risk_mode": metadata.get("risk_mode") if isinstance(metadata, dict) else None,
+            "risk_budget": metadata.get("risk_budget") if isinstance(metadata, dict) else None,
+            "current_exposure": metadata.get("current_exposure") if isinstance(metadata, dict) else None,
+            "target_exposure": metadata.get("target_exposure") if isinstance(metadata, dict) else None,
+            "notional_size": metadata.get("notional_size") if isinstance(metadata, dict) else None,
+            "capital_score": metadata.get("capital_score") if isinstance(metadata, dict) else None,
+            "capital_state": metadata.get("capital_state") if isinstance(metadata, dict) else None,
+            "promotion_candidate": metadata.get("promotion_candidate") if isinstance(metadata, dict) else None,
+            "demotion_candidate": metadata.get("demotion_candidate") if isinstance(metadata, dict) else None,
+            "expected_risk_profile": metadata.get("expected_risk_profile") if isinstance(metadata, dict) else None,
+            **self._size_sharp_close_carry(metadata),
+            
             # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
             **self._carry_entry_model_truth_from_metadata(metadata),
         }
@@ -6000,6 +6249,61 @@ class PolymarketTrader:
             else 0.0
         )
         self._update_bankroll_rank_lock(equity, force_log=force_log)
+        
+        # Evaluate capital quality using the BankrollRankEngine
+        evaluation = self.bankroll_rank_engine.evaluate(
+            current_bankroll=state.current_bankroll,
+            equity=state.equity,
+            realized_pnl=state.realized_pnl,
+            unrealized_pnl=state.unrealized_pnl,
+            drawdown_pct=state.daily_drawdown_pct,
+            closed_positions=self.tracker.closed_positions(),
+            risk_mode=str(getattr(self._risk_mgr, "mode", "NORMAL")),
+            daily_pnl=state.daily_pnl,
+        )
+        state.capital_score = evaluation["capital_score"]
+        state.capital_state = evaluation["capital_state"]
+        state.promotion_candidate = evaluation["promotion_candidate"]
+        state.demotion_candidate = evaluation["demotion_candidate"]
+        state.expected_risk_profile = evaluation["expected_risk_profile"]
+
+        # Log and emit evaluation telemetry
+        self._emit_quant_event(
+            "log_bankroll_rank_evaluation",
+            {
+                "timestamp": self._utc_timestamp(),
+                "equity": equity,
+                "current_bankroll": state.current_bankroll,
+                "realized_pnl": state.realized_pnl,
+                "unrealized_pnl": state.unrealized_pnl,
+                "drawdown_pct": state.daily_drawdown_pct,
+                "bankroll_rank": evaluation["bankroll_rank"],
+                "bankroll_family": evaluation["bankroll_family"],
+                "capital_score": evaluation["capital_score"],
+                "capital_state": evaluation["capital_state"],
+                "promotion_candidate": evaluation["promotion_candidate"],
+                "demotion_candidate": evaluation["demotion_candidate"],
+                "expected_risk_profile": evaluation["expected_risk_profile"],
+                "consecutive_wins": evaluation["metrics"]["consecutive_wins"],
+                "consecutive_losses": evaluation["metrics"]["consecutive_losses"],
+                "recovery_factor": evaluation["metrics"]["recovery_factor"],
+                "volatility": evaluation["metrics"]["volatility"],
+                "mode": self._runtime_mode(),
+            }
+        )
+        
+        if force_log or evaluation["capital_state"] != "HEALTHY":
+            LOGGER.info(
+                "[BANKROLL_RANK_ENGINE] score=%.4f state=%s expected_risk_profile=%s promotion=%s demotion=%s wins=%d losses=%d",
+                evaluation["capital_score"],
+                evaluation["capital_state"],
+                evaluation["expected_risk_profile"],
+                str(evaluation["promotion_candidate"]).lower(),
+                str(evaluation["demotion_candidate"]).lower(),
+                evaluation["metrics"]["consecutive_wins"],
+                evaluation["metrics"]["consecutive_losses"],
+            )
+
         self._update_risk_mode(force_log=force_log)
         self._sync_sizing_bankroll(state.current_bankroll_for_sizing)
         if force_log:
@@ -9487,6 +9791,49 @@ class PolymarketTrader:
             **timing_detail,
             **clob_detail,
         )
+        size_sharp_result = self._evaluate_size_sharp_observability(
+            ticker=ticker,
+            market_id=market.market_id,
+            side=model_side,
+            probability=probability.p_yes if model_side == "YES" else probability.p_no,
+            fair_value=probability.p_yes if model_side == "YES" else probability.p_no,
+            ev=model_ev,
+            ev_after_spread=model_ev,
+            confidence=confidence,
+            spread=ob_spread,
+            depth_usd=ob_liquidity_usd,
+            quote_age_ms=max(yes_orderbook_age_ms, no_orderbook_age_ms),
+            fill_probability=max(0.0, min(1.0, 1.0 - float(ob_spread or 0.0))),
+            slippage_risk=max(0.0, min(1.0, float(ob_spread or 0.0) * 2.0)),
+            regime=snapshot_regime_detail.get("market_regime") or snapshot_regime_detail.get("regime"),
+            volatility=recent_volatility,
+            lifecycle_phase=timing_detail.get("lifecycle_phase"),
+            seconds_remaining=int(ptb_info.seconds_remaining),
+            current_exposure=float(sum(p.notional_size for p in self.tracker.open_positions())) if self.tracker else 0.0,
+            market_exposure=float(sum(p.notional_size for p in self._open_positions_for_market(market.market_id))),
+            open_position_count=len(self.tracker.open_positions()) if self.tracker else 0,
+            bankroll_rank=float(getattr(self.bankroll_state, "capital_score", 1.0) or 1.0),
+            capital_score=float(getattr(self.bankroll_state, "capital_score", 1.0) or 1.0),
+            capital_state=getattr(getattr(self.bankroll_state, "capital_state", "HEALTHY"), "value", getattr(self.bankroll_state, "capital_state", "HEALTHY")),
+            risk_mode=getattr(getattr(self._risk_mgr, "mode", "NORMAL"), "value", getattr(self._risk_mgr, "mode", "NORMAL")),
+            alternative_candidate_count=len(scan.watchlist) if getattr(scan, "watchlist", None) is not None else 0,
+            best_alternative_ev_after_spread=None,
+            recent_rejected_opportunity_count=0,
+            recent_rejected_best_ev_after_spread=None,
+            candidate_rank_in_cycle=1 if scan.best_trade else None,
+            candidate_trace_id=quant_detail.get("candidate_trace_id"),
+            paper_trade_replay_key=self._build_paper_trade_replay_key(
+                condition_id=meta.get("condition_id", ""),
+                epoch_start_ts=int(ptb_info.epoch_start_ts or 0),
+                ticker=ticker,
+                outcome=model_side,
+                token_id=selected_token_id,
+            ),
+        )
+        size_sharp_metadata = self._size_sharp_metadata(size_sharp_result)
+        quant_detail.update(size_sharp_metadata)
+        quant_detail["size_sharp_result"] = size_sharp_result.as_dict()
+        self.last_quant_details[str(ticker or "").upper()] = quant_detail
 
         if bool(self._setting("verbose_scan_logs", True)):
             self._log_section(
@@ -9891,7 +10238,7 @@ class PolymarketTrader:
                             receipt.order_id, receipt.status)
 
         if receipt is not None and _is_fill_confirmed:
-            opened_pos = self.tracker.open_position(
+            opened_pos = self._open_tracked_position(
                 symbol=market.market_id,
                 source="polymarket",
                 side="BUY",
@@ -9919,6 +10266,20 @@ class PolymarketTrader:
                     signal_reason=clob_detail.get("signal_reason"),
                     strategy_signal_name=clob_detail.get("strategy_signal_name"),
                     strategy_signal_reason=clob_detail.get("strategy_signal_reason"),
+                    bankroll_tier_id=tier.value if tier else None,
+                    bankroll_family=self.bankroll_family,
+                    risk_mode=self._risk_mgr.mode.value if hasattr(self._risk_mgr, "mode") and hasattr(self._risk_mgr.mode, "value") else str(getattr(self._risk_mgr, "mode", "NORMAL")),
+                    risk_budget=float(risk_plan.risk_amount) if risk_plan else None,
+                    current_exposure=float(sum(p.notional_size for p in self.tracker.open_positions())) if self.tracker else None,
+                    target_exposure=float(risk_plan.notional_size) if risk_plan else None,
+                    notional_size=float(risk_plan.notional_size) if risk_plan else None,
+                    seconds_remaining=int(ptb_info.seconds_remaining) if ptb_info and ptb_info.seconds_remaining is not None else None,
+                    capital_score=float(self.bankroll_state.capital_score),
+                    capital_state=str(self.bankroll_state.capital_state),
+                    promotion_candidate=bool(self.bankroll_state.promotion_candidate),
+                    demotion_candidate=bool(self.bankroll_state.demotion_candidate),
+                    expected_risk_profile=str(self.bankroll_state.expected_risk_profile),
+                    size_sharp_result=size_sharp_result,
                 ),
             )
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
@@ -10320,7 +10681,7 @@ class PolymarketTrader:
 
         # Register in tracker if order was placed
         if receipt is not None:
-            self.tracker.open_position(
+            self._open_tracked_position(
                 symbol=market.market_id,
                 source="polymarket",
                 side=decision.upper(),
@@ -10506,7 +10867,7 @@ class PolymarketTrader:
                         now=datetime.now(UTC),
                         market_state={"current_mark_price": price},
                     )
-                closed = self.tracker.close_position(pos.position_id, price, reason=reason)
+                closed = self._close_tracked_position(pos.position_id, price, reason=reason)
                 self._consecutive_raw_breach_seconds.pop(pos.position_id, None)
                 self._consecutive_mid_breach_seconds.pop(pos.position_id, None)
                 self._consecutive_ob_unavailable_seconds.pop(pos.position_id, None)
@@ -11345,7 +11706,7 @@ class PolymarketTrader:
                 if receipt is None:
                     continue
                 pnl = pos.size * (current_price - pos.entry_price)
-                self.tracker.close_position(pos.position_id, current_price, reason="stop_loss")
+                self._close_tracked_position(pos.position_id, current_price, reason="stop_loss")
                 self._risk_mgr.record_result(won=False, pnl=abs(pnl))
                 if self.settings.paper_trading:
                     self._paper_record_close(pnl)
@@ -12241,7 +12602,7 @@ class PolymarketTrader:
                 position_id=pos.position_id,
             )
             if receipt is not None:
-                self.tracker.close_position(pos.position_id, exit_price, reason="stall_exit")
+                self._close_tracked_position(pos.position_id, exit_price, reason="stall_exit")
                 pnl = (exit_price - pos.entry_price) * pos.size
                 self._risk_mgr.record_result(won=pnl >= 0, pnl=abs(pnl))
                 if self.settings.paper_trading:

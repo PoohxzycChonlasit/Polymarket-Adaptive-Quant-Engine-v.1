@@ -1,42 +1,67 @@
 {
-  "$schema": "active_workflow_state_v1",
-  "last_updated": "2026-06-27",
-  "current_phase": "Live trading readiness final check complete — 5 blockers identified, B1+B4 must be resolved",
-  "last_completed_task": "LIVE_TRADING_READINESS_FINAL_CHECK_001",
-  "last_commit": "pending-final-check-commit",
-  "last_commit_message": "docs: add live trading readiness final check audit",
-  "next_task": "APPROVE_ALLOWANCE_IMPLEMENTATION_001",
-  "next_workflow_tier": "GATE",
-  "working_tree_expected": "clean",
-  "batch_3c_started": true,
-  "blocked": false,
-  "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001 — blocks strategy/sizer/execution changes; does NOT block structural refactors",
-  "refactor_state": {
-    "trader_py_lines": 12824,
-    "completed_batches": ["Batch-1", "Batch-2A", "Batch-3A", "Batch-3B-1", "Batch-3B-2", "Batch-3B-dedup"],
-    "next_batch": "Batch-3C",
-    "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
-    "last_runtime_refactor_commit": "381cbc4"
-  },
-  "workflow_governance": {
-    "loop_engineering_enabled": true,
-    "loop_memory_operational": true,
-    "awe_design_committed": true,
-    "awe_implemented": false,
-    "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
-  },
-  "recommended_first_reads": [
-    "PROJECT_RULES.md",
-    "MASTER_AGENT_ROUTER.md",
-    "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
-    "docs/operations/TASK_QUEUE_001.json",
-    "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
-  ],
-  "loop_runtime_engine": {
-    "version": "v1",
-    "spec": "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
-    "schema_ref": "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
-    "status": "specification_only"
-  },
-  "notes": "Active question open blocks strategy/sizer changes only. Batch 3C structural refactor is eligible after gate check passes."
+    "$schema":  "active_workflow_state_v1",
+    "last_updated":  "2026-06-28",
+    "current_phase":  "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001 complete - observability-only implementation ready for validation gate",
+    "last_completed_task":  "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001",
+    "last_commit":  "pending-at-report-time",
+    "last_commit_message":  "feat: add observability-only size sharp engine",
+    "next_task":  "SIZE_SHARP_ENGINE_VALIDATION_GATE_001",
+    "next_workflow_tier":  "STANDARD",
+    "working_tree_expected":  "dirty_candidate_ready_for_merge_review",
+    "batch_3c_started":  true,
+    "blocked":  false,
+    "active_question_status":  "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
+    "refactor_state":  {
+                           "trader_py_lines":  12824,
+                           "completed_batches":  [
+                                                     "Batch-1",
+                                                     "Batch-2A",
+                                                     "Batch-3A",
+                                                     "Batch-3B-1",
+                                                     "Batch-3B-2",
+                                                     "Batch-3B-dedup"
+                                                 ],
+                           "next_batch":  "Batch-3C",
+                           "architecture_master_plan":  "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
+                           "last_runtime_refactor_commit":  "381cbc4"
+                       },
+    "workflow_governance":  {
+                                "loop_engineering_enabled":  true,
+                                "loop_memory_operational":  true,
+                                "awe_design_committed":  true,
+                                "awe_implemented":  false,
+                                "loop_playbook":  "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
+                            },
+    "recommended_first_reads":  [
+                                    "PROJECT_RULES.md",
+                                    "MASTER_AGENT_ROUTER.md",
+                                    "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+                                    "docs/operations/TASK_QUEUE_001.json",
+                                    "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+                                ],
+    "loop_runtime_engine":  {
+                                "version":  "v1",
+                                "spec":  "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
+                                "schema_ref":  "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
+                                "status":  "specification_only"
+                            },
+    "quant_truth_engine_audit":  {
+                                     "status":  "COMPLETE",
+                                     "data_readiness":  "PARTIAL",
+                                     "trade_open_count":  797,
+                                     "real_close_count":  1469,
+                                     "paper_win_rate":  0.629,
+                                     "gross_pnl":  347.43,
+                                     "critical_gap":  "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
+                                     "next_task":  "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001",
+                                     "audit_doc":  "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
+                                 },
+    "canonical_trade_context":  {
+                                    "status":  "LINEAGE_AUDITED",
+                                    "spec_doc":  "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+                                    "report_doc":  "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+                                    "compiler_script":  "tools/canonical_trade_context_builder.py",
+                                    "test_suite":  "tests/test_canonical_trade_context_builder.py"
+                                },
+    "notes":  "Size Sharp v1 implemented as observability-only scoring. It emits passive evaluation telemetry, carries fields into trade metadata/open/close, and compiles canonical builder fields. No risk, sizing, execution, order intent, dashboard, Telegram, replay policy, or live behavior changes. Report: docs/reports/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001.md"
 }

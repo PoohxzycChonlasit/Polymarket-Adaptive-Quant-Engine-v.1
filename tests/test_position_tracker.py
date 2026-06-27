@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -164,6 +166,30 @@ class SummaryTests(unittest.TestCase):
 
 
 class PersistenceTests(unittest.TestCase):
+    def test_open_and_close_do_not_decide_when_to_persist(self) -> None:
+        tracker = _make_tracker()
+        calls: list[Path] = []
+
+        original_env = os.environ.pop("PYTEST_CURRENT_TEST", None)
+        original_unittest = sys.modules.pop("unittest", None)
+        original_save_state = tracker.save_state
+
+        def fake_save_state(path: Path) -> None:
+            calls.append(path)
+
+        tracker.save_state = fake_save_state  # type: ignore[method-assign]
+        try:
+            pos = _open(tracker, price=65000.0, size=0.01)
+            tracker.close_position(pos.position_id, exit_price=66000.0)
+        finally:
+            tracker.save_state = original_save_state  # type: ignore[method-assign]
+            if original_env is not None:
+                os.environ["PYTEST_CURRENT_TEST"] = original_env
+            if original_unittest is not None:
+                sys.modules["unittest"] = original_unittest
+
+        self.assertEqual(calls, [])
+
     def test_save_and_load_state(self) -> None:
         tracker = _make_tracker()
         pos = _open(tracker, price=65000.0, size=0.01)

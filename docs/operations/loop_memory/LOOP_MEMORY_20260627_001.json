@@ -1893,5 +1893,477 @@
     "blockers": ["B1_no_approve_allowance", "B2_no_file_kill_switch", "B3_signing_not_fully_tested", "B4_no_credential_startup_validation", "B5_no_arb_auto_unwind"],
     "verdict": "READY_WITH_BLOCKERS",
     "next_recommendation": "APPROVE_ALLOWANCE_IMPLEMENTATION_001 (B1) then CREDENTIAL_STARTUP_VALIDATION_001 (B4)"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "QUANT_TRUTH_ENGINE_AUDIT_001",
+    "task_class": 1,
+    "scope": [
+      "runtime/quant_data/trade_journal/",
+      "runtime/quant_data/decision_log/",
+      "runtime/quant_data/execution_log/",
+      "runtime/quant_data/path_truth/",
+      "runtime/quant_data/signal_filter_shadow/",
+      "runtime/event_stream/",
+      "tools/replay_analyzer.py",
+      "tools/canonical_trade_table_v1.py",
+      "polymarket/backtester_5m.py",
+      "polymarket/position_sizing.py",
+      "utils/risk_manager.py",
+      "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md",
+      "docs/reports/QUANT_TRUTH_ENGINE_AUDIT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B",
+    "commits": [],
+    "files_changed": 4,
+    "files_written": [
+      "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md",
+      "docs/reports/QUANT_TRUTH_ENGINE_AUDIT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "data_coverage_days": 51,
+      "total_jsonl_gb": 28.6,
+      "trade_open_count": 797,
+      "real_close_count": 1469,
+      "paper_win_rate": 0.629,
+      "gross_pnl_usd": 347.43,
+      "data_readiness": "PARTIAL",
+      "metrics_ready": "PARTIAL",
+      "critical_missing_fields_at_close": [
+        "true_probability",
+        "fair_value",
+        "ev_after_spread",
+        "bankroll_tier_id",
+        "risk_mode",
+        "lifecycle_phase",
+        "notional_size",
+        "seconds_remaining_at_entry"
+      ],
+      "metrics_ready_now": ["win_rate", "expectancy", "profit_factor", "gross_pnl"],
+      "metrics_partial": ["max_drawdown", "sharpe", "sortino", "kelly"],
+      "metrics_not_ready": ["slippage", "adverse_selection", "opportunity_cost"]
+    },
+    "acceptance_criteria": {
+      "runtime_data_inventoried": true,
+      "trade_lifecycle_coverage_assessed": true,
+      "metrics_feasibility_classified": true,
+      "bankroll_rank_requirements_mapped": true,
+      "size_sharp_requirements_mapped": true,
+      "replay_backtest_readiness_assessed": true,
+      "telemetry_backfill_needs_documented": true,
+      "next_task_recommended": true,
+      "no_runtime_files_changed": true,
+      "no_strategy_changes": true
+    },
+    "verdict": "PARTIAL_DATA_READINESS",
+    "next_recommendation": "TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001 (Class 5 OBSERVABILITY) - add 10 carry-forward fields to trade_close in trader.py"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "CANONICAL_TRADE_CONTEXT_V1_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+      "docs/reports/CANONICAL_TRADE_CONTEXT_V1_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": [],
+    "files_changed": 4,
+    "files_written": [
+      "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+      "docs/reports/CANONICAL_TRADE_CONTEXT_V1_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "canonical_trade_context_designed": true,
+      "objective_scope_mapped": true,
+      "data_reality_summarized": true,
+      "identity_context_designed": true,
+      "entry_decision_context_designed": true,
+      "execution_context_designed": true,
+      "capital_risk_context_designed": true,
+      "inventory_context_designed": true,
+      "exit_outcome_context_designed": true,
+      "replay_backtest_context_designed": true,
+      "field_source_map_created": true,
+      "required_runtime_backfill_mapped": true,
+      "risks_failure_modes_analyzed": true,
+      "verification_plan_defined": true
+    },
+    "acceptance_criteria": {
+      "schema_spec_created": true,
+      "report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true,
+      "no_runtime_files_changed": true,
+      "no_strategy_changes": true
+    },
+    "verdict": "SCHEMA_DESIGNED",
+    "next_recommendation": "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001 (Class 4 TOOLING) - build tools/canonical_trade_builder.py to compile historical logs conforming to spec"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001",
+    "task_class": 4,
+    "scope": [
+      "tools/canonical_trade_context_builder.py",
+      "tests/test_canonical_trade_context_builder.py",
+      "docs/reports/CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+C",
+    "commits": [],
+    "files_changed": 5,
+    "files_written": [
+      "tools/canonical_trade_context_builder.py",
+      "tests/test_canonical_trade_context_builder.py",
+      "docs/reports/CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "builder_tool_implemented": true,
+      "join_logic_verified": true,
+      "excursions_computed": true,
+      "data_quality_grades_assigned": true,
+      "cli_interface_functional": true,
+      "pnl_statistics_summarized": true
+    },
+    "acceptance_criteria": {
+      "builder_created": true,
+      "unit_tests_passed": true,
+      "real_data_dry_run_success": true,
+      "no_runtime_files_changed": true,
+      "no_strategy_changes": true
+    },
+    "verdict": "BUILDER_VERIFIED",
+    "next_recommendation": "TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001 (Class 5 OBSERVABILITY) - implement sizer/decision context carry-forward inside trader.py"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "TRADE_CONTEXT_LINEAGE_AUDIT_001",
+    "task_class": 1,
+    "scope": [
+      "docs/audits/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+      "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B",
+    "commits": [],
+    "files_changed": 4,
+    "files_written": [
+      "docs/audits/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+      "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "reconciliation_matched_100_percent_on_expanded_scoping": true,
+      "position_tracker_identified_as_in_memory_only": true,
+      "lack_of_state_saving_in_production_identified": true,
+      "exit_events_lost_original_metadata_on_restart": true
+    },
+    "acceptance_criteria": {
+      "lineage_audit_created": true,
+      "reconciliation_low_join_confidence_explained": true,
+      "metadata_carry_flaw_uncovered": true,
+      "backfill_plan_proposed": true,
+      "no_runtime_files_changed": true,
+      "no_strategy_changes": true
+    },
+    "verdict": "LINEAGE_AUDITED",
+    "next_recommendation": "TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001 (Class 5 OBSERVABILITY) - implement sizer/decision context carry-forward inside trader.py"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001",
+    "task_class": 5,
+    "scope": [
+      "polymarket/trader.py",
+      "utils/position_tracker.py",
+      "tests/test_telemetry_backfill.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+C",
+    "commits": ["fix: carry trade context into close telemetry"],
+    "files_changed": 3,
+    "files_written": [
+      "tests/test_telemetry_backfill.py"
+    ],
+    "runtime_files_modified": true,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "telemetry_backfill_mapping_survives_open_to_close": true,
+      "state_persistence_enabled_for_position_tracker": true
+    },
+    "acceptance_criteria": {
+      "flat_fields_logged_in_trade_close": true,
+      "state_saved_in_open_and_close": true,
+      "state_loaded_in_constructor": true,
+      "tests_isolated_from_test_writes": true
+    },
+    "verdict": "TELEMETRY_BACKFILLED",
+    "next_recommendation": "POST_TELEMETRY_BACKFILL_VALIDATION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "POST_TELEMETRY_BACKFILL_VALIDATION_001",
+    "task_class": 5,
+    "scope": [
+      "docs/reports/POST_TELEMETRY_BACKFILL_VALIDATION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+C",
+    "commits": [],
+    "files_changed": 3,
+    "files_written": [
+      "docs/reports/POST_TELEMETRY_BACKFILL_VALIDATION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "all_core_unit_tests_pass": true,
+      "historical_missing_fields_rates_remain_high_due_to_legacy_logs": true,
+      "matched_trades_remains_14_as_expected": true
+    },
+    "acceptance_criteria": {
+      "telemetry_backfill_validation_created": true,
+      "core_test_suite_passes": true,
+      "persistence_coupling_audited": true,
+      "exposure_definition_audited": true
+    },
+    "verdict": "VALIDATED",
+    "next_recommendation": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "BANKROLL_RANK_ENGINE_VALIDATION_GATE_001",
+    "task_class": 0,
+    "scope": [
+      "docs/reports/BANKROLL_RANK_ENGINE_VALIDATION_GATE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "BLOCK",
+    "repairs": 0,
+    "evidence_grade": "A+B+C",
+    "commits": [],
+    "files_changed": 4,
+    "files_written": [
+      "docs/reports/BANKROLL_RANK_ENGINE_VALIDATION_GATE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "bankroll_rank_outputs_observability_only": true,
+      "targeted_tests_passed": 211,
+      "builder_tests_passed": 4,
+      "canonical_builder_rows_compiled": 358,
+      "runtime_reports_rewritten": false,
+      "position_tracker_persistence_behavior_detected": true
+    },
+    "acceptance_criteria": {
+      "regression_matrix_ran": true,
+      "canonical_builder_recent_range_passed": true,
+      "schema_accepts_rank_fields": true,
+      "old_rows_compatible_with_defaults": true,
+      "architecture_risk_assessed": true,
+      "merge_verdict_issued": true
+    },
+    "verdict": "BLOCK_BEHAVIOR_CHANGE_DETECTED",
+    "next_recommendation": "HOLD_REFACTOR_REQUIRED_POSITION_TRACKER_PERSISTENCE_REVIEW_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "POSITION_TRACKER_PERSISTENCE_REFACTOR_001",
+    "task_class": 6,
+    "scope": [
+      "utils/position_tracker.py",
+      "polymarket/trader.py",
+      "tests/test_position_tracker.py",
+      "tests/test_telemetry_backfill.py",
+      "docs/reports/POSITION_TRACKER_PERSISTENCE_REFACTOR_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C",
+    "commits": [],
+    "files_changed": 10,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "position_tracker_auto_save_removed": true,
+      "trader_owns_persistence_orchestration": true,
+      "red_tests_failed_before_fix": 2,
+      "required_tests_passed": 29,
+      "extra_safety_tests_passed": 128,
+      "canonical_builder_rows_compiled": 358,
+      "runtime_reports_rewritten": false
+    },
+    "acceptance_criteria": {
+      "position_tracker_is_pure_domain_object": true,
+      "load_state_save_state_remain_explicit_api": true,
+      "startup_load_owned_by_trader": true,
+      "save_after_open_close_owned_by_trader": true,
+      "observability_only_guarantee_restored": true,
+      "validation_report_created": true
+    },
+    "verdict": "MERGE_OK_OBSERVABILITY_ONLY",
+    "next_recommendation": "SIZE_SHARP_ENGINE_DESIGN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "SIZE_SHARP_ENGINE_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/SIZE_SHARP_ENGINE_001.md",
+      "docs/reports/SIZE_SHARP_ENGINE_DESIGN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": [],
+    "files_changed": 5,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "size_sharp_definition_created": true,
+      "input_groups_defined": true,
+      "output_schema_defined": true,
+      "formula_v1_proposed": true,
+      "observability_fields_defined": true,
+      "replay_backtest_compatibility_defined": true,
+      "integration_plan_v1_v2_v3_defined": true,
+      "failure_modes_defined": true,
+      "future_tests_required_defined": true
+    },
+    "acceptance_criteria": {
+      "architecture_spec_created": true,
+      "design_report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true,
+      "no_runtime_files_changed": true,
+      "no_strategy_sizing_risk_execution_changes": true,
+      "observability_only_next_task_defined": true
+    },
+    "verdict": "DESIGN_COMPLETE_PROCEED_TO_OBSERVABILITY_IMPLEMENTATION",
+    "next_recommendation": "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001",
+    "task_class": 5,
+    "scope": [
+      "polymarket/size_sharp_engine.py",
+      "polymarket/trader.py",
+      "tools/canonical_trade_context_builder.py",
+      "tests/test_size_sharp_engine.py",
+      "tests/test_telemetry_backfill.py",
+      "tests/test_canonical_trade_context_builder.py",
+      "docs/reports/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A+B+C",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 11,
+    "runtime_files_modified": true,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "size_sharp_engine_created": true,
+      "pure_deterministic_evaluate": true,
+      "size_sharp_event_emitted": "log_size_sharp_evaluation",
+      "trade_metadata_carry_forward": true,
+      "trade_close_flat_fields": true,
+      "canonical_builder_fields_added": true,
+      "legacy_rows_default_unknown": true,
+      "targeted_tests_passed": 39,
+      "execution_risk_and_paper_tests_passed": 128,
+      "builder_rows_compiled": 378
+    },
+    "acceptance_criteria": {
+      "observability_only": true,
+      "no_risk_plan_consumption": true,
+      "no_position_size_change": true,
+      "no_order_intent_change": true,
+      "no_execution_change": true,
+      "no_dashboard_or_telegram_change": true,
+      "no_live_trading_enabled": true,
+      "validation_gate_queued": true
+    },
+    "verdict": "IMPLEMENTED_OBSERVABILITY_ONLY",
+    "next_recommendation": "SIZE_SHARP_ENGINE_VALIDATION_GATE_001"
   }
 ]

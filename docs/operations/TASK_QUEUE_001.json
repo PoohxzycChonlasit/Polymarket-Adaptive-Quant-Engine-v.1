@@ -1,7 +1,291 @@
 {
   "$schema": "task_queue_v1",
-  "last_updated": "2026-06-27",
+  "last_updated": "2026-06-28",
   "queue": [
+    {
+      "priority": 0,
+      "task_id": "POSITION_TRACKER_PERSISTENCE_REFACTOR_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 6,
+      "description": "Refactor PositionTracker persistence ownership so PositionTracker is a pure domain object and PolymarketTrader owns runtime persistence orchestration.",
+      "blocked_by": "BANKROLL_RANK_ENGINE_VALIDATION_GATE_001",
+      "allowed_scope": [
+        "utils/position_tracker.py",
+        "polymarket/trader.py",
+        "tests/test_position_tracker.py",
+        "tests/test_telemetry_backfill.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/POSITION_TRACKER_PERSISTENCE_REFACTOR_001.md",
+        "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md",
+        "docs/operations/graph_queries/QUERY-20260628-POSITION_TRACKER_PERSISTENCE_REFACTOR_001.md"
+      ],
+      "notes": "Validation complete. Verdict MERGE_OK_OBSERVABILITY_ONLY. Tracker open/close no longer auto-save; Trader owns load/save orchestration."
+    },
+    {
+      "priority": 0,
+      "task_id": "HOLD_REFACTOR_REQUIRED_POSITION_TRACKER_PERSISTENCE_REVIEW_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Review production PositionTracker runtime persistence introduced in the current candidate tree. Decide whether it is explicitly scoped, gated/default-off, or removed before Size Sharp begins.",
+      "blocked_by": "BANKROLL_RANK_ENGINE_VALIDATION_GATE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "polymarket/trader.py",
+        "utils/position_tracker.py",
+        "tests/"
+      ],
+      "outputs": [
+        "docs/reports/HOLD_REFACTOR_REQUIRED_POSITION_TRACKER_PERSISTENCE_REVIEW_001.md"
+      ],
+      "notes": "Resolved by POSITION_TRACKER_PERSISTENCE_REFACTOR_001. Persistence ownership moved out of PositionTracker; Size Sharp unblocked for design-only work."
+    },
+    {
+      "priority": 0,
+      "task_id": "SIZE_SHARP_ENGINE_DESIGN_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design the Size Sharp Engine as the final capital deployment score before Dynamic Risk Budget and Position Size V2.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/SIZE_SHARP_ENGINE_001.md",
+        "docs/reports/SIZE_SHARP_ENGINE_DESIGN_001.md"
+      ],
+      "notes": "Class 2 DESIGN completed. V1 must be observability-only and must not change sizing, risk, execution, order submission, dashboard, Telegram, replay, or live behavior."
+    },
+    {
+      "priority": 0,
+      "task_id": "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Implement Size Sharp Engine v1 as observability-only telemetry, metadata carry-forward, and canonical builder fields.",
+      "blocked_by": "SIZE_SHARP_ENGINE_DESIGN_001",
+      "allowed_scope": [
+        "polymarket/size_sharp_engine.py",
+        "polymarket/trader.py",
+        "tools/canonical_trade_context_builder.py",
+        "tests/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001.md"
+      ],
+      "notes": "Implemented and verified as observability-only. Targeted tests passed 39/39, execution risk controls and paper mode passed 128/128, builder compiled 378 recent rows with legacy UNKNOWN defaults."
+    },
+    {
+      "priority": 0,
+      "task_id": "SIZE_SHARP_ENGINE_VALIDATION_GATE_001",
+      "status": "PENDING",
+      "workflow_tier": "GATE",
+      "task_class": 0,
+      "description": "Validate Size Sharp v1 before merge: observability-only guarantee, regression tests, canonical builder recent range, and source guard against policy consumption.",
+      "blocked_by": "SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/SIZE_SHARP_ENGINE_VALIDATION_GATE_001.md"
+      ],
+      "notes": "Validation only. No Python/runtime changes. Confirm no Size Sharp consumption in risk, sizing, order intent, execution, paper/live mode, dashboard, Telegram, or live trading."
+    },
+    {
+      "priority": 0,
+      "task_id": "BANKROLL_RANK_ENGINE_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 7,
+      "description": "Implement the enterprise-grade Bankroll Rank engine.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "polymarket/bankroll_rank_engine.py",
+        "polymarket/trader.py",
+        "tools/canonical_trade_context_builder.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/BANKROLL_RANK_ENGINE_001.md"
+      ],
+      "notes": "Class 7 FEATURE. Bankroll Rank engine implemented successfully."
+    },
+    {
+      "priority": 0,
+      "task_id": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001",
+      "status": "PENDING",
+      "workflow_tier": "STANDARD",
+      "task_class": 7,
+      "description": "Implement Backtest Engine v2 using the Canonical Trade Context v1 schema as source of truth.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "polymarket/backtester_5m.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001.md"
+      ],
+      "notes": "Class 7 FEATURE. High priority quant research feature."
+    },
+    {
+      "priority": 0,
+      "task_id": "POST_TELEMETRY_BACKFILL_VALIDATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Validate the telemetry backfill implementation after TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/POST_TELEMETRY_BACKFILL_VALIDATION_001.md"
+      ],
+      "notes": "Validation complete. Telemetry carry-forward verified."
+    },
+    {
+      "priority": 0,
+      "task_id": "TRADE_CONTEXT_LINEAGE_AUDIT_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 1,
+      "description": "Audit the exact lineage of trade context fields from decision time to trade_open, position metadata, trade_close, canonical builder, replay, and backtest.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/audits/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+        "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md"
+      ],
+      "notes": "Audit completed successfully. Volatility of PositionTracker identified as root cause of metadata loss on exit."
+    },
+    {
+      "priority": 0,
+      "task_id": "CANONICAL_TRADE_CONTEXT_V1_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design the Canonical Trade Context v1 schema that will become the shared trade-level truth object for replay, backtest, bankroll rank, size sharp, dashboard, Telegram explanation, and future live validation.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+        "docs/reports/CANONICAL_TRADE_CONTEXT_V1_001.md"
+      ],
+      "notes": "Design completed successfully."
+    },
+    {
+      "priority": 0,
+      "task_id": "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Build tools/canonical_trade_context_builder.py to compile historical JSONL logs into Completed Trades v1 datasets conforming to the Canonical Trade Context v1 schema.",
+      "blocked_by": "CANONICAL_TRADE_CONTEXT_V1_001",
+      "allowed_scope": [
+        "tools/",
+        "tests/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "tools/canonical_trade_context_builder.py",
+        "tests/test_canonical_trade_context_builder.py",
+        "docs/reports/CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001.md"
+      ],
+      "notes": "Offline compiler verified against unit tests and historical logs."
+    },
+    {
+      "priority": 0,
+      "task_id": "QUANT_TRUTH_ENGINE_AUDIT_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 1,
+      "description": "Read-only audit of JSONL event stream, replay tools, and backtest tools for Quant Truth Engine readiness.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "runtime/quant_data/",
+        "runtime/event_stream/",
+        "tools/replay_analyzer.py",
+        "tools/canonical_trade_table_v1.py",
+        "polymarket/backtester_5m.py",
+        "utils/risk_manager.py",
+        "polymarket/position_sizing.py"
+      ],
+      "outputs": [
+        "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md",
+        "docs/reports/QUANT_TRUTH_ENGINE_AUDIT_001.md"
+      ],
+      "findings": {
+        "trade_open_count": 797,
+        "real_close_count": 1469,
+        "paper_win_rate": 0.629,
+        "gross_pnl": 347.43,
+        "data_readiness": "PARTIAL",
+        "critical_gap": "trade_close missing ev, fair_value, true_probability, bankroll_tier, risk_mode"
+      },
+      "notes": "Data readiness PARTIAL. Telemetry backfill required before Bankroll Rank and Size Sharp."
+    },
+    {
+      "priority": 1,
+      "task_id": "TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Carry forward 10 entry-time fields into trade_close payloads in trader.py. Required before Bankroll Rank and Size Sharp can be built on solid data.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "utils/quant_event_logger.py",
+        "tests/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "required_fields_to_add": [
+        "bankroll_tier_id",
+        "bankroll_tier_name",
+        "bankroll_family",
+        "risk_mode",
+        "ev_at_entry",
+        "fair_value_at_entry",
+        "true_probability_at_entry",
+        "lifecycle_phase_at_entry",
+        "notional_size",
+        "seconds_remaining_at_entry"
+      ],
+      "out_of_scope": [
+        "strategy changes",
+        "sizing changes",
+        "risk logic changes",
+        "live mode enablement",
+        "new event types (Priority 1 only)"
+      ],
+      "outputs": [
+        "docs/reports/TELEMETRY_BACKFILL_FOR_QUANT_TRUTH_001.md"
+      ],
+      "notes": "Class 5 OBSERVABILITY. Add fields to existing trade_close emission only. Tests must confirm fields emitted. No runtime behavior change."
+    },
     {
       "priority": 1,
       "task_id": "BATCH_3C_GATE_CHECK_001",
