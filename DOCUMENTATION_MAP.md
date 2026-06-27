@@ -1,6 +1,6 @@
 # Documentation Map
 
-> Last synced: 2026-06-21.
+> Last synced: 2026-06-27.
 > Purpose: Official map for humans and AI assistants. This is docs-only and does not imply runtime behavior is implemented.
 
 ---
@@ -28,13 +28,13 @@ To prevent clutter in the project root, files are routed into dedicated director
 
 | Directory | Purpose / Category | Description |
 | :--- | :--- | :--- |
-| **[`docs/architecture/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/)** | System Architecture | Blueprints, engine designs, data flow specifications, schemas, and structure maps. |
-| **[`docs/audits/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/audits/)** | Forensics & Safety Audits | Point-in-time codebase reviews, pre-commit checklist checks, and safety logs. |
-| **[`docs/reports/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/reports/)** | Milestone Summaries | Point-in-time implementation reports, recovery logs, and git commit details. |
+| **[`docs/architecture/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/)** | System Architecture | Blueprints, engine designs, data flow specifications, schemas, and structure maps. Includes `QUANT_ARCHITECTURE_MASTER_PLAN_001.md`, `AI_AGENT_OPERATING_SYSTEM_DESIGN_001.md`, and Batch 3 extraction designs. 100+ files. |
+| **[`docs/audits/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/audits/)** | Forensics & Safety Audits | Point-in-time codebase reviews, pre-commit checklist checks, safety logs, and Batch 3 gate checks (`BATCH_3B1_GATE_CHECK_001.md`, `BATCH_3B2_GATE_CHECK_001.md`). 200+ files. |
+| **[`docs/reports/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/reports/)** | Milestone Summaries | Implementation reports, commit reports, runtime validation reports, phase reviews, and architecture audits. Includes `PROJECT_WIDE_REFACTOR_AUDIT_001.md` and all Batch 3 reports. 160+ files. |
 | **[`docs/evidence/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/evidence/)** | Validation Evidence | sqlite/shadow telemetry validation checks and dry-run proof logs. |
-| **[`docs/research/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/)** | Strategy Research | Quant hypotheses, campaigns, registries, active question locks. |
-| **[`docs/operations/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/)** | Operations & Deployment | Operating runbooks, VPS deployment configurations. |
-| **[`docs/quant_agent_setup_md/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/quant_agent_setup_md/)** | AI Agent Setup | Safety role playbooks, templates, and setup prompts. |
+| **[`docs/research/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/)** | Strategy Research | Quant hypotheses, campaigns, registries, active question locks. Contains `ACTIVE_QUESTION.md`, `AUDIT_REGISTRY.json`, `DECISION_REGISTRY.json`. |
+| **[`docs/operations/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/)** | Operations & Deployment | Operating runbooks, VPS deployment configurations, and the **Loop Engineering Playbook** (`LOOP_ENGINEERING_PLAYBOOK_001.md`) — defines autonomous AI workflow mode for eligible task classes. |
+| **[`docs/quant_agent_setup_md/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/quant_agent_setup_md/)** | AI Agent Setup | Safety role playbooks (roles 01–29), templates, and setup prompts. Roles 24–29 added 2026-06-26 (Librarian, Data Steward, Handoff, Verification Officer, Runtime Ops, Architecture Governance). |
 
 ---
 
@@ -102,6 +102,23 @@ Located in `.codex/`. Reusable prompts, checklists, and templates to guide AI ag
 | **[`.codex/security/AI_AGENT_SECURITY_CHECKLIST.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/security/AI_AGENT_SECURITY_CHECKLIST.md)** | Security checklist for secrets, wallet safety, and runtime separation. |
 | **[`research/session_memory_template.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/research/session_memory_template.md)** | Handoff session template to maintain memory. |
 | **[`research/daily/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/research/daily/README.md)** | Daily research diary workflow. |
+
+---
+
+## 6b. Batch 3 Trader Refactor Status (2026-06-27)
+
+`polymarket/trader.py` is being decomposed via proxy delegation into orchestration helpers:
+
+| Batch | Commit | Extracted to | Status |
+| :--- | :--- | :--- | :--- |
+| Batch 1 | `e76581fb` | `polymarket/trader_presentation.py` — `TraderPresentationHelper` | COMPLETE |
+| Batch 2A | `c3b2bd2` | `polymarket/orchestration/trader_lifecycle.py` — `TraderLifecycleHelper` | COMPLETE |
+| Batch 3A | `3c24111` | `polymarket/orchestration/trader_observability.py` (display state) — `TraderObservabilityHelper` | COMPLETE |
+| Batch 3B-1 | `a491820` | `trader_observability.py` +8 orderbook refresh fields +2 methods | COMPLETE |
+| Batch 3B-2 | `381cbc4` | `trader_observability.py` +5 cadence fields +3 methods; Presentation dedup fix in `6872a07` | COMPLETE |
+| Batch 3C+ | TBD | Remaining lifecycle observability payload assembly | PLANNED |
+
+`trader.py` is at 12,824 lines (architecture master plan target: ≤ 1,000 lines). See `docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md` for full decomposition roadmap.
 
 ---
 

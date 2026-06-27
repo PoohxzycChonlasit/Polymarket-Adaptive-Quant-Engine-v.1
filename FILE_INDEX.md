@@ -1,6 +1,6 @@
 # FILE_INDEX.md
 
-> Last updated: 2026-06-21.
+> Last updated: 2026-06-27.
 > Purpose: Quick file map for Codex and human operators. This is an index, not a source of truth for live readiness.
 
 ## 1. Documentation Folder Map
@@ -9,13 +9,13 @@ To prevent clutter in the repository root and keep the engine's operation clean,
 
 | Directory | Purpose / Category | Contents Description |
 | :--- | :--- | :--- |
-| [`docs/architecture/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/) | **System Architecture** | Technical blueprints, engine designs, data schemas, and pipeline structures. |
-| [`docs/audits/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/audits/) | **Forensics & Safety Audits** | Codebase audits, pre-commit checklists, safety reviews, and forensic check logs. |
-| [`docs/reports/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/reports/) | **Development Milestones** | Implementation reports, commit reports, recovery reports, and status summaries. |
+| [`docs/architecture/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/) | **System Architecture** | Technical blueprints, engine designs, data schemas, and pipeline structures. 100+ files including Quant Architecture Master Plan, AI Agent OS Design, and Batch 3 extraction designs. |
+| [`docs/audits/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/audits/) | **Forensics & Safety Audits** | Codebase audits, pre-commit checklists, safety reviews, and forensic check logs. 200+ files including Batch 3 gate checks. |
+| [`docs/reports/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/reports/) | **Development Milestones** | Implementation reports, commit reports, recovery reports, phase reviews, and runtime validation reports. 160+ files. |
 | [`docs/evidence/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/evidence/) | **Validation & Test Logs** | SQLite real-data validations, shadow telemetry runtime confirmation logs, and compatibility checks. |
-| [`docs/research/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/) | **Quant Strategy Research** | Strategy research plans, campaigns, active questions, and hypothesis ledgers. |
-| [`docs/operations/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/) | **Operations & Deployment** | Operational runbooks and VPS/execution setup guides. |
-| [`docs/quant_agent_setup_md/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/quant_agent_setup_md/) | **AI Agent Roles** | Safety-first role playbooks, templates, and agent setups. |
+| [`docs/research/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/) | **Quant Strategy Research** | Strategy research plans, campaigns, active questions, hypothesis ledgers, ACTIVE_QUESTION.md, AUDIT_REGISTRY.json, DECISION_REGISTRY.json. |
+| [`docs/operations/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/) | **Operations & Deployment** | Operational runbooks, VPS/execution setup guides, and the **Loop Engineering Playbook** (`LOOP_ENGINEERING_PLAYBOOK_001.md`). |
+| [`docs/quant_agent_setup_md/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/quant_agent_setup_md/) | **AI Agent Roles** | Safety-first role playbooks (roles 01–29), templates, and agent setups. |
 
 > [!WARNING]
 > **Historical Evidence Warning**: Most files in `docs/audits/`, `docs/reports/`, and `docs/evidence/` represent point-in-time development logs and historical validation records. They are preserved for auditability and trace history, and they are **NOT active operational specifications or system instructions**. Active guidelines must be checked only in the root files (e.g., `PROJECT_RULES.md`, `AGENTS.md`).
@@ -115,9 +115,23 @@ python main.py --mode live --interval 60
 
 ## 5. Polymarket Core
 
+### 5.1 Orchestration Helpers (Batch 3 Refactors — 2026-06-27)
+
+`polymarket/trader.py` is being decomposed via proxy delegation. Extracted helpers:
+
+| Helper | Location | Owns |
+| :--- | :--- | :--- |
+| `TraderPresentationHelper` | [`polymarket/trader_presentation.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/trader_presentation.py) | TUI display formatting, display field presence/visibility checks, label generators |
+| `TraderLifecycleHelper` | [`polymarket/orchestration/trader_lifecycle.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/orchestration/trader_lifecycle.py) | Session startup, feed initialization, shutdown/cleanup hooks |
+| `TraderObservabilityHelper` | [`polymarket/orchestration/trader_observability.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/orchestration/trader_observability.py) | Display state, recent trades, health monitoring, orderbook refresh timing (8 fields), cadence/scheduler timing (5 fields), event producer, scheduler cadence detail, hybrid snapshot |
+
+`trader.py` delegates to these helpers via `@property` shims and method proxies. Core trading logic (signals, EV, risk, sizing, execution, reconciliation) remains in `trader.py`.
+
+### 5.2 Core Trader Modules
+
 | File | Role |
 | :--- | :--- |
-| [`polymarket/trader.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/trader.py) | Main trade coordinator: cycle loop, market analysis, risk plan use, paper execution, reconciliation, exits, dashboard state, observability events. |
+| [`polymarket/trader.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/trader.py) | Main trade coordinator: cycle loop, market analysis, risk plan use, paper execution, reconciliation, exits, dashboard state, observability events. (12,824 lines — decomposition in progress) |
 | [`polymarket/client.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/client.py) | Polymarket CLOB client, auth, orderbooks, balances, orders, redemptions. |
 | [`polymarket/gamma_fetcher.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/gamma_fetcher.py) | Gamma market/event/token discovery. |
 | [`polymarket/market_feed.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/market_feed.py) | Binance market feed singleton. |
@@ -240,6 +254,12 @@ Playbooks and prompts live under `docs/quant_agent_setup_md/roles/`. Use `MASTER
 | `21_EXECUTION_MICROSTRUCTURE_AGENT.md` | Executable edge, spread, liquidity. |
 | `22_INVENTORY_ANALYTICS_AGENT.md` | Offline inventory replay analytics. |
 | `23_QUANT_LIFECYCLE_INVENTORY_AGENT.md` | Lifecycle inventory coordination. |
+| `24_REPOSITORY_LIBRARIAN_AGENT.md` | File hygiene, doc routing, root folder control. |
+| `25_DATA_STEWARD_AGENT.md` | JSONL schema contracts, event stream retention. |
+| `26_AI_HANDOFF_AGENT.md` | Cross-AI session handoff documents. |
+| `27_VERIFICATION_OFFICER_AGENT.md` | Challenge AI claims, enforce evidence grades. |
+| `28_RUNTIME_OPERATIONS_AGENT.md` | Paper/live session lifecycle management. |
+| `29_ARCHITECTURE_GOVERNANCE_AGENT.md` | Refactor batch gate-check and scope enforcement. |
 
 ---
 
