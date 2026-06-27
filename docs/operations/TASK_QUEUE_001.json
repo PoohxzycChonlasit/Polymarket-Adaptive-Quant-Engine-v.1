@@ -1057,7 +1057,7 @@
     {
       "priority": 4.0,
       "task_id": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 4,
       "description": "Add 5 new Telegram helpers, wire to live startup and order lifecycle. Signing and allowance visibility.",
@@ -1072,6 +1072,18 @@
         "docs/reports/LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001.md"
       ],
       "notes": "COMPLETED — 19+128 tests pass. 5 new notify_* methods. Wired to startup/fill/cancel/signing."
+    },
+    {
+      "priority": 5.0,
+      "task_id": "LIVE_TRADING_READINESS_FINAL_CHECK_001",
+      "status": "READY",
+      "workflow_tier": "GATE",
+      "task_class": 2,
+      "description": "Perform the final live trading readiness gate check audit.",
+      "blocked_by": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
+      "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
+      "outputs": ["docs/audits/LIVE_TRADING_READINESS_FINAL_CHECK_001.md"],
+      "notes": "Final live readiness check."
     }
   ]
 }

@@ -1829,7 +1829,7 @@
     "result": "PASS",
     "repairs": 0,
     "evidence_grade": "C",
-    "commits": ["pending-telegram-commit"],
+    "commits": ["7f63991"],
     "commit_messages": ["feat: add live order signing and telegram visibility"],
     "acceptance_criteria": {
       "signing_check_status_visible": true,
