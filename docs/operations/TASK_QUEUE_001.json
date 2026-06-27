@@ -214,20 +214,55 @@
     {
       "priority": 0,
       "task_id": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001",
-      "status": "PENDING",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 7,
       "description": "Implement Backtest Engine v2 using the Canonical Trade Context v1 schema as source of truth.",
       "blocked_by": null,
       "allowed_scope": [
-        "polymarket/backtester_5m.py",
+        "tools/backtest_engine_v2/",
         "tests/",
         "docs/reports/"
       ],
       "outputs": [
         "docs/reports/BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001.md"
       ],
-      "notes": "Class 7 FEATURE. High priority quant research feature."
+      "notes": "COMPLETED — 9-component engine implemented. 51 tests pass. tools/backtest_engine_v2/ only, zero runtime changes."
+    },
+    {
+      "priority": 0,
+      "task_id": "BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 1,
+      "description": "Validate Backtest Engine V2 against real canonical context data.",
+      "blocked_by": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001.md"
+      ],
+      "notes": "COMPLETED — Verdict: POLICY_NOT_READY_DATA_TOO_SMALL. Engine mechanics verified. Only 14 HIGH-confidence rows (need >= 50). 334 grade D rows are test/settlement events with no signal fields. Size Sharp and Bankroll Rank absent from all rows."
+    },
+    {
+      "priority": -1,
+      "task_id": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 1,
+      "description": "Compile more canonical context data from historical logs. Diagnose grade D root cause. Achieve >=50 HIGH-confidence rows before policy decisions.",
+      "blocked_by": "BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001",
+      "allowed_scope": [
+        "tools/canonical_trade_context_builder.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md"
+      ],
+      "notes": "Run builder on all available historical log dates. Target: >=50 grade A rows. Diagnose exit_reason=test rows in grade D. Re-run validation when count reaches threshold."
     },
     {
       "priority": 0,

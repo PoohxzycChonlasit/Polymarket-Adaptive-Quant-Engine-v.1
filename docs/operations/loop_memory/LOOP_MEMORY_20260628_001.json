@@ -1,0 +1,112 @@
+[
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
+    "task_class": 4,
+    "scope": [
+      "utils/telegram_alerts.py",
+      "polymarket/trader.py",
+      "tests/test_live_telegram_visibility.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A",
+    "commits": ["eec3e7e"],
+    "commit_messages": ["feat: add live order signing and telegram visibility"],
+    "files_changed": 3,
+    "net_lines": 57,
+    "acceptance_criteria": {
+      "notify_order_timeout_cancelled_added": true,
+      "verify_signing_log_added": true,
+      "timeout_vs_cancelled_routing_correct": true,
+      "21_tests_pass": true,
+      "84_paper_mode_tests_pass": true,
+      "no_runtime_behavior_change": true,
+      "stop_conditions_hit": false
+    },
+    "telegram_events_added": [
+      "notify_order_timeout_cancelled"
+    ],
+    "signing_visibility": "[VERIFY SIGNING] status | has_signer | has_builder | signature_type | message",
+    "next_recommendation": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001",
+    "task_class": 7,
+    "scope": [
+      "tools/backtest_engine_v2/",
+      "tests/test_backtest_engine_v2.py",
+      "docs/reports/BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A",
+    "commits": ["5752825"],
+    "commit_messages": ["feat: add BacktestEngineV2 — offline replay over Canonical Context data"],
+    "files_changed": 11,
+    "net_lines": 1765,
+    "acceptance_criteria": {
+      "9_components_implemented": true,
+      "51_tests_pass": true,
+      "determinism_verified": true,
+      "policy_isolation_verified": true,
+      "no_runtime_imports": true,
+      "100_plus_grid_configs_supported": true,
+      "grid_count": 630
+    },
+    "components": [
+      "ReplayEngine", "PolicyEngine", "PolicyRegistry",
+      "EquitySimulator", "MetricsEngine", "ScenarioRunner",
+      "ComparisonEngine", "ExperimentRegistry", "RecommendationExporter"
+    ],
+    "next_recommendation": "BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001",
+    "task_class": 1,
+    "scope": [
+      "runtime/reports/canonical_trade_context_*.jsonl",
+      "tools/backtest_engine_v2/",
+      "docs/reports/BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "POLICY_NOT_READY_DATA_TOO_SMALL",
+    "repairs": 0,
+    "evidence_grade": "A",
+    "commits": [],
+    "files_changed": 4,
+    "data_inventory": {
+      "canonical_files": 1,
+      "total_rows": 348,
+      "grade_A": 14,
+      "grade_D": 334,
+      "has_ev": 14,
+      "has_size_sharp": 0,
+      "has_bankroll_rank": 0,
+      "date_range": "2026-06-26 to 2026-06-28"
+    },
+    "key_findings": [
+      "Only 14 HIGH-confidence rows with complete signal data — sample too small for policy decisions",
+      "334 grade D rows are test/settlement events (exit_reason=test), bankroll=None, ev=None",
+      "Grade D rows cannot be used for signal-based policy — they lack ev/probability/lifecycle_phase",
+      "The $153 total PnL from grade D rows is not a usable backtest signal",
+      "EV vs PnL Pearson correlation on n=14 = -0.24 (no predictive signal detectable)",
+      "12/14 HIGH-confidence trades are stop_loss outcomes — single adverse period, not policy signal",
+      "Size Sharp and Bankroll Rank both 0% populated — cannot run those policy buckets yet",
+      "Engine mechanics VERIFIED CORRECT: 51 unit tests, determinism confirmed, grade A filter works"
+    ],
+    "policy_readiness": "POLICY_NOT_READY_DATA_TOO_SMALL",
+    "secondary_verdict": "POLICY_NOT_READY_DATA_QUALITY",
+    "min_required_high_conf_rows": 50,
+    "next_recommendation": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+  }
+]
