@@ -219,7 +219,7 @@
     },
     {
       "pipeline_id": "TOOL_PIPELINE_LOOP",
-      "workflow_tier": "LOOP",
+      "workflow_tier": "STANDARD",
       "task_classes": [3, 4],
       "description": "Tool registry/pipeline updates and offline automation tooling (no runtime trading code changes)",
       "ordered_tool_sequence": [

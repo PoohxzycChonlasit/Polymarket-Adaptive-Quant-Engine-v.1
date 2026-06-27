@@ -172,7 +172,7 @@
     {
       "pipeline_id": "TOOL_PIPELINE_LOOP",
       "task_classes": [3, 4],
-      "workflow_tiers": ["LOOP"],
+      "workflow_tiers": ["LOOP", "STANDARD"],
       "risk_level": "NONE",
       "description": "Tool registry/pipeline spec updates and offline tooling tasks (Class 3 governance docs, Class 4 offline automation scripts)",
       "role_sequence": ["29_ARCHITECTURE_GOVERNANCE_AGENT", "27_VERIFICATION_OFFICER_AGENT", "24_REPOSITORY_LIBRARIAN_AGENT"],
