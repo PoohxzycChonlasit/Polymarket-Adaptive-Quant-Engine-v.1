@@ -1,0 +1,215 @@
+{
+  "$schema": "ai_cognition_memory_schema_v1",
+  "version": "1.0.0",
+  "last_updated": "2026-06-27",
+  "storage_path": "docs/operations/cognition_memory/",
+  "file_pattern": "{memory_type}/MEMORY_{YYYYMMDD}_{NNN}.json",
+  "memory_types": {
+    "decision": {
+      "description": "Why a particular scope, tier, or approach was chosen",
+      "retention_days": 90,
+      "compact_after_days": 90,
+      "required_fields": ["memory_id", "task_id", "source_commit", "confidence", "evidence_grade", "summary", "reusable_decision"],
+      "example": {
+        "memory_id": "DECISION-20260627-BATCH3C-001",
+        "memory_type": "decision",
+        "task_id": "BATCH_3C_GATE_CHECK_001",
+        "source_commit": "db21426",
+        "confidence": "HIGH",
+        "evidence_grade": "B",
+        "summary": "Chose display proxy elimination as Batch 3C primary scope",
+        "lessons_learned": "After dedup fix (6872a07), 4 display proxy methods have 0 remaining call sites — safe to remove entirely without updating any call sites",
+        "failure_pattern": null,
+        "repair_pattern": null,
+        "reusable_decision": "Check call sites before assuming proxy methods need updating. Dedup fixes can reduce call sites to zero, making removal trivial.",
+        "forbidden_scope_notes": null,
+        "next_recommendation": "BATCH_3C_IMPLEMENTATION_001"
+      }
+    },
+    "failure": {
+      "description": "What failed, why, and which file/method was involved",
+      "retention_days": 180,
+      "compact_after_days": 180,
+      "required_fields": ["memory_id", "task_id", "source_commit", "confidence", "evidence_grade", "summary", "failure_pattern", "lessons_learned"],
+      "example": {
+        "memory_id": "FAILURE-20260627-BATCH3B1-001",
+        "memory_type": "failure",
+        "task_id": "BATCH_3B1_REVIEW_001",
+        "source_commit": "a491820",
+        "confidence": "HIGH",
+        "evidence_grade": "C",
+        "summary": "Pre-existing test failure: test_decision_event_emits_orderbook_refresh_reuse_cadence_observability",
+        "lessons_learned": "Test used mock trader without _event_producer_label or _display_* methods. After dedup fix (6872a07), test now passes — fix was unrelated to the batch.",
+        "failure_pattern": {
+          "failure_class": "unit_test_failure",
+          "affected_file": "tests/test_paper_mode.py",
+          "root_cause": "helper called trader._event_producer_label() through indirect route; mock trader lacked the method",
+          "was_pre_existing": true,
+          "resolved_in_commit": "6872a07"
+        },
+        "repair_pattern": null,
+        "reusable_decision": null,
+        "forbidden_scope_notes": null,
+        "next_recommendation": "When tests use mock traders, verify which methods the helper calls indirectly — if helper calls trader.* for methods that could be on self.*, dedup fix resolves the mock incompatibility."
+      }
+    },
+    "repair": {
+      "description": "What repair pattern fixed what failure class",
+      "retention_days": 180,
+      "compact_after_days": 180,
+      "required_fields": ["memory_id", "task_id", "source_commit", "confidence", "evidence_grade", "failure_pattern", "repair_pattern"],
+      "example": {
+        "memory_id": "REPAIR-20260627-BATCH3C-001",
+        "memory_type": "repair",
+        "task_id": "BATCH_3C_IMPLEMENTATION_001",
+        "source_commit": "3c5b781",
+        "confidence": "HIGH",
+        "evidence_grade": "B",
+        "summary": "Added hashlib import to trader_observability.py after moving _phase2_candidate_hash",
+        "lessons_learned": "When moving a @staticmethod that uses a stdlib module (hashlib), the import must follow it to the new file",
+        "failure_pattern": {
+          "failure_class": "compile_error",
+          "affected_file": "polymarket/orchestration/trader_observability.py",
+          "root_cause": "hashlib.sha1() called but hashlib not imported in helper file"
+        },
+        "repair_pattern": {
+          "fix_applied": "Added 'import hashlib' to trader_observability.py imports section",
+          "lines_changed": 1,
+          "evidence_after_repair": "B",
+          "repair_count": 1
+        },
+        "reusable_decision": "Always check stdlib imports used by a @staticmethod before moving it to a new file.",
+        "forbidden_scope_notes": null,
+        "next_recommendation": null
+      }
+    },
+    "tool_usage": {
+      "description": "Tool invocation history, success rate, known edge cases",
+      "retention_entries": 30,
+      "compact_after_entries": 30,
+      "required_fields": ["memory_id", "tool_id", "task_id", "source_commit", "confidence", "evidence_grade", "summary", "lessons_learned"],
+      "example": {
+        "memory_id": "TOOL-20260627-JSONL-001",
+        "memory_type": "tool_usage",
+        "tool_id": "jsonl_session_scan",
+        "task_id": "POST_BATCH_3B1_RUNTIME_VALIDATION_001",
+        "source_commit": "a491820",
+        "confidence": "HIGH",
+        "evidence_grade": "A",
+        "summary": "JSONL session scan found 443 events using PID 19480",
+        "lessons_learned": "Filter by runtime_session_id not raw PID — PID appears in multiple JSON fields. Session ID is authoritative.",
+        "failure_pattern": null,
+        "repair_pattern": null,
+        "reusable_decision": "Use runtime_session_id field for JSONL filtering, not numeric PID string match",
+        "forbidden_scope_notes": null,
+        "next_recommendation": null
+      }
+    },
+    "runtime_evidence": {
+      "description": "Paper run results indexed by commit SHA",
+      "retention_days": 60,
+      "compact_after_days": 60,
+      "required_fields": ["memory_id", "task_id", "source_commit", "confidence", "evidence_grade", "summary"],
+      "example": {
+        "memory_id": "RUNTIME-20260627-BATCH3C-001",
+        "memory_type": "runtime_evidence",
+        "task_id": "POST_BATCH_3C_RUNTIME_VALIDATION_001",
+        "source_commit": "3c5b781",
+        "confidence": "HIGH",
+        "evidence_grade": "A",
+        "summary": "Batch 3C validated: 7 cycles, exit 0, 56 orderbook events, 28 cadence events",
+        "lessons_learned": "Display proxy removal and static utility migration do not affect JSONL telemetry shape",
+        "failure_pattern": null,
+        "repair_pattern": null,
+        "reusable_decision": null,
+        "forbidden_scope_notes": null,
+        "next_recommendation": "BATCH_3D_GATE_CHECK_001"
+      }
+    },
+    "repository_insight": {
+      "description": "What has been moved where, method ownership history",
+      "retention": "PERMANENT",
+      "compact_after": "NEVER",
+      "required_fields": ["memory_id", "source_commit", "confidence", "evidence_grade", "summary", "lessons_learned"],
+      "example": {
+        "memory_id": "REPO-INSIGHT-TRADER-OBS-001",
+        "memory_type": "repository_insight",
+        "task_id": "BATCH_3C_IMPLEMENTATION_001",
+        "source_commit": "3c5b781",
+        "confidence": "HIGH",
+        "evidence_grade": "B",
+        "summary": "trader_observability.py now owns: display state (3A), orderbook refresh (3B-1), cadence (3B-2), static phase2 utils (3C)",
+        "lessons_learned": "Each batch adds a labeled section to trader_observability.py. Do not mix batch artifacts — use comments like '# Batch 3C:'",
+        "failure_pattern": null,
+        "repair_pattern": null,
+        "reusable_decision": "Check trader_observability.py section comments to understand what was moved in each batch",
+        "forbidden_scope_notes": null,
+        "next_recommendation": null
+      }
+    },
+    "quant_safety": {
+      "description": "Known forbidden areas — PERMANENT, never expires",
+      "retention": "PERMANENT",
+      "compact_after": "NEVER",
+      "required_fields": ["memory_id", "confidence", "evidence_grade", "summary", "forbidden_scope_notes"],
+      "example": {
+        "memory_id": "QS-001",
+        "memory_type": "quant_safety",
+        "task_id": "BATCH_3B_DESIGN_REVIEW_001",
+        "source_commit": "45bf999",
+        "confidence": "HIGH",
+        "evidence_grade": "B",
+        "summary": "_phase4_build_quote_lineage is PERMANENT on trader.py — never extract",
+        "lessons_learned": null,
+        "failure_pattern": null,
+        "repair_pattern": null,
+        "reusable_decision": null,
+        "forbidden_scope_notes": {
+          "method": "_phase4_build_quote_lineage",
+          "reason": "Called from live order submission path (lines 4338, 11583, 11689). Extraction creates execution-path coupling to helper.",
+          "severity": "CRITICAL",
+          "expires": "NEVER"
+        },
+        "next_recommendation": null
+      }
+    },
+    "agent_skill": {
+      "description": "Which agent role performed well on which task type",
+      "retention_days": 90,
+      "compact_after_days": 90,
+      "required_fields": ["memory_id", "agent_role", "task_id", "confidence", "evidence_grade", "summary"],
+      "example": {
+        "memory_id": "AGENT-SKILL-29-001",
+        "memory_type": "agent_skill",
+        "agent_role": "29_ARCHITECTURE_GOVERNANCE_AGENT",
+        "task_id": "BATCH_3C_GATE_CHECK_001",
+        "source_commit": "db21426",
+        "confidence": "HIGH",
+        "evidence_grade": "B",
+        "summary": "Role 29 gate check: PROCEED verdict, 0 escalations, 4 context reads",
+        "lessons_learned": "For gate checks, Role 29 needs: gate check design + trader.py grep + loop memory. Typically 4 reads.",
+        "failure_pattern": null,
+        "repair_pattern": null,
+        "reusable_decision": "Assign Role 29 to all Class 2 gate check tasks. Use 4 context reads: active state + task queue + loop memory + gate design doc.",
+        "forbidden_scope_notes": null,
+        "next_recommendation": null
+      }
+    }
+  },
+  "retrieval_priority": [
+    "quant_safety",
+    "failure",
+    "repair",
+    "decision",
+    "repository_insight",
+    "runtime_evidence",
+    "tool_usage",
+    "agent_skill"
+  ],
+  "compact_policy": {
+    "loop_memory_monthly_archive": true,
+    "raw_logs_never_in_memory": true,
+    "quant_safety_never_expires": true,
+    "working_memory_session_scoped_only": true
+  }
+}
