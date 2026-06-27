@@ -172,14 +172,26 @@
     {
       "priority": 4.4,
       "task_id": "RUNTIME_LOG_GOVERNANCE_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
-      "description": "Design and implement tools/flaos/log_governance.py — Phase A offline script to compress JSONL files, archive logs/.log.N backups, rotate validation_run_output.log. No runtime code changes.",
+      "description": "Design Phase A offline log governance script. Architecture at docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md",
+      "blocked_by": null,
+      "allowed_scope": ["docs/architecture/", "docs/reports/"],
+      "outputs": ["docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md", "docs/reports/RUNTIME_LOG_GOVERNANCE_DESIGN_001.md"],
+      "notes": "Design complete. 5 subcommands, dry-run-first policy, 12-section spec. Implementation is next task."
+    },
+    {
+      "priority": 4.3,
+      "task_id": "RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement tools/flaos/log_governance.py following the design in docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md. Phase A: inspect, plan, dry-run, execute, report subcommands. No runtime trading code changes.",
       "blocked_by": null,
       "allowed_scope": ["tools/flaos/", "docs/reports/"],
-      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_DESIGN_001.md"],
-      "notes": "URGENCY HIGH — logs/ at 1.6 GB. Phase A offline script can safely reclaim ~1.4 GB without touching trading runtime."
+      "outputs": ["tools/flaos/log_governance.py", "docs/reports/RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001.md"],
+      "notes": "URGENCY HIGH — logs/ at 1.6 GB. Implement dry-run first policy. Execute only with --confirm flag. Session guard required before DELETE."
     },
     {
       "priority": 5,

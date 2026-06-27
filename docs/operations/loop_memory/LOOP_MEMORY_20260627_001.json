@@ -678,5 +678,34 @@
       "bootstrap_healthy_at_end": true
     },
     "next_recommendation": "RUNTIME_LOG_GOVERNANCE_DESIGN_001 — LOOP tier Class 4. Implement Phase A offline script following ME lifecycle. URGENCY HIGH — logs/ at 1.6 GB."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "RUNTIME_LOG_GOVERNANCE_DESIGN_001",
+    "task_class": 4,
+    "scope": [
+      "docs/architecture/RUNTIME_LOG_GOVERNANCE_001.md",
+      "docs/reports/RUNTIME_LOG_GOVERNANCE_DESIGN_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add runtime log governance design"],
+    "files_changed": 2,
+    "acceptance_criteria": {
+      "5_subcommands_designed": true,
+      "dry_run_first_policy": true,
+      "session_guard_per_delete": true,
+      "retention_table_complete": true,
+      "json_report_schema_defined": true,
+      "verification_checklist_complete": true,
+      "phase_b_deferred": true,
+      "no_runtime_files_changed": true
+    },
+    "estimated_phase_a_reclaim_mb": 1500,
+    "next_recommendation": "RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001 — STANDARD tier Class 4. Implement tools/flaos/log_governance.py with 5 subcommands. URGENCY HIGH."
   }
 ]
