@@ -87,6 +87,18 @@
     },
     {
       "priority": 6,
+      "task_id": "SKILL_REGISTRY_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Create docs/operations/skills/SKILL_REGISTRY_001.json with 8 initial skills as machine-readable JSON. No Python changes.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/operations/skills/", "docs/reports/"],
+      "outputs": ["docs/operations/skills/SKILL_REGISTRY_001.json"],
+      "notes": "Phase 2 Skill Engine. See SKILL_ENGINE_001.md for 8 skill examples and registry schema."
+    },
+    {
+      "priority": 7,
       "task_id": "BATCH_3D_GATE_CHECK_001",
       "status": "READY",
       "workflow_tier": "GATE",
@@ -95,7 +107,7 @@
       "blocked_by": null,
       "allowed_scope": ["docs/audits/"],
       "outputs": ["docs/audits/BATCH_3D_GATE_CHECK_001.md"],
-      "notes": "Can run in parallel with TOOL_PIPELINE_ENABLEMENT_001."
+      "notes": "Can run in parallel with SKILL_REGISTRY_ENABLEMENT_001."
     },
     {
       "priority": 6,

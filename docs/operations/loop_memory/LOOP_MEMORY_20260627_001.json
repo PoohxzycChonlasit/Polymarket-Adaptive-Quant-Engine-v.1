@@ -329,5 +329,33 @@
       "no_root_markdown_created": true
     },
     "next_recommendation": "BATCH_3D_GATE_CHECK_001 — gate check for _phase2_complete_lifecycle_observability and _phase2_observability_payload. GATE tier, Role 29 + 02."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-27",
+    "loop_id": "PLANNING_SKILL_REPOSITORY_GRAPH_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/PLANNING_ENGINE_001.md",
+      "docs/architecture/SKILL_ENGINE_001.md",
+      "docs/architecture/REPOSITORY_GRAPH_ENGINE_001.md",
+      "docs/reports/PLANNING_SKILL_REPOSITORY_GRAPH_DESIGN_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add planning skill and repository graph design"],
+    "files_changed": 4,
+    "acceptance_criteria": {
+      "planning_engine_design_complete": true,
+      "skill_engine_8_skills_defined": true,
+      "repo_graph_10_nodes_10_edges": true,
+      "quant_safety_constraints_embedded": true,
+      "migration_roadmaps_v1_to_v5": true,
+      "no_runtime_files_changed": true
+    },
+    "next_recommendation": "SKILL_REGISTRY_ENABLEMENT_001 — create docs/operations/skills/SKILL_REGISTRY_001.json with 8 skills. LOOP tier Class 3. Parallel: BATCH_3D_GATE_CHECK_001."
   }
 ]
