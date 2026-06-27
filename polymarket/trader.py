@@ -11641,6 +11641,123 @@ class PolymarketTrader:
         outcome: str = "",
         position_id: str = "",
     ) -> bool:
+        # ── Micro-live Emergency Kill Switch Check ────────────────────────────
+        kill_switch_file = getattr(self.settings, "live_kill_switch_file", "runtime/KILL_SWITCH")
+        import os
+        if os.path.exists(kill_switch_file):
+            if not self.settings.paper_trading:
+                # Trigger lockdown in live mode
+                self._trigger_lockdown("kill_switch_file_detected")
+                self._emit_quant_event(
+                    "log_system_health",
+                    {
+                        "event": "live_kill_switch_triggered",
+                        "kill_switch_file": kill_switch_file,
+                        "mode": self._runtime_mode(),
+                    },
+                )
+                self._notify_telegram(
+                    "notify_critical",
+                    "CRITICAL: Live emergency kill switch file detected. Blocking all live orders.",
+                    kill_switch_file=kill_switch_file,
+                )
+                LOGGER.error(
+                    "[KILL_SWITCH_ACTIVE] Emergency stop active. File %s exists. Blocking order.",
+                    kill_switch_file
+                )
+                return False
+            else:
+                LOGGER.warning(
+                    "[KILL_SWITCH_WARNING] Emergency stop file exists at %s but paper mode is active.",
+                    kill_switch_file
+                )
+
+        # ── Micro-live Hard Dollar Caps Check ─────────────────────────────────
+        if not self.settings.paper_trading:
+            order_notional = float(size) * float(price)
+
+            # Cap 1: Max Order USD
+            max_order_usd = float(getattr(self.settings, "live_max_order_usd", 5.0))
+            if order_notional > max_order_usd:
+                LOGGER.error(
+                    "[ORDER_INTENT_BLOCKED] token=%s side=%s size=%.6f reason=live_order_cap_exceeded notional=%.2f max=%.2f",
+                    market_id, side, size, order_notional, max_order_usd
+                )
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "order_intent_reject",
+                        "reason": "live_order_cap_exceeded",
+                        "token_id": market_id,
+                        "side": side,
+                        "price": float(price),
+                        "size": float(size),
+                        "notional": order_notional,
+                        "max_order_usd": max_order_usd,
+                        "risk_state": "blocked",
+                        "mode": self._runtime_mode(),
+                    }
+                )
+                return False
+
+            # Cap 2: Max Daily Loss USD
+            max_daily_loss_usd = float(getattr(self.settings, "live_max_daily_loss_usd", 3.0))
+            # Current session/daily realized loss is positive if it is a net loss
+            realized_pnl = float(getattr(self.bankroll_state, "realized_pnl", 0.0) or 0.0)
+            realized_loss = -realized_pnl if realized_pnl < 0 else 0.0
+            if realized_loss >= max_daily_loss_usd:
+                LOGGER.error(
+                    "[ORDER_INTENT_BLOCKED] token=%s side=%s size=%.6f reason=live_daily_loss_cap_exceeded loss=%.2f max=%.2f",
+                    market_id, side, size, realized_loss, max_daily_loss_usd
+                )
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "order_intent_reject",
+                        "reason": "live_daily_loss_cap_exceeded",
+                        "token_id": market_id,
+                        "side": side,
+                        "price": float(price),
+                        "size": float(size),
+                        "realized_loss": realized_loss,
+                        "max_daily_loss_usd": max_daily_loss_usd,
+                        "risk_state": "blocked",
+                        "mode": self._runtime_mode(),
+                    }
+                )
+                return False
+
+            # Cap 3: Max Open Exposure USD
+            max_exposure_usd = float(getattr(self.settings, "live_max_open_exposure_usd", 10.0))
+            current_exposure = sum(
+                float(p.notional_size)
+                for p in self.tracker.open_positions()
+                if getattr(p, "status", "open") == "open"
+            )
+            if current_exposure + order_notional > max_exposure_usd:
+                LOGGER.error(
+                    "[ORDER_INTENT_BLOCKED] token=%s side=%s size=%.6f reason=live_open_exposure_cap_exceeded "
+                    "current_exposure=%.2f new_order_notional=%.2f max=%.2f",
+                    market_id, side, size, current_exposure, order_notional, max_exposure_usd
+                )
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "order_intent_reject",
+                        "reason": "live_open_exposure_cap_exceeded",
+                        "token_id": market_id,
+                        "side": side,
+                        "price": float(price),
+                        "size": float(size),
+                        "current_exposure": current_exposure,
+                        "order_notional": order_notional,
+                        "max_open_exposure_usd": max_exposure_usd,
+                        "risk_state": "blocked",
+                        "mode": self._runtime_mode(),
+                    }
+                )
+                return False
+
         if intent_type is None:
             LOGGER.error(
                 "[ORDER_INTENT_BLOCKED] token=%s side=%s size=%.6f reason=missing_order_intent",

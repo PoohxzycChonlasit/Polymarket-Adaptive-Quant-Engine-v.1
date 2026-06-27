@@ -1224,6 +1224,12 @@ class PolymarketClient:
         if self.settings.paper_trading:
             raise RuntimeError("paper_mode_live_order_api_blocked")
 
+        # Micro-live Emergency Kill Switch Check (Client-level gate)
+        kill_switch_file = getattr(self.settings, "live_kill_switch_file", "runtime/KILL_SWITCH")
+        import os
+        if os.path.exists(kill_switch_file):
+            raise RuntimeError(f"live_kill_switch_active: emergency stop file {kill_switch_file} exists")
+
         client = self._require_clob()
         if check_balance and not self.settings.paper_trading:
             self._preflight_balance_allowance(token_id=token_id, price=price, size=size, side=side)

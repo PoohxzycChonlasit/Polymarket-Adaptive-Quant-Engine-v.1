@@ -86,6 +86,12 @@ class Settings(BaseSettings):
     telegram_enabled: str = "true"
     live_trading_enabled: str = "false"
 
+    # Micro-live Safety and Kill Switch settings
+    live_kill_switch_file: str = "runtime/KILL_SWITCH"
+    live_max_order_usd: float = 5.0
+    live_max_daily_loss_usd: float = 3.0
+    live_max_open_exposure_usd: float = 10.0
+
     option_d_shadow_enabled: bool = False
     delta_shadow_enabled: bool = False
     shadow_telemetry_enabled: bool = False
