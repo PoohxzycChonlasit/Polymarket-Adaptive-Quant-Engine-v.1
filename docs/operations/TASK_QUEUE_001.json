@@ -64,7 +64,7 @@
     {
       "priority": 5,
       "task_id": "TOOL_PIPELINE_ENABLEMENT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 3,
       "description": "Create Tool Registry JSON and Tool Pipeline spec JSON files. Formalizes current manual verification into a checkable schema. No Python changes.",
@@ -75,6 +75,18 @@
     },
     {
       "priority": 5,
+      "task_id": "AGENT_PIPELINE_ENABLEMENT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Define Agent Pipeline JSON spec: task-type to role mapping, context budgets, parallel eligibility. No Python changes.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/operations/", "docs/architecture/", "docs/reports/"],
+      "outputs": ["docs/operations/AGENT_PIPELINE_001.json"],
+      "notes": "Phase 3 FLAOS migration — completes automated role selection framework."
+    },
+    {
+      "priority": 6,
       "task_id": "BATCH_3D_GATE_CHECK_001",
       "status": "READY",
       "workflow_tier": "GATE",

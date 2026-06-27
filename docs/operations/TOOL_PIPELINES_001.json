@@ -1,0 +1,248 @@
+{
+  "$schema": "tool_pipelines_v1",
+  "version": "1.0.0",
+  "last_updated": "2026-06-27",
+  "registry_ref": "docs/operations/TOOL_REGISTRY_001.json",
+  "pipelines": [
+    {
+      "pipeline_id": "DOCS_LOOP",
+      "workflow_tier": "FAST",
+      "task_classes": [3, 9],
+      "description": "Docs-only loops: housekeeping, routing, governance updates",
+      "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 3: 24_REPOSITORY_LIBRARIAN or 01_PROJECT_MANAGER",
+      "ordered_tool_sequence": [
+        "read_active_workflow_state",
+        "read_task_queue",
+        "read_loop_memory",
+        "git_status_short",
+        "git_diff_name_only",
+        "root_markdown_check",
+        "full_accept_guard",
+        "write_final_report",
+        "git_cached_name_only",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_evidence": "D",
+      "auto_repair_allowed": true,
+      "max_repairs": 3,
+      "stop_conditions": [
+        "forbidden_file_in_diff",
+        "root_markdown_created",
+        "runtime_file_modified"
+      ],
+      "commit_policy": "TYPE_C_ONLY",
+      "compact_output_required": true
+    },
+    {
+      "pipeline_id": "HEALTH_CHECK_LOOP",
+      "workflow_tier": "FAST",
+      "task_classes": [0],
+      "description": "Read-only health checks: compile, import, git state, JSONL",
+      "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 0: 28_RUNTIME_OPERATIONS or ALL",
+      "ordered_tool_sequence": [
+        "read_active_workflow_state",
+        "read_git_log",
+        "git_status_short",
+        "py_compile_runtime",
+        "import_polymarket_trader",
+        "git_diff_name_only",
+        "write_final_report",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_evidence": "B",
+      "auto_repair_allowed": false,
+      "max_repairs": 0,
+      "stop_conditions": [
+        "compile_error",
+        "import_error",
+        "attributeerror_in_log"
+      ],
+      "commit_policy": "TYPE_C_ONLY",
+      "compact_output_required": true
+    },
+    {
+      "pipeline_id": "LOW_RISK_REFACTOR_LOOP",
+      "workflow_tier": "LOOP",
+      "task_classes": [6],
+      "description": "Low-risk structural refactors: proxy/shim/static utility extraction",
+      "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 6-low: 02_CODE_ARCHITECT + 07_TEST_CI",
+      "ordered_tool_sequence": [
+        "read_active_workflow_state",
+        "read_git_log",
+        "git_status_short",
+        "py_compile_runtime",
+        "import_polymarket_trader",
+        "pytest_core_suite",
+        "pytest_targeted_suite",
+        "git_diff_name_only",
+        "forbidden_scope_diff_check",
+        "high_risk_keyword_check",
+        "root_markdown_check",
+        "full_accept_guard",
+        "write_final_report",
+        "git_cached_name_only",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_evidence": "C",
+      "auto_repair_allowed": true,
+      "max_repairs": 3,
+      "stop_conditions": [
+        "compile_error_outside_scope",
+        "new_test_failure",
+        "forbidden_scope_in_diff",
+        "high_risk_keyword_found",
+        "root_markdown_created"
+      ],
+      "commit_policy": "TYPE_A_FIRST_THEN_TYPE_C",
+      "compact_output_required": true
+    },
+    {
+      "pipeline_id": "RUNTIME_VALIDATION_LOOP",
+      "workflow_tier": "LOOP",
+      "task_classes": [0],
+      "description": "Post-commit runtime validation with paper run and JSONL verification",
+      "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 0: 28_RUNTIME_OPERATIONS",
+      "ordered_tool_sequence": [
+        "read_active_workflow_state",
+        "git_status_short",
+        "git_log_recent",
+        "py_compile_runtime",
+        "import_polymarket_trader",
+        "file_size_check",
+        "paper_run_5_cycles",
+        "runtime_exit_code_check",
+        "traceback_check",
+        "no_live_order_check",
+        "jsonl_session_scan",
+        "full_accept_guard",
+        "write_final_report",
+        "git_cached_name_only",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_evidence": "A",
+      "auto_repair_allowed": false,
+      "max_repairs": 0,
+      "stop_conditions": [
+        "exit_code_not_0",
+        "attributeerror_in_log",
+        "traceback_in_log",
+        "jsonl_field_missing",
+        "live_orders_detected"
+      ],
+      "commit_policy": "TYPE_C_ONLY",
+      "compact_output_required": true
+    },
+    {
+      "pipeline_id": "GATE_WORKFLOW",
+      "workflow_tier": "GATE",
+      "task_classes": [2, 7],
+      "description": "High-stakes gate check + design + implementation workflow",
+      "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 7: 29_ARCHITECTURE_GOVERNANCE + 02_CODE_ARCHITECT + 07_TEST_CI",
+      "ordered_tool_sequence": [
+        "read_active_workflow_state",
+        "read_task_queue",
+        "read_loop_memory",
+        "read_git_log",
+        "git_status_short",
+        "py_compile_runtime",
+        "import_polymarket_trader",
+        "pytest_core_suite",
+        "pytest_targeted_suite",
+        "forbidden_scope_diff_check",
+        "high_risk_keyword_check",
+        "git_diff_name_only",
+        "file_size_check",
+        "paper_run_5_cycles",
+        "runtime_exit_code_check",
+        "traceback_check",
+        "no_live_order_check",
+        "jsonl_session_scan",
+        "full_accept_guard",
+        "write_final_report",
+        "git_cached_name_only",
+        "git_commit",
+        "append_loop_memory",
+        "update_active_workflow_state",
+        "update_task_queue"
+      ],
+      "required_evidence": "A",
+      "auto_repair_allowed": true,
+      "max_repairs": 3,
+      "stop_conditions": [
+        "forbidden_scope_in_diff",
+        "high_risk_keyword_found",
+        "live_orders_detected",
+        "attributeerror_in_log",
+        "exit_code_not_0",
+        "new_test_failure",
+        "user_approval_not_received"
+      ],
+      "commit_policy": "TYPE_A_FIRST_THEN_TYPE_C_SEPARATE",
+      "compact_output_required": true
+    },
+    {
+      "pipeline_id": "HIGH_RISK_STOP_WORKFLOW",
+      "workflow_tier": "GATE",
+      "task_classes": [8],
+      "description": "Live trading / execution / risk changes — always stops for human review",
+      "role_sequence_reference": "MASTER_AGENT_ROUTER.md — Class 8: MANUAL ONLY",
+      "ordered_tool_sequence": [
+        "read_active_workflow_state",
+        "high_risk_keyword_check",
+        "forbidden_scope_diff_check"
+      ],
+      "required_evidence": "A",
+      "auto_repair_allowed": false,
+      "max_repairs": 0,
+      "stop_conditions": [
+        "ANY_HIGH_RISK_CONTENT_DETECTED",
+        "live_trading_keyword_found",
+        "execution_path_modified",
+        "risk_sizing_modified",
+        "wallet_allowance_modified",
+        "always_stop_for_human_approval"
+      ],
+      "commit_policy": "MANUAL_ONLY",
+      "compact_output_required": false,
+      "notes": "This pipeline always terminates at STOP_AND_ESCALATE. No automated commit permitted. Full human review required for every Class 8 task."
+    }
+  ],
+  "safety_policy": {
+    "full_accept_never_allows": [
+      "live_trading_commands",
+      "execution_path_changes_without_gate",
+      "risk_or_sizing_changes_without_gate",
+      "wallet_or_bankroll_mutation",
+      "reconciliation_changes_without_gate",
+      "deploy_or_push_to_production",
+      "runtime_data_deletion",
+      "destructive_git_operations"
+    ],
+    "high_risk_tools_require_user_approval": [
+      "log_rotator",
+      "jsonl_compactor",
+      "any_live_trading_tool"
+    ],
+    "forbidden_scope_always_stops": [
+      "_phase4_build_quote_lineage",
+      "_phase4_quote_lineage_carry",
+      "_last_quote_lineage_context",
+      "_risk_plan_zero_diagnostics",
+      "_diagnostic_float",
+      "_diagnostic_int",
+      "polymarket/client.py live order methods",
+      "config/.env live flags"
+    ]
+  }
+}

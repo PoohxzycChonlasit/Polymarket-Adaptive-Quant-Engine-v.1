@@ -98,6 +98,17 @@ Tools can be composed into pipelines without code changes. The pipeline for each
 
 ---
 
+## 6b. Operational Files (created 2026-06-27)
+
+The Tool Registry and Pipeline specs are now live in `docs/operations/`:
+
+- **`TOOL_REGISTRY_001.json`** — 32 registered tools across 7 categories with grade, risk, scope, and stop conditions
+- **`TOOL_PIPELINES_001.json`** — 6 pipelines (DOCS_LOOP, HEALTH_CHECK_LOOP, LOW_RISK_REFACTOR_LOOP, RUNTIME_VALIDATION_LOOP, GATE_WORKFLOW, HIGH_RISK_STOP_WORKFLOW)
+
+This completes v1 (spec) and v2 (JSON schema) migration phases simultaneously.
+
+---
+
 ## 7. Migration Plan
 
 | Phase | Implementation |
