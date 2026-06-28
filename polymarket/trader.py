@@ -474,6 +474,10 @@ class PolymarketTrader:
         )
         self.bankroll_rank_engine = BankrollRankEngine()
         self._last_bankroll_rank_lock_log = ""
+        # P0.5 observability — persisted for trade_open carry-forward only.
+        # Never read by risk_plan, sizing, order_intent, or execution paths.
+        self._last_bankroll_rank: float | None = None
+        self._last_bankroll_family: str | None = None
         self.last_quant_details: dict[str, dict[str, object]] = {}
         self._last_orderbook_age_ms: dict[str, int] = {}
         # Batch 3B-1: these 8 fields now live in TraderObservabilityHelper;
@@ -4689,6 +4693,7 @@ class PolymarketTrader:
         demotion_candidate: object = None,
         expected_risk_profile: object = None,
         size_sharp_result: object = None,
+        bankroll_rank: object = None,
     ) -> dict[str, object]:
         paper_trade_replay_key = self._build_paper_trade_replay_key(
             condition_id=condition_id,
@@ -4759,6 +4764,8 @@ class PolymarketTrader:
             "promotion_candidate": promotion_candidate,
             "demotion_candidate": demotion_candidate,
             "expected_risk_profile": expected_risk_profile,
+            # P0.5: bankroll rank observability — used only in emit/carry paths
+            "bankroll_rank": bankroll_rank,
         }
         if size_sharp_result is None:
             size_sharp_result = quant_details.get("size_sharp_result")
@@ -4926,6 +4933,10 @@ class PolymarketTrader:
                 "ev": selected_ev,
                 "confidence": selected_confidence,
                 **self._size_sharp_metadata(model_context.get("size_sharp_result")),
+                # P0.5: bankroll rank and capital quality — observability-only carry-forward
+                "bankroll_rank": self._last_bankroll_rank,
+                "bankroll_family": self._last_bankroll_family,
+                "capital_score": float(getattr(self.bankroll_state, "capital_score", None) or 0.0) or None,
                 # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
                 **self._build_entry_model_truth_envelope(
                     true_probability=selected_probability,
@@ -5054,6 +5065,8 @@ class PolymarketTrader:
             "promotion_candidate": metadata.get("promotion_candidate") if isinstance(metadata, dict) else None,
             "demotion_candidate": metadata.get("demotion_candidate") if isinstance(metadata, dict) else None,
             "expected_risk_profile": metadata.get("expected_risk_profile") if isinstance(metadata, dict) else None,
+            # P0.5: bankroll rank carry from entry metadata — observability only
+            "bankroll_rank": metadata.get("bankroll_rank") if isinstance(metadata, dict) else None,
             **self._size_sharp_close_carry(metadata),
             
             # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
@@ -6266,6 +6279,10 @@ class PolymarketTrader:
         state.promotion_candidate = evaluation["promotion_candidate"]
         state.demotion_candidate = evaluation["demotion_candidate"]
         state.expected_risk_profile = evaluation["expected_risk_profile"]
+        # P0.5: persist rank for observability carry-forward into trade_open payload.
+        # These attributes are read ONLY in emit helpers — never by sizing or risk paths.
+        self._last_bankroll_rank = evaluation.get("bankroll_rank")
+        self._last_bankroll_family = evaluation.get("bankroll_family")
 
         # Log and emit evaluation telemetry
         self._emit_quant_event(
@@ -10323,6 +10340,7 @@ class PolymarketTrader:
                     demotion_candidate=bool(self.bankroll_state.demotion_candidate),
                     expected_risk_profile=str(self.bankroll_state.expected_risk_profile),
                     size_sharp_result=size_sharp_result,
+                    bankroll_rank=self._last_bankroll_rank,
                 ),
             )
             self._placed_epochs[ticker] = ptb_info.epoch_start_ts
