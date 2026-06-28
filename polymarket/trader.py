@@ -6281,7 +6281,10 @@ class PolymarketTrader:
         state.expected_risk_profile = evaluation["expected_risk_profile"]
         # P0.5: persist rank for observability carry-forward into trade_open payload.
         # These attributes are read ONLY in emit helpers — never by sizing or risk paths.
-        self._last_bankroll_rank = evaluation.get("bankroll_rank")
+        # bankroll_rank_engine["bankroll_rank"] is a tier-string (e.g. "T0_MICRO_SEED");
+        # the canonical builder expects a float. Use capital_score (the numeric quality score)
+        # for the float slot; the tier string is already in bankroll_tier_id.
+        self._last_bankroll_rank = evaluation.get("capital_score")
         self._last_bankroll_family = evaluation.get("bankroll_family")
 
         # Log and emit evaluation telemetry

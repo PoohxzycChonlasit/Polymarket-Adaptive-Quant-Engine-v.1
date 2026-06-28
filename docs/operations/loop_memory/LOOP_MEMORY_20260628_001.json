@@ -198,5 +198,42 @@
     ],
     "known_issues": ["log_bankroll_rank_evaluation method missing from QuantEventLogger"],
     "next_recommendation": "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "BANKROLL_RANK_EVENT_LOGGER_FIX_001",
+    "task_class": 5,
+    "scope": ["utils/quant_event_logger.py", "tests/test_telemetry_backfill.py"],
+    "result": "PASS",
+    "evidence_grade": "A",
+    "commits": ["a329425"],
+    "key_findings": [
+      "log_bankroll_rank_evaluation method added to QuantEventLogger routing to research_log",
+      "Verified working: 56 events written to research_log in current session",
+      "16/16 tests pass including 6 new logger tests"
+    ],
+    "next_recommendation": "CANONICAL_TRADE_OPEN_RUNTIME_VALIDATION_002"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "CANONICAL_TRADE_OPEN_RUNTIME_VALIDATION_002",
+    "task_class": 5,
+    "scope": ["polymarket/trader.py", "docs/reports/CANONICAL_TRADE_OPEN_RUNTIME_VALIDATION_002.md"],
+    "result": "NO_TRADE_OPEN_MARKET_UNAVAILABLE",
+    "evidence_grade": "B",
+    "commits": [],
+    "key_findings": [
+      "Zero active 5-minute BTC/ETH binary markets on Polymarket Gamma API at 05:21 UTC 2026-06-28",
+      "Sessions remain TRUE EMPTY — not an epoch gap but a market schedule gap (no updown-5m markets today)",
+      "bankroll_rank_evaluation: 56 events written to research_log — LOGGER FIX VERIFIED",
+      "bankroll_rank type mismatch found and fixed: evaluate()['bankroll_rank'] returns tier-string not float. _last_bankroll_rank now stores evaluate()['capital_score'] (float)",
+      "36/36 tests pass including type fix",
+      "Implementation unit-test verified. Runtime validation requires active market hours."
+    ],
+    "type_fix": "_last_bankroll_rank = evaluation.get('capital_score') instead of evaluation.get('bankroll_rank')",
+    "market_availability_note": "5-min binary markets appear to run during oracle epoch windows (historically 7-14 UTC, 21-02 UTC). No markets active on 2026-06-28 at 05-06 UTC.",
+    "next_recommendation": "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001"
   }
 ]
