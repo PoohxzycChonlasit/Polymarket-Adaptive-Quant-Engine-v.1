@@ -147,6 +147,20 @@ git branch -vv                     # verify up to date
 
 ---
 
+## Loop Memory Health Validation
+
+Before executing any commit or task completion state update, the active loop memory file must pass these checks:
+1. **Pointer Existence**: The `active_loop_memory_file` key must be defined in `ACTIVE_WORKFLOW_STATE_001.json`.
+2. **File Existence**: The referenced active loop memory file must exist on disk under `docs/operations/loop_memory/`.
+3. **JSON Validity**: The file must be syntactically valid JSON. Verify using:
+   ```bash
+   python -m json.tool <active_loop_memory_file>
+   ```
+4. **No Side-channel Appends**: No task loop memory entry may be written to any file other than the designated active loop memory file.
+5. **Entry Alignment**: The date of the latest task entry in the active file must match the current local system date, or be explicitly authorized by the operator.
+
+---
+
 ## Governance Integration
 
 This protocol integrates with [AI_RESOURCE_GOVERNANCE_001.md](AI_RESOURCE_GOVERNANCE_001.md).

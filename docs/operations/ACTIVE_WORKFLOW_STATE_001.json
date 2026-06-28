@@ -52,6 +52,9 @@
     "workflow_governance":  {
                                 "loop_engineering_enabled":  true,
                                 "loop_memory_operational":  true,
+                                "active_loop_memory_file":  "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+                                "loop_memory_policy":  "append_only_to_active",
+                                "last_loop_memory_rollover_utc":  "2026-06-28T08:28:41Z",
                                 "awe_design_committed":  true,
                                 "awe_implemented":  false,
                                 "loop_playbook":  "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
@@ -61,7 +64,7 @@
                                     "MASTER_AGENT_ROUTER.md",
                                     "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
                                     "docs/operations/TASK_QUEUE_001.json",
-                                    "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+                                    "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
                                 ],
     "loop_runtime_engine":  {
                                 "version":  "v1",

@@ -177,6 +177,21 @@ In all exception cases, the reason for splitting the commit must be explicitly d
 
 ---
 
+## Loop Memory Active File Governance
+
+To prevent fragmented operational memory and cross-AI loop drift, all agents must adhere to these active-file workflow rules:
+1. **Never Hardcode filenames**: Never hardcode loop memory filenames (e.g. `LOOP_MEMORY_YYYYMMDD_001.json`) in prompts, scripts, or task executions.
+2. **Retrieve Pointer**: Always retrieve the `active_loop_memory_file` path directly from the `workflow_governance` block of `docs/operations/ACTIVE_WORKFLOW_STATE_001.json`.
+3. **Pointer Missing Safety Stop**: If the `active_loop_memory_file` pointer is missing, classify the condition as `LOOP_MEMORY_POINTER_MISSING`, STOP, and ask the operator to repair.
+4. **Pointer Precedence**: If the pointer file date differs from the current local date but the pointer path is explicit, continue using the pointer file as the active log file unless the operator explicitly requests a rollover.
+5. **Rollover Procedure**: If the operator says "new day" or requests a rollover:
+   - Create the next dated loop memory file matching the current date.
+   - Initialize it with a valid empty JSON list structure (`[]`).
+   - Update the `active_loop_memory_file` pointer and update `last_loop_memory_rollover_utc` in `ACTIVE_WORKFLOW_STATE_001.json`.
+   - Document the rollover in the next task report.
+
+---
+
 ## Non-Goals
 
 - This document does not authorize runtime, strategy, sizing, risk, execution, dashboard, Telegram, `.env`, paper, or live changes.

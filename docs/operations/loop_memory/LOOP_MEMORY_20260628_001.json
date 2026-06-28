@@ -458,5 +458,283 @@
       "no_tools_moved": true
     },
     "next_recommendation": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
+    "task_class": 6,
+    "scope": [
+      "tools/free_outcome_truth_provisional.py -> tools/outcome_truth/free_outcome_truth_provisional.py",
+      "tools/free_outcome_truth_provisional_join.py -> tools/outcome_truth/free_outcome_truth_provisional_join.py",
+      "tools/free_outcome_truth_provisional_readiness.py -> tools/outcome_truth/free_outcome_truth_provisional_readiness.py",
+      "tests/test_free_outcome_truth_provisional.py",
+      "tests/test_free_outcome_truth_provisional_join.py",
+      "tests/test_free_outcome_truth_provisional_readiness.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 6,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "outcome_truth_provisional_trio_moved": true,
+      "test_imports_resolved": true,
+      "targeted_tests_all_pass": true
+    },
+    "acceptance_criteria": {
+      "renamed_successfully": true,
+      "targeted_tests_pass": true,
+      "no_runtime_logic_changes": true
+    },
+    "verdict": "OUTCOME_TRUTH_PROVISIONAL_MOVE_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "phase_1c_move_plan_designed": true,
+      "isolated_batch_selected": "canonical_regime_export.py and runtime_event_replay.py",
+      "heavy_references_deferred": "canonical_trade_context_builder.py, replay_analyzer.py, canonical_trade_table_v1.py"
+    },
+    "acceptance_criteria": {
+      "plan_report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "CANONICAL_REPLAY_MOVE_PLAN_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
+    "task_class": 6,
+    "scope": [
+      "tools/canonical_regime_export.py -> tools/canonical/canonical_regime_export.py",
+      "tools/runtime_event_replay.py -> tools/replay/runtime_event_replay.py",
+      "tests/test_canonical_regime_export.py",
+      "tests/test_runtime_event_stream.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "canonical_regime_export_moved": true,
+      "runtime_event_replay_moved": true,
+      "test_imports_resolved": true,
+      "targeted_tests_all_pass": true
+    },
+    "acceptance_criteria": {
+      "renamed_successfully": true,
+      "targeted_tests_pass": true,
+      "no_runtime_logic_changes": true
+    },
+    "verdict": "CANONICAL_REPLAY_MOVE_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001",
+    "task_class": 3,
+    "scope": [
+      "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md",
+      "docs/operations/AI_LOOP_BOUNDARY_GOVERNANCE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 5,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "github_sync_successful": true,
+      "pushed_commits": 9,
+      "commit_cohesion_rule_added": true
+    },
+    "acceptance_criteria": {
+      "local_commits_pushed": true,
+      "governance_updated": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "SYNC_AND_BOUNDARY_REVIEW_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "phase_1d_move_plan_designed": true,
+      "cohesive_steps_batch_selected": "commitment, classification, exit, profit, stabilization, QIE",
+      "heavy_cross_dependencies_deferred": "replay_analyzer, lifecycle_truth, multi_session_runner, canonical_builders"
+    },
+    "acceptance_criteria": {
+      "plan_report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "COMPLEX_CANONICAL_MOVE_PLAN_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "ENTERPRISE_MARKET_INTELLIGENCE_PHASE_1",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/MARKET_INTELLIGENCE_LAYER_SPEC_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "market_intelligence_designed": true,
+      "layered_engines_structured": "regime, probability, trend, volatility, compression, reversal, evidence",
+      "tui_and_telegram_ui_designed": true,
+      "replay_compatibility_mapped": true
+    },
+    "acceptance_criteria": {
+      "architecture_spec_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "MARKET_INTELLIGENCE_DESIGN_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/MARKET_INTELLIGENCE_CONTRACTS_001.md",
+      "docs/architecture/MARKET_STATE_SCHEMA_001.md",
+      "docs/architecture/MARKET_INTELLIGENCE_DEPENDENCY_GRAPH_001.md",
+      "docs/reports/MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 7,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "contracts_defined": true,
+      "schema_defined": true,
+      "dependency_graph_defined": true,
+      "multi_market_extensibility_rules_established": true
+    },
+    "acceptance_criteria": {
+      "contracts_spec_created": true,
+      "schema_spec_created": true,
+      "dependency_graph_spec_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001",
+    "copied_from": "LOOP_MEMORY_20260627_001.json"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "LOOP_MEMORY_ACTIVE_FILE_FIX_001",
+    "task_class": 3,
+    "scope": [
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/AI_LOOP_BOUNDARY_GOVERNANCE_001.md",
+      "docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
+      "docs/reports/LOOP_MEMORY_ACTIVE_FILE_FIX_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 5,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "active_loop_memory_file_corrected": "LOOP_MEMORY_20260628_001.json",
+      "historical_entries_copied": 7,
+      "governance_pointer_rules_added": true,
+      "health_check_validations_added": true
+    },
+    "acceptance_criteria": {
+      "active_file_pointer_set": true,
+      "stale_entries_copied": true,
+      "governance_updated": true,
+      "health_check_updated": true
+    },
+    "verdict": "LOOP_MEMORY_ACTIVE_FILE_FIX_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001"
   }
 ]
