@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "TRADER_MODULE_DECOMPOSITION_AUDIT_001 complete — 8-phase plan, 305 methods classified, do-not-touch list defined",
-    "last_completed_task":  "TRADER_MODULE_DECOMPOSITION_AUDIT_001",
-    "last_commit":  "b9739c6",
-    "last_commit_message":  "feat: add shadow policy evaluator for EV012/PROB065/NORMAL candidate",
-    "next_task":  "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+    "current_phase":  "REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001 complete — 8-phase plan, tools/tests/docs structure designed, polymarket deferred",
+    "last_completed_task":  "REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001",
+    "last_commit":  "96cea93",
+    "last_commit_message":  "docs: trader module decomposition audit — 8-phase plan for 13k-line god class",
+    "next_task":  "REPOSITORY_PHASE0_ROOT_CLEANUP_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
