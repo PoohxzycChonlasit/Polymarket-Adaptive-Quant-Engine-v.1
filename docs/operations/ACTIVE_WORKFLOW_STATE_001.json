@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001 complete - provisional outcome truth tools relocated",
-    "last_completed_task":  "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
-    "last_commit":  "bddb86c",
-    "last_commit_message":  "docs: add AI loop boundary governance",
-    "next_task":  "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+    "current_phase":  "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001 complete - Phase 1C move plan designed",
+    "last_completed_task":  "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+    "last_commit":  "c94c84c",
+    "last_commit_message":  "refactor: move provisional outcome truth tools",
+    "next_task":  "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,

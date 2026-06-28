@@ -1695,6 +1695,46 @@
         "docs/reports/REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001.md"
       ],
       "notes": "DONE. Renamed files, updated imports/path references in their three targeted tests, verified clean py_compile and 16/16 passing targeted tests."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design the next safe tools migration batch for canonical and replay-related tools after Phase 1B.",
+      "blocked_by": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001.md"
+      ],
+      "notes": "DONE. Selected canonical_regime_export.py and runtime_event_replay.py as the Phase 1C batch. Deferred context builder, replay analyzer, and other replay tools. Move execution is next."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Move the selected canonical and replay tools into tools/canonical/ and tools/replay/ and update their tests.",
+      "blocked_by": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+      "allowed_scope": [
+        "tools/canonical_regime_export.py",
+        "tools/runtime_event_replay.py",
+        "tools/canonical/",
+        "tools/replay/",
+        "tests/test_canonical_regime_export.py",
+        "tests/test_runtime_event_stream.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001.md"
+      ],
+      "notes": "Move canonical_regime_export.py -> tools/canonical/ and runtime_event_replay.py -> tools/replay/. Update imports in test_canonical_regime_export.py and test_runtime_event_stream.py. Validate with old reference searches, py_compile, and targeted pytests. Do not run full tests/builders."
     }
   ]
 }

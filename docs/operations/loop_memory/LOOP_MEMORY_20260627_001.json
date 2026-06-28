@@ -2645,5 +2645,37 @@
     },
     "verdict": "OUTCOME_TRUTH_PROVISIONAL_MOVE_PASS",
     "next_recommendation": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260627_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "phase_1c_move_plan_designed": true,
+      "isolated_batch_selected": "canonical_regime_export.py and runtime_event_replay.py",
+      "heavy_references_deferred": "canonical_trade_context_builder.py, replay_analyzer.py, canonical_trade_table_v1.py"
+    },
+    "acceptance_criteria": {
+      "plan_report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "CANONICAL_REPLAY_MOVE_PLAN_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001"
   }
 ]
