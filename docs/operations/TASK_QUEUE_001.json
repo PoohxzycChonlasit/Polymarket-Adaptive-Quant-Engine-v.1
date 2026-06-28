@@ -2271,6 +2271,46 @@
       "allowed_scope": ["polymarket/observability/", "polymarket/trader.py"],
       "outputs": ["polymarket/observability/trader_observability.py"],
       "notes": "HIGH risk for trader.py changes. Requires Architecture Governance gate PASSED. Paper session validation required."
+    },
+    {
+      "priority": 120,
+      "task_id": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract _decision_diagnostics_payload from polymarket/trader.py into polymarket/observability/trader_decision_diagnostics.py as a compatibility-wrapper-backed diagnostics builder.",
+      "blocked_by": "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/trader_decision_diagnostics.py",
+        "tests/polymarket/test_trader_decision_diagnostics.py",
+        "docs/operations/repository/",
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_decision_diagnostics.py",
+        "tests/polymarket/test_trader_decision_diagnostics.py",
+        "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md"
+      ],
+      "notes": "DONE. Extracted decision diagnostics payload builder and retained backward-compatible trader wrapper. Old-vs-new controlled equivalence passed for rich and sparse payload cases. py_compile passed; focused targeted pytest passed 154/154. Broad tests/observability tests/polymarket group was attempted and produced unrelated/noisy failures, so the accepted gate used scoped diagnostics, telemetry, market availability, shadow policy, and trader observability tests."
+    },
+    {
+      "priority": 121,
+      "task_id": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design the next trader.py observability extraction plan for the risk-boundary payload area before any implementation, with explicit dependency and side-effect classification.",
+      "blocked_by": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001.md"
+      ],
+      "notes": "READY. Plan first because the likely next safe extraction target is observability-related but named around risk boundary, so dependency and side-effect classification should precede code movement."
     }
   ]
 }

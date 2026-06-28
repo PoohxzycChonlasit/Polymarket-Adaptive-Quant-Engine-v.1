@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
-    "last_updated": "2026-06-28",
-    "current_phase": "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001 complete \u2014 10 pure static functions extracted to trader_lifecycle_observability.py, 307 tests pass",
-    "last_completed_task": "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
-    "last_commit": "ee6c25d",
-    "last_commit_message": "refactor: organize polymarket safe packages (Wave 2, 5/14 files)",
-    "next_task": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+    "last_updated": "2026-06-29",
+    "current_phase": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001 complete — _decision_diagnostics_payload extracted to trader_decision_diagnostics.py with wrapper compatibility and targeted tests passing",
+    "last_completed_task": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+    "last_commit": "pending-at-commit-time",
+    "last_commit_message": "refactor: extract trader decision diagnostics builder",
+    "next_task": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -30,15 +30,17 @@
         ]
     },
     "decomposition_state": {
-        "trader_py_lines": 13589,
+        "trader_py_lines": 13010,
         "trader_py_methods": 305,
-        "phases_completed": 0,
+        "phases_completed": 2,
         "phases_planned": 8,
         "already_extracted": [
             "shadow_policy.py",
             "market_availability_engine.py",
             "bankroll_rank_engine.py",
-            "size_sharp_engine.py"
+            "size_sharp_engine.py",
+            "polymarket/observability/trader_lifecycle_observability.py",
+            "polymarket/observability/trader_decision_diagnostics.py"
         ],
         "target_trader_py_lines_after_phase8": 5000
     },
@@ -65,7 +67,7 @@
     "blocked": false,
     "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
     "refactor_state": {
-        "trader_py_lines": 13467,
+        "trader_py_lines": 13010,
         "completed_batches": [
             "Batch-1",
             "Batch-2A",
@@ -73,9 +75,11 @@
             "Batch-3B-1",
             "Batch-3B-2",
             "Batch-3B-dedup",
-            "Batch-3C-observability"
+            "Batch-3C-observability",
+            "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+            "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001"
         ],
-        "next_batch": "Batch-3D-risk-budget",
+        "next_batch": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
     },

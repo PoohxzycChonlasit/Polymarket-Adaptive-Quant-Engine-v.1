@@ -90,6 +90,9 @@
     "polymarket/observability/shadow_telemetry.py": [
       "tests/integration/test_shadow_filters.py"
     ],
+    "polymarket/observability/trader_decision_diagnostics.py": [
+      "tests/polymarket/test_trader_decision_diagnostics.py"
+    ],
     "polymarket/opportunity_scanner.py": [
       "tests/integration/test_shadow_filters.py",
       "tests/other/test_candidate_identity.py",
@@ -200,6 +203,7 @@
       "tests/polymarket/test_signal_identity_propagation.py",
       "tests/polymarket/test_size_sharp_engine.py",
       "tests/polymarket/test_stale_feed_kill_switch.py",
+      "tests/polymarket/test_trader_decision_diagnostics.py",
       "tests/polymarket/test_verify_mode.py",
       "tests/replay/test_semantic_c_shadow_observability_report.py",
       "tests/tools/test_no_entry_analyzer.py",
@@ -795,6 +799,10 @@
       "polymarket/bankroll_tiers.py",
       "polymarket/position_sizing.py",
       "polymarket/trade_frequency.py"
+    ],
+    "tests/polymarket/test_trader_decision_diagnostics.py": [
+      "polymarket/observability/trader_decision_diagnostics.py",
+      "polymarket/trader.py"
     ],
     "tests/polymarket/test_trend_runner.py": [
       "polymarket/delta_engine.py",

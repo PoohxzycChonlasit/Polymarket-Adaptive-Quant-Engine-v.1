@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T17:20:01.647933Z",
-  "module_count": 434,
+  "generated_at_utc": "2026-06-28T17:34:47.369150Z",
+  "module_count": 436,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -962,6 +962,32 @@
       "recommended_target_folder": null
     },
     {
+      "path": "polymarket/observability/trader_decision_diagnostics.py",
+      "module_name": "polymarket.observability.trader_decision_diagnostics",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 562,
+      "blast_radius_score": 24,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": true,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/orchestration/trader_observability.py",
+        "polymarket/regime_diagnostics.py",
+        "utils/admission_probe_classifier.py",
+        "utils/executable_state_persistence_classifier.py",
+        "utils/no_entry_diagnostics.py",
+        "utils/no_entry_root_cause_classifier.py"
+      ],
+      "reverse_importers": [
+        "polymarket/trader.py",
+        "tests/polymarket/test_trader_decision_diagnostics.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
       "path": "polymarket/observability/trader_lifecycle_observability.py",
       "module_name": "polymarket.observability.trader_lifecycle_observability",
       "domain": "polymarket",
@@ -1070,15 +1096,16 @@
       "domain": "polymarket",
       "package": "polymarket/orchestration",
       "line_count": 471,
-      "blast_radius_score": 9,
+      "blast_radius_score": 12,
       "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
+      "runtime_sensitive": true,
       "do_not_touch": false,
       "direct_imports": [
         "config/settings.py",
         "polymarket/observability/trader_presentation.py"
       ],
       "reverse_importers": [
+        "polymarket/observability/trader_decision_diagnostics.py",
         "polymarket/trader.py"
       ],
       "tests": [],
@@ -1231,12 +1258,13 @@
       "domain": "polymarket",
       "package": "polymarket",
       "line_count": 435,
-      "blast_radius_score": 9,
+      "blast_radius_score": 12,
       "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
+      "runtime_sensitive": true,
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
+        "polymarket/observability/trader_decision_diagnostics.py",
         "polymarket/signal.py",
         "polymarket/trader.py",
         "tests/polymarket/test_regime_diagnostics.py"
@@ -1366,8 +1394,8 @@
       "module_name": "polymarket.trader",
       "domain": "polymarket",
       "package": "polymarket",
-      "line_count": 13558,
-      "blast_radius_score": 273,
+      "line_count": 13010,
+      "blast_radius_score": 270,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
       "do_not_touch": true,
@@ -1385,6 +1413,7 @@
         "polymarket/market_availability_engine.py",
         "polymarket/models/quant_indicators.py",
         "polymarket/observability/shadow_telemetry.py",
+        "polymarket/observability/trader_decision_diagnostics.py",
         "polymarket/observability/trader_lifecycle_observability.py",
         "polymarket/observability/trader_presentation.py",
         "polymarket/opportunity_scanner.py",
@@ -1402,10 +1431,7 @@
         "polymarket/trade_frequency.py",
         "polymarket/trend_runner.py",
         "polymarket/virtual_ptb.py",
-        "utils/admission_probe_classifier.py",
-        "utils/executable_state_persistence_classifier.py",
         "utils/no_entry_diagnostics.py",
-        "utils/no_entry_root_cause_classifier.py",
         "utils/position_tracker.py",
         "utils/quant_event_logger.py",
         "utils/risk_manager.py",
@@ -1459,6 +1485,7 @@
         "tests/polymarket/test_signal_identity_propagation.py",
         "tests/polymarket/test_size_sharp_engine.py",
         "tests/polymarket/test_stale_feed_kill_switch.py",
+        "tests/polymarket/test_trader_decision_diagnostics.py",
         "tests/polymarket/test_verify_mode.py",
         "tests/replay/test_semantic_c_shadow_observability_report.py",
         "tests/tools/test_no_entry_analyzer.py",
@@ -4582,6 +4609,28 @@
         "polymarket/trade_frequency.py"
       ],
       "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tests/polymarket/test_trader_decision_diagnostics.py",
+      "module_name": "tests.polymarket.test_trader_decision_diagnostics",
+      "domain": "tests",
+      "package": "tests/polymarket",
+      "line_count": 136,
+      "blast_radius_score": 6,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/trader_decision_diagnostics.py",
+        "polymarket/trader.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "polymarket/observability/trader_decision_diagnostics.py",
+        "polymarket/trader.py"
+      ],
+      "safe_move_status": "DO_NOT_MOVE",
       "recommended_target_folder": null
     },
     {
@@ -8146,7 +8195,7 @@
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
-        "polymarket/trader.py",
+        "polymarket/observability/trader_decision_diagnostics.py",
         "tests/integration/test_market_readiness_admission_probe.py",
         "tools/probes/market_readiness_admission_probe.py"
       ],
@@ -8221,7 +8270,7 @@
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
-        "polymarket/trader.py",
+        "polymarket/observability/trader_decision_diagnostics.py",
         "tests/integration/test_executable_state_persistence_probe.py",
         "tools/probes/executable_state_persistence_probe.py"
       ],
@@ -8253,18 +8302,19 @@
       "domain": "utils",
       "package": "utils",
       "line_count": 78,
-      "blast_radius_score": 3,
-      "migration_safety_status": "SAFE_ATOMIC",
+      "blast_radius_score": 4,
+      "migration_safety_status": "MEDIUM_ATOMIC",
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
+        "polymarket/observability/trader_decision_diagnostics.py",
         "polymarket/trader.py",
         "tests/tools/test_no_entry_analyzer.py",
         "tools/research/no_entry_analyzer.py"
       ],
       "tests": [],
-      "safe_move_status": "SAFE_ATOMIC",
+      "safe_move_status": "MEDIUM_ATOMIC",
       "recommended_target_folder": null
     },
     {
@@ -8279,7 +8329,7 @@
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
-        "polymarket/trader.py",
+        "polymarket/observability/trader_decision_diagnostics.py",
         "tests/tools/test_no_entry_root_cause_classifier.py",
         "tools/research/no_entry_root_cause_report.py"
       ],

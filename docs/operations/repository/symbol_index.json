@@ -1,41 +1,41 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T17:20:03.713211Z",
-  "file_count": 434,
+  "generated_at_utc": "2026-06-28T17:34:49.879082Z",
+  "file_count": 436,
   "files": [
     {
       "path": "polymarket/trader.py",
-      "total_lines": 13559,
+      "total_lines": 13011,
       "class_count": 6,
       "top_function_count": 2,
       "method_count": 304,
       "classes": [
         {
           "name": "TradeOutcome",
-          "line": 131,
+          "line": 115,
           "method_count": 0,
           "methods": []
         },
         {
           "name": "MarketDisplayMetrics",
-          "line": 144,
+          "line": 128,
           "method_count": 0,
           "methods": []
         },
         {
           "name": "AdaptiveEntryCutoffDecision",
-          "line": 204,
+          "line": 188,
           "method_count": 0,
           "methods": []
         },
         {
           "name": "PaperSessionStats",
-          "line": 220,
+          "line": 204,
           "method_count": 5,
           "methods": [
             {
               "name": "__post_init__",
-              "line": 251,
+              "line": 235,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -44,7 +44,7 @@
             },
             {
               "name": "win_rate",
-              "line": 255,
+              "line": 239,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -53,7 +53,7 @@
             },
             {
               "name": "average_ev",
-              "line": 260,
+              "line": 244,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -62,7 +62,7 @@
             },
             {
               "name": "average_confidence",
-              "line": 264,
+              "line": 248,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -71,7 +71,7 @@
             },
             {
               "name": "average_position_size",
-              "line": 268,
+              "line": 252,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -82,12 +82,12 @@
         },
         {
           "name": "BankrollState",
-          "line": 273,
+          "line": 257,
           "method_count": 1,
           "methods": [
             {
               "name": "__post_init__",
-              "line": 301,
+              "line": 285,
               "size": 21,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -98,12 +98,12 @@
         },
         {
           "name": "PolymarketTrader",
-          "line": 389,
+          "line": 373,
           "method_count": 298,
           "methods": [
             {
               "name": "__init__",
-              "line": 402,
+              "line": 386,
               "size": 183,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -112,7 +112,7 @@
             },
             {
               "name": "_call_shutdown_hook",
-              "line": 586,
+              "line": 570,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -121,7 +121,7 @@
             },
             {
               "name": "close",
-              "line": 589,
+              "line": 573,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -130,7 +130,7 @@
             },
             {
               "name": "shutdown",
-              "line": 593,
+              "line": 577,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -139,7 +139,7 @@
             },
             {
               "name": "stop",
-              "line": 596,
+              "line": 580,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -148,7 +148,7 @@
             },
             {
               "name": "_runtime_mode",
-              "line": 599,
+              "line": 583,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -157,7 +157,7 @@
             },
             {
               "name": "_position_tracker_state_path",
-              "line": 602,
+              "line": 586,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -166,7 +166,7 @@
             },
             {
               "name": "_position_tracker_persistence_enabled",
-              "line": 605,
+              "line": 589,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -175,7 +175,7 @@
             },
             {
               "name": "_load_position_tracker_state",
-              "line": 608,
+              "line": 592,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -184,7 +184,7 @@
             },
             {
               "name": "_save_position_tracker_state",
-              "line": 619,
+              "line": 603,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -193,7 +193,7 @@
             },
             {
               "name": "_open_tracked_position",
-              "line": 627,
+              "line": 611,
               "size": 4,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -202,7 +202,7 @@
             },
             {
               "name": "_close_tracked_position",
-              "line": 632,
+              "line": 616,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -211,7 +211,7 @@
             },
             {
               "name": "_size_sharp_metadata",
-              "line": 639,
+              "line": 623,
               "size": 19,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -220,7 +220,7 @@
             },
             {
               "name": "_size_sharp_close_carry",
-              "line": 660,
+              "line": 644,
               "size": 22,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -229,7 +229,7 @@
             },
             {
               "name": "_evaluate_size_sharp_observability",
-              "line": 683,
+              "line": 667,
               "size": 91,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -238,7 +238,7 @@
             },
             {
               "name": "run_ghost_position_sentinel",
-              "line": 775,
+              "line": 759,
               "size": 41,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -247,7 +247,7 @@
             },
             {
               "name": "_micro_survival_threshold",
-              "line": 817,
+              "line": 801,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "sizing",
@@ -256,7 +256,7 @@
             },
             {
               "name": "_micro_survival_min_position_size",
-              "line": 820,
+              "line": 804,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "sizing",
@@ -265,7 +265,7 @@
             },
             {
               "name": "_micro_survival_risk_fraction",
-              "line": 823,
+              "line": 807,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "sizing",
@@ -274,7 +274,7 @@
             },
             {
               "name": "_bankroll_mode",
-              "line": 826,
+              "line": 810,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "sizing",
@@ -283,7 +283,7 @@
             },
             {
               "name": "_micro_survival_active",
-              "line": 834,
+              "line": 818,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "sizing",
@@ -292,7 +292,7 @@
             },
             {
               "name": "_micro_position_size",
-              "line": 837,
+              "line": 821,
               "size": 11,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -301,7 +301,7 @@
             },
             {
               "name": "_bankroll_mode_detail",
-              "line": 849,
+              "line": 833,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "sizing",
@@ -310,7 +310,7 @@
             },
             {
               "name": "_bankroll_tier_detail",
-              "line": 859,
+              "line": 843,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -319,7 +319,7 @@
             },
             {
               "name": "_entry_min_position_size_usd",
-              "line": 870,
+              "line": 854,
               "size": 4,
               "runtime_sensitive": true,
               "trader_group": "sizing",
@@ -328,7 +328,7 @@
             },
             {
               "name": "_micro_survival_allows_fractional_shares",
-              "line": 875,
+              "line": 859,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "sizing",
@@ -337,7 +337,7 @@
             },
             {
               "name": "_maybe_apply_micro_survival_plan",
-              "line": 878,
+              "line": 862,
               "size": 32,
               "runtime_sensitive": false,
               "trader_group": "sizing",
@@ -346,7 +346,7 @@
             },
             {
               "name": "_init_quant_event_logger",
-              "line": 911,
+              "line": 895,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -355,7 +355,7 @@
             },
             {
               "name": "_init_telegram_alert_layer",
-              "line": 914,
+              "line": 898,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -364,7 +364,7 @@
             },
             {
               "name": "dashboard_observability_health_state",
-              "line": 917,
+              "line": 901,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -373,7 +373,7 @@
             },
             {
               "name": "_get_observability",
-              "line": 925,
+              "line": 909,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -382,6 +382,42 @@
             },
             {
               "name": "_last_orderbook_refresh_at_utc",
+              "line": 924,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "orderbook_lineage",
+              "safe_first_extraction": true,
+              "high_risk": false
+            },
+            {
+              "name": "_last_orderbook_refresh_at_utc",
+              "line": 928,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "orderbook_lineage",
+              "safe_first_extraction": true,
+              "high_risk": false
+            },
+            {
+              "name": "_last_orderbook_refresh_monotonic",
+              "line": 932,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "orderbook_lineage",
+              "safe_first_extraction": true,
+              "high_risk": false
+            },
+            {
+              "name": "_last_orderbook_refresh_monotonic",
+              "line": 936,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "orderbook_lineage",
+              "safe_first_extraction": true,
+              "high_risk": false
+            },
+            {
+              "name": "_last_orderbook_refresh_source",
               "line": 940,
               "size": 2,
               "runtime_sensitive": false,
@@ -390,7 +426,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_orderbook_refresh_at_utc",
+              "name": "_last_orderbook_refresh_source",
               "line": 944,
               "size": 2,
               "runtime_sensitive": false,
@@ -399,7 +435,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_orderbook_refresh_monotonic",
+              "name": "_last_orderbook_refresh_trigger",
               "line": 948,
               "size": 2,
               "runtime_sensitive": false,
@@ -408,7 +444,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_orderbook_refresh_monotonic",
+              "name": "_last_orderbook_refresh_trigger",
               "line": 952,
               "size": 2,
               "runtime_sensitive": false,
@@ -417,7 +453,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_orderbook_refresh_source",
+              "name": "_last_orderbook_refresh_token_pair_key",
               "line": 956,
               "size": 2,
               "runtime_sensitive": false,
@@ -426,7 +462,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_orderbook_refresh_source",
+              "name": "_last_orderbook_refresh_token_pair_key",
               "line": 960,
               "size": 2,
               "runtime_sensitive": false,
@@ -435,43 +471,43 @@
               "high_risk": false
             },
             {
-              "name": "_last_orderbook_refresh_trigger",
+              "name": "_last_successful_yes_no_book_at_utc",
               "line": 964,
               "size": 2,
               "runtime_sensitive": false,
-              "trader_group": "orderbook_lineage",
-              "safe_first_extraction": true,
-              "high_risk": false
-            },
-            {
-              "name": "_last_orderbook_refresh_trigger",
-              "line": 968,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "orderbook_lineage",
-              "safe_first_extraction": true,
-              "high_risk": false
-            },
-            {
-              "name": "_last_orderbook_refresh_token_pair_key",
-              "line": 972,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "orderbook_lineage",
-              "safe_first_extraction": true,
-              "high_risk": false
-            },
-            {
-              "name": "_last_orderbook_refresh_token_pair_key",
-              "line": 976,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "orderbook_lineage",
-              "safe_first_extraction": true,
+              "trader_group": "unknown",
+              "safe_first_extraction": false,
               "high_risk": false
             },
             {
               "name": "_last_successful_yes_no_book_at_utc",
+              "line": 968,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "unknown",
+              "safe_first_extraction": false,
+              "high_risk": false
+            },
+            {
+              "name": "_last_successful_yes_no_book_monotonic",
+              "line": 972,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "unknown",
+              "safe_first_extraction": false,
+              "high_risk": false
+            },
+            {
+              "name": "_last_successful_yes_no_book_monotonic",
+              "line": 976,
+              "size": 2,
+              "runtime_sensitive": false,
+              "trader_group": "unknown",
+              "safe_first_extraction": false,
+              "high_risk": false
+            },
+            {
+              "name": "_last_successful_yes_no_book_token_pair_key",
               "line": 980,
               "size": 2,
               "runtime_sensitive": false,
@@ -480,7 +516,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_successful_yes_no_book_at_utc",
+              "name": "_last_successful_yes_no_book_token_pair_key",
               "line": 984,
               "size": 2,
               "runtime_sensitive": false,
@@ -489,7 +525,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_successful_yes_no_book_monotonic",
+              "name": "_last_decision_cycle_monotonic",
               "line": 988,
               "size": 2,
               "runtime_sensitive": false,
@@ -498,7 +534,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_successful_yes_no_book_monotonic",
+              "name": "_last_decision_cycle_monotonic",
               "line": 992,
               "size": 2,
               "runtime_sensitive": false,
@@ -507,7 +543,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_successful_yes_no_book_token_pair_key",
+              "name": "_market_evaluation_started_monotonic",
               "line": 996,
               "size": 2,
               "runtime_sensitive": false,
@@ -516,7 +552,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_successful_yes_no_book_token_pair_key",
+              "name": "_market_evaluation_started_monotonic",
               "line": 1000,
               "size": 2,
               "runtime_sensitive": false,
@@ -525,7 +561,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_decision_cycle_monotonic",
+              "name": "_market_evaluation_started_at_utc",
               "line": 1004,
               "size": 2,
               "runtime_sensitive": false,
@@ -534,7 +570,7 @@
               "high_risk": false
             },
             {
-              "name": "_last_decision_cycle_monotonic",
+              "name": "_market_evaluation_started_at_utc",
               "line": 1008,
               "size": 2,
               "runtime_sensitive": false,
@@ -543,7 +579,7 @@
               "high_risk": false
             },
             {
-              "name": "_market_evaluation_started_monotonic",
+              "name": "_current_cycle_market_sequence_index",
               "line": 1012,
               "size": 2,
               "runtime_sensitive": false,
@@ -552,7 +588,7 @@
               "high_risk": false
             },
             {
-              "name": "_market_evaluation_started_monotonic",
+              "name": "_current_cycle_market_sequence_index",
               "line": 1016,
               "size": 2,
               "runtime_sensitive": false,
@@ -561,7 +597,7 @@
               "high_risk": false
             },
             {
-              "name": "_market_evaluation_started_at_utc",
+              "name": "_current_cycle_market_sequence_count",
               "line": 1020,
               "size": 2,
               "runtime_sensitive": false,
@@ -570,7 +606,7 @@
               "high_risk": false
             },
             {
-              "name": "_market_evaluation_started_at_utc",
+              "name": "_current_cycle_market_sequence_count",
               "line": 1024,
               "size": 2,
               "runtime_sensitive": false,
@@ -579,44 +615,8 @@
               "high_risk": false
             },
             {
-              "name": "_current_cycle_market_sequence_index",
-              "line": 1028,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "unknown",
-              "safe_first_extraction": false,
-              "high_risk": false
-            },
-            {
-              "name": "_current_cycle_market_sequence_index",
-              "line": 1032,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "unknown",
-              "safe_first_extraction": false,
-              "high_risk": false
-            },
-            {
-              "name": "_current_cycle_market_sequence_count",
-              "line": 1036,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "unknown",
-              "safe_first_extraction": false,
-              "high_risk": false
-            },
-            {
-              "name": "_current_cycle_market_sequence_count",
-              "line": 1040,
-              "size": 2,
-              "runtime_sensitive": false,
-              "trader_group": "unknown",
-              "safe_first_extraction": false,
-              "high_risk": false
-            },
-            {
               "name": "_event_producer_label",
-              "line": 1043,
+              "line": 1027,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -625,7 +625,7 @@
             },
             {
               "name": "_event_driven_admission_packet_price_detail",
-              "line": 1046,
+              "line": 1030,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -634,7 +634,7 @@
             },
             {
               "name": "_observability_health_from_payload",
-              "line": 1053,
+              "line": 1037,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -643,7 +643,7 @@
             },
             {
               "name": "_evaluate_passive_shadow_telemetry",
-              "line": 1067,
+              "line": 1051,
               "size": 117,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -652,7 +652,7 @@
             },
             {
               "name": "_display_payload_with_candidate_trace_identity",
-              "line": 1185,
+              "line": 1169,
               "size": 20,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -661,7 +661,7 @@
             },
             {
               "name": "_execution_parent_detail",
-              "line": 1206,
+              "line": 1190,
               "size": 53,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -670,7 +670,7 @@
             },
             {
               "name": "_execution_payload_with_parent_context",
-              "line": 1260,
+              "line": 1244,
               "size": 129,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -679,7 +679,7 @@
             },
             {
               "name": "_emit_quant_event",
-              "line": 1390,
+              "line": 1374,
               "size": 64,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -688,7 +688,7 @@
             },
             {
               "name": "_utc_timestamp",
-              "line": 1455,
+              "line": 1439,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -697,7 +697,7 @@
             },
             {
               "name": "_phase1_execution_latency_truth_level",
-              "line": 1458,
+              "line": 1442,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -706,7 +706,7 @@
             },
             {
               "name": "_phase3_paper_proxy_ms",
-              "line": 1461,
+              "line": 1445,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -715,7 +715,7 @@
             },
             {
               "name": "_phase4_build_quote_lineage",
-              "line": 1469,
+              "line": 1453,
               "size": 27,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -724,7 +724,7 @@
             },
             {
               "name": "_phase4_quote_lineage_carry",
-              "line": 1497,
+              "line": 1481,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -733,7 +733,7 @@
             },
             {
               "name": "_begin_cycle_timing",
-              "line": 1504,
+              "line": 1488,
               "size": 17,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -742,7 +742,7 @@
             },
             {
               "name": "_cycle_elapsed_ms",
-              "line": 1522,
+              "line": 1506,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -751,7 +751,7 @@
             },
             {
               "name": "set_runtime_cadence_observability",
-              "line": 1528,
+              "line": 1512,
               "size": 22,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -760,7 +760,7 @@
             },
             {
               "name": "_mark_market_evaluation_started",
-              "line": 1551,
+              "line": 1535,
               "size": 15,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -769,7 +769,7 @@
             },
             {
               "name": "_scheduler_cadence_observability_detail",
-              "line": 1567,
+              "line": 1551,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -778,7 +778,7 @@
             },
             {
               "name": "_orderbook_token_pair_key",
-              "line": 1572,
+              "line": 1556,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -787,7 +787,7 @@
             },
             {
               "name": "_mark_orderbook_refresh",
-              "line": 1586,
+              "line": 1570,
               "size": 27,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -796,7 +796,7 @@
             },
             {
               "name": "_orderbook_refresh_observability_detail",
-              "line": 1614,
+              "line": 1598,
               "size": 24,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -805,7 +805,7 @@
             },
             {
               "name": "_orderbook_lineage_compact_text",
-              "line": 1640,
+              "line": 1624,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -814,7 +814,7 @@
             },
             {
               "name": "_orderbook_lineage_raw_count",
-              "line": 1644,
+              "line": 1628,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -823,7 +823,7 @@
             },
             {
               "name": "_orderbook_lineage_side_status",
-              "line": 1647,
+              "line": 1631,
               "size": 29,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -832,7 +832,7 @@
             },
             {
               "name": "_orderbook_lineage_current_fetch_status",
-              "line": 1678,
+              "line": 1662,
               "size": 19,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -841,7 +841,7 @@
             },
             {
               "name": "_build_orderbook_lineage_probe_payload",
-              "line": 1698,
+              "line": 1682,
               "size": 261,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -850,7 +850,7 @@
             },
             {
               "name": "_emit_orderbook_lineage_probe",
-              "line": 1960,
+              "line": 1944,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "orderbook_lineage",
@@ -859,7 +859,7 @@
             },
             {
               "name": "_finish_cycle_timing",
-              "line": 1968,
+              "line": 1952,
               "size": 4,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -868,7 +868,7 @@
             },
             {
               "name": "_push_event_stream_metrics",
-              "line": 1973,
+              "line": 1957,
               "size": 21,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -877,7 +877,7 @@
             },
             {
               "name": "_emit_telegram_route_telemetry",
-              "line": 1995,
+              "line": 1979,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -886,7 +886,7 @@
             },
             {
               "name": "_notify_telegram",
-              "line": 2001,
+              "line": 1985,
               "size": 31,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -895,7 +895,7 @@
             },
             {
               "name": "_risk_plan_payload",
-              "line": 2033,
+              "line": 2017,
               "size": 11,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -904,7 +904,7 @@
             },
             {
               "name": "_market_slug_for_ticker",
-              "line": 2045,
+              "line": 2029,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -913,7 +913,7 @@
             },
             {
               "name": "_current_five_min_epoch",
-              "line": 2050,
+              "line": 2034,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -922,7 +922,7 @@
             },
             {
               "name": "_market_preload_lead_seconds",
-              "line": 2054,
+              "line": 2038,
               "size": 4,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -931,7 +931,7 @@
             },
             {
               "name": "_meta_int",
-              "line": 2060,
+              "line": 2044,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -940,7 +940,7 @@
             },
             {
               "name": "_phase2_safe_setting",
-              "line": 2066,
+              "line": 2050,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -949,7 +949,7 @@
             },
             {
               "name": "_phase2_lifecycle_phase",
-              "line": 2072,
+              "line": 2056,
               "size": 14,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -958,7 +958,7 @@
             },
             {
               "name": "_phase2_readiness_store",
-              "line": 2087,
+              "line": 2071,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -967,7 +967,7 @@
             },
             {
               "name": "_phase2_readiness_timestamps",
-              "line": 2094,
+              "line": 2078,
               "size": 55,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -976,7 +976,7 @@
             },
             {
               "name": "_compute_lifecycle_latency_ms",
-              "line": 2150,
+              "line": 2134,
               "size": 89,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -985,7 +985,7 @@
             },
             {
               "name": "_phase2_mark_readiness",
-              "line": 2240,
+              "line": 2224,
               "size": 214,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -994,7 +994,7 @@
             },
             {
               "name": "_emit_lifecycle_milestone_event",
-              "line": 2455,
+              "line": 2439,
               "size": 37,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1003,7 +1003,7 @@
             },
             {
               "name": "_phase2_exposure_timeline",
-              "line": 2493,
+              "line": 2477,
               "size": 36,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1012,7 +1012,7 @@
             },
             {
               "name": "_phase2_ev_null_reason",
-              "line": 2530,
+              "line": 2514,
               "size": 38,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1021,7 +1021,7 @@
             },
             {
               "name": "_phase2_pre_model_gate_detail",
-              "line": 2569,
+              "line": 2553,
               "size": 97,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1030,7 +1030,7 @@
             },
             {
               "name": "_phase2_ev_null_reason_detail",
-              "line": 2667,
+              "line": 2651,
               "size": 113,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1039,7 +1039,7 @@
             },
             {
               "name": "_phase2_orderbook_state_classification",
-              "line": 2781,
+              "line": 2765,
               "size": 38,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1048,7 +1048,7 @@
             },
             {
               "name": "_phase2_book_state_level",
-              "line": 2821,
+              "line": 2805,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1057,7 +1057,7 @@
             },
             {
               "name": "_phase2_authoritative_orderbook_availability",
-              "line": 2835,
+              "line": 2819,
               "size": 47,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1066,7 +1066,7 @@
             },
             {
               "name": "_phase2_market_readiness_state",
-              "line": 2883,
+              "line": 2867,
               "size": 25,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1075,7 +1075,7 @@
             },
             {
               "name": "_phase2_model_activation_detail",
-              "line": 2909,
+              "line": 2893,
               "size": 168,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1084,7 +1084,7 @@
             },
             {
               "name": "_phase2_candidate_block_detail",
-              "line": 3078,
+              "line": 3062,
               "size": 43,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1093,7 +1093,7 @@
             },
             {
               "name": "_phase2_candidate_survival_ms",
-              "line": 3122,
+              "line": 3106,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1102,7 +1102,7 @@
             },
             {
               "name": "_phase2_elapsed_second",
-              "line": 3125,
+              "line": 3109,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1111,7 +1111,7 @@
             },
             {
               "name": "_phase2_complete_lifecycle_observability",
-              "line": 3128,
+              "line": 3112,
               "size": 153,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1120,7 +1120,7 @@
             },
             {
               "name": "_phase2_observability_payload",
-              "line": 3282,
+              "line": 3266,
               "size": 127,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -1129,7 +1129,7 @@
             },
             {
               "name": "_active_window_alignment_detail",
-              "line": 3410,
+              "line": 3394,
               "size": 122,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1138,7 +1138,7 @@
             },
             {
               "name": "_cached_active_market_valid",
-              "line": 3533,
+              "line": 3517,
               "size": 8,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1147,7 +1147,7 @@
             },
             {
               "name": "_cache_market_tokens",
-              "line": 3542,
+              "line": 3526,
               "size": 26,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1156,7 +1156,7 @@
             },
             {
               "name": "_promote_preloaded_market",
-              "line": 3569,
+              "line": 3553,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1165,7 +1165,7 @@
             },
             {
               "name": "_warm_orderbooks_for_ticker",
-              "line": 3583,
+              "line": 3567,
               "size": 89,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1174,7 +1174,7 @@
             },
             {
               "name": "_diagnostic_float",
-              "line": 3674,
+              "line": 3658,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1183,7 +1183,7 @@
             },
             {
               "name": "_diagnostic_int",
-              "line": 3678,
+              "line": 3662,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1192,7 +1192,7 @@
             },
             {
               "name": "_risk_plan_zero_diagnostics",
-              "line": 3681,
+              "line": 3665,
               "size": 27,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1201,7 +1201,7 @@
             },
             {
               "name": "_paper_available_balance",
-              "line": 3709,
+              "line": 3693,
               "size": 4,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1210,7 +1210,7 @@
             },
             {
               "name": "_risk_plan_zero_reason",
-              "line": 3714,
+              "line": 3698,
               "size": 28,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1219,8 +1219,8 @@
             },
             {
               "name": "_decision_diagnostics_payload",
-              "line": 3743,
-              "size": 539,
+              "line": 3727,
+              "size": 7,
               "runtime_sensitive": false,
               "trader_group": "decision_diag",
               "safe_first_extraction": true,
@@ -1228,7 +1228,7 @@
             },
             {
               "name": "_risk_boundary_payload_from_decision",
-              "line": 4283,
+              "line": 3735,
               "size": 142,
               "runtime_sensitive": true,
               "trader_group": "decision_diag",
@@ -1237,7 +1237,7 @@
             },
             {
               "name": "_regime_pass_through_fields",
-              "line": 4426,
+              "line": 3878,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1246,7 +1246,7 @@
             },
             {
               "name": "_emit_decision_event",
-              "line": 4437,
+              "line": 3889,
               "size": 88,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -1255,7 +1255,7 @@
             },
             {
               "name": "_emit_hybrid_v1_snapshot",
-              "line": 4526,
+              "line": 3978,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1264,7 +1264,7 @@
             },
             {
               "name": "_build_paper_trade_replay_key",
-              "line": 4531,
+              "line": 3983,
               "size": 19,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1273,7 +1273,7 @@
             },
             {
               "name": "_build_entry_model_truth_envelope",
-              "line": 4551,
+              "line": 4003,
               "size": 89,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1282,7 +1282,7 @@
             },
             {
               "name": "_carry_entry_model_truth_from_metadata",
-              "line": 4641,
+              "line": 4093,
               "size": 14,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1291,7 +1291,7 @@
             },
             {
               "name": "_build_trade_position_metadata",
-              "line": 4656,
+              "line": 4108,
               "size": 121,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1300,7 +1300,7 @@
             },
             {
               "name": "_emit_trade_opened_event",
-              "line": 4778,
+              "line": 4230,
               "size": 198,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -1309,7 +1309,7 @@
             },
             {
               "name": "_emit_trade_closed_event",
-              "line": 4977,
+              "line": 4429,
               "size": 128,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -1318,7 +1318,7 @@
             },
             {
               "name": "_emit_risk_event",
-              "line": 5106,
+              "line": 4558,
               "size": 5,
               "runtime_sensitive": true,
               "trader_group": "telemetry",
@@ -1327,7 +1327,7 @@
             },
             {
               "name": "_maybe_emit_risk_state_event",
-              "line": 5112,
+              "line": 4564,
               "size": 34,
               "runtime_sensitive": true,
               "trader_group": "telemetry",
@@ -1336,7 +1336,7 @@
             },
             {
               "name": "_maybe_emit_system_health",
-              "line": 5147,
+              "line": 4599,
               "size": 33,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1345,7 +1345,7 @@
             },
             {
               "name": "_setting",
-              "line": 5181,
+              "line": 4633,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1354,7 +1354,7 @@
             },
             {
               "name": "_feed_age_seconds",
-              "line": 5184,
+              "line": 4636,
               "size": 15,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1363,7 +1363,7 @@
             },
             {
               "name": "_seconds_to_close",
-              "line": 5200,
+              "line": 4652,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -1372,7 +1372,7 @@
             },
             {
               "name": "_market_timing_detail",
-              "line": 5208,
+              "line": 4660,
               "size": 55,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1381,7 +1381,7 @@
             },
             {
               "name": "_entry_hard_block_seconds",
-              "line": 5264,
+              "line": 4716,
               "size": 11,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1390,7 +1390,7 @@
             },
             {
               "name": "_micro_adaptive_timing_active",
-              "line": 5276,
+              "line": 4728,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1399,7 +1399,7 @@
             },
             {
               "name": "_micro_adaptive_timing_skipped_reason",
-              "line": 5286,
+              "line": 4738,
               "size": 12,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1408,7 +1408,7 @@
             },
             {
               "name": "_micro_hard_close_floor_seconds",
-              "line": 5299,
+              "line": 4751,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1417,7 +1417,7 @@
             },
             {
               "name": "_micro_adaptive_cutoff_seconds",
-              "line": 5309,
+              "line": 4761,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1426,7 +1426,7 @@
             },
             {
               "name": "_adaptive_entry_cutoff_seconds",
-              "line": 5315,
+              "line": 4767,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1435,7 +1435,7 @@
             },
             {
               "name": "_cutoff_decision_detail",
-              "line": 5321,
+              "line": 4773,
               "size": 16,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1444,7 +1444,7 @@
             },
             {
               "name": "_entry_cutoff_skip_reason",
-              "line": 5338,
+              "line": 4790,
               "size": 11,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1453,7 +1453,7 @@
             },
             {
               "name": "_evaluate_entry_cutoff",
-              "line": 5350,
+              "line": 4802,
               "size": 122,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1462,7 +1462,7 @@
             },
             {
               "name": "_exit_agent_entry_cutoff_seconds",
-              "line": 5473,
+              "line": 4925,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1471,7 +1471,7 @@
             },
             {
               "name": "_exit_agent_force_exit_seconds",
-              "line": 5479,
+              "line": 4931,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "execution",
@@ -1480,7 +1480,7 @@
             },
             {
               "name": "_exit_agent_action",
-              "line": 5485,
+              "line": 4937,
               "size": 8,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1489,7 +1489,7 @@
             },
             {
               "name": "_order_matches_market",
-              "line": 5494,
+              "line": 4946,
               "size": 16,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1498,7 +1498,7 @@
             },
             {
               "name": "_cancel_entry_orders_for_market",
-              "line": 5511,
+              "line": 4963,
               "size": 76,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1507,7 +1507,7 @@
             },
             {
               "name": "_paper_enabled",
-              "line": 5588,
+              "line": 5040,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1516,7 +1516,7 @@
             },
             {
               "name": "_paper_record_skip",
-              "line": 5591,
+              "line": 5043,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1525,7 +1525,7 @@
             },
             {
               "name": "_paper_record_model",
-              "line": 5599,
+              "line": 5051,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1534,7 +1534,7 @@
             },
             {
               "name": "_paper_record_trade",
-              "line": 5609,
+              "line": 5061,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1543,7 +1543,7 @@
             },
             {
               "name": "_paper_record_close",
-              "line": 5617,
+              "line": 5069,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1552,7 +1552,7 @@
             },
             {
               "name": "_paper_record_cancel",
-              "line": 5628,
+              "line": 5080,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1561,7 +1561,7 @@
             },
             {
               "name": "_paper_record_position_state",
-              "line": 5632,
+              "line": 5084,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1570,7 +1570,7 @@
             },
             {
               "name": "_ticker_from_market_id",
-              "line": 5636,
+              "line": 5088,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1579,7 +1579,7 @@
             },
             {
               "name": "_record_quant_detail",
-              "line": 5639,
+              "line": 5091,
               "size": 113,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1588,7 +1588,7 @@
             },
             {
               "name": "_evaluate_and_log_delta_extreme_shadow",
-              "line": 5753,
+              "line": 5205,
               "size": 81,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1597,7 +1597,7 @@
             },
             {
               "name": "_display_skip_reason",
-              "line": 5835,
+              "line": 5287,
               "size": 34,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1606,7 +1606,7 @@
             },
             {
               "name": "_record_display_trade",
-              "line": 5870,
+              "line": 5322,
               "size": 24,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1615,7 +1615,7 @@
             },
             {
               "name": "get_recent_display_trades",
-              "line": 5895,
+              "line": 5347,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1624,7 +1624,7 @@
             },
             {
               "name": "_trades_last_hour",
-              "line": 5898,
+              "line": 5350,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1633,7 +1633,7 @@
             },
             {
               "name": "_log_section",
-              "line": 5906,
+              "line": 5358,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1642,7 +1642,7 @@
             },
             {
               "name": "_momentum_label",
-              "line": 5912,
+              "line": 5364,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1651,7 +1651,7 @@
             },
             {
               "name": "_volatility_label",
-              "line": 5915,
+              "line": 5367,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1660,7 +1660,7 @@
             },
             {
               "name": "_liquidity_label",
-              "line": 5918,
+              "line": 5370,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1669,7 +1669,7 @@
             },
             {
               "name": "_edge_label",
-              "line": 5921,
+              "line": 5373,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1678,7 +1678,7 @@
             },
             {
               "name": "_risk_off",
-              "line": 5924,
+              "line": 5376,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -1687,7 +1687,7 @@
             },
             {
               "name": "_consecutive_losses",
-              "line": 5927,
+              "line": 5379,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1696,7 +1696,7 @@
             },
             {
               "name": "_trigger_lockdown",
-              "line": 5931,
+              "line": 5383,
               "size": 3,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -1705,7 +1705,7 @@
             },
             {
               "name": "_update_risk_mode",
-              "line": 5935,
+              "line": 5387,
               "size": 38,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -1714,7 +1714,7 @@
             },
             {
               "name": "_apply_risk_mode_to_plan",
-              "line": 5974,
+              "line": 5426,
               "size": 12,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -1723,7 +1723,7 @@
             },
             {
               "name": "_sync_sizing_bankroll",
-              "line": 5987,
+              "line": 5439,
               "size": 6,
               "runtime_sensitive": true,
               "trader_group": "sizing",
@@ -1732,7 +1732,7 @@
             },
             {
               "name": "_coerce_cash_balance",
-              "line": 5994,
+              "line": 5446,
               "size": 4,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1741,7 +1741,7 @@
             },
             {
               "name": "_wallet_address_for_logs",
-              "line": 5999,
+              "line": 5451,
               "size": 6,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1750,7 +1750,7 @@
             },
             {
               "name": "_fetch_live_balance_snapshot",
-              "line": 6006,
+              "line": 5458,
               "size": 24,
               "runtime_sensitive": true,
               "trader_group": "balance",
@@ -1759,7 +1759,7 @@
             },
             {
               "name": "_record_balance_snapshot",
-              "line": 6031,
+              "line": 5483,
               "size": 4,
               "runtime_sensitive": true,
               "trader_group": "balance",
@@ -1768,7 +1768,7 @@
             },
             {
               "name": "_paper_balance_source_setting",
-              "line": 6036,
+              "line": 5488,
               "size": 3,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1777,7 +1777,7 @@
             },
             {
               "name": "_paper_starting_balance_source_setting",
-              "line": 6040,
+              "line": 5492,
               "size": 11,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1786,7 +1786,7 @@
             },
             {
               "name": "_paper_wallet_sync_on_start",
-              "line": 6052,
+              "line": 5504,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1795,7 +1795,7 @@
             },
             {
               "name": "_paper_wallet_sync_mode",
-              "line": 6055,
+              "line": 5507,
               "size": 3,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1804,7 +1804,7 @@
             },
             {
               "name": "_paper_min_balance_fallback",
-              "line": 6059,
+              "line": 5511,
               "size": 5,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1813,7 +1813,7 @@
             },
             {
               "name": "_paper_wallet_reference_enabled",
-              "line": 6065,
+              "line": 5517,
               "size": 7,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1822,7 +1822,7 @@
             },
             {
               "name": "_paper_wallet_reference_refresh_seconds",
-              "line": 6073,
+              "line": 5525,
               "size": 5,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1831,7 +1831,7 @@
             },
             {
               "name": "_paper_wallet_reference_visible",
-              "line": 6079,
+              "line": 5531,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1840,7 +1840,7 @@
             },
             {
               "name": "_paper_open_position_entry_cost",
-              "line": 6082,
+              "line": 5534,
               "size": 8,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1849,7 +1849,7 @@
             },
             {
               "name": "_apply_paper_reference_balance",
-              "line": 6091,
+              "line": 5543,
               "size": 12,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -1858,7 +1858,7 @@
             },
             {
               "name": "_set_wallet_reference_snapshot",
-              "line": 6104,
+              "line": 5556,
               "size": 10,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1867,7 +1867,7 @@
             },
             {
               "name": "_activate_paper_virtual_fallback",
-              "line": 6115,
+              "line": 5567,
               "size": 19,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1876,7 +1876,7 @@
             },
             {
               "name": "_refresh_wallet_reference_balance",
-              "line": 6135,
+              "line": 5587,
               "size": 38,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1885,7 +1885,7 @@
             },
             {
               "name": "_ensure_bankroll_state_matches_settings",
-              "line": 6174,
+              "line": 5626,
               "size": 17,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1894,7 +1894,7 @@
             },
             {
               "name": "_update_bankroll_rank_lock",
-              "line": 6192,
+              "line": 5644,
               "size": 28,
               "runtime_sensitive": false,
               "trader_group": "balance",
@@ -1903,7 +1903,7 @@
             },
             {
               "name": "_update_bankroll_state",
-              "line": 6221,
+              "line": 5673,
               "size": 130,
               "runtime_sensitive": false,
               "trader_group": "balance",
@@ -1912,7 +1912,7 @@
             },
             {
               "name": "_paper_apply_entry_cash",
-              "line": 6352,
+              "line": 5804,
               "size": 8,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1921,7 +1921,7 @@
             },
             {
               "name": "_paper_apply_exit_cash",
-              "line": 6361,
+              "line": 5813,
               "size": 8,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1930,7 +1930,7 @@
             },
             {
               "name": "_log_risk_section",
-              "line": 6370,
+              "line": 5822,
               "size": 44,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -1939,7 +1939,7 @@
             },
             {
               "name": "_log_order_section",
-              "line": 6415,
+              "line": 5867,
               "size": 19,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1948,7 +1948,7 @@
             },
             {
               "name": "_summary_body",
-              "line": 6435,
+              "line": 5887,
               "size": 27,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1957,7 +1957,7 @@
             },
             {
               "name": "log_quant_summary",
-              "line": 6463,
+              "line": 5915,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1966,7 +1966,7 @@
             },
             {
               "name": "_maybe_log_cycle_summary",
-              "line": 6466,
+              "line": 5918,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1975,7 +1975,7 @@
             },
             {
               "name": "_maybe_send_telegram_summary",
-              "line": 6472,
+              "line": 5924,
               "size": 34,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -1984,7 +1984,7 @@
             },
             {
               "name": "_paper_update_drawdown",
-              "line": 6507,
+              "line": 5959,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -1993,7 +1993,7 @@
             },
             {
               "name": "paper_session_summary",
-              "line": 6515,
+              "line": 5967,
               "size": 42,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -2002,7 +2002,7 @@
             },
             {
               "name": "dashboard_portfolio_state",
-              "line": 6558,
+              "line": 6010,
               "size": 57,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2011,7 +2011,7 @@
             },
             {
               "name": "_compile_dashboard_v2a_stats",
-              "line": 6616,
+              "line": 6068,
               "size": 131,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2020,7 +2020,7 @@
             },
             {
               "name": "dashboard_v2a_stats",
-              "line": 6748,
+              "line": 6200,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2029,7 +2029,7 @@
             },
             {
               "name": "dashboard_probe_counts",
-              "line": 6756,
+              "line": 6208,
               "size": 12,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2038,7 +2038,7 @@
             },
             {
               "name": "dashboard_session_summary",
-              "line": 6769,
+              "line": 6221,
               "size": 16,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2047,7 +2047,7 @@
             },
             {
               "name": "log_paper_session_summary",
-              "line": 6786,
+              "line": 6238,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "paper",
@@ -2056,7 +2056,7 @@
             },
             {
               "name": "_log_session_runtime_evaluation",
-              "line": 6793,
+              "line": 6245,
               "size": 31,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2065,7 +2065,7 @@
             },
             {
               "name": "_skip_outcome",
-              "line": 6825,
+              "line": 6277,
               "size": 64,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2074,7 +2074,7 @@
             },
             {
               "name": "_open_positions_for_market",
-              "line": 6890,
+              "line": 6342,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2083,7 +2083,7 @@
             },
             {
               "name": "_entry_count_for_market",
-              "line": 6893,
+              "line": 6345,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2092,7 +2092,7 @@
             },
             {
               "name": "_record_market_entry",
-              "line": 6896,
+              "line": 6348,
               "size": 3,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2101,7 +2101,7 @@
             },
             {
               "name": "_position_token_id",
-              "line": 6900,
+              "line": 6352,
               "size": 4,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2110,7 +2110,7 @@
             },
             {
               "name": "_position_outcome",
-              "line": 6905,
+              "line": 6357,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2119,7 +2119,7 @@
             },
             {
               "name": "_position_mark_price",
-              "line": 6912,
+              "line": 6364,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2128,7 +2128,7 @@
             },
             {
               "name": "_path_truth_metadata",
-              "line": 6922,
+              "line": 6374,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2137,7 +2137,7 @@
             },
             {
               "name": "_path_truth_emitted_checkpoints",
-              "line": 6933,
+              "line": 6385,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2146,7 +2146,7 @@
             },
             {
               "name": "_remember_path_truth_checkpoint",
-              "line": 6940,
+              "line": 6392,
               "size": 11,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2155,7 +2155,7 @@
             },
             {
               "name": "_path_truth_parse_ts",
-              "line": 6953,
+              "line": 6405,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2164,7 +2164,7 @@
             },
             {
               "name": "_path_truth_elapsed_seconds",
-              "line": 6956,
+              "line": 6408,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2173,7 +2173,7 @@
             },
             {
               "name": "_path_truth_session_hour_utc",
-              "line": 6966,
+              "line": 6418,
               "size": 8,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2182,7 +2182,7 @@
             },
             {
               "name": "_path_truth_lifecycle_phase",
-              "line": 6975,
+              "line": 6427,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2191,7 +2191,7 @@
             },
             {
               "name": "_path_truth_market_state",
-              "line": 6989,
+              "line": 6441,
               "size": 45,
               "runtime_sensitive": false,
               "trader_group": "path_truth",
@@ -2200,7 +2200,7 @@
             },
             {
               "name": "_emit_path_truth_checkpoint",
-              "line": 7035,
+              "line": 6487,
               "size": 81,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -2209,7 +2209,7 @@
             },
             {
               "name": "_maybe_emit_path_truth_checkpoints",
-              "line": 7117,
+              "line": 6569,
               "size": 21,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -2218,7 +2218,7 @@
             },
             {
               "name": "_emit_path_truth_shutdown_events",
-              "line": 7139,
+              "line": 6591,
               "size": 11,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -2227,7 +2227,7 @@
             },
             {
               "name": "_unrealized_pct",
-              "line": 7151,
+              "line": 6603,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2236,7 +2236,7 @@
             },
             {
               "name": "reconcile_live_positions",
-              "line": 7154,
+              "line": 6606,
               "size": 29,
               "runtime_sensitive": true,
               "trader_group": "reconciliation",
@@ -2245,7 +2245,7 @@
             },
             {
               "name": "_block_on_reconciliation_if_needed",
-              "line": 7184,
+              "line": 6636,
               "size": 42,
               "runtime_sensitive": true,
               "trader_group": "reconciliation",
@@ -2254,7 +2254,7 @@
             },
             {
               "name": "_poll_pending_live_orders",
-              "line": 7227,
+              "line": 6679,
               "size": 81,
               "runtime_sensitive": true,
               "trader_group": "reconciliation",
@@ -2263,7 +2263,7 @@
             },
             {
               "name": "_reconcile_after_order_attempt",
-              "line": 7309,
+              "line": 6761,
               "size": 7,
               "runtime_sensitive": true,
               "trader_group": "reconciliation",
@@ -2272,7 +2272,7 @@
             },
             {
               "name": "_ensure_connected",
-              "line": 7321,
+              "line": 6773,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2281,7 +2281,7 @@
             },
             {
               "name": "_apply_balance",
-              "line": 7324,
+              "line": 6776,
               "size": 56,
               "runtime_sensitive": true,
               "trader_group": "balance",
@@ -2290,7 +2290,7 @@
             },
             {
               "name": "refresh_live_balance",
-              "line": 7381,
+              "line": 6833,
               "size": 18,
               "runtime_sensitive": true,
               "trader_group": "balance",
@@ -2299,7 +2299,7 @@
             },
             {
               "name": "_log_portfolio_source",
-              "line": 7400,
+              "line": 6852,
               "size": 19,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2308,7 +2308,7 @@
             },
             {
               "name": "_collateral_allowance_snapshot",
-              "line": 7420,
+              "line": 6872,
               "size": 11,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -2317,7 +2317,7 @@
             },
             {
               "name": "_log_wallet_startup_verification",
-              "line": 7432,
+              "line": 6884,
               "size": 51,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -2326,7 +2326,7 @@
             },
             {
               "name": "_select_markets",
-              "line": 7488,
+              "line": 6940,
               "size": 39,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2335,7 +2335,7 @@
             },
             {
               "name": "_preload_observability_payload",
-              "line": 7528,
+              "line": 6980,
               "size": 21,
               "runtime_sensitive": false,
               "trader_group": "observability",
@@ -2344,7 +2344,7 @@
             },
             {
               "name": "_preload_next_market",
-              "line": 7550,
+              "line": 7002,
               "size": 89,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2353,7 +2353,7 @@
             },
             {
               "name": "_refresh_token_ids",
-              "line": 7640,
+              "line": 7092,
               "size": 96,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2362,7 +2362,7 @@
             },
             {
               "name": "_snipe_score",
-              "line": 7737,
+              "line": 7189,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2371,7 +2371,7 @@
             },
             {
               "name": "_orderbook_age_ms",
-              "line": 7744,
+              "line": 7196,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2380,7 +2380,7 @@
             },
             {
               "name": "_is_empty_orderbook_error",
-              "line": 7748,
+              "line": 7200,
               "size": 2,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2389,7 +2389,7 @@
             },
             {
               "name": "_is_liquidity_recovery_error",
-              "line": 7751,
+              "line": 7203,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2398,7 +2398,7 @@
             },
             {
               "name": "_empty_book_recovery_detail",
-              "line": 7759,
+              "line": 7211,
               "size": 21,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2407,7 +2407,7 @@
             },
             {
               "name": "_fetch_orderbook_pair_once",
-              "line": 7781,
+              "line": 7233,
               "size": 4,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2416,7 +2416,7 @@
             },
             {
               "name": "_empty_book_recovery_research_enabled",
-              "line": 7786,
+              "line": 7238,
               "size": 5,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2425,7 +2425,7 @@
             },
             {
               "name": "_recovery_exit_reason_for_block",
-              "line": 7792,
+              "line": 7244,
               "size": 21,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2434,7 +2434,7 @@
             },
             {
               "name": "_recovery_candidate_survival_detail",
-              "line": 7814,
+              "line": 7266,
               "size": 20,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2443,7 +2443,7 @@
             },
             {
               "name": "_fetch_orderbook_pair_with_empty_recovery",
-              "line": 7835,
+              "line": 7287,
               "size": 129,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2452,7 +2452,7 @@
             },
             {
               "name": "_token_mapping_warning",
-              "line": 7965,
+              "line": 7417,
               "size": 48,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2461,7 +2461,7 @@
             },
             {
               "name": "_classify_orderbook_readiness_reason",
-              "line": 8014,
+              "line": 7466,
               "size": 45,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2470,7 +2470,7 @@
             },
             {
               "name": "_infer_clob_orderbook_error_category",
-              "line": 8060,
+              "line": 7512,
               "size": 25,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2479,7 +2479,7 @@
             },
             {
               "name": "_clob_orderbook_error_detail",
-              "line": 8086,
+              "line": 7538,
               "size": 63,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2488,7 +2488,7 @@
             },
             {
               "name": "_clob_orderbook_health_detail",
-              "line": 8150,
+              "line": 7602,
               "size": 26,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2497,7 +2497,7 @@
             },
             {
               "name": "get_market_display_metrics",
-              "line": 8177,
+              "line": 7629,
               "size": 208,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2506,7 +2506,7 @@
             },
             {
               "name": "_check_and_alert_true_empty",
-              "line": 8386,
+              "line": 7838,
               "size": 29,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2515,7 +2515,7 @@
             },
             {
               "name": "verify_account_readiness",
-              "line": 8416,
+              "line": 7868,
               "size": 483,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2524,7 +2524,7 @@
             },
             {
               "name": "get_arbitrage_opportunity",
-              "line": 8900,
+              "line": 8352,
               "size": 29,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2533,7 +2533,7 @@
             },
             {
               "name": "_analyze_market_quant",
-              "line": 8934,
+              "line": 8386,
               "size": 1500,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2542,7 +2542,7 @@
             },
             {
               "name": "_analyze_market",
-              "line": 10435,
+              "line": 9887,
               "size": 400,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -2551,7 +2551,7 @@
             },
             {
               "name": "_verify_balance_for_order",
-              "line": 10840,
+              "line": 10292,
               "size": 75,
               "runtime_sensitive": true,
               "trader_group": "execution",
@@ -2560,7 +2560,7 @@
             },
             {
               "name": "_close_position_with_retry",
-              "line": 10916,
+              "line": 10368,
               "size": 148,
               "runtime_sensitive": false,
               "trader_group": "execution",
@@ -2569,7 +2569,7 @@
             },
             {
               "name": "_reduce_position_with_retry",
-              "line": 11065,
+              "line": 10517,
               "size": 166,
               "runtime_sensitive": false,
               "trader_group": "execution",
@@ -2578,7 +2578,7 @@
             },
             {
               "name": "_force_exit_position",
-              "line": 11232,
+              "line": 10684,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "execution",
@@ -2587,7 +2587,7 @@
             },
             {
               "name": "_exit_agent_check_position",
-              "line": 11243,
+              "line": 10695,
               "size": 6,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2596,7 +2596,7 @@
             },
             {
               "name": "_exit_agent_tick",
-              "line": 11250,
+              "line": 10702,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2605,7 +2605,7 @@
             },
             {
               "name": "enforce_pre_close_exits",
-              "line": 11261,
+              "line": 10713,
               "size": 11,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2614,7 +2614,7 @@
             },
             {
               "name": "panic_sell_check",
-              "line": 11277,
+              "line": 10729,
               "size": 121,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -2623,7 +2623,7 @@
             },
             {
               "name": "check_stop_loss",
-              "line": 11403,
+              "line": 10855,
               "size": 404,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -2632,7 +2632,7 @@
             },
             {
               "name": "check_take_profit",
-              "line": 11812,
+              "line": 11264,
               "size": 193,
               "runtime_sensitive": true,
               "trader_group": "risk",
@@ -2641,7 +2641,7 @@
             },
             {
               "name": "_compute_limit_price",
-              "line": 12010,
+              "line": 11462,
               "size": 45,
               "runtime_sensitive": false,
               "trader_group": "execution",
@@ -2650,7 +2650,7 @@
             },
             {
               "name": "_reconciliation_safe_for_entry",
-              "line": 12056,
+              "line": 11508,
               "size": 2,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -2659,7 +2659,7 @@
             },
             {
               "name": "_tracked_exit_inventory_size",
-              "line": 12059,
+              "line": 11511,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2668,7 +2668,7 @@
             },
             {
               "name": "_validate_submit_order_intent",
-              "line": 12070,
+              "line": 11522,
               "size": 253,
               "runtime_sensitive": true,
               "trader_group": "execution",
@@ -2677,7 +2677,7 @@
             },
             {
               "name": "_submit_order",
-              "line": 12324,
+              "line": 11776,
               "size": 254,
               "runtime_sensitive": true,
               "trader_group": "execution",
@@ -2686,7 +2686,7 @@
             },
             {
               "name": "auto_redeem_cycle",
-              "line": 12583,
+              "line": 12035,
               "size": 64,
               "runtime_sensitive": false,
               "trader_group": "execution",
@@ -2695,7 +2695,7 @@
             },
             {
               "name": "_check_stalled_positions",
-              "line": 12648,
+              "line": 12100,
               "size": 42,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2704,7 +2704,7 @@
             },
             {
               "name": "_manage_open_positions_for_cycle",
-              "line": 12691,
+              "line": 12143,
               "size": 58,
               "runtime_sensitive": false,
               "trader_group": "position",
@@ -2713,7 +2713,7 @@
             },
             {
               "name": "_cancel_stale_entry_orders_if_needed",
-              "line": 12750,
+              "line": 12202,
               "size": 59,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2722,7 +2722,7 @@
             },
             {
               "name": "settle_and_record",
-              "line": 12814,
+              "line": 12266,
               "size": 63,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2731,7 +2731,7 @@
             },
             {
               "name": "_emit_entry_budget_probe_event",
-              "line": 12882,
+              "line": 12334,
               "size": 64,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -2740,7 +2740,7 @@
             },
             {
               "name": "_zero_size_primary_constraint",
-              "line": 12951,
+              "line": 12403,
               "size": 26,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -2749,7 +2749,7 @@
             },
             {
               "name": "_emit_zero_size_probe_event",
-              "line": 12978,
+              "line": 12430,
               "size": 104,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -2758,7 +2758,7 @@
             },
             {
               "name": "_emit_cycle_selection_probe_event",
-              "line": 13087,
+              "line": 12539,
               "size": 94,
               "runtime_sensitive": false,
               "trader_group": "telemetry",
@@ -2767,7 +2767,7 @@
             },
             {
               "name": "run_single_cycle",
-              "line": 13182,
+              "line": 12634,
               "size": 211,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -2776,7 +2776,7 @@
             },
             {
               "name": "update_dashboard_status",
-              "line": 13394,
+              "line": 12846,
               "size": 24,
               "runtime_sensitive": false,
               "trader_group": "dashboard",
@@ -2789,13 +2789,13 @@
       "top_functions": [
         {
           "name": "evaluate_delta_extreme_shadow_candidate",
-          "line": 324,
+          "line": 308,
           "size": 63,
           "runtime_sensitive": false
         },
         {
           "name": "evaluate_option_d_shadow",
-          "line": 13420,
+          "line": 12872,
           "size": 139,
           "runtime_sensitive": false
         }
@@ -2805,11 +2805,6 @@
           "name": "_analyze_market_quant",
           "class": "PolymarketTrader",
           "size": 1500
-        },
-        {
-          "name": "_decision_diagnostics_payload",
-          "class": "PolymarketTrader",
-          "size": 539
         },
         {
           "name": "verify_account_readiness",
@@ -2850,6 +2845,11 @@
           "name": "run_single_cycle",
           "class": "PolymarketTrader",
           "size": 211
+        },
+        {
+          "name": "get_market_display_metrics",
+          "class": "PolymarketTrader",
+          "size": 208
         }
       ],
       "runtime_sensitive_symbols": [
@@ -8624,6 +8624,30 @@
           "name": "evaluate_shadow_filter",
           "class": null,
           "size": 71
+        }
+      ],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/observability/trader_decision_diagnostics.py",
+      "total_lines": 563,
+      "class_count": 0,
+      "top_function_count": 1,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "build_decision_diagnostics_payload",
+          "line": 27,
+          "size": 536,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "build_decision_diagnostics_payload",
+          "class": null,
+          "size": 536
         }
       ],
       "runtime_sensitive_symbols": []
@@ -31148,6 +31172,74 @@
         "test_high_frequency_reduces_position_size",
         "test_risk_off_and_reconciliation_unsafe_block"
       ]
+    },
+    {
+      "path": "tests/polymarket/test_trader_decision_diagnostics.py",
+      "total_lines": 137,
+      "class_count": 0,
+      "top_function_count": 5,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "_settings",
+          "line": 12,
+          "size": 32,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_trader",
+          "line": 46,
+          "size": 24,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_outcome",
+          "line": 72,
+          "size": 12,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_decision_diagnostics_builder_matches_wrapper_for_rich_payload",
+          "line": 86,
+          "size": 34,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_decision_diagnostics_builder_matches_wrapper_for_missing_fields",
+          "line": 122,
+          "size": 15,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "test_decision_diagnostics_builder_matches_wrapper_for_rich_payload",
+          "class": null,
+          "size": 34
+        },
+        {
+          "name": "_settings",
+          "class": null,
+          "size": 32
+        },
+        {
+          "name": "_trader",
+          "class": null,
+          "size": 24
+        },
+        {
+          "name": "test_decision_diagnostics_builder_matches_wrapper_for_missing_fields",
+          "class": null,
+          "size": 15
+        },
+        {
+          "name": "_outcome",
+          "class": null,
+          "size": 12
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "tests/polymarket/test_trend_runner.py",
@@ -71386,10 +71478,10 @@
       "size": 720
     },
     {
-      "file": "polymarket/trader.py",
-      "name": "_decision_diagnostics_payload",
-      "class": "PolymarketTrader",
-      "size": 539
+      "file": "polymarket/observability/trader_decision_diagnostics.py",
+      "name": "build_decision_diagnostics_payload",
+      "class": null,
+      "size": 536
     },
     {
       "file": "tools/unknown/ev_field_coverage.py",
