@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.free_outcome_truth_provisional_join import (
+from tools.outcome_truth.free_outcome_truth_provisional_join import (
     ProvisionalJoinError,
     join_provisional_outcomes,
 )

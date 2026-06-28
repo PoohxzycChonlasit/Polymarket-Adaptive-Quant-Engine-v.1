@@ -2611,5 +2611,39 @@
     },
     "verdict": "QIE_OFFLINE_BUILDER_PASS",
     "next_recommendation": "BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
+    "task_class": 6,
+    "scope": [
+      "tools/free_outcome_truth_provisional.py -> tools/outcome_truth/free_outcome_truth_provisional.py",
+      "tools/free_outcome_truth_provisional_join.py -> tools/outcome_truth/free_outcome_truth_provisional_join.py",
+      "tools/free_outcome_truth_provisional_readiness.py -> tools/outcome_truth/free_outcome_truth_provisional_readiness.py",
+      "tests/test_free_outcome_truth_provisional.py",
+      "tests/test_free_outcome_truth_provisional_join.py",
+      "tests/test_free_outcome_truth_provisional_readiness.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 6,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "outcome_truth_provisional_trio_moved": true,
+      "test_imports_resolved": true,
+      "targeted_tests_all_pass": true
+    },
+    "acceptance_criteria": {
+      "renamed_successfully": true,
+      "targeted_tests_pass": true,
+      "no_runtime_logic_changes": true
+    },
+    "verdict": "OUTCOME_TRUTH_PROVISIONAL_MOVE_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_PLAN_001"
   }
 ]

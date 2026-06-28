@@ -1675,7 +1675,7 @@
     {
       "priority": -2,
       "task_id": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 6,
       "description": "Move the three provisional free-source outcome-truth tools into tools/outcome_truth/ and update their targeted tests.",
@@ -1694,7 +1694,7 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001.md"
       ],
-      "notes": "Move only the provisional outcome-truth trio. Update imports to tools.outcome_truth.* and path source checks to tools/outcome_truth/*.py. Validate with rg old paths/modules, py_compile moved files only, and targeted pytest for the three listed test files. Do not run full pytest, builders, backtests, paper, or live runtime."
+      "notes": "DONE. Renamed files, updated imports/path references in their three targeted tests, verified clean py_compile and 16/16 passing targeted tests."
     }
   ]
 }

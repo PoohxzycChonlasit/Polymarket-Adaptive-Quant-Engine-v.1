@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from tools.free_outcome_truth_provisional_readiness import assess_provisional_readiness
+from tools.outcome_truth.free_outcome_truth_provisional_readiness import assess_provisional_readiness
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> Path:
@@ -66,7 +66,7 @@ def test_readiness_report_is_deterministic_and_hashed(tmp_path: Path) -> None:
 
 
 def test_readiness_tool_has_no_official_graduation_or_runtime_imports() -> None:
-    source = Path("tools/free_outcome_truth_provisional_readiness.py").read_text(encoding="utf-8")
+    source = Path("tools/outcome_truth/free_outcome_truth_provisional_readiness.py").read_text(encoding="utf-8")
 
     assert "outcome_truth_graduation" not in source
     assert "polymarket." not in source

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.free_outcome_truth_provisional import (
+from tools.outcome_truth.free_outcome_truth_provisional import (
     ProvisionalOutcomeError,
     build_provisional_outcomes,
     classify_provisional_evidence,
@@ -147,7 +147,7 @@ def test_build_output_and_hash_are_deterministic(tmp_path: Path) -> None:
 
 
 def test_no_paid_provider_dependency_or_runtime_imports() -> None:
-    source = Path("tools/free_outcome_truth_provisional.py").read_text(encoding="utf-8")
+    source = Path("tools/outcome_truth/free_outcome_truth_provisional.py").read_text(encoding="utf-8")
 
     for forbidden in ("chainstack", "quicknode", "alchemy", "infura", "main.py", "polymarket.trader"):
         assert forbidden not in source.lower()
