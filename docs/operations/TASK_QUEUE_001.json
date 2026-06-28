@@ -1739,7 +1739,7 @@
     {
       "priority": -1,
       "task_id": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Design the next safe tools migration batch for high-reference/complex canonical tools.",
@@ -1751,7 +1751,40 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001.md"
       ],
-      "notes": "Plan the move for deferred canonical tools (canonical_trade_context_builder.py, canonical_trade_table_v1.py) and their high-reference imports."
+      "notes": "DONE. Selected 5 replay steps group (commitment, classification, exit, profit, stabilization) and QIE tool as Phase 1D batch. Updated steps logic to update tools/multi_session_runner.py steps. Deferred cross-tool imported utilities (replay_analyzer, lifecycle_truth)."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Move the selected complex canonical/replay/research tools into their target folders and update targeted tests and runners.",
+      "blocked_by": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
+      "allowed_scope": [
+        "tools/commitment_regime_replay.py",
+        "tools/convergence_regime_classification_replay.py",
+        "tools/exit_convergence_intelligence_replay.py",
+        "tools/lifecycle_profit_management_replay.py",
+        "tools/stabilization_survival_replay.py",
+        "tools/quant_intelligence_engine.py",
+        "tools/replay/",
+        "tools/research/",
+        "tools/multi_session_runner.py",
+        "tests/test_commitment_regime_replay.py",
+        "tests/test_convergence_regime_classification_replay.py",
+        "tests/test_exit_convergence_intelligence_replay.py",
+        "tests/test_lifecycle_profit_management_replay.py",
+        "tests/test_stabilization_survival_replay.py",
+        "tests/test_quant_intelligence_engine.py",
+        "tests/test_multi_session_runner.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001.md"
+      ],
+      "notes": "Move files with git mv, update REPLAY_STEPS module names in tools/multi_session_runner.py, update tests/test_multi_session_runner.py, update targeted test file imports, compile and run targeted tests."
     },
     {
       "priority": 0,
