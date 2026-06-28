@@ -672,7 +672,16 @@ class CanonicalContextBuilder:
             "size_sharp_hard_caps": extract_field(events, "size_sharp_hard_caps", "hard_caps") or [],
             "size_sharp_missing_inputs": extract_field(events, "size_sharp_missing_inputs", "missing_inputs") or [],
             "size_sharp_schema_version": extract_field(events, "size_sharp_schema_version") or "missing_legacy_metadata",
-            
+
+            # Shadow Policy — offline candidate validation telemetry (observability-only)
+            "shadow_policy_decision": extract_field(events, "shadow_policy_decision"),
+            "shadow_policy_reasons": extract_field(events, "shadow_policy_reasons") or [],
+            "shadow_policy_observed_ev": _to_float(extract_field(events, "shadow_policy_observed_ev")),
+            "shadow_policy_observed_probability": _to_float(extract_field(events, "shadow_policy_observed_probability")),
+            "shadow_policy_observed_risk_mode": extract_field(events, "shadow_policy_observed_risk_mode"),
+            "shadow_policy_id": extract_field(events, "shadow_policy_id"),
+            "shadow_policy_confidence": extract_field(events, "shadow_policy_confidence"),
+
             # Inventory Context
             "inventory_state": extract_field(events, "inventory_state") or "FLAT",
             "open_position_count": _to_float(extract_field(events, "open_position_count")),

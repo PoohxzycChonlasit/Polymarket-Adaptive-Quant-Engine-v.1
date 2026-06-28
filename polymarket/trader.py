@@ -45,6 +45,7 @@ from polymarket.bankroll_tiers import (
 )
 from polymarket.bankroll_rank_engine import BankrollRankEngine
 from polymarket.market_availability_engine import MarketAvailabilityEngine, MarketAvailabilityState
+from polymarket.shadow_policy import ShadowPolicyEvaluator
 from polymarket.risk_modes import (
     RiskMode,
     RiskModeDecision,
@@ -477,6 +478,8 @@ class PolymarketTrader:
         self._last_bankroll_rank_lock_log = ""
         # Market availability scheduler — observability/resource guard only.
         self.market_availability_engine = MarketAvailabilityEngine(self.settings)
+        # Shadow policy evaluator — passive telemetry, never gates execution.
+        self._shadow_policy_evaluator = ShadowPolicyEvaluator()
         # P0.5 observability — persisted for trade_open carry-forward only.
         # Never read by risk_plan, sizing, order_intent, or execution paths.
         # bankroll_rank is a tier-string (e.g. "T0_MICRO_SEED"); capital_score is the float.
@@ -4772,6 +4775,14 @@ class PolymarketTrader:
             # P0.5: bankroll rank observability — used only in emit/carry paths
             "bankroll_rank": bankroll_rank,
         }
+        # Shadow policy fields from quant_details — carry into position metadata
+        for _sp_key in (
+            "shadow_policy_decision", "shadow_policy_reasons",
+            "shadow_policy_observed_ev", "shadow_policy_observed_probability",
+            "shadow_policy_observed_risk_mode", "shadow_policy_id",
+            "shadow_policy_confidence",
+        ):
+            metadata[_sp_key] = quant_details.get(_sp_key)
         if size_sharp_result is None:
             size_sharp_result = quant_details.get("size_sharp_result")
         metadata.update(self._size_sharp_metadata(size_sharp_result))
@@ -4943,6 +4954,14 @@ class PolymarketTrader:
                 "bankroll_rank": self._last_bankroll_rank,
                 "bankroll_family": self._last_bankroll_family,
                 "capital_score": self._last_capital_score,
+                # Shadow policy — observability-only, does NOT gate entry
+                "shadow_policy_decision": model_context.get("shadow_policy_decision"),
+                "shadow_policy_reasons": model_context.get("shadow_policy_reasons"),
+                "shadow_policy_observed_ev": model_context.get("shadow_policy_observed_ev"),
+                "shadow_policy_observed_probability": model_context.get("shadow_policy_observed_probability"),
+                "shadow_policy_observed_risk_mode": model_context.get("shadow_policy_observed_risk_mode"),
+                "shadow_policy_id": model_context.get("shadow_policy_id"),
+                "shadow_policy_confidence": model_context.get("shadow_policy_confidence"),
                 # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
                 **self._build_entry_model_truth_envelope(
                     true_probability=selected_probability,
@@ -5074,6 +5093,12 @@ class PolymarketTrader:
             # P0.5: bankroll rank and capital score carry from entry metadata — observability only
             "bankroll_rank": metadata.get("bankroll_rank") if isinstance(metadata, dict) else None,
             "capital_score": metadata.get("capital_score") if isinstance(metadata, dict) else None,
+            # Shadow policy carry — observability only
+            "shadow_policy_decision": metadata.get("shadow_policy_decision") if isinstance(metadata, dict) else None,
+            "shadow_policy_observed_ev": metadata.get("shadow_policy_observed_ev") if isinstance(metadata, dict) else None,
+            "shadow_policy_observed_probability": metadata.get("shadow_policy_observed_probability") if isinstance(metadata, dict) else None,
+            "shadow_policy_observed_risk_mode": metadata.get("shadow_policy_observed_risk_mode") if isinstance(metadata, dict) else None,
+            "shadow_policy_id": metadata.get("shadow_policy_id") if isinstance(metadata, dict) else None,
             **self._size_sharp_close_carry(metadata),
             
             # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
@@ -9903,6 +9928,19 @@ class PolymarketTrader:
         size_sharp_metadata = self._size_sharp_metadata(size_sharp_result)
         quant_detail.update(size_sharp_metadata)
         quant_detail["size_sharp_result"] = size_sharp_result.as_dict()
+
+        # Shadow policy evaluation — observability-only, never gates entry.
+        _sp_ev = model_ev if model_ev is not None else None
+        _sp_prob = (probability.p_yes if model_side == "YES" else probability.p_no) if probability else None
+        _sp_mode = getattr(getattr(self._risk_mgr, "mode", None), "value",
+                           str(getattr(self._risk_mgr, "mode", "NORMAL")))
+        _shadow = self._shadow_policy_evaluator.evaluate(
+            ev=_sp_ev,
+            probability=_sp_prob,
+            risk_mode=_sp_mode,
+        )
+        quant_detail.update(_shadow.to_dict())
+
         self.last_quant_details[str(ticker or "").upper()] = quant_detail
 
         if bool(self._setting("verbose_scan_logs", True)):
