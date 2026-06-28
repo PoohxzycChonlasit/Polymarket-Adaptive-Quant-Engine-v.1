@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-import tools.canonical_trade_table_v1 as ctt
-from tools.canonical_trade_table_v1 import build_canonical_trade_table, enrich_canonical_rows_v1_1
+import tools.canonical.canonical_trade_table_v1 as ctt
+from tools.canonical.canonical_trade_table_v1 import build_canonical_trade_table, enrich_canonical_rows_v1_1
 
 
 RUN_ID = "run-canonical-test"

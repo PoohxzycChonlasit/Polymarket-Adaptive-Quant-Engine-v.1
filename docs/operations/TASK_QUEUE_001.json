@@ -2156,6 +2156,27 @@
         "docs/reports/AIROS_V2_BATCH_GENERATOR_001.md"
       ],
       "notes": "DONE. Implemented tools/airos/batch_generator.py and its unit test suite. Generated batch_candidates.json."
+    },
+    {
+      "priority": 0,
+      "task_id": "AIROS_V2_ATOMIC_BATCH_EXECUTOR_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement and run the first AIROS atomic batch executor using docs/operations/repository/batch_candidates.json as the source of truth.",
+      "blocked_by": "AIROS_V2_BATCH_GENERATOR_001",
+      "allowed_scope": [
+        "tools/airos/",
+        "tests/test_airos_atomic_batch_executor.py",
+        "docs/operations/repository/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/airos/atomic_batch_executor.py",
+        "tests/test_airos_atomic_batch_executor.py",
+        "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md"
+      ],
+      "notes": "DONE. Implemented tools/airos/atomic_batch_executor.py and its unit test suite. Successfully executed batch REPOSITORY_PHASE1_CANONICAL_BATCH_001, moving tools/canonical_trade_table_v1.py and updating tests."
     }
   ]
 }

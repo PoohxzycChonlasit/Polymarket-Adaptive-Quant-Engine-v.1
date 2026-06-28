@@ -219,6 +219,15 @@
     "polymarket/trend_runner.py": [
       "tests/test_trend_runner.py"
     ],
+    "tools/airos/atomic_batch_executor.py": [
+      "tests/test_airos_atomic_batch_executor.py"
+    ],
+    "tools/airos/batch_generator.py": [
+      "tests/test_airos_batch_generator.py"
+    ],
+    "tools/airos/dependency_graph_builder.py": [
+      "tests/test_airos_dependency_graph_builder.py"
+    ],
     "tools/airos/repository_index_generator.py": [
       "tests/test_airos_repository_index_generator.py"
     ],
@@ -261,13 +270,13 @@
     "tools/canonical/canonical_regime_export.py": [
       "tests/test_canonical_regime_export.py"
     ],
+    "tools/canonical/canonical_trade_table_v1.py": [
+      "tests/test_canonical_trade_table_v1.py"
+    ],
     "tools/canonical_trade_context_builder.py": [
       "tests/test_canonical_trade_context_builder.py",
       "tests/test_market_availability_engine.py",
       "tests/test_shadow_policy.py"
-    ],
-    "tools/canonical_trade_table_v1.py": [
-      "tests/test_canonical_trade_table_v1.py"
     ],
     "tools/compact_run_summary.py": [
       "tests/test_compact_run_summary.py",
@@ -503,6 +512,15 @@
     ]
   },
   "test_to_source": {
+    "tests/test_airos_atomic_batch_executor.py": [
+      "tools/airos/atomic_batch_executor.py"
+    ],
+    "tests/test_airos_batch_generator.py": [
+      "tools/airos/batch_generator.py"
+    ],
+    "tests/test_airos_dependency_graph_builder.py": [
+      "tools/airos/dependency_graph_builder.py"
+    ],
     "tests/test_airos_repository_index_generator.py": [
       "tools/airos/repository_index_generator.py"
     ],
@@ -551,7 +569,7 @@
       "tools/canonical_trade_context_builder.py"
     ],
     "tests/test_canonical_trade_table_v1.py": [
-      "tools/canonical_trade_table_v1.py"
+      "tools/canonical/canonical_trade_table_v1.py"
     ],
     "tests/test_commitment_regime_replay.py": [
       "tools/replay/commitment_regime_replay.py"

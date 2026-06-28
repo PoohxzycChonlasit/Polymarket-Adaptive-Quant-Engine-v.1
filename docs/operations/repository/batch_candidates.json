@@ -1,42 +1,6 @@
 {
-  "batch_count": 7,
+  "batch_count": 6,
   "candidates": [
-    {
-      "affected_imports": [
-        "tools.canonical_trade_table_v1"
-      ],
-      "affected_tests": [
-        "tests/test_canonical_trade_table_v1.py"
-      ],
-      "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_CANONICAL_BATCH_001",
-      "batch_type": "TOOLS_ORGANIZATION",
-      "blocked_by": [],
-      "commit_message": "refactor(batch): relocate canonical tools",
-      "compile_commands": [
-        ".venv\\Scripts\\python.exe -m py_compile tools\\canonical\\canonical_trade_table_v1.py"
-      ],
-      "confidence": "HIGH",
-      "pytest_commands": [
-        ".venv\\Scripts\\python.exe -m pytest tests\\test_canonical_trade_table_v1.py -q"
-      ],
-      "reason": "Atomic consolidation of root level tools into target tools/canonical/ domain subfolder.",
-      "reference_validation_commands": [
-        "git grep \"tools.canonical_trade_table_v1\""
-      ],
-      "risk_level": "SAFE_ATOMIC",
-      "rollback_commands": [
-        "git mv tools\\canonical\\canonical_trade_table_v1.py tools\\canonical_trade_table_v1.py",
-        "git checkout -- docs/operations/ACTIVE_WORKFLOW_STATE_001.json docs/operations/TASK_QUEUE_001.json",
-        "git checkout -- tests\\test_canonical_trade_table_v1.py"
-      ],
-      "source_paths": [
-        "tools/canonical_trade_table_v1.py"
-      ],
-      "target_paths": [
-        "tools/canonical/canonical_trade_table_v1.py"
-      ]
-    },
     {
       "affected_imports": [
         "tools.official_resolution_acquire_pilot",
@@ -57,7 +21,7 @@
         "tests/test_outcome_truth_streaming_scan.py"
       ],
       "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_OUTCOME_TRUTH_BATCH_002",
+      "batch_id": "REPOSITORY_PHASE1_OUTCOME_TRUTH_BATCH_001",
       "batch_type": "TOOLS_ORGANIZATION",
       "blocked_by": [],
       "commit_message": "refactor(batch): relocate outcome_truth tools",
@@ -145,7 +109,7 @@
         "tests/test_zero_size_risk_floor_probe.py"
       ],
       "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_PROBES_BATCH_003",
+      "batch_id": "REPOSITORY_PHASE1_PROBES_BATCH_002",
       "batch_type": "TOOLS_ORGANIZATION",
       "blocked_by": [],
       "commit_message": "refactor(batch): relocate probes tools",
@@ -244,7 +208,7 @@
         "tests/test_outcome_truth_pipeline_integration.py"
       ],
       "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_REPLAY_BATCH_004",
+      "batch_id": "REPOSITORY_PHASE1_REPLAY_BATCH_003",
       "batch_type": "TOOLS_ORGANIZATION",
       "blocked_by": [],
       "commit_message": "refactor(batch): relocate replay tools",
@@ -297,7 +261,7 @@
         "tests/test_research_state_writer.py"
       ],
       "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_RESEARCH_BATCH_005",
+      "batch_id": "REPOSITORY_PHASE1_RESEARCH_BATCH_004",
       "batch_type": "TOOLS_ORGANIZATION",
       "blocked_by": [],
       "commit_message": "refactor(batch): relocate research tools",
@@ -385,7 +349,7 @@
         "tests/test_shadow_policy.py"
       ],
       "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_RUNTIME_BATCH_006",
+      "batch_id": "REPOSITORY_PHASE1_RUNTIME_BATCH_005",
       "batch_type": "TOOLS_ORGANIZATION",
       "blocked_by": [],
       "commit_message": "refactor(batch): relocate runtime tools",
@@ -504,7 +468,7 @@
         "tests/test_phase_b_weekly_review_engine.py"
       ],
       "approval_required": false,
-      "batch_id": "REPOSITORY_PHASE1_UNKNOWN_BATCH_007",
+      "batch_id": "REPOSITORY_PHASE1_UNKNOWN_BATCH_006",
       "batch_type": "TOOLS_ORGANIZATION",
       "blocked_by": [],
       "commit_message": "refactor(batch): relocate unknown tools",
@@ -624,13 +588,13 @@
       "reason": "FLAGGED_DO_NOT_MOVE_BY_GRAPH_METRICS"
     }
   ],
-  "generated_at_utc": "2026-06-28T14:17:56.549857Z",
-  "recommended_next_batch": "REPOSITORY_PHASE1_CANONICAL_BATCH_001",
+  "generated_at_utc": "2026-06-28T14:25:19.563599Z",
+  "recommended_next_batch": "REPOSITORY_PHASE1_PROBES_BATCH_002",
   "safety_summary": {
     "total_deferred_files": 2,
     "total_medium_atomic_batches": 5,
     "total_plan_required_batches": 0,
-    "total_safe_atomic_batches": 2
+    "total_safe_atomic_batches": 1
   },
   "schema_version": "batch_candidates_v1",
   "source_files": [
@@ -660,6 +624,9 @@
     "AI_HANDOFF_20260628_1544.md",
     "AI_HANDOFF_20260628_2045.md",
     "AI_HANDOFF_20260628_2056.md",
+    "AI_HANDOFF_20260628_2105.md",
+    "AI_HANDOFF_20260628_2111.md",
+    "AI_HANDOFF_20260628_2118.md",
     "CHATGPT_PROJECT_START_PROMPT.md",
     "CLAUDE.md",
     "CODEX_START_HERE.md",
@@ -1248,6 +1215,12 @@
     "docs/operations/memory/MEMORY_INDEX_001.json",
     "docs/operations/memory/loop/2026/06/2026-06-27.jsonl",
     "docs/operations/memory/safety/SAFETY_MEMORY.jsonl",
+    "docs/operations/repository/batch_candidates.json",
+    "docs/operations/repository/dependency_graph.json",
+    "docs/operations/repository/repo_health.json",
+    "docs/operations/repository/repository_index.json",
+    "docs/operations/repository/test_registry.json",
+    "docs/operations/repository/tool_registry.json",
     "docs/operations/skills/SKILL_REGISTRY_001.json",
     "docs/quant_agent_setup_md/00_MASTER_CONTEXT.md",
     "docs/quant_agent_setup_md/01_QUANT_OPERATING_SYSTEM.md",
@@ -1289,6 +1262,9 @@
     "docs/reports/AGENT_OS_DOCS_BATCH_1_REPORT.md",
     "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md",
     "docs/reports/AIROS_V2_BATCH_AUTOMATION_DESIGN_001.md",
+    "docs/reports/AIROS_V2_BATCH_GENERATOR_001.md",
+    "docs/reports/AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001.md",
+    "docs/reports/AIROS_V2_STATIC_REPOSITORY_INDEX_GENERATOR_001.md",
     "docs/reports/AI_COGNITION_MEMORY_ENGINE_DESIGN_001.md",
     "docs/reports/AI_HANDOFF_20260627_0020.md",
     "docs/reports/AI_HANDOFF_20260627_0120.md",
@@ -2527,6 +2503,9 @@
     "scripts/hft_paper_summary.py",
     "scripts/vultr_deploy_paper.py",
     "tests/fixtures/_smoke_drift_audit.csv",
+    "tests/test_airos_atomic_batch_executor.py",
+    "tests/test_airos_batch_generator.py",
+    "tests/test_airos_dependency_graph_builder.py",
     "tests/test_airos_repository_index_generator.py",
     "tests/test_arbitrage_executor.py",
     "tests/test_backtest_engine_v2.py",
@@ -2691,6 +2670,9 @@
     "tests/test_zero_size_risk_floor_probe.py",
     "tools/_delta_causal_verify.py",
     "tools/airos/__init__.py",
+    "tools/airos/atomic_batch_executor.py",
+    "tools/airos/batch_generator.py",
+    "tools/airos/dependency_graph_builder.py",
     "tools/airos/repository_index_generator.py",
     "tools/audit/_audit_cs_btc.py",
     "tools/audit/_audit_decision_state.py",
@@ -2711,8 +2693,8 @@
     "tools/candidate_continuity.py",
     "tools/candidate_path_observability.py",
     "tools/canonical/canonical_regime_export.py",
+    "tools/canonical/canonical_trade_table_v1.py",
     "tools/canonical_trade_context_builder.py",
-    "tools/canonical_trade_table_v1.py",
     "tools/compact_run_summary.py",
     "tools/dashboard_state_aggregator.py",
     "tools/decision_cycle_timing_probe.py",

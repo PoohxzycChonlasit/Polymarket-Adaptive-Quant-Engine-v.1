@@ -1,6 +1,9 @@
 {
   "airos": [
     "tools/airos/__init__.py",
+    "tools/airos/atomic_batch_executor.py",
+    "tools/airos/batch_generator.py",
+    "tools/airos/dependency_graph_builder.py",
     "tools/airos/repository_index_generator.py"
   ],
   "audit": [
@@ -14,7 +17,7 @@
   ],
   "canonical": [
     "tools/canonical/canonical_regime_export.py",
-    "tools/canonical_trade_table_v1.py"
+    "tools/canonical/canonical_trade_table_v1.py"
   ],
   "outcome_truth": [
     "tools/official_resolution_acquire_pilot.py",
