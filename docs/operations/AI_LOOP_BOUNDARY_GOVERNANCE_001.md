@@ -20,6 +20,13 @@ DIRTY_TREE_STOP
 
 The existing governance correctly told agents to stop on a dirty tree, but it did not clearly require closing the previous task boundary first. This document makes task transitions explicit.
 
+AIROS integration:
+
+- `docs/operations/AI_REPO_BOOTSTRAP_001.md` uses this document when deciding whether a new task can start.
+- `docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md` treats task boundary state as part of the Repository Kernel.
+- `docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md` defines `repo_health.json.boundary_state`.
+- `docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md` includes commit-boundary and dirty-tree templates.
+
 ---
 
 ## Task Boundary Rule

@@ -1,10 +1,10 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001 complete - Phase 1F shadow tools migration plan designed",
-    "last_completed_task":  "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001",
-    "last_commit":  "c4e2117",
-    "last_commit_message":  "docs: add session handoff",
+    "current_phase":  "AI_REPOSITORY_OPERATING_SYSTEM_V1_DESIGN_001 complete - AIROS v1 design created",
+    "last_completed_task":  "AI_REPOSITORY_OPERATING_SYSTEM_V1_DESIGN_001",
+    "last_commit":  "pending-at-report-time",
+    "last_commit_message":  "docs: design AI repository operating system v1",
     "next_task":  "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
@@ -60,6 +60,7 @@
                                 "loop_playbook":  "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
                             },
     "recommended_first_reads":  [
+                                    "docs/operations/AI_REPO_BOOTSTRAP_001.md",
                                     "PROJECT_RULES.md",
                                     "MASTER_AGENT_ROUTER.md",
                                     "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
@@ -90,5 +91,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Repository Phase 1B move plan complete. Selected a small outcome-truth provisional free-source trio for the next Class 6 move: free_outcome_truth_provisional.py, free_outcome_truth_provisional_join.py, and free_outcome_truth_provisional_readiness.py. This task was design-only: no tools moved, no tests changed, no pytest, no builders, and no backtests. Next task should move only those three files into tools/outcome_truth/ and update their three targeted tests."
+    "notes":  "AIROS v1 design complete. Created architecture, bootstrap, kernel schema, task template library, and report docs. Updated router/index/governance references. Design only: no scripts implemented, no tools moved, no runtime code changed, no pytest, no builders, no backtests."
 }

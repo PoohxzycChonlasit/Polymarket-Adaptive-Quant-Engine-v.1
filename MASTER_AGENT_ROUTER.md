@@ -17,6 +17,15 @@ Before choosing an agent, read:
 9. `QUANT_FUTURE_DECISION_ENGINE.md`
 10. Only the selected role docs under `docs/quant_agent_setup_md/roles/`
 
+AIROS v1 navigation layer:
+
+- `docs/operations/AI_REPO_BOOTSTRAP_001.md` - single-file AI startup flow and current task discovery.
+- `docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md` - repository operating system design.
+- `docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md` - registry schema contracts.
+- `docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md` - reusable task templates.
+
+Use AIROS to reduce repeated repository searches. AIROS is a navigation/kernel layer only; it does not authorize runtime, strategy, sizing, risk, execution, dashboard, Telegram, `.env`, paper, or live changes.
+
 For research, replay, lifecycle truth, no-entry, observability-review, or paper-session evidence tasks, read this compact state before opening large reports/logs/JSONL:
 
 ```text
@@ -30,11 +39,12 @@ Only inspect larger reports when the compact state flags a gap, the user asks fo
 Use this workflow before implementation for every task:
 
 1. For research, replay, lifecycle truth, no-entry, observability-review, or paper-session evidence tasks, read `runtime/research_state/latest_research_state.md` before large reports, logs, or JSONL.
-2. Read `MASTER_AGENT_ROUTER.md`.
-3. Select exactly one PRIMARY role.
-4. Select zero to three SUPPORTING roles only when the task crosses boundaries.
-5. Read only the selected role docs, not all role docs.
-6. State a compact role-routing block before implementation:
+2. Read `docs/operations/AI_REPO_BOOTSTRAP_001.md` for the current startup flow.
+3. Read `MASTER_AGENT_ROUTER.md`.
+4. Select exactly one PRIMARY role.
+5. Select zero to three SUPPORTING roles only when the task crosses boundaries.
+6. Read only the selected role docs, not all role docs.
+7. State a compact role-routing block before implementation:
    - primary role
    - supporting roles
    - why selected

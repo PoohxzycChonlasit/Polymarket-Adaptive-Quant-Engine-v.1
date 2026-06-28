@@ -36,6 +36,10 @@ The following core files remain in the root directory and must be read at the st
 | [`MASTER_AGENT_ROUTER.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/MASTER_AGENT_ROUTER.md) | Pick the right role doc for scoped tasks. |
 | [`FILE_INDEX.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/FILE_INDEX.md) | This index file. |
 | [`DOCUMENTATION_MAP.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/DOCUMENTATION_MAP.md) | Clean human/AI documentation map. |
+| [`docs/operations/AI_REPO_BOOTSTRAP_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/AI_REPO_BOOTSTRAP_001.md) | Single-file AIROS startup flow for AI agents. |
+| [`docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md) | AIROS v1 architecture and repository kernel design. |
+| [`docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md) | AIROS registry schema contracts. |
+| [`docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md) | Reusable AI task templates. |
 | [`KNOWN_ISSUES.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/KNOWN_ISSUES.md) | Quick pointer to known live issues and tickets. |
 | [`PROJECT_STRUCTURE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/PROJECT_STRUCTURE.md) | Quick pointer to canonical architecture. |
 | [`docs/research/QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/QUANT_FUTURE_DECISION_ENGINE.md) | Exactly 3 future options for research/runtime decisions. |

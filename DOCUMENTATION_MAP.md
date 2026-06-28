@@ -20,6 +20,13 @@ Before initiating any development, testing, or research task, new AI agents must
 9. **[`DOCUMENTATION_MAP.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/DOCUMENTATION_MAP.md)**: This overview guide mapping documentation folders.
 10. **[`docs/research/QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/QUANT_FUTURE_DECISION_ENGINE.md)**: Exactly 3 future options for research/runtime decisions.
 
+AIROS v1 additions for faster AI navigation:
+
+- **[`docs/operations/AI_REPO_BOOTSTRAP_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/AI_REPO_BOOTSTRAP_001.md)**: Single-file AI startup flow.
+- **[`docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md)**: AI repository operating system architecture.
+- **[`docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md)**: Repository kernel registry schema contracts.
+- **[`docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md)**: Standard task templates.
+
 ---
 
 ## 2. Docs Folder Routing

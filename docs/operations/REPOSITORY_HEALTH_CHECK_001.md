@@ -10,6 +10,13 @@
 
 On 2026-06-28, the local branch was 177 commits ahead of origin/main after multiple AI sessions. GitHub was not current, meaning any parallel AI agent using the remote would start from stale state. This protocol prevents implementation on stale state.
 
+AIROS integration:
+
+- `docs/operations/AI_REPO_BOOTSTRAP_001.md` starts with this health check.
+- `docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V1_001.md` defines the Health Dashboard layer.
+- `docs/operations/AI_REPOSITORY_KERNEL_SCHEMA_001.md` defines `repo_health.json`.
+- `docs/operations/AI_TASK_TEMPLATE_LIBRARY_001.md` includes dirty-tree and commit-boundary templates.
+
 ---
 
 ## Mandatory Commands Before Any Implementation
