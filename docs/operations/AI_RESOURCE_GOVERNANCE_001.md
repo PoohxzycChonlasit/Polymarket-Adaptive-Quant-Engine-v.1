@@ -14,6 +14,34 @@ On 2026-06-28, multiple heavy background processes were launched in parallel (ca
 
 ## Hard Rules
 
+### 0. Close Task Boundaries Before Starting New Work
+
+Before starting any new task, apply [AI_LOOP_BOUNDARY_GOVERNANCE_001.md](AI_LOOP_BOUNDARY_GOVERNANCE_001.md).
+
+Every task must end with exactly one boundary state:
+- `COMMITTED`
+- `CLEAN_NO_CHANGES`
+- `BLOCKED_NEEDS_OPERATOR_DECISION`
+
+If `git status --short` is dirty from previous completed task outputs, the next task must be a commit-boundary task such as `COMMIT_PREVIOUS_TASK_OUTPUTS_001`, not the next implementation task.
+
+Forbidden pattern:
+
+```text
+DESIGN_TASK_DONE_UNCOMMITTED
+->
+IMPLEMENTATION_TASK_STARTED
+->
+DIRTY_TREE_STOP
+```
+
+Required final handoff fields:
+- Worktree status
+- Commit status
+- Boundary state
+- Whether the next task can start immediately
+- If not, the exact commit task name
+
 ### 1. Maximum Concurrent Heavy Processes: 1
 
 Only ONE of the following may run at a time:
@@ -113,6 +141,7 @@ Never delete, overwrite, or rotate files in `runtime/reports/`, `runtime/quant_d
 ```
 [ ] No other background process is currently running
 [ ] git status is clean (or operator has approved dirty state)
+[ ] Previous task boundary is COMMITTED, CLEAN_NO_CHANGES, or BLOCKED_NEEDS_OPERATOR_DECISION
 [ ] GitHub is current (git branch -vv shows no "ahead N")
 [ ] Resource estimate stated
 [ ] Output directory confirmed (scratch vs production)

@@ -53,6 +53,40 @@ git status
 
 ---
 
+## Dirty Tree Classification
+
+Classify a dirty tree before starting any new task.
+
+| Classification | How to identify | Required action |
+|---|---|---|
+| `DIRTY_PREVIOUS_TASK_OUTPUTS` | Dirty files match the previous completed task's allowed outputs, such as docs/reports and docs/operations metadata from a finished design/report task. | Do not start the next implementation task. Run a commit-boundary task such as `COMMIT_PREVIOUS_TASK_OUTPUTS_001` or a task-specific commit task. |
+| `DIRTY_OPERATOR_WORK` | Dirty files appear unrelated to the previous AI task, were modified by the operator, or include files outside the previous task's allowed scope. | Stop and ask the operator whether to preserve, commit, ignore, branch around, or otherwise handle the work. |
+| `DIRTY_UNKNOWN` | The source of dirty files cannot be confidently identified. | Stop, report `git status --short` and `git diff --name-only`, and ask for operator classification. |
+
+Forbidden transition:
+
+```text
+DESIGN_TASK_DONE_UNCOMMITTED
+->
+IMPLEMENTATION_TASK_STARTED
+->
+DIRTY_TREE_STOP
+```
+
+Required transition:
+
+```text
+DIRTY_PREVIOUS_TASK_OUTPUTS
+->
+COMMIT_PREVIOUS_TASK_OUTPUTS_001
+->
+next implementation task
+```
+
+See [AI_LOOP_BOUNDARY_GOVERNANCE_001.md](AI_LOOP_BOUNDARY_GOVERNANCE_001.md) for the full task boundary contract.
+
+---
+
 ## Stop Conditions
 
 **STOP and report to operator if:**
@@ -63,6 +97,7 @@ git status
 4. Dirty tree with modified tracked files that you did not create this session.
 5. Merge conflicts in any file.
 6. `git diff --check` reports whitespace errors in implementation files.
+7. Previous task outputs are complete but uncommitted and the requested next task is implementation/refactor/tooling.
 
 ---
 
@@ -79,6 +114,8 @@ git log --oneline -5       # confirm HEAD is expected commit
 **If branch is ahead of origin**: push before starting new work when the tree is clean.
 
 **Never assume GitHub is current.** The remote may be stale from previous sessions.
+
+**If the tree is dirty from previous completed task outputs**: do not ask for a broad commit/stash choice. The next task should be a narrow commit-boundary task that validates and commits those outputs.
 
 ---
 
@@ -119,3 +156,5 @@ Repository health check must pass before:
 - Running full historical canonical builder
 - Running backtest grid on new data
 - Starting any Class 6+ implementation task
+
+It also integrates with [AI_LOOP_BOUNDARY_GOVERNANCE_001.md](AI_LOOP_BOUNDARY_GOVERNANCE_001.md), which defines the required final task boundary states and clean handoff contract.
