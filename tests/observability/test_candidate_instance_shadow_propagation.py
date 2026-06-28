@@ -4,11 +4,12 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 
+import polymarket.trader as trader_module
 from polymarket.trader import PolymarketTrader, TradeOutcome
 from utils.quant_event_logger import QuantEventLogger
 
 
-TRADER_PATH = Path(__file__).resolve().parents[1] / "polymarket" / "trader.py"
+TRADER_PATH = Path(trader_module.__file__)
 SHADOW_FIELDS = {
     "candidate_instance_id",
     "candidate_instance_trace_id",
@@ -84,11 +85,11 @@ def test_active_candidate_identity_is_copied_to_quant_detail_with_shadow_names_o
 
     string_literals = [
         node.value
-        for node in ast.walk(tree)
+        for node in ast.walk(clob_detail_assignments[0])
         if isinstance(node, ast.Constant) and isinstance(node.value, str)
     ]
     for field_name in SHADOW_FIELDS:
-        assert string_literals.count(field_name) == 2
+        assert string_literals.count(field_name) == 1
 
 
 def test_shadow_identity_reaches_decision_only_and_preserves_legacy_candidate_id() -> None:

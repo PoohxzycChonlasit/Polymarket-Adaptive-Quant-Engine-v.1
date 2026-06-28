@@ -1989,5 +1989,36 @@
       "UNKNOWN_NEEDS_REVIEW": 4
     },
     "next_recommendation": "TRADER_REFACTOR_TEST_PATH_FIX_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "TRADER_REFACTOR_TEST_PATH_FIX_001",
+    "task_class": 5,
+    "result": "PASS",
+    "evidence_grade": "A+C",
+    "scope": [
+      "tests/observability/test_candidate_instance_shadow_propagation.py",
+      "tests/polymarket/test_signal_identity.py",
+      "tests/polymarket/test_signal_identity_propagation.py",
+      "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "path_failures_fixed": 3,
+    "validation": {
+      "exact_target_tests": "3 passed",
+      "py_compile_changed_tests": "PASS",
+      "broad_subset": "663 passed, 12 failed, 5 warnings",
+      "baseline_before": "660 passed, 15 failed, 5 warnings",
+      "new_failures": 0
+    },
+    "remaining_failures": 12,
+    "next_recommendation": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001"
   }
 ]

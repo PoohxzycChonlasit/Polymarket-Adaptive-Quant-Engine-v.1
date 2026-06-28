@@ -4,10 +4,11 @@ import ast
 from pathlib import Path
 from types import SimpleNamespace
 
+import polymarket.trader as trader_module
 from polymarket.trader import PolymarketTrader, TradeOutcome
 
 
-TRADER_PATH = Path(__file__).resolve().parents[1] / "polymarket" / "trader.py"
+TRADER_PATH = Path(trader_module.__file__)
 
 
 class _CollectingQuantLogger:

@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_REFACTOR_TEST_BASELINE_001 complete - broad observability/polymarket subset baseline established; 15 failures reproduced before and after Phase 2",
-    "last_completed_task": "TRADER_REFACTOR_TEST_BASELINE_001",
+    "current_phase": "TRADER_REFACTOR_TEST_PATH_FIX_001 complete - 3 path-sensitive AST/source tests fixed; broad subset now 663 passed / 12 failed",
+    "last_completed_task": "TRADER_REFACTOR_TEST_PATH_FIX_001",
     "last_commit": "pending-at-commit-time",
-    "last_commit_message": "docs: add trader refactor test baseline",
-    "next_task": "TRADER_REFACTOR_TEST_PATH_FIX_001",
+    "last_commit_message": "test: fix trader refactor path-sensitive tests",
+    "next_task": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -79,7 +79,7 @@
             "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
             "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
+        "next_batch": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
     },
@@ -115,7 +115,7 @@
         "paper_win_rate": 0.629,
         "gross_pnl": 347.43,
         "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
-        "next_task": "TRADER_REFACTOR_TEST_PATH_FIX_001",
+        "next_task": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001",
         "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
     },
     "canonical_trade_context": {

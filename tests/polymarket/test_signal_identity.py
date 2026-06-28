@@ -3,10 +3,11 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
+import polymarket.signal as signal_module
 from polymarket.signal import SignalResult
 
 
-SIGNAL_PATH = Path(__file__).resolve().parents[1] / "polymarket" / "signal.py"
+SIGNAL_PATH = Path(signal_module.__file__)
 CANONICAL_SIGNAL_NAMES = {"reversion", "sniper", "trend", "NO_SIGNAL"}
 CANONICAL_SIGNAL_REASONS = {
     "feed_not_ready",
