@@ -1802,6 +1802,24 @@
         "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md"
       ],
       "notes": "DONE. Pushed all 9 local commits to origin main. Updated docs/operations/AI_LOOP_BOUNDARY_GOVERNANCE_001.md to add the Commit Cohesion Rule."
+    },
+    {
+      "priority": 0,
+      "task_id": "ENTERPRISE_MARKET_INTELLIGENCE_PHASE_1",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design and audit a complete Market Intelligence Layer for the Adaptive Prediction Market Quant Platform.",
+      "blocked_by": "REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001",
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/MARKET_INTELLIGENCE_LAYER_SPEC_001.md"
+      ],
+      "notes": "DONE. Created docs/architecture/MARKET_INTELLIGENCE_LAYER_SPEC_001.md outlining the layered intelligence engines, json schema, telemetry additions, replay compatibility, and lifecycle inventory integration."
     }
   ]
 }

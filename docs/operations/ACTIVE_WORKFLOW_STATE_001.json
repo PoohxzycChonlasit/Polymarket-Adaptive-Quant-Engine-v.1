@@ -1,10 +1,10 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001 complete - Phase 1D move plan designed",
-    "last_completed_task":  "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
-    "last_commit":  "6f51622",
-    "last_commit_message":  "docs: refine commit boundary governance after tools phase 1c",
+    "current_phase":  "Enterprise Market Intelligence Phase 1 complete - Market Intelligence Layer designed",
+    "last_completed_task":  "ENTERPRISE_MARKET_INTELLIGENCE_PHASE_1",
+    "last_commit":  "01328d1",
+    "last_commit_message":  "docs: add tools phase 1d complex move plan",
     "next_task":  "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
