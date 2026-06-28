@@ -25,7 +25,7 @@ _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from tools.ev_field_coverage_audit import (
+from tools.audit.ev_field_coverage_audit import (
     AUDIT_FIELDS,
     CANONICAL_NAMES,
     aggregate,
@@ -500,7 +500,7 @@ class TestRenderConsole:
 
 class TestAdditiveOnly:
     def test_no_runtime_imports(self):
-        import tools.ev_field_coverage_audit as mod
+        import tools.audit.ev_field_coverage_audit as mod
         source = Path(mod.__file__).read_text(encoding="utf-8")
         forbidden = [
             "polymarket.trader", "utils.risk_manager", "order_manager",

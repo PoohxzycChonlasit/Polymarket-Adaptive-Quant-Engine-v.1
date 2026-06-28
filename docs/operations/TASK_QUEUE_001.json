@@ -1806,7 +1806,7 @@
     {
       "priority": -1,
       "task_id": "REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 6,
       "description": "Execute the Phase 1E tools migration for the selected Audit Batch.",
@@ -1821,7 +1821,24 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_001.md"
       ],
-      "notes": "Move 7 audit scripts to tools/audit/, update imports in test_drift_audit.py and test_ev_field_coverage_audit.py, compile and run targeted tests."
+      "notes": "DONE. Moved 7 audit scripts -> tools/audit/. Updated test imports in test_drift_audit.py and test_ev_field_coverage_audit.py, compiled, and verified 63/63 tests passing."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design the next migration plan for the remaining shadow, reload, and semantic C replay tools in the tools folder.",
+      "blocked_by": "REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001.md"
+      ],
+      "notes": "Plan the move for shadow/semantic tools (e.g. semantic_c_shadow_fill_replay.py, shadow_filter_evaluator.py, and other shadow scripts)."
     },
     {
       "priority": 0,

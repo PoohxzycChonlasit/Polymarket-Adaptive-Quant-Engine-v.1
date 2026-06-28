@@ -15,7 +15,7 @@ import datetime
 
 import pytest
 
-import tools._drift_audit as drift
+import tools.audit._drift_audit as drift
 
 
 # ---------------------------------------------------------------------------
