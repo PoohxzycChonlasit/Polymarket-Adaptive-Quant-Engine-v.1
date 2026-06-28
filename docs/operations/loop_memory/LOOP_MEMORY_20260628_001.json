@@ -866,5 +866,53 @@
     },
     "verdict": "COMPLEX_RESEARCH_MOVE_PASS",
     "next_recommendation": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending-at-commit-time"],
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "shadow_filter_evaluator_risk": "LOW_PATH_RISK (docstring ref in shadow_telemetry.py only, not a Python import)",
+      "semantic_c_bounded_reload_replay_risk": "LOW_PATH_RISK (no REPLAY_STEPS coupling)",
+      "semantic_c_shadow_observability_report_risk": "LOW_PATH_RISK (no REPLAY_STEPS coupling)",
+      "cross_run_ev_blindness_risk": "LOW_PATH_RISK (no cross-tool imports)",
+      "semantic_c_shadow_fill_replay_risk": "MEDIUM_IMPORT_RISK (REPLAY_STEPS module string in multi_session_runner.py)",
+      "semantic_c_shadow_pnl_truth_risk": "MEDIUM_IMPORT_RISK (REPLAY_STEPS module string)",
+      "semantic_c_inventory_continuity_replay_risk": "MEDIUM_IMPORT_RISK (REPLAY_STEPS module string)",
+      "cross_run_lifecycle_truth_risk": "MEDIUM_IMPORT_RISK (imported by research_state_writer.py and lifecycle_truth_backfill.py)",
+      "cross_run_shadow_fill_report_existence": "FILE_NOT_FOUND - historical reference only",
+      "cross_run_shadow_fill_summary_existence": "FILE_NOT_FOUND - historical reference only",
+      "selected_batch": "4 LOW_PATH_RISK files into tools/shadow/",
+      "deferred": "4 MEDIUM risk files into Phase 1G and 1H"
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "active_loop_memory_pointer_used": true,
+      "candidate_dependency_map_complete": true,
+      "risk_table_complete": true,
+      "selected_batch_declared": true,
+      "deferred_files_declared": true,
+      "validation_plan_written": true,
+      "rollback_plan_written": true,
+      "plan_report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true
+    },
+    "verdict": "SHADOW_MOVE_PLAN_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001"
   }
 ]

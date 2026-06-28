@@ -1826,7 +1826,7 @@
     {
       "priority": -1,
       "task_id": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Design the next migration plan for the remaining shadow, reload, and semantic C replay tools in the tools folder.",
@@ -1838,7 +1838,30 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001.md"
       ],
-      "notes": "Plan the move for shadow/semantic tools (e.g. semantic_c_shadow_fill_replay.py, shadow_filter_evaluator.py, and other shadow scripts)."
+      "notes": "DONE. Designed Phase 1F LOW_PATH_RISK shadow batch (4 files): shadow_filter_evaluator, semantic_c_bounded_reload_replay, semantic_c_shadow_observability_report, cross_run_ev_blindness. MEDIUM batch (semantic_c REPLAY_STEPS-coupled files) deferred to Phase 1G."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Execute the Phase 1F shadow tools migration for the selected LOW_PATH_RISK batch into tools/shadow/.",
+      "blocked_by": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_PLAN_001",
+      "allowed_scope": [
+        "tools/shadow/",
+        "tests/test_shadow_filter_evaluator.py",
+        "tests/test_semantic_c_bounded_reload_replay.py",
+        "tests/test_semantic_c_shadow_observability_report.py",
+        "tests/test_cross_run_ev_blindness.py",
+        "tests/test_joined_records_builder.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001.md"
+      ],
+      "notes": "Move 4 LOW_PATH_RISK shadow files: shadow_filter_evaluator.py, semantic_c_bounded_reload_replay.py, semantic_c_shadow_observability_report.py, cross_run_ev_blindness.py. Update 5 test imports. Compile, targeted pytest, JSON validation, cohesive commit."
     },
     {
       "priority": 0,
