@@ -63,9 +63,9 @@ class ReplayStep:
 
 REPLAY_STEPS: tuple[ReplayStep, ...] = (
     ReplayStep(0, "data_quality_gate",                        "tools.quant_data_quality",                        None, "quant_data_quality"),
-    ReplayStep(1, "semantic_c_shadow_fill_replay",            "tools.semantic_c_shadow_fill_replay",             None, "sem_c_fill_replay"),
-    ReplayStep(2, "semantic_c_shadow_pnl_truth",              "tools.semantic_c_shadow_pnl_truth",               None, "sem_c_pnl_truth"),
-    ReplayStep(3, "semantic_c_inventory_continuity_replay",   "tools.semantic_c_inventory_continuity_replay",    None, "sem_c_inv_continuity"),
+    ReplayStep(1, "semantic_c_shadow_fill_replay",            "tools.shadow.semantic_c_shadow_fill_replay",      None, "sem_c_fill_replay"),
+    ReplayStep(2, "semantic_c_shadow_pnl_truth",              "tools.shadow.semantic_c_shadow_pnl_truth",        None, "sem_c_pnl_truth"),
+    ReplayStep(3, "semantic_c_inventory_continuity_replay",   "tools.shadow.semantic_c_inventory_continuity_replay", None, "sem_c_inv_continuity"),
     ReplayStep(4, "lifecycle_profit_management_replay",       "tools.replay.lifecycle_profit_management_replay", None, "lifecycle_pm"),
     ReplayStep(5, "commitment_regime_replay",                 "tools.replay.commitment_regime_replay",           None, "commitment_regime"),
     ReplayStep(6, "exit_convergence_intelligence_replay",     "tools.replay.exit_convergence_intelligence_replay", None, "exit_convergence"),

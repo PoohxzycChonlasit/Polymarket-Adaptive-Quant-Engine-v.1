@@ -29,10 +29,10 @@ Max drawdown approximation:
     max_drawdown = max over series of (peak_so_far - current_cumulative_pnl).
 
 Usage:
-    python -m tools.semantic_c_shadow_pnl_truth --date 2026-05-15
-    python -m tools.semantic_c_shadow_pnl_truth --date 2026-05-15 --write-report
-    python -m tools.semantic_c_shadow_pnl_truth --date 2026-05-15 --run-id <id>
-    python -m tools.semantic_c_shadow_pnl_truth --date 2026-05-15 --asset BTC
+    python -m tools.shadow.semantic_c_shadow_pnl_truth --date 2026-05-15
+    python -m tools.shadow.semantic_c_shadow_pnl_truth --date 2026-05-15 --write-report
+    python -m tools.shadow.semantic_c_shadow_pnl_truth --date 2026-05-15 --run-id <id>
+    python -m tools.shadow.semantic_c_shadow_pnl_truth --date 2026-05-15 --asset BTC
 
 Output:
     Console summary + optional runtime/reports/sem_c_pnl_truth_YYYY-MM-DD_HHMM.json

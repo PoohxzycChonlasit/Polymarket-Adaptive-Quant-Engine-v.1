@@ -31,7 +31,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.semantic_c_shadow_pnl_truth import (
+from tools.shadow.semantic_c_shadow_pnl_truth import (
     _NO_THRESHOLD,
     _YES_THRESHOLD,
     _MAX_SR_FOR_PROXY,
@@ -109,7 +109,7 @@ def _write_jsonl(path: Path, payloads: list[dict]) -> None:
 def _build_smap(snaps: list[dict]) -> dict:
     """Build settlement map directly from snapshot dicts (no file I/O)."""
     from collections import defaultdict
-    from tools.semantic_c_shadow_pnl_truth import _YES_THRESHOLD, _NO_THRESHOLD, _MAX_SR_FOR_PROXY
+    from tools.shadow.semantic_c_shadow_pnl_truth import _YES_THRESHOLD, _NO_THRESHOLD, _MAX_SR_FOR_PROXY
 
     best: dict[tuple, dict] = {}
     for p in snaps:
@@ -811,7 +811,7 @@ class TestNoRuntimeImports:
     def test_no_runtime_modules_imported(self):
         import ast
         import inspect
-        import tools.semantic_c_shadow_pnl_truth as mod
+        import tools.shadow.semantic_c_shadow_pnl_truth as mod
 
         src  = inspect.getsource(mod)
         tree = ast.parse(src)

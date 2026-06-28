@@ -54,7 +54,7 @@
     {
       "priority": -3,
       "task_id": "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 1,
       "description": "Run 630+ config policy grid on 886-row signal-driven dataset. Focus on EV × probability × risk_mode combinations. Surface best policy for NORMAL mode with positive Sharpe.",
@@ -1862,6 +1862,32 @@
         "docs/reports/REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001.md"
       ],
       "notes": "DONE. Moved 4 LOW_PATH_RISK shadow files into tools/shadow/: shadow_filter_evaluator.py, semantic_c_bounded_reload_replay.py, semantic_c_shadow_observability_report.py, cross_run_ev_blindness.py. Updated 5 targeted tests and moved-module CLI examples. Repaired scratch-root detection after deeper path move. py_compile passed and targeted pytest passed 155/155. No full pytest, builders, backtests, paper/live runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, or .env changes."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_ATOMIC_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Move remaining shadow/replay-step tools into tools/shadow/ when dependency analysis confirms no runtime imports or complex cross-tool coupling.",
+      "blocked_by": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001",
+      "allowed_scope": [
+        "tools/semantic_c_shadow_fill_replay.py",
+        "tools/semantic_c_shadow_pnl_truth.py",
+        "tools/semantic_c_inventory_continuity_replay.py",
+        "tools/shadow/",
+        "tools/multi_session_runner.py",
+        "tests/test_semantic_c_shadow_fill_replay.py",
+        "tests/test_semantic_c_shadow_pnl_truth.py",
+        "tests/test_semantic_c_inventory_continuity_replay.py",
+        "tests/test_multi_session_runner.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_ATOMIC_MOVE_001.md"
+      ],
+      "notes": "DONE. Moved semantic_c_shadow_fill_replay.py, semantic_c_shadow_pnl_truth.py, and semantic_c_inventory_continuity_replay.py into tools/shadow/. Updated tools/multi_session_runner.py module strings and four targeted tests. cross_run_lifecycle_truth.py deferred because tools/lifecycle_truth_backfill.py imports it directly. py_compile passed and targeted pytest passed 239/239. No full pytest, builders, backtests, paper/live runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, or .env changes."
     },
     {
       "priority": 0,

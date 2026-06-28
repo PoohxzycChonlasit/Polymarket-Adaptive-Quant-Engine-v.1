@@ -105,9 +105,9 @@ REPORT_FIXTURES = {
 
 TOOL_TO_PREFIX = {
     "tools.quant_data_quality": "quant_data_quality",
-    "tools.semantic_c_shadow_fill_replay": "sem_c_fill_replay",
-    "tools.semantic_c_shadow_pnl_truth": "sem_c_pnl_truth",
-    "tools.semantic_c_inventory_continuity_replay": "sem_c_inv_continuity",
+    "tools.shadow.semantic_c_shadow_fill_replay": "sem_c_fill_replay",
+    "tools.shadow.semantic_c_shadow_pnl_truth": "sem_c_pnl_truth",
+    "tools.shadow.semantic_c_inventory_continuity_replay": "sem_c_inv_continuity",
     "tools.replay.lifecycle_profit_management_replay": "lifecycle_pm",
     "tools.replay.commitment_regime_replay": "commitment_regime",
     "tools.replay.exit_convergence_intelligence_replay": "exit_convergence",
@@ -187,9 +187,9 @@ def test_deterministic_order_in_manifest_and_commands(tmp_path: Path) -> None:
     command_names = [_tool_key(call) for call in calls]
     assert command_names == [
         "tools.quant_data_quality",
-        "tools.semantic_c_shadow_fill_replay",
-        "tools.semantic_c_shadow_pnl_truth",
-        "tools.semantic_c_inventory_continuity_replay",
+        "tools.shadow.semantic_c_shadow_fill_replay",
+        "tools.shadow.semantic_c_shadow_pnl_truth",
+        "tools.shadow.semantic_c_inventory_continuity_replay",
         "tools.replay.lifecycle_profit_management_replay",
         "tools.replay.commitment_regime_replay",
         "tools.replay.exit_convergence_intelligence_replay",

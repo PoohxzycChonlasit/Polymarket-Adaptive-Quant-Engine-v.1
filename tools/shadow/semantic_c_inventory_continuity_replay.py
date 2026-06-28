@@ -41,10 +41,10 @@ Additional opportunity-cost metrics:
   skipped_candidate_opportunity_cost  sum of proxy PnL foregone from skipped profitable candidates
 
 Usage:
-  python -m tools.semantic_c_inventory_continuity_replay --date 2026-05-15
-  python -m tools.semantic_c_inventory_continuity_replay --date 2026-05-15 --write-report
-  python -m tools.semantic_c_inventory_continuity_replay --date 2026-05-15 --run-id <id>
-  python -m tools.semantic_c_inventory_continuity_replay --date 2026-05-15 --asset BTC
+  python -m tools.shadow.semantic_c_inventory_continuity_replay --date 2026-05-15
+  python -m tools.shadow.semantic_c_inventory_continuity_replay --date 2026-05-15 --write-report
+  python -m tools.shadow.semantic_c_inventory_continuity_replay --date 2026-05-15 --run-id <id>
+  python -m tools.shadow.semantic_c_inventory_continuity_replay --date 2026-05-15 --asset BTC
 
 Output:
   Console summary + optional runtime/reports/sem_c_inv_continuity_YYYY-MM-DD_HHMM.json

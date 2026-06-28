@@ -24,10 +24,10 @@ This tool simulates hypothetical fills and reports ten outputs:
   10. whether Semantic C is safe for a scoped paper-only runtime trial
 
 Usage:
-    python -m tools.semantic_c_shadow_fill_replay --date 2026-05-15
-    python -m tools.semantic_c_shadow_fill_replay --date 2026-05-15 --write-report
-    python -m tools.semantic_c_shadow_fill_replay --date 2026-05-15 --run-id <id>
-    python -m tools.semantic_c_shadow_fill_replay --date 2026-05-15 --asset BTC
+    python -m tools.shadow.semantic_c_shadow_fill_replay --date 2026-05-15
+    python -m tools.shadow.semantic_c_shadow_fill_replay --date 2026-05-15 --write-report
+    python -m tools.shadow.semantic_c_shadow_fill_replay --date 2026-05-15 --run-id <id>
+    python -m tools.shadow.semantic_c_shadow_fill_replay --date 2026-05-15 --asset BTC
 
 Output:
     Console summary + optional runtime/reports/sem_c_fill_replay_YYYY-MM-DD_HHMM.json

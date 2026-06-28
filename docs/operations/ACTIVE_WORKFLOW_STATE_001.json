@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001 complete - low-risk shadow tools moved",
-    "last_completed_task":  "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001",
+    "current_phase":  "REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_ATOMIC_MOVE_001 complete - replay-step shadow tools moved",
+    "last_completed_task":  "REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_ATOMIC_MOVE_001",
     "last_commit":  "pending-at-report-time",
-    "last_commit_message":  "refactor: move shadow semantic tools",
-    "next_task":  "REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_MOVE_PLAN_001",
+    "last_commit_message":  "refactor: move remaining shadow replay step tools",
+    "next_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -91,5 +91,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Phase 1F low-risk shadow tools move complete. Moved semantic_c_bounded_reload_replay, semantic_c_shadow_observability_report, cross_run_ev_blindness, and shadow_filter_evaluator into tools/shadow/. Updated five targeted tests and moved-module CLI examples. Repaired shadow_filter_evaluator scratch-root detection after deeper path move. Targeted pytest passed 155/155. No runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, .env, builder, backtest, paper, or live behavior changes."
+    "notes":  "Phase 1G replay-step shadow tools move complete. Moved semantic_c_shadow_fill_replay, semantic_c_shadow_pnl_truth, and semantic_c_inventory_continuity_replay into tools/shadow/. Updated multi_session_runner module strings and four targeted tests. cross_run_lifecycle_truth deferred because lifecycle_truth_backfill imports it directly. Targeted pytest passed 239/239. No runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, .env, builder, backtest, paper, or live behavior changes."
 }

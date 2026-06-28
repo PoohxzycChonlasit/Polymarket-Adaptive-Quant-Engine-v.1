@@ -30,7 +30,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.semantic_c_shadow_fill_replay import (
+from tools.shadow.semantic_c_shadow_fill_replay import (
     _CONF_FLOOR,
     _CUTOFF_COLLISION_SECONDS,
     _GOOD_EV,
@@ -93,7 +93,7 @@ def _ev(
     if resolution_price is not None:
         p["resolution_price"] = resolution_price
     if include_shadow:
-        from tools.semantic_c_shadow_fill_replay import _CONF_SPAN
+        from tools.shadow.semantic_c_shadow_fill_replay import _CONF_SPAN
         ev_q  = min(1.0, max(_EV_Q_FLOOR, ev / _GOOD_EV))
         c_in  = confidence * ev_q
         c_m   = max(0.0, min(1.0, 0.25 + 0.75 * (c_in - _CONF_FLOOR) / _CONF_SPAN))
@@ -684,7 +684,7 @@ class TestNoRuntimeImports:
     def test_tool_does_not_import_runtime_modules(self):
         import ast
         import inspect
-        import tools.semantic_c_shadow_fill_replay as mod
+        import tools.shadow.semantic_c_shadow_fill_replay as mod
 
         src = inspect.getsource(mod)
         tree = ast.parse(src)
