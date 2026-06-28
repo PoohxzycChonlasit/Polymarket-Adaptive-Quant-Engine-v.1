@@ -3,6 +3,43 @@
   "last_updated": "2026-06-28",
   "queue": [
     {
+      "priority": -2,
+      "task_id": "REPOSITORY_SYNC_AND_RESOURCE_GOVERNANCE_001",
+      "status": "DONE",
+      "workflow_tier": "GATE",
+      "task_class": 3,
+      "description": "Sync local branch to GitHub and add AI resource governance docs to prevent parallel heavy process overload.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/research/",
+        "runtime/research_exports/"
+      ],
+      "outputs": [
+        "docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
+        "docs/operations/REPOSITORY_HEALTH_CHECK_001.md"
+      ],
+      "notes": "COMPLETED — 177 commits pushed to origin/main. GitHub now current. Resource governance and repo health check protocols active."
+    },
+    {
+      "priority": -1,
+      "task_id": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Emit size_sharp_at_entry, size_sharp_bucket, and bankroll_rank in the trade_open event payload so canonical builder can populate those fields for future policy backtests.",
+      "blocked_by": "REPOSITORY_SYNC_AND_RESOURCE_GOVERNANCE_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001.md"
+      ],
+      "notes": "Class 5 OBSERVABILITY. Adds 2 fields to existing trade_open emission only. No runtime behavior change. Required before Size Sharp and Bankroll Rank policy backtests are possible."
+    },
+    {
       "priority": 0,
       "task_id": "POSITION_TRACKER_PERSISTENCE_REFACTOR_001",
       "status": "DONE",
