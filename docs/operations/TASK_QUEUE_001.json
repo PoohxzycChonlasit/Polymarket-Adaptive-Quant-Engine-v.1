@@ -2065,6 +2065,28 @@
         "docs/reports/ENTERPRISE_BATCH_MIGRATION_SYSTEM_001.md"
       ],
       "notes": "DONE. Created the enterprise batch migration system architecture, risk scoring model, reusable prompt templates, and updated task library, loop boundary, and health check governance."
+    },
+    {
+      "priority": 0,
+      "task_id": "AIROS_V2_BATCH_AUTOMATION_DESIGN_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design AI Repository Operating System v2 automation layer for enterprise batch migrations: repository registry generation, dependency graph generation, blast radius scoring, batch generation, migration command compilation, validation planning, and rollback planning.",
+      "blocked_by": "ENTERPRISE_BATCH_MIGRATION_SYSTEM_001",
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/architecture/AI_REPOSITORY_OPERATING_SYSTEM_V2_BATCH_AUTOMATION_001.md",
+        "docs/operations/AIROS_V2_REGISTRY_ARTIFACTS_001.md",
+        "docs/operations/AIROS_V2_BATCH_GENERATOR_SPEC_001.md",
+        "docs/operations/AIROS_V2_MIGRATION_COMPILER_SPEC_001.md",
+        "docs/reports/AIROS_V2_BATCH_AUTOMATION_DESIGN_001.md"
+      ],
+      "notes": "DONE. Designed AIROS v2 batch automation layer, specifying registry artifacts, clustering algorithms, command generation rules, and rollback planning."
     }
   ]
 }
