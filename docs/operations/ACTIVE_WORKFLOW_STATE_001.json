@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001 complete - bounded tests/observability tests/polymarket baseline clean at 675 passed / 0 failed",
-    "last_completed_task": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001",
+    "current_phase": "TRADER_MODULARIZATION_PROGRAM_001 complete - design roadmap created; next executable is Phase 3A orderbook lineage observability extraction",
+    "last_completed_task": "TRADER_MODULARIZATION_PROGRAM_001",
     "last_commit": "pending-at-commit-time",
-    "last_commit_message": "test: resolve remaining trader refactor baseline",
-    "next_task": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
+    "last_commit_message": "docs: add trader modularization roadmap",
+    "next_task": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -33,7 +33,7 @@
         "trader_py_lines": 13010,
         "trader_py_methods": 305,
         "phases_completed": 2,
-        "phases_planned": 8,
+        "phases_planned": 9,
         "already_extracted": [
             "shadow_policy.py",
             "market_availability_engine.py",
@@ -79,7 +79,7 @@
             "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
             "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
+        "next_batch": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
     },
@@ -115,7 +115,7 @@
         "paper_win_rate": 0.629,
         "gross_pnl": 347.43,
         "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
-        "next_task": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
+        "next_task": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
         "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
     },
     "canonical_trade_context": {

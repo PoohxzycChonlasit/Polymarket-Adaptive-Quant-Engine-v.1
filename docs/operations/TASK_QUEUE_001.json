@@ -2239,7 +2239,7 @@
     {
       "priority": 103,
       "task_id": "POLYMARKET_MODELS_SUBFOLDER_BATCH_001",
-      "status": "BLOCKED",
+      "status": "DEFERRED",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Move probability_model.py, quant_indicators.py, expected_value.py, delta_engine.py from polymarket/ to polymarket/models/. Update import sites.",
@@ -2310,7 +2310,7 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001.md"
       ],
-      "notes": "READY. Trader refactor bounded baseline is now clean: tests/observability tests/polymarket passed 675/675 after TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001. Plan first because the likely next safe extraction target is observability-related but named around risk boundary, so dependency and side-effect classification should precede code movement."
+      "notes": "DEFERRED by TRADER_MODULARIZATION_PROGRAM_001 ordering. Still useful after Phase 3A starts, but the roadmap selects _build_orderbook_lineage_probe_payload as the first safer extraction because it is the largest remaining pure observability builder with zero self-writes."
     },
     {
       "priority": 121,
@@ -2391,6 +2391,44 @@
         "docs/reports/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001.md"
       ],
       "notes": "DONE. Exact two failing tests now pass 2/2. Bounded tests/observability tests/polymarket now pass 675/675. Fixes were scoped to decision observability identity propagation and selected_token_id initialization for observability metadata; no order submission, risk, sizing, strategy threshold, wallet/balance, live execution, config, or .env behavior changed."
+    },
+    {
+      "priority": 125,
+      "task_id": "TRADER_MODULARIZATION_PROGRAM_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Create the complete trader.py modularization roadmap using current AIROS registries, clean bounded baseline, and prior extraction reports.",
+      "blocked_by": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_MODULARIZATION_PROGRAM_001.md"
+      ],
+      "notes": "DONE. Measured trader.py at 13,010 lines and 298 PolymarketTrader methods. Dependency graph marks trader.py DO_NOT_MOVE with blast radius score 270. Roadmap defines target coordinator architecture, domain map, extraction phases 3A-3E, deferred Phase 4 risk/execution/sizing review, and safety gates."
+    },
+    {
+      "priority": 126,
+      "task_id": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract _build_orderbook_lineage_probe_payload into polymarket/observability/trader_orderbook_lineage.py with retained wrapper and golden equivalence tests.",
+      "blocked_by": "TRADER_MODULARIZATION_PROGRAM_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/trader_orderbook_lineage.py",
+        "tests/observability/",
+        "tests/polymarket/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md"
+      ],
+      "notes": "READY as first roadmap extraction. Target method is 261 lines, pure observability, and has zero self-writes. Must use wrapper delegation, golden equivalence tests, py_compile, bounded tests/observability tests/polymarket, and AIROS refresh. Do not touch execution, risk, sizing, wallet/balance, order submission, live/paper behavior, config, or .env."
     }
   ]
 }
