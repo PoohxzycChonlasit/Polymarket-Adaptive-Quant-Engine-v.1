@@ -2134,6 +2134,28 @@
         "docs/reports/AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001.md"
       ],
       "notes": "DONE. Implemented tools/airos/dependency_graph_builder.py and its unit test suite. Generated dependency_graph.json."
+    },
+    {
+      "priority": 0,
+      "task_id": "AIROS_V2_BATCH_GENERATOR_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement the AIROS v2 batch generator that consumes repository_index.json and dependency_graph.json and emits batch_candidates.json for safe enterprise batch migrations.",
+      "blocked_by": "AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001",
+      "allowed_scope": [
+        "tools/airos/",
+        "tests/test_airos_batch_generator.py",
+        "docs/operations/repository/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/airos/batch_generator.py",
+        "tests/test_airos_batch_generator.py",
+        "docs/operations/repository/batch_candidates.json",
+        "docs/reports/AIROS_V2_BATCH_GENERATOR_001.md"
+      ],
+      "notes": "DONE. Implemented tools/airos/batch_generator.py and its unit test suite. Generated batch_candidates.json."
     }
   ]
 }
