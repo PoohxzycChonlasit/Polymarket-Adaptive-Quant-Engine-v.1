@@ -75,6 +75,7 @@ class QuantEventLogger:
         "signal_filter_shadow_phase_b": "signal_filter_shadow_phase_b",
         "delta_shadow": "delta_shadow",
         "ghost_position_detected": "system_health",
+        "bankroll_rank_evaluation": "research_log",
     }
 
     # Mapping from internal logger category → canonical stream event type
@@ -94,6 +95,7 @@ class QuantEventLogger:
         "signal_filter_shadow_phase_b": "candidate_rejected_v1",
         "delta_shadow": "sizing_evaluated_v1",
         "ghost_position_detected": "ghost_position_detected_v1",
+        "bankroll_rank_evaluation": "bankroll_rank_evaluated_v1",
     }
 
     _STREAM_PRIORITY_MAP: dict[str, str] = {
@@ -112,6 +114,7 @@ class QuantEventLogger:
         "signal_filter_shadow_phase_b": "LOW",
         "delta_shadow": "NORMAL",
         "ghost_position_detected": "CRITICAL",
+        "bankroll_rank_evaluation": "NORMAL",
     }
 
     def __init__(
@@ -200,6 +203,14 @@ class QuantEventLogger:
 
     def log_delta_shadow(self, payload: dict[str, Any] | None = None) -> bool:
         return self._write_event("delta_shadow", payload)
+
+    def log_bankroll_rank_evaluation(self, payload: dict[str, Any] | None = None) -> bool:
+        """Write a bankroll_rank_evaluation event to research_log.
+
+        Emitted each time BankrollRankEngine.evaluate() runs. Payload must include
+        bankroll_rank, bankroll_family, capital_state, capital_score. Observability-only.
+        """
+        return self._write_event("bankroll_rank_evaluation", payload)
 
     def _write_event(self, event_type: str, payload: dict[str, Any] | None) -> bool:
         category = self._CATEGORY_BY_METHOD[event_type]

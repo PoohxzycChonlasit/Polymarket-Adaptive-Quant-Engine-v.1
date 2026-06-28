@@ -568,3 +568,114 @@ def test_source_guard_execution_paths_do_not_read_bankroll_rank():
         assert "_last_bankroll_family" not in fn_body, (
             f"OBSERVABILITY VIOLATION: _last_bankroll_family found in {fn_name}"
         )
+
+
+# ---------------------------------------------------------------------------
+# BANKROLL_RANK_EVENT_LOGGER_FIX_001 — log_bankroll_rank_evaluation method
+# ---------------------------------------------------------------------------
+
+def test_log_bankroll_rank_evaluation_method_exists():
+    """QuantEventLogger must expose log_bankroll_rank_evaluation."""
+    from utils.quant_event_logger import QuantEventLogger
+    logger = QuantEventLogger(enabled=False)
+    assert hasattr(logger, "log_bankroll_rank_evaluation")
+    assert callable(logger.log_bankroll_rank_evaluation)
+
+
+def test_log_bankroll_rank_evaluation_no_attribute_error(tmp_path):
+    """log_bankroll_rank_evaluation must not raise AttributeError."""
+    from utils.quant_event_logger import QuantEventLogger
+    logger = QuantEventLogger(base_dir=str(tmp_path / "qdata"))
+    result = logger.log_bankroll_rank_evaluation({
+        "bankroll_rank": 0.85,
+        "bankroll_family": "STANDARD",
+        "capital_state": "HEALTHY",
+        "capital_score": 1.0,
+        "bankroll_rank_schema_version": "v1",
+    })
+    assert isinstance(result, bool)
+
+
+def test_log_bankroll_rank_evaluation_writes_to_research_log(tmp_path):
+    """log_bankroll_rank_evaluation must write to research_log directory."""
+    from utils.quant_event_logger import QuantEventLogger
+    import json
+
+    logger = QuantEventLogger(base_dir=str(tmp_path / "qdata"))
+    logger.log_bankroll_rank_evaluation({
+        "bankroll_rank": 0.72,
+        "bankroll_family": "MICRO",
+        "capital_state": "DEGRADED",
+        "capital_score": 0.72,
+    })
+
+    research_files = list((tmp_path / "qdata" / "research_log").glob("*.jsonl"))
+    assert len(research_files) == 1, f"Expected 1 research_log file, got {research_files}"
+
+    events = [json.loads(l.strip()) for l in research_files[0].read_text(encoding="utf-8").splitlines() if l.strip()]
+    assert len(events) == 1
+    payload = events[0].get("payload") or {}
+    assert payload.get("bankroll_rank") == 0.72
+    assert payload.get("bankroll_family") == "MICRO"
+    assert payload.get("capital_state") == "DEGRADED"
+    assert payload.get("capital_score") == 0.72
+
+
+def test_log_bankroll_rank_evaluation_payload_has_required_fields(tmp_path):
+    """Event written to research_log must include all required fields."""
+    from utils.quant_event_logger import QuantEventLogger
+    import json
+
+    logger = QuantEventLogger(base_dir=str(tmp_path / "qdata"))
+    logger.log_bankroll_rank_evaluation({
+        "bankroll_rank": 0.90,
+        "bankroll_family": "STANDARD",
+        "capital_state": "HEALTHY",
+        "capital_score": 0.90,
+        "bankroll_rank_schema_version": "v1",
+        "equity": 20.10,
+        "drawdown_pct": 0.0,
+    })
+
+    research_files = list((tmp_path / "qdata" / "research_log").glob("*.jsonl"))
+    event = json.loads(research_files[0].read_text(encoding="utf-8").strip())
+
+    # Outer envelope fields
+    assert event.get("event_type") == "bankroll_rank_evaluation"
+    assert "timestamp_utc" in event
+    assert "run_id" in event
+
+    payload = event.get("payload") or {}
+    for required in ("bankroll_rank", "bankroll_family", "capital_state", "capital_score"):
+        assert required in payload, f"Missing required field: {required}"
+
+
+def test_log_bankroll_rank_evaluation_none_payload_is_fail_soft(tmp_path):
+    """None payload must not raise; method returns bool."""
+    from utils.quant_event_logger import QuantEventLogger
+    logger = QuantEventLogger(base_dir=str(tmp_path / "qdata"))
+    result = logger.log_bankroll_rank_evaluation(None)
+    assert isinstance(result, bool)
+
+
+def test_emit_quant_event_routes_bankroll_rank_evaluation(mock_settings, tmp_path):
+    """trader._emit_quant_event('log_bankroll_rank_evaluation', ...) must not raise
+    AttributeError now that QuantEventLogger has the method."""
+    mock_settings.quant_data_dir = str(tmp_path / "quant_data")
+    trader = PolymarketTrader(settings=mock_settings)
+
+    raised = False
+    try:
+        trader._emit_quant_event(
+            "log_bankroll_rank_evaluation",
+            {
+                "bankroll_rank": 0.80,
+                "bankroll_family": "MICRO",
+                "capital_state": "HEALTHY",
+                "capital_score": 0.80,
+            },
+        )
+    except AttributeError:
+        raised = True
+
+    assert not raised, "AttributeError raised — log_bankroll_rank_evaluation still not wired"
