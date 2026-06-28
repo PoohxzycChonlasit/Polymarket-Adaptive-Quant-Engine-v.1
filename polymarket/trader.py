@@ -44,6 +44,7 @@ from polymarket.bankroll_tiers import (
     get_tier_config,
 )
 from polymarket.bankroll_rank_engine import BankrollRankEngine
+from polymarket.market_availability_engine import MarketAvailabilityEngine, MarketAvailabilityState
 from polymarket.risk_modes import (
     RiskMode,
     RiskModeDecision,
@@ -474,10 +475,14 @@ class PolymarketTrader:
         )
         self.bankroll_rank_engine = BankrollRankEngine()
         self._last_bankroll_rank_lock_log = ""
+        # Market availability scheduler — observability/resource guard only.
+        self.market_availability_engine = MarketAvailabilityEngine(self.settings)
         # P0.5 observability — persisted for trade_open carry-forward only.
         # Never read by risk_plan, sizing, order_intent, or execution paths.
-        self._last_bankroll_rank: float | None = None
+        # bankroll_rank is a tier-string (e.g. "T0_MICRO_SEED"); capital_score is the float.
+        self._last_bankroll_rank: str | None = None
         self._last_bankroll_family: str | None = None
+        self._last_capital_score: float | None = None
         self.last_quant_details: dict[str, dict[str, object]] = {}
         self._last_orderbook_age_ms: dict[str, int] = {}
         # Batch 3B-1: these 8 fields now live in TraderObservabilityHelper;
@@ -4934,9 +4939,10 @@ class PolymarketTrader:
                 "confidence": selected_confidence,
                 **self._size_sharp_metadata(model_context.get("size_sharp_result")),
                 # P0.5: bankroll rank and capital quality — observability-only carry-forward
+                # bankroll_rank = tier-string; capital_score = float numeric score
                 "bankroll_rank": self._last_bankroll_rank,
                 "bankroll_family": self._last_bankroll_family,
-                "capital_score": float(getattr(self.bankroll_state, "capital_score", None) or 0.0) or None,
+                "capital_score": self._last_capital_score,
                 # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
                 **self._build_entry_model_truth_envelope(
                     true_probability=selected_probability,
@@ -5065,8 +5071,9 @@ class PolymarketTrader:
             "promotion_candidate": metadata.get("promotion_candidate") if isinstance(metadata, dict) else None,
             "demotion_candidate": metadata.get("demotion_candidate") if isinstance(metadata, dict) else None,
             "expected_risk_profile": metadata.get("expected_risk_profile") if isinstance(metadata, dict) else None,
-            # P0.5: bankroll rank carry from entry metadata — observability only
+            # P0.5: bankroll rank and capital score carry from entry metadata — observability only
             "bankroll_rank": metadata.get("bankroll_rank") if isinstance(metadata, dict) else None,
+            "capital_score": metadata.get("capital_score") if isinstance(metadata, dict) else None,
             **self._size_sharp_close_carry(metadata),
             
             # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
@@ -6281,10 +6288,10 @@ class PolymarketTrader:
         state.expected_risk_profile = evaluation["expected_risk_profile"]
         # P0.5: persist rank for observability carry-forward into trade_open payload.
         # These attributes are read ONLY in emit helpers — never by sizing or risk paths.
-        # bankroll_rank_engine["bankroll_rank"] is a tier-string (e.g. "T0_MICRO_SEED");
-        # the canonical builder expects a float. Use capital_score (the numeric quality score)
-        # for the float slot; the tier string is already in bankroll_tier_id.
-        self._last_bankroll_rank = evaluation.get("capital_score")
+        # bankroll_rank = tier-string (e.g. "T0_MICRO_SEED") — categorical field
+        # capital_score = float (e.g. 1.0) — numeric quality score
+        self._last_bankroll_rank = evaluation.get("bankroll_rank")
+        self._last_capital_score = evaluation.get("capital_score")
         self._last_bankroll_family = evaluation.get("bankroll_family")
 
         # Log and emit evaluation telemetry
@@ -13295,6 +13302,20 @@ class PolymarketTrader:
             self._emit_cycle_selection_probe_event(early_return_reason="risk_pause")
             self._finish_cycle_timing(reason="cycle_end_risk_pause", force=True)
             return []
+
+        # Market availability guard — skip expensive scan if no 5m markets scheduled.
+        if getattr(self.settings, "enable_market_availability_guard", True):
+            avail = self.market_availability_engine.check()
+            self._emit_quant_event("log_market_availability_check", avail.to_telemetry_payload())
+            if avail.should_skip_scan():
+                LOGGER.info(
+                    "[MAE] skip scan state=%s next_check=%ds",
+                    avail.state.value,
+                    avail.next_check_seconds,
+                )
+                self._maybe_log_cycle_summary()
+                self._finish_cycle_timing(reason=f"cycle_end_market_{avail.state.value.lower()}", force=True)
+                return []
 
         markets = self._select_markets(top_n=top_n)
 

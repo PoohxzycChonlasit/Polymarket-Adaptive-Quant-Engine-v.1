@@ -648,7 +648,7 @@ class CanonicalContextBuilder:
             "realized_pnl_before": _to_float(extract_field(events, "realized_pnl_before")),
             "unrealized_pnl_before": _to_float(extract_field(events, "unrealized_pnl_before")),
             "bankroll_tier_id": extract_field(events, "bankroll_tier_id", "tier"),
-            "bankroll_rank": _to_float(extract_field(events, "bankroll_rank")),
+            "bankroll_rank": extract_field(events, "bankroll_rank"),  # tier-string e.g. "T0_MICRO_SEED"
             "risk_mode": extract_field(events, "risk_mode") or "NORMAL",
             "risk_budget": _to_float(extract_field(events, "risk_budget", "remaining_risk_budget")),
             "max_order_usd": _to_float(extract_field(events, "max_order_usd", "live_max_order_usd")),

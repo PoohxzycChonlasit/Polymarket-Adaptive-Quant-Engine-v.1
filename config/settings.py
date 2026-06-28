@@ -169,6 +169,14 @@ class Settings(BaseSettings):
     arb_unwind_on_partial_fill: bool = True
     arb_max_active_markets_small_bankroll: int = 1
 
+    # ── Market Availability Scheduler (observability-only) ─────────────────────
+    enable_market_availability_guard: bool = True
+    market_availability_cache_ttl_sec: int = 30
+    market_between_epochs_sleep_sec: int = 15
+    market_not_scheduled_sleep_sec: int = 300
+    market_api_unavailable_base_sleep_sec: int = 60
+    market_api_unavailable_max_sleep_sec: int = 600
+
     # ── Take Profit & Let Profit Run (v3.1) ────────────────────────────────────
     tp_partial_pct: float = 0.05            # Partial TP at 5% unrealized profit (sell 50%)
     tp_full_pct: float = 0.10               # Full TP at 10% unrealized profit (sell 100%)

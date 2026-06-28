@@ -76,6 +76,7 @@ class QuantEventLogger:
         "delta_shadow": "delta_shadow",
         "ghost_position_detected": "system_health",
         "bankroll_rank_evaluation": "research_log",
+        "market_availability_check": "research_log",
     }
 
     # Mapping from internal logger category → canonical stream event type
@@ -96,6 +97,7 @@ class QuantEventLogger:
         "delta_shadow": "sizing_evaluated_v1",
         "ghost_position_detected": "ghost_position_detected_v1",
         "bankroll_rank_evaluation": "bankroll_rank_evaluated_v1",
+        "market_availability_check": "market_availability_checked_v1",
     }
 
     _STREAM_PRIORITY_MAP: dict[str, str] = {
@@ -115,6 +117,7 @@ class QuantEventLogger:
         "delta_shadow": "NORMAL",
         "ghost_position_detected": "CRITICAL",
         "bankroll_rank_evaluation": "NORMAL",
+        "market_availability_check": "NORMAL",
     }
 
     def __init__(
@@ -211,6 +214,15 @@ class QuantEventLogger:
         bankroll_rank, bankroll_family, capital_state, capital_score. Observability-only.
         """
         return self._write_event("bankroll_rank_evaluation", payload)
+
+    def log_market_availability_check(self, payload: dict[str, Any] | None = None) -> bool:
+        """Write a market_availability_check event to research_log.
+
+        Emitted each time MarketAvailabilityEngine.check() queries the Gamma API.
+        Payload includes state, active_market_count, symbols_available, next_check_seconds.
+        Observability-only — never modifies strategy or execution.
+        """
+        return self._write_event("market_availability_check", payload)
 
     def _write_event(self, event_type: str, payload: dict[str, Any] | None) -> bool:
         category = self._CATEGORY_BY_METHOD[event_type]
