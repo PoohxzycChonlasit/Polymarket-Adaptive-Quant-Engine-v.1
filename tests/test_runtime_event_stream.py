@@ -423,7 +423,7 @@ def _build_event(seq: int, event_type: str, session_id: str = "sess_001") -> dic
 
 
 def test_replay_filter_by_event_type(tmp_path):
-    from tools.runtime_event_replay import _find_files, _read_events
+    from tools.replay.runtime_event_replay import _find_files, _read_events
 
     outdir = tmp_path / "event_stream"
     evts = [_build_event(i, "candidate_generated_v1" if i % 2 == 0 else "go_no_go_decision_v1") for i in range(1, 7)]
@@ -436,7 +436,7 @@ def test_replay_filter_by_event_type(tmp_path):
 
 
 def test_replay_filter_by_session_id(tmp_path):
-    from tools.runtime_event_replay import _find_files, _read_events
+    from tools.replay.runtime_event_replay import _find_files, _read_events
 
     outdir = tmp_path / "event_stream"
     evts = [
@@ -453,7 +453,7 @@ def test_replay_filter_by_session_id(tmp_path):
 
 
 def test_replay_from_sequence(tmp_path):
-    from tools.runtime_event_replay import _find_files, _read_events
+    from tools.replay.runtime_event_replay import _find_files, _read_events
 
     outdir = tmp_path / "event_stream"
     evts = [_build_event(i, "test_v1") for i in range(1, 11)]
@@ -467,7 +467,7 @@ def test_replay_from_sequence(tmp_path):
 
 
 def test_replay_limit(tmp_path):
-    from tools.runtime_event_replay import _find_files, _read_events
+    from tools.replay.runtime_event_replay import _find_files, _read_events
 
     outdir = tmp_path / "event_stream"
     evts = [_build_event(i, "test_v1") for i in range(1, 11)]
@@ -479,7 +479,7 @@ def test_replay_limit(tmp_path):
 
 
 def test_replay_summary(tmp_path, capsys):
-    from tools.runtime_event_replay import _print_summary
+    from tools.replay.runtime_event_replay import _print_summary
 
     evts = [
         _build_event(1, "alpha_v1"),
@@ -495,7 +495,7 @@ def test_replay_summary(tmp_path, capsys):
 
 
 def test_replay_find_files_empty_dir(tmp_path):
-    from tools.runtime_event_replay import _find_files
+    from tools.replay.runtime_event_replay import _find_files
 
     outdir = tmp_path / "empty"
     outdir.mkdir()

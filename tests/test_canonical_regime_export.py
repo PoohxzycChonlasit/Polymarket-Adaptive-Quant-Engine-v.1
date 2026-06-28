@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import tools.canonical_regime_export as cre
+import tools.canonical.canonical_regime_export as cre
 
 
 def _event(event_type: str, timestamp: str, payload: dict, *, run_id: str = "run-1") -> dict:
