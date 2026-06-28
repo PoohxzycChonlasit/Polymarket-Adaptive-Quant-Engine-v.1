@@ -93,6 +93,9 @@
     "polymarket/observability/trader_decision_diagnostics.py": [
       "tests/polymarket/test_trader_decision_diagnostics.py"
     ],
+    "polymarket/observability/trader_orderbook_lineage.py": [
+      "tests/observability/test_trader_orderbook_lineage.py"
+    ],
     "polymarket/opportunity_scanner.py": [
       "tests/integration/test_shadow_filters.py",
       "tests/other/test_candidate_identity.py",
@@ -186,6 +189,7 @@
       "tests/observability/test_candidate_instance_shadow_propagation.py",
       "tests/observability/test_telemetry_backfill.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_orderbook_lineage.py",
       "tests/observability/test_zero_size_risk_floor_probe.py",
       "tests/polymarket/test_bankroll_rank_engine.py",
       "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -638,6 +642,10 @@
     ],
     "tests/observability/test_trade_open_model_visibility_serialization.py": [
       "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_orderbook_lineage.py": [
+      "polymarket/observability/trader_orderbook_lineage.py",
       "polymarket/trader.py"
     ],
     "tests/observability/test_zero_size_risk_floor_probe.py": [

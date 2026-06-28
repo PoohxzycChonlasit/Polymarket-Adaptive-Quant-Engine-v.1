@@ -2412,7 +2412,7 @@
     {
       "priority": 126,
       "task_id": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Extract _build_orderbook_lineage_probe_payload into polymarket/observability/trader_orderbook_lineage.py with retained wrapper and golden equivalence tests.",
@@ -2428,7 +2428,28 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md"
       ],
-      "notes": "READY as first roadmap extraction. Target method is 261 lines, pure observability, and has zero self-writes. Must use wrapper delegation, golden equivalence tests, py_compile, bounded tests/observability tests/polymarket, and AIROS refresh. Do not touch execution, risk, sizing, wallet/balance, order submission, live/paper behavior, config, or .env."
+      "notes": "DONE. Extracted _build_orderbook_lineage_probe_payload and related helper functions (orderbook_lineage_side_status, orderbook_lineage_compact_text, orderbook_lineage_raw_count, orderbook_lineage_current_fetch_status, orderbook_age_ms, is_empty_orderbook_error) into polymarket/observability/trader_orderbook_lineage.py. Verified equivalence via wrapper-vs-builder tests. 680 tests passed."
+    },
+    {
+      "priority": 127,
+      "task_id": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract orderbook details/status helper methods (_orderbook_refresh_observability_detail, etc.) into polymarket/observability/trader_orderbook_details.py.",
+      "blocked_by": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/trader_orderbook_details.py",
+        "tests/observability/",
+        "tests/polymarket/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md"
+      ],
+      "notes": "READY. Extraction of the next layer of orderbook/cadence details helper methods. Preserve backward compatibility and wrapper delegation."
     }
   ]
 }

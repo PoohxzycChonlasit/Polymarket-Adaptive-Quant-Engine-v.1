@@ -2130,5 +2130,62 @@
       "phase_4_plus": "execution/risk/sizing deferred architecture review"
     },
     "next_recommendation": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+    "task_class": 6,
+    "scope": [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_orderbook_lineage.py",
+      "tests/observability/test_trader_orderbook_lineage.py",
+      "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
+      "docs/operations/execution_contracts/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001_CONTRACT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "B+C",
+    "commits": [
+      "pending-at-commit-time"
+    ],
+    "commit_messages": [
+      "refactor: extract trader orderbook lineage helpers"
+    ],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "methods_extracted": [
+        "_build_orderbook_lineage_probe_payload",
+        "_orderbook_lineage_compact_text",
+        "_orderbook_lineage_raw_count",
+        "_orderbook_lineage_side_status",
+        "_orderbook_lineage_current_fetch_status",
+        "_orderbook_age_ms",
+        "_is_empty_orderbook_error"
+      ],
+      "delegation_retained": true,
+      "test_suite_passed": true
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "active_loop_memory_pointer_used": true,
+      "methods_extracted_cleanly": true,
+      "unit_tests_passed": true,
+      "equivalence_verified": true,
+      "report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true,
+      "active_loop_memory_updated": true
+    },
+    "verdict": "PASS",
+    "next_recommendation": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001"
   }
 ]

@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_MODULARIZATION_PROGRAM_001 complete - design roadmap created; next executable is Phase 3A orderbook lineage observability extraction",
-    "last_completed_task": "TRADER_MODULARIZATION_PROGRAM_001",
+    "current_phase": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001 complete; next is Phase 3B orderbook details",
+    "last_completed_task": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
     "last_commit": "pending-at-commit-time",
-    "last_commit_message": "docs: add trader modularization roadmap",
-    "next_task": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+    "last_commit_message": "refactor: extract trader orderbook lineage helpers",
+    "next_task": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -30,9 +30,9 @@
         ]
     },
     "decomposition_state": {
-        "trader_py_lines": 13010,
-        "trader_py_methods": 305,
-        "phases_completed": 2,
+        "trader_py_lines": 12811,
+        "trader_py_methods": 298,
+        "phases_completed": 3,
         "phases_planned": 9,
         "already_extracted": [
             "shadow_policy.py",
@@ -40,7 +40,8 @@
             "bankroll_rank_engine.py",
             "size_sharp_engine.py",
             "polymarket/observability/trader_lifecycle_observability.py",
-            "polymarket/observability/trader_decision_diagnostics.py"
+            "polymarket/observability/trader_decision_diagnostics.py",
+            "polymarket/observability/trader_orderbook_lineage.py"
         ],
         "target_trader_py_lines_after_phase8": 5000
     },
@@ -67,7 +68,7 @@
     "blocked": false,
     "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
     "refactor_state": {
-        "trader_py_lines": 13010,
+        "trader_py_lines": 12811,
         "completed_batches": [
             "Batch-1",
             "Batch-2A",
@@ -77,9 +78,10 @@
             "Batch-3B-dedup",
             "Batch-3C-observability",
             "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
-            "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001"
+            "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+            "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+        "next_batch": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
     },
@@ -115,7 +117,7 @@
         "paper_win_rate": 0.629,
         "gross_pnl": 347.43,
         "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
-        "next_task": "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+        "next_task": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
         "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
     },
     "canonical_trade_context": {
@@ -125,5 +127,5 @@
         "compiler_script": "tools/canonical_trade_context_builder.py",
         "test_suite": "tests/test_canonical_trade_context_builder.py"
     },
-    "notes": "Decomposition plan complete. Inventoried 35 polymarket/ files (14 SAFE_MOVE candidates), 166 tests/ files (6 subfolder groups), 304 trader.py methods (grouped by risk: 37 SAFE_OBSERVABILITY, 29 MEDIUM_ORCHESTRATION, 45 HIGH_RUNTIME_RISK DO_NOT_TOUCH). Target: polymarket/observability/, polymarket/models/, polymarket/market/, polymarket/backtest/. First executable task: TESTS_AIROS_SUBFOLDER_BATCH_001 (5 test_airos_ files to tests/airos/). Trader.py extraction deferred to Phase E+ pending blast-radius graph approval."
+    "notes": "Phase 3A orderbook lineage observability extraction complete. Extracted _build_orderbook_lineage_probe_payload and helper methods from trader.py into polymarket/observability/trader_orderbook_lineage.py. Verified equivalence with wrappers. 680 tests passed."
 }

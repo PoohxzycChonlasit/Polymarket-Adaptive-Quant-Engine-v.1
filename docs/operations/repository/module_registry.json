@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T18:24:19.333793Z",
-  "module_count": 436,
+  "generated_at_utc": "2026-06-28T18:46:11.016386Z",
+  "module_count": 438,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -993,13 +993,35 @@
       "domain": "polymarket",
       "package": "polymarket/observability",
       "line_count": 192,
-      "blast_radius_score": 3,
+      "blast_radius_score": 6,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
+        "polymarket/observability/trader_orderbook_lineage.py",
         "polymarket/trader.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/trader_orderbook_lineage.py",
+      "module_name": "polymarket.observability.trader_orderbook_lineage",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 321,
+      "blast_radius_score": 9,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": true,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/trader_lifecycle_observability.py"
+      ],
+      "reverse_importers": [
+        "polymarket/trader.py",
+        "tests/observability/test_trader_orderbook_lineage.py"
       ],
       "tests": [],
       "safe_move_status": "DO_NOT_MOVE",
@@ -1394,8 +1416,8 @@
       "module_name": "polymarket.trader",
       "domain": "polymarket",
       "package": "polymarket",
-      "line_count": 13010,
-      "blast_radius_score": 270,
+      "line_count": 12808,
+      "blast_radius_score": 276,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
       "do_not_touch": true,
@@ -1415,6 +1437,7 @@
         "polymarket/observability/shadow_telemetry.py",
         "polymarket/observability/trader_decision_diagnostics.py",
         "polymarket/observability/trader_lifecycle_observability.py",
+        "polymarket/observability/trader_orderbook_lineage.py",
         "polymarket/observability/trader_presentation.py",
         "polymarket/opportunity_scanner.py",
         "polymarket/orchestration/trader_lifecycle.py",
@@ -1468,6 +1491,7 @@
         "tests/observability/test_candidate_instance_shadow_propagation.py",
         "tests/observability/test_telemetry_backfill.py",
         "tests/observability/test_trade_open_model_visibility_serialization.py",
+        "tests/observability/test_trader_orderbook_lineage.py",
         "tests/observability/test_zero_size_risk_floor_probe.py",
         "tests/polymarket/test_bankroll_rank_engine.py",
         "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -3668,6 +3692,28 @@
         "polymarket/trader.py"
       ],
       "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tests/observability/test_trader_orderbook_lineage.py",
+      "module_name": "tests.observability.test_trader_orderbook_lineage",
+      "domain": "tests",
+      "package": "tests/observability",
+      "line_count": 149,
+      "blast_radius_score": 6,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": true,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/trader_orderbook_lineage.py",
+        "polymarket/trader.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "polymarket/observability/trader_orderbook_lineage.py",
+        "polymarket/trader.py"
+      ],
+      "safe_move_status": "DO_NOT_MOVE",
       "recommended_target_folder": null
     },
     {
