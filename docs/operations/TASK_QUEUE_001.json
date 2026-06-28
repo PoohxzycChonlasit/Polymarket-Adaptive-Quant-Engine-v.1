@@ -1613,6 +1613,46 @@
         "docs/reports/REPOSITORY_PHASE0_ROOT_CLEANUP_001.md"
       ],
       "notes": "DONE. Handoffs moved to docs/operations/handoffs/. Research/planning docs moved to docs/research/. VULTR_PAPER_RUN moved to docs/operations/. No runtime, strategy, sizing, risk, execution, dashboard, Telegram, tests, tools, .env, or live/paper behavior changes."
+    },
+    {
+      "priority": -5,
+      "task_id": "REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Audit tools/ and produce a safe phased migration plan before moving any tool scripts into subfolders.",
+      "blocked_by": "REPOSITORY_PHASE0_ROOT_CLEANUP_001",
+      "allowed_scope": [
+        "docs/reports/REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001.md",
+        "docs/architecture/TOOLS_STRUCTURE_TARGET_001.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001.md",
+        "docs/architecture/TOOLS_STRUCTURE_TARGET_001.md"
+      ],
+      "notes": "DONE. Design only; no tools moved or edited. Inventory found 81 root tools/*.py, existing structured tools/backtest_engine_v2/ and tools/flaos/, and only one strict no-import-risk move candidate."
+    },
+    {
+      "priority": -4,
+      "task_id": "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Move the single no-import-risk tool script into tools/probes/ and validate no stale references.",
+      "blocked_by": "REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001",
+      "allowed_scope": [
+        "tools/silent_zone_selection_probe.py",
+        "tools/probes/silent_zone_selection_probe.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001.md"
+      ],
+      "notes": "Move only tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py. Validate with git diff --name-status, rg old path/module references, and py_compile moved script only. Do not run pytest, builders, backtests, live, or paper sessions."
     }
   ]
 }
