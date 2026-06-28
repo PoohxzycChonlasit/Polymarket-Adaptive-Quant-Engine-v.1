@@ -33,7 +33,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.convergence_regime_classification_replay import (
+from tools.replay.convergence_regime_classification_replay import (
     ALL_REGIMES,
     LATE_REVERSAL,
     NO_CONVERGENCE,
@@ -529,7 +529,7 @@ class TestPnLByRegime:
 
     def test_regime_aggregate_totals_pnl_correctly(self):
         # Two YES-settled REAL positions + one NO-settled PSEUDO
-        from tools.convergence_regime_classification_replay import _regime_aggregate
+        from tools.replay.convergence_regime_classification_replay import _regime_aggregate
         pos = [
             {
                 "asset": "BTC", "market_key": "k1", "epoch_start_ts": 1,
@@ -817,7 +817,7 @@ class TestNoRuntimeImports:
     def test_no_runtime_modules_imported(self):
         import ast
         import inspect
-        import tools.convergence_regime_classification_replay as mod
+        import tools.replay.convergence_regime_classification_replay as mod
 
         src  = inspect.getsource(mod)
         tree = ast.parse(src)

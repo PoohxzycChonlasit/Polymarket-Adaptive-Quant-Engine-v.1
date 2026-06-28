@@ -108,11 +108,11 @@ TOOL_TO_PREFIX = {
     "tools.semantic_c_shadow_fill_replay": "sem_c_fill_replay",
     "tools.semantic_c_shadow_pnl_truth": "sem_c_pnl_truth",
     "tools.semantic_c_inventory_continuity_replay": "sem_c_inv_continuity",
-    "tools.lifecycle_profit_management_replay": "lifecycle_pm",
-    "tools.commitment_regime_replay": "commitment_regime",
-    "tools.exit_convergence_intelligence_replay": "exit_convergence",
-    "tools.convergence_regime_classification_replay": "conv_regime",
-    "tools.stabilization_survival_replay": "stab_survival",
+    "tools.replay.lifecycle_profit_management_replay": "lifecycle_pm",
+    "tools.replay.commitment_regime_replay": "commitment_regime",
+    "tools.replay.exit_convergence_intelligence_replay": "exit_convergence",
+    "tools.replay.convergence_regime_classification_replay": "conv_regime",
+    "tools.replay.stabilization_survival_replay": "stab_survival",
 }
 
 
@@ -190,11 +190,11 @@ def test_deterministic_order_in_manifest_and_commands(tmp_path: Path) -> None:
         "tools.semantic_c_shadow_fill_replay",
         "tools.semantic_c_shadow_pnl_truth",
         "tools.semantic_c_inventory_continuity_replay",
-        "tools.lifecycle_profit_management_replay",
-        "tools.commitment_regime_replay",
-        "tools.exit_convergence_intelligence_replay",
-        "tools.convergence_regime_classification_replay",
-        "tools.stabilization_survival_replay",
+        "tools.replay.lifecycle_profit_management_replay",
+        "tools.replay.commitment_regime_replay",
+        "tools.replay.exit_convergence_intelligence_replay",
+        "tools.replay.convergence_regime_classification_replay",
+        "tools.replay.stabilization_survival_replay",
     ]
 
 

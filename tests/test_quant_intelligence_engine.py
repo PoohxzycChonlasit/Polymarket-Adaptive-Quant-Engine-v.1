@@ -1,7 +1,7 @@
 import json
 import tempfile
 from pathlib import Path
-from tools.quant_intelligence_engine import (
+from tools.research.quant_intelligence_engine import (
     EvidenceCollector,
     EvidenceCompiler,
     EvidenceStore,

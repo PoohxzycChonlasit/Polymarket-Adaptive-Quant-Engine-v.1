@@ -19,7 +19,7 @@ import pytest
 _REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_REPO))
 
-from tools.commitment_regime_replay import (
+from tools.replay.commitment_regime_replay import (
     CANDIDATE_GUARD_ACCURACY_THR,
     CANDIDATE_GUARD_PRECISION_THR,
     CONSERVATIVE_VOL_SCALE,
@@ -596,7 +596,7 @@ class TestHighCommitmentFalsePositiveCount:
 # ===========================================================================
 
 class TestNoRuntimeImportASTScan:
-    TOOL_PATH = _REPO / "tools" / "commitment_regime_replay.py"
+    TOOL_PATH = _REPO / "tools" / "replay" / "commitment_regime_replay.py"
     RUNTIME_MODULES = frozenset({
         "polymarket", "utils", "config", "main",
         "trader", "risk_manager", "order_manager",

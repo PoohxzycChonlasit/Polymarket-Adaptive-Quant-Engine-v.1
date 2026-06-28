@@ -36,7 +36,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.lifecycle_profit_management_replay import (
+from tools.replay.lifecycle_profit_management_replay import (
     _DECAY_THRESHOLD,
     _DECAY_SR_WINDOW,
     _DECAY_PEAK_MIN,
@@ -129,7 +129,7 @@ def _run_policy(policy_idx: int, events: list[dict], smap: dict,
     if timelines is None:
         timelines = {}
     sim = simulate_lifecycle_policy(events, smap, timelines, POLICIES[policy_idx], bankroll)
-    from tools.lifecycle_profit_management_replay import _policy_report
+    from tools.replay.lifecycle_profit_management_replay import _policy_report
     bl = 0.0
     if policy_idx > 0:
         sim_a  = simulate_lifecycle_policy(events, smap, timelines, POLICIES[0], bankroll)
@@ -665,7 +665,7 @@ class TestNoRuntimeImports:
     def test_no_runtime_modules_imported(self):
         import ast
         import inspect
-        import tools.lifecycle_profit_management_replay as mod
+        import tools.replay.lifecycle_profit_management_replay as mod
 
         src  = inspect.getsource(mod)
         tree = ast.parse(src)

@@ -66,11 +66,11 @@ REPLAY_STEPS: tuple[ReplayStep, ...] = (
     ReplayStep(1, "semantic_c_shadow_fill_replay",            "tools.semantic_c_shadow_fill_replay",             None, "sem_c_fill_replay"),
     ReplayStep(2, "semantic_c_shadow_pnl_truth",              "tools.semantic_c_shadow_pnl_truth",               None, "sem_c_pnl_truth"),
     ReplayStep(3, "semantic_c_inventory_continuity_replay",   "tools.semantic_c_inventory_continuity_replay",    None, "sem_c_inv_continuity"),
-    ReplayStep(4, "lifecycle_profit_management_replay",       "tools.lifecycle_profit_management_replay",        None, "lifecycle_pm"),
-    ReplayStep(5, "commitment_regime_replay",                 "tools.commitment_regime_replay",                  None, "commitment_regime"),
-    ReplayStep(6, "exit_convergence_intelligence_replay",     "tools.exit_convergence_intelligence_replay",      None, "exit_convergence"),
-    ReplayStep(7, "convergence_regime_classification_replay", "tools.convergence_regime_classification_replay",  None, "conv_regime"),
-    ReplayStep(8, "stabilization_survival_replay",            "tools.stabilization_survival_replay",             None, "stab_survival"),
+    ReplayStep(4, "lifecycle_profit_management_replay",       "tools.replay.lifecycle_profit_management_replay", None, "lifecycle_pm"),
+    ReplayStep(5, "commitment_regime_replay",                 "tools.replay.commitment_regime_replay",           None, "commitment_regime"),
+    ReplayStep(6, "exit_convergence_intelligence_replay",     "tools.replay.exit_convergence_intelligence_replay", None, "exit_convergence"),
+    ReplayStep(7, "convergence_regime_classification_replay", "tools.replay.convergence_regime_classification_replay", None, "conv_regime"),
+    ReplayStep(8, "stabilization_survival_replay",            "tools.replay.stabilization_survival_replay",      None, "stab_survival"),
 )
 
 

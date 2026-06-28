@@ -31,7 +31,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.exit_convergence_intelligence_replay import (
+from tools.replay.exit_convergence_intelligence_replay import (
     _CONV_PERSIST_N,
     _CONV_PROXY_BAND,
     _CONV_REVERSAL_THRESHOLD,
@@ -118,7 +118,7 @@ def _run_policy(
     timelines: dict | None = None,
     bankroll: float = 20.0,
 ) -> dict:
-    from tools.exit_convergence_intelligence_replay import _policy_report
+    from tools.replay.exit_convergence_intelligence_replay import _policy_report
     tl = timelines or {}
     # Policy A baseline first (needed for uplift reference)
     pos_a = simulate_convergence_policy(events, smap, tl, POLICIES[0], bankroll)
@@ -558,7 +558,7 @@ class TestVerdictBranches:
     def test_convergence_unstable_verdict_string(self):
         # Directly trigger convergence_unstable verdict by mocking report data
         # by setting up enough false convergence exits in a direct function call
-        from tools.exit_convergence_intelligence_replay import _policy_report
+        from tools.replay.exit_convergence_intelligence_replay import _policy_report
         # Simulate positions where 100% of convergence exits are false
         positions = []
         for i in range(12):
@@ -630,7 +630,7 @@ class TestFalsePositiveCost:
 
     def test_fp_cost_aggregated_in_policy_report(self):
         # Two positions: one with false exit + cost, one without
-        from tools.exit_convergence_intelligence_replay import _policy_report
+        from tools.replay.exit_convergence_intelligence_replay import _policy_report
         pos = [
             {
                 "asset": "BTC", "market_key": "pm-5m-btc",
@@ -707,7 +707,7 @@ class TestLateUncertaintyExpansion:
 
     def test_expansion_count_aggregated_in_policy_report(self):
         # Set up two epochs: one with expansion, one without
-        from tools.exit_convergence_intelligence_replay import _policy_report
+        from tools.replay.exit_convergence_intelligence_replay import _policy_report
         pos = [
             {"asset": "BTC", "market_key": "k1", "epoch_start_ts": 1, "entry_price": 0.29,
              "shadow_size_usd": 0.68, "shadow_pct_bankroll": 3.4, "entry_sr": 250.0,
@@ -766,7 +766,7 @@ class TestNoRuntimeImports:
     def test_no_runtime_modules_imported(self):
         import ast
         import inspect
-        import tools.exit_convergence_intelligence_replay as mod
+        import tools.replay.exit_convergence_intelligence_replay as mod
 
         src  = inspect.getsource(mod)
         tree = ast.parse(src)
