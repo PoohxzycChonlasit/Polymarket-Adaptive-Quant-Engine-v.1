@@ -5,9 +5,9 @@ Offline aggregation tool that reads decision_log JSONL and optional research_log
 lifecycle milestone events to produce structured no-entry diagnostics.
 
 Usage:
-    python -m tools.no_entry_root_cause_report --date 2026-05-14
-    python -m tools.no_entry_root_cause_report --date 2026-05-14 --write-report
-    python -m tools.no_entry_root_cause_report --date 2026-05-14 --run-id <run_id>
+    python -m tools.research.no_entry_root_cause_report --date 2026-05-14
+    python -m tools.research.no_entry_root_cause_report --date 2026-05-14 --write-report
+    python -m tools.research.no_entry_root_cause_report --date 2026-05-14 --run-id <run_id>
 
 Output:
     Console summary + optional runtime/reports/no_entry_root_cause_YYYY-MM-DD.json

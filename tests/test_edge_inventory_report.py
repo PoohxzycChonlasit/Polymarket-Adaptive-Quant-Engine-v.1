@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.edge_inventory_report import (
+from tools.unknown.edge_inventory_report import (
     ATTRIBUTION_FIELDS,
     NOT_READY_METRICS,
     build_report,

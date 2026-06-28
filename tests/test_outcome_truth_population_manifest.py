@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.outcome_truth_population_manifest import (
+from tools.outcome_truth.outcome_truth_population_manifest import (
     PopulationManifestError,
     generate_population_manifest,
 )
@@ -234,7 +234,7 @@ def test_model_ready_row_without_probability_fails_closed(tmp_path: Path) -> Non
 
 
 def test_source_jsonl_is_streamed_without_whole_file_loading() -> None:
-    import tools.outcome_truth_population_manifest as target_module
+    import tools.outcome_truth.outcome_truth_population_manifest as target_module
     source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     attributes = [

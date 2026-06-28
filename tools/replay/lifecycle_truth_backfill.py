@@ -12,7 +12,7 @@ from tools.shadow.cross_run_lifecycle_truth import (
     build_cross_run_lifecycle_truth,
     write_cross_run_lifecycle_truth,
 )
-from tools.lifecycle_truth_tables import build_lifecycle_truth_tables, write_lifecycle_truth_tables
+from tools.unknown.lifecycle_truth_tables import build_lifecycle_truth_tables, write_lifecycle_truth_tables
 from tools.replay_analyzer import DEFAULT_QUANT_DATA_DIR, DEFAULT_REPORT_DIR, RunIdSummary, discover_run_ids
 
 

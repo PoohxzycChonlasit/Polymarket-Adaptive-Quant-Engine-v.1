@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import pytest
-from tools.canonical_trade_context_builder import (
+from tools.runtime.canonical_trade_context_builder import (
     CanonicalContextBuilder,
     uuid_hash_key,
     _classify_event,

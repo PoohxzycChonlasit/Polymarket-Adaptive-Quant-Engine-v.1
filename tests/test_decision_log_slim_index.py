@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.decision_log_slim_index import build_decision_log_slim_index, is_safe_scratch_output
+from tools.unknown.decision_log_slim_index import build_decision_log_slim_index, is_safe_scratch_output
 
 
 def _write_jsonl(path: Path, rows: list[dict | str]) -> None:
@@ -187,7 +187,7 @@ def test_output_outside_scratch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_no_forbidden_imports() -> None:
-    import tools.decision_log_slim_index as target_module
+    import tools.unknown.decision_log_slim_index as target_module
     tree = ast.parse(Path(target_module.__file__).read_text(encoding="utf-8"))
     imports: set[str] = set()
     for node in ast.walk(tree):

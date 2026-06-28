@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.research_state_writer import (
+from tools.research.research_state_writer import (
     COMPACT_SIZE_TARGET_BYTES,
     build_research_state,
     main,

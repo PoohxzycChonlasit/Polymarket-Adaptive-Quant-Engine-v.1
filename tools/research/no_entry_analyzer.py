@@ -393,9 +393,9 @@ def print_missing_date_diagnostics(
         print("- (none)")
     print(f"nearest date with data: {nearest or '(none)'}")
     if nearest:
-        print(f"suggestion: python -m tools.no_entry_analyzer --date {nearest}")
+        print(f"suggestion: python -m tools.research.no_entry_analyzer --date {nearest}")
     else:
-        print("suggestion: run python -m tools.no_entry_analyzer --list-dates after the bot writes logs")
+        print("suggestion: run python -m tools.research.no_entry_analyzer --list-dates after the bot writes logs")
 
 
 def _load_jsonl_events(path: Path, *, time_filter: dict[str, Any] | None = None) -> tuple[list[dict[str, Any]], int]:

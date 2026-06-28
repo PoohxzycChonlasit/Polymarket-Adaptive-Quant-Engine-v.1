@@ -13,7 +13,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.multi_session_runner import (
+from tools.replay.multi_session_runner import (
     CANONICAL_SR60_POLICY_ID,
     CAUTION_STATUS,
     FULL_COVERAGE_STATUS,
@@ -104,7 +104,7 @@ REPORT_FIXTURES = {
 
 
 TOOL_TO_PREFIX = {
-    "tools.quant_data_quality": "quant_data_quality",
+    "tools.research.quant_data_quality": "quant_data_quality",
     "tools.shadow.semantic_c_shadow_fill_replay": "sem_c_fill_replay",
     "tools.shadow.semantic_c_shadow_pnl_truth": "sem_c_pnl_truth",
     "tools.shadow.semantic_c_inventory_continuity_replay": "sem_c_inv_continuity",
@@ -186,7 +186,7 @@ def test_deterministic_order_in_manifest_and_commands(tmp_path: Path) -> None:
     assert manifest["fixed_replay_order"] == [step.name for step in REPLAY_STEPS]
     command_names = [_tool_key(call) for call in calls]
     assert command_names == [
-        "tools.quant_data_quality",
+        "tools.research.quant_data_quality",
         "tools.shadow.semantic_c_shadow_fill_replay",
         "tools.shadow.semantic_c_shadow_pnl_truth",
         "tools.shadow.semantic_c_inventory_continuity_replay",
@@ -281,7 +281,7 @@ def test_session_isolation_uses_distinct_report_directories(tmp_path: Path) -> N
 
 
 def test_no_runtime_import_ast_scan() -> None:
-    import tools.multi_session_runner as target_module
+    import tools.replay.multi_session_runner as target_module
     source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     forbidden = ("polymarket", "utils", "config", "main")
@@ -444,14 +444,14 @@ def test_replay_command_recording_includes_run_id_and_report_dir(tmp_path: Path)
     )
 
     command = manifest["sessions"][0]["steps"][0]["command_record"]["command"]
-    assert command[:3] == ["python", "-m", "tools.quant_data_quality"]
+    assert command[:3] == ["python", "-m", "tools.research.quant_data_quality"]
     assert "--date" in command
     assert _arg_after(command, "--date") == DATE_1
     assert "--write-report" in command
     assert "--report-dir" in command
     assert "--run-id" in command
     assert _arg_after(command, "--run-id") == "run-selected"
-    assert "tools.quant_data_quality" in manifest["sessions"][0]["steps"][0]["command_record"]["command_text"]
+    assert "tools.research.quant_data_quality" in manifest["sessions"][0]["steps"][0]["command_record"]["command_text"]
     assert "tools/quant_data_quality.py" not in manifest["sessions"][0]["steps"][0]["command_record"]["command_text"]
 
 

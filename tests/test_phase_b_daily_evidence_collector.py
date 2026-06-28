@@ -5,7 +5,7 @@ import json
 import pytest
 from pathlib import Path
 
-from tools.phase_b_daily_evidence_collector import (
+from tools.unknown.phase_b_daily_evidence_collector import (
     check_schema_complete,
     calculate_max_drawdown,
     calculate_profit_factor,
@@ -349,7 +349,7 @@ def test_watchlist_status():
 
 def test_worst_case_status_logic():
     """Verify worst-case governance status determination."""
-    from tools.phase_b_daily_report import determine_worst_case_status
+    from tools.unknown.phase_b_daily_report import determine_worst_case_status
     assert determine_worst_case_status(["WATCHLIST", "CANDIDATE", "PROMOTION_REVIEW"]) == "WATCHLIST"
     assert determine_worst_case_status(["PROMOTION_REVIEW", "PROMOTION_REVIEW"]) == "PROMOTION_REVIEW"
     assert determine_worst_case_status(["NOT_READY", "PROMOTION_REVIEW"]) == "NOT_READY"
@@ -394,7 +394,7 @@ def test_snapshot_archiver_and_summary(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     # Import and run archiver
-    from tools.phase_b_snapshot_archiver import run_snapshot_archiver
+    from tools.unknown.phase_b_snapshot_archiver import run_snapshot_archiver
     run_snapshot_archiver()
 
     # Verify snapshot files were created
@@ -414,7 +414,7 @@ def test_snapshot_archiver_and_summary(tmp_path, monkeypatch):
     assert index_data["2026-06-21"]["join_coverage_pct"] == 97.0
 
     # Test summary generator
-    from tools.phase_b_snapshot_summary import generate_7day_summary
+    from tools.runtime.phase_b_snapshot_summary import generate_7day_summary
     generate_7day_summary()
 
     summary_md_path = tmp_path / "scratch" / "phase_b_7day_snapshot_summary.md"

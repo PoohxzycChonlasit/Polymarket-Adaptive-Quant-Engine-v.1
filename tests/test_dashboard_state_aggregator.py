@@ -2,7 +2,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from tools.dashboard_state_aggregator import build_dashboard_state, write_dashboard_state
+from tools.runtime.dashboard_state_aggregator import build_dashboard_state, write_dashboard_state
 
 
 NOW = datetime(2026, 6, 23, 12, 0, 0, tzinfo=timezone.utc)

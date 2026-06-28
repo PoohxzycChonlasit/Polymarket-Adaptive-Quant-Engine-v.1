@@ -70,7 +70,7 @@ class ReplayStep:
 
 
 REPLAY_STEPS: tuple[ReplayStep, ...] = (
-    ReplayStep(0, "data_quality_gate",                        "tools.quant_data_quality",                        None, "quant_data_quality"),
+    ReplayStep(0, "data_quality_gate",                        "tools.research.quant_data_quality",                        None, "quant_data_quality"),
     ReplayStep(1, "semantic_c_shadow_fill_replay",            "tools.shadow.semantic_c_shadow_fill_replay",      None, "sem_c_fill_replay"),
     ReplayStep(2, "semantic_c_shadow_pnl_truth",              "tools.shadow.semantic_c_shadow_pnl_truth",        None, "sem_c_pnl_truth"),
     ReplayStep(3, "semantic_c_inventory_continuity_replay",   "tools.shadow.semantic_c_inventory_continuity_replay", None, "sem_c_inv_continuity"),

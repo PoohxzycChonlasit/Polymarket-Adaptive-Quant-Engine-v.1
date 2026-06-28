@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.official_resolution_acquire_pilot import (
+from tools.outcome_truth.official_resolution_acquire_pilot import (
     CONDITION_RESOLUTION_TOPIC,
     CTF_CONTRACT,
     build_pilot_package,

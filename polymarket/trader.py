@@ -6805,7 +6805,7 @@ class PolymarketTrader:
 
     def _log_session_runtime_evaluation(self) -> None:
         try:
-            from tools.session_runtime_evaluator import evaluate_session_runtime, format_terminal_summary
+            from tools.runtime.session_runtime_evaluator import evaluate_session_runtime, format_terminal_summary
 
             evaluation = evaluate_session_runtime(
                 session_summary=self.paper_session_summary(),

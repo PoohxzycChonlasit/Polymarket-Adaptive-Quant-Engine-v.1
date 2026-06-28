@@ -488,7 +488,7 @@ class TestBankrollRankSchema:
 class TestCanonicalBuilderBankrollSchema:
     def _build_row_with(self, bankroll_rank_val, capital_score_val, tmp_path) -> dict:
         import json
-        from tools.canonical_trade_context_builder import CanonicalContextBuilder
+        from tools.runtime.canonical_trade_context_builder import CanonicalContextBuilder
         date_str = "2026-06-28"
         rkey = "cond|1782565800|BTC|YES|token"
         run_id = "run_schema_test"

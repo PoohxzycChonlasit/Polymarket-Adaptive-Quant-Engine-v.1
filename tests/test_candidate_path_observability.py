@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.candidate_path_observability import (
+from tools.unknown.candidate_path_observability import (
     build_candidate_path_observability_report,
     main,
     write_candidate_path_observability_report,

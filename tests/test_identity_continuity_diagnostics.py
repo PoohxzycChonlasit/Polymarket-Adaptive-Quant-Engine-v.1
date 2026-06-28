@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from tools.compact_run_summary import _identity_continuity_diagnostics
+from tools.runtime.compact_run_summary import _identity_continuity_diagnostics
 
 
 # ---------------------------------------------------------------------------

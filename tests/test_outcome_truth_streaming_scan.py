@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.outcome_truth_streaming_scan import (
+from tools.outcome_truth.outcome_truth_streaming_scan import (
     CHECKPOINT_SCHEMA_VERSION,
     SourceMutationError,
     atomic_write_json,
@@ -60,7 +60,7 @@ def _scan(
 
 
 def test_source_uses_line_iteration_without_whole_file_loading() -> None:
-    import tools.outcome_truth_streaming_scan as target_module
+    import tools.outcome_truth.outcome_truth_streaming_scan as target_module
     source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     calls = [

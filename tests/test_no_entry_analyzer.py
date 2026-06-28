@@ -9,10 +9,10 @@ import pytest
 
 from polymarket.risk_modes import RiskModeState
 from polymarket.trader import PolymarketTrader, TradeOutcome
-from tools.paper_evaluation_report import evaluate_paper_run
-from tools.quant_data_quality import scan_quant_data
+from tools.runtime.paper_evaluation_report import evaluate_paper_run
+from tools.research.quant_data_quality import scan_quant_data
 from tools.replay_analyzer import analyze_replay
-from tools.no_entry_analyzer import analyze_no_entries, discover_available_dates, main as no_entry_main, nearest_available_date, write_no_entry_report
+from tools.research.no_entry_analyzer import analyze_no_entries, discover_available_dates, main as no_entry_main, nearest_available_date, write_no_entry_report
 from utils.quant_event_logger import QuantEventLogger
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
 from utils.risk_manager import RiskPlan
@@ -1183,7 +1183,7 @@ def test_missing_date_prints_helpful_diagnostics(
     assert "available dates:" in output
     assert "2026-05-08: decision_log JSONL=1" in output
     assert "nearest date with data: 2026-05-08" in output
-    assert "suggestion: python -m tools.no_entry_analyzer --date 2026-05-08" in output
+    assert "suggestion: python -m tools.research.no_entry_analyzer --date 2026-05-08" in output
 
 
 def test_utc_local_mismatch_suggests_nearest_date(tmp_path: Path) -> None:

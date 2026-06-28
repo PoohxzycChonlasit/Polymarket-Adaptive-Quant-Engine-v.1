@@ -5,7 +5,7 @@ import json
 import pytest
 import requests
 
-from tools.official_resolution_rpc_client import (
+from tools.outcome_truth.official_resolution_rpc_client import (
     ARCHIVE_RPC_ENV_VAR,
     ArchiveRpcClient,
     ArchiveRpcError,

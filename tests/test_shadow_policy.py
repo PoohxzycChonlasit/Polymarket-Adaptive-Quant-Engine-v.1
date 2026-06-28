@@ -294,7 +294,7 @@ class TestTraderWiring:
 
 class TestCanonicalBuilderExtraction:
     def _build_row_with_shadow(self, decision: str, ev: float, tmp_path) -> dict:
-        from tools.canonical_trade_context_builder import CanonicalContextBuilder
+        from tools.runtime.canonical_trade_context_builder import CanonicalContextBuilder
         date_str = "2026-06-28"
         rkey = f"cond|epoch|BTC|YES|tok_{decision}"
         run_id = f"run_shadow_{decision}"
@@ -361,7 +361,7 @@ class TestCanonicalBuilderExtraction:
         assert row.get("shadow_policy_id") == SHADOW_POLICY_ID
 
     def test_legacy_rows_without_shadow_compile_clean(self, tmp_path):
-        from tools.canonical_trade_context_builder import CanonicalContextBuilder
+        from tools.runtime.canonical_trade_context_builder import CanonicalContextBuilder
         date_str = "2026-06-28"
         rkey = "cond|epoch|BTC|YES|tok_legacy"
         open_event = {

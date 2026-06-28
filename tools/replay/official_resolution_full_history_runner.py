@@ -305,12 +305,12 @@ def _archive_components(
     Callable[[Path], dict[str, Any]],
     str,
 ]:
-    from tools.official_resolution_acquire_pilot import (
+    from tools.outcome_truth.official_resolution_acquire_pilot import (
         _default_get_json,
         build_pilot_package,
         verify_pilot_package,
     )
-    from tools.official_resolution_rpc_client import ArchiveRpcClient
+    from tools.outcome_truth.official_resolution_rpc_client import ArchiveRpcClient
 
     client = rpc_client or ArchiveRpcClient.from_env(log_chunk_size=rpc_log_chunk_size)
     get_json = archive_get_json or _default_get_json

@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.discovery_harness_validation import (
+from tools.unknown.discovery_harness_validation import (
     DEFAULT_VALIDATION_RECORD,
     HarnessValidationError,
     brier_score,
@@ -153,7 +153,7 @@ def test_missing_or_invalid_inputs_fail_closed(call, match: str) -> None:
 
 
 def test_module_has_no_runtime_trading_imports() -> None:
-    import tools.discovery_harness_validation as target_module
+    import tools.unknown.discovery_harness_validation as target_module
     module_path = Path(target_module.__file__)
     tree = ast.parse(module_path.read_text(encoding="utf-8"))
     imported: list[str] = []

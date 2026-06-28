@@ -8,9 +8,9 @@ from types import SimpleNamespace
 import pytest
 
 from polymarket.trader import PolymarketTrader
-import tools.session_runtime_evaluator as session_runtime_evaluator
-from tools.paper_evaluation_report import DECISION_CAUTION, DECISION_FAIL, DECISION_PASS
-from tools.session_runtime_evaluator import (
+import tools.runtime.session_runtime_evaluator as session_runtime_evaluator
+from tools.runtime.paper_evaluation_report import DECISION_CAUTION, DECISION_FAIL, DECISION_PASS
+from tools.runtime.session_runtime_evaluator import (
     build_multi_session_spread_summary,
     evaluate_session_runtime,
     format_terminal_summary,

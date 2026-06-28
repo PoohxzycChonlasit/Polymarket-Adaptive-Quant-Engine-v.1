@@ -6,8 +6,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from tools.official_resolution_rpc_client import ARCHIVE_RPC_ENV_VAR, ArchiveRpcError
-from tools.official_resolution_full_history_runner import (
+from tools.outcome_truth.official_resolution_rpc_client import ARCHIVE_RPC_ENV_VAR, ArchiveRpcError
+from tools.replay.official_resolution_full_history_runner import (
     IntegrityFailure,
     TransientAcquisitionError,
     _build_parser,
@@ -439,7 +439,7 @@ def test_resume_hash_verifies_committed_batches(tmp_path: Path) -> None:
 
 
 def test_no_runtime_module_imports() -> None:
-    import tools.official_resolution_full_history_runner as target_module
+    import tools.replay.official_resolution_full_history_runner as target_module
     source = Path(target_module.__file__).read_text(encoding="utf-8")
 
     forbidden = ("polymarket.", "utils.risk_manager", "main.py", "config.settings")
@@ -464,10 +464,10 @@ def test_archive_mode_commits_batch_and_records_fingerprint(
         return _fake_acquirer()(selected=kwargs["selected"], output_dir=kwargs["output_dir"])
 
     monkeypatch.setattr(
-        "tools.official_resolution_acquire_pilot.build_pilot_package", build_pilot_package
+        "tools.outcome_truth.official_resolution_acquire_pilot.build_pilot_package", build_pilot_package
     )
     monkeypatch.setattr(
-        "tools.official_resolution_acquire_pilot.verify_pilot_package", _fake_verifier
+        "tools.outcome_truth.official_resolution_acquire_pilot.verify_pilot_package", _fake_verifier
     )
 
     result = run_full_history(
@@ -510,10 +510,10 @@ def test_archive_resume_skips_verified_committed_batch(
         return _fake_acquirer()(selected=kwargs["selected"], output_dir=kwargs["output_dir"])
 
     monkeypatch.setattr(
-        "tools.official_resolution_acquire_pilot.build_pilot_package", build_pilot_package
+        "tools.outcome_truth.official_resolution_acquire_pilot.build_pilot_package", build_pilot_package
     )
     monkeypatch.setattr(
-        "tools.official_resolution_acquire_pilot.verify_pilot_package", _fake_verifier
+        "tools.outcome_truth.official_resolution_acquire_pilot.verify_pilot_package", _fake_verifier
     )
     common = {
         "population_manifest": population,

@@ -4,10 +4,10 @@ import hashlib
 import json
 from pathlib import Path
 
-from tools.official_resolution_full_history_runner import run_full_history
-from tools.official_resolution_outcome_join import join_official_outcomes
-from tools.outcome_truth_graduation import graduate_outcome_truth
-from tools.outcome_truth_population_manifest import generate_population_manifest
+from tools.replay.official_resolution_full_history_runner import run_full_history
+from tools.outcome_truth.official_resolution_outcome_join import join_official_outcomes
+from tools.outcome_truth.outcome_truth_graduation import graduate_outcome_truth
+from tools.outcome_truth.outcome_truth_population_manifest import generate_population_manifest
 
 
 def _write_json(path: Path, payload: dict) -> Path:

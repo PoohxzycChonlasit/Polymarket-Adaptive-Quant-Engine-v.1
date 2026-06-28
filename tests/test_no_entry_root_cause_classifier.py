@@ -23,7 +23,7 @@ from utils.no_entry_root_cause_classifier import (
     classify_no_entry_root_cause,
     _classify,
 )
-from tools.no_entry_root_cause_report import (
+from tools.research.no_entry_root_cause_report import (
     aggregate,
     build_records,
     load_decision_events,

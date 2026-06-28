@@ -3,7 +3,7 @@ import json
 import os
 import numpy as np
 from collections import defaultdict
-from tools.research_gap_analyzer import analyze_research_log, _calculate_percentiles
+from tools.research.research_gap_analyzer import analyze_research_log, _calculate_percentiles
 
 def test_calculate_percentiles():
     data = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0]

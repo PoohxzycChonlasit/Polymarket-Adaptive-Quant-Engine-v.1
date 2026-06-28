@@ -10,7 +10,7 @@ from pathlib import Path
 import pytest
 
 from tools.shadow import shadow_filter_evaluator
-from tools.joined_records_builder import build_joined_records, extract_json_string_field, is_safe_scratch_path, main
+from tools.runtime.joined_records_builder import build_joined_records, extract_json_string_field, is_safe_scratch_path, main
 
 
 def _write_jsonl(path: Path, rows: list[dict]) -> list[str]:
@@ -691,7 +691,7 @@ def test_slim_index_output_matches_jsonl_mode_for_identical_fixture(tmp_path: Pa
 
 
 def test_no_forbidden_imports() -> None:
-    import tools.joined_records_builder as target_module
+    import tools.runtime.joined_records_builder as target_module
     source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     imported = set()

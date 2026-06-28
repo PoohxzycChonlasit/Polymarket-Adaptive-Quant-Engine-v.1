@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.offline_telegram_summary import build_offline_telegram_summary_message
+from tools.runtime.offline_telegram_summary import build_offline_telegram_summary_message
 
 
 DATE = "2026-05-15"

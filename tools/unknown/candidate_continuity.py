@@ -13,7 +13,7 @@ if __package__ in {None, ""}:
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
 
-from tools.lifecycle_truth_tables import (
+from tools.unknown.lifecycle_truth_tables import (
     _asset_from,
     _blocked_after_ev,
     _blocked_before_ev,

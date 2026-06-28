@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.lifecycle_truth_tables import (
+from tools.unknown.lifecycle_truth_tables import (
     build_lifecycle_truth_tables,
     main,
     write_lifecycle_truth_tables,

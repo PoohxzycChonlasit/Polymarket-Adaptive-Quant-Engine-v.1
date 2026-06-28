@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.paper_evaluation_report import (
+from tools.runtime.paper_evaluation_report import (
     DECISION_CAUTION,
     DECISION_FAIL,
     DECISION_PASS,

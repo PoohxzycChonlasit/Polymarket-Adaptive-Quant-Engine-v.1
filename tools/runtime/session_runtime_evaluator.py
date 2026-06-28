@@ -14,14 +14,14 @@ if __package__ in {None, ""}:
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
 
-from tools.no_entry_analyzer import (
+from tools.research.no_entry_analyzer import (
     DEFAULT_QUANT_DATA_DIR,
     DEFAULT_REALTIME_LOG_DIR,
     DEFAULT_REPORT_DIR,
     NoEntryReport,
     analyze_no_entries,
 )
-from tools.paper_evaluation_report import DECISION_CAUTION, DECISION_FAIL, DECISION_PASS
+from tools.runtime.paper_evaluation_report import DECISION_CAUTION, DECISION_FAIL, DECISION_PASS
 from tools.replay_analyzer import (
     ReplayReport,
     analyze_replay,

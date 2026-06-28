@@ -4,6 +4,7 @@
     "tools/airos/atomic_batch_executor.py",
     "tools/airos/batch_generator.py",
     "tools/airos/dependency_graph_builder.py",
+    "tools/airos/migration_analyzer.py",
     "tools/airos/repository_index_generator.py"
   ],
   "audit": [
@@ -20,15 +21,16 @@
     "tools/canonical/canonical_trade_table_v1.py"
   ],
   "outcome_truth": [
-    "tools/official_resolution_acquire_pilot.py",
-    "tools/official_resolution_outcome_join.py",
-    "tools/official_resolution_rpc_client.py",
+    "tools/outcome_truth/__init__.py",
     "tools/outcome_truth/free_outcome_truth_provisional.py",
     "tools/outcome_truth/free_outcome_truth_provisional_join.py",
     "tools/outcome_truth/free_outcome_truth_provisional_readiness.py",
-    "tools/outcome_truth_graduation.py",
-    "tools/outcome_truth_population_manifest.py",
-    "tools/outcome_truth_streaming_scan.py"
+    "tools/outcome_truth/official_resolution_acquire_pilot.py",
+    "tools/outcome_truth/official_resolution_outcome_join.py",
+    "tools/outcome_truth/official_resolution_rpc_client.py",
+    "tools/outcome_truth/outcome_truth_graduation.py",
+    "tools/outcome_truth/outcome_truth_population_manifest.py",
+    "tools/outcome_truth/outcome_truth_streaming_scan.py"
   ],
   "probes": [
     "tools/probes/decision_cycle_timing_probe.py",
@@ -45,39 +47,31 @@
     "tools/probes/zero_size_risk_floor_probe.py"
   ],
   "replay": [
-    "tools/multi_session_runner.py",
-    "tools/official_resolution_full_history_runner.py",
+    "tools/replay/__init__.py",
     "tools/replay/commitment_regime_replay.py",
     "tools/replay/convergence_regime_classification_replay.py",
     "tools/replay/exit_convergence_intelligence_replay.py",
     "tools/replay/lifecycle_profit_management_replay.py",
     "tools/replay/lifecycle_truth_backfill.py",
+    "tools/replay/multi_session_runner.py",
+    "tools/replay/official_resolution_full_history_runner.py",
     "tools/replay/runtime_event_replay.py",
     "tools/replay/stabilization_survival_replay.py",
     "tools/replay_analyzer.py"
   ],
   "research": [
-    "tools/no_entry_analyzer.py",
-    "tools/no_entry_root_cause_report.py",
-    "tools/quant_data_quality.py",
+    "tools/research/__init__.py",
+    "tools/research/no_entry_analyzer.py",
+    "tools/research/no_entry_root_cause_report.py",
+    "tools/research/quant_data_quality.py",
     "tools/research/quant_intelligence_engine.py",
-    "tools/research_gap_analyzer.py",
-    "tools/research_memory_writer.py",
-    "tools/research_state_writer.py"
+    "tools/research/research_gap_analyzer.py",
+    "tools/research/research_memory_writer.py",
+    "tools/research/research_state_writer.py"
   ],
   "runtime": [
-    "tools/canonical_trade_context_builder.py",
-    "tools/compact_run_summary.py",
-    "tools/dashboard_state_aggregator.py",
     "tools/execution_paper_runtime.py",
-    "tools/flaos/runtime_session.py",
-    "tools/joined_records_builder.py",
-    "tools/offline_telegram_summary.py",
-    "tools/operator_summary.py",
-    "tools/paper_evaluation_report.py",
-    "tools/phase_b_snapshot_summary.py",
-    "tools/runtime_storage_compressor.py",
-    "tools/session_runtime_evaluator.py"
+    "tools/flaos/runtime_session.py"
   ],
   "shadow": [
     "tools/shadow/cross_run_ev_blindness.py",
@@ -90,7 +84,6 @@
     "tools/shadow/shadow_filter_evaluator.py"
   ],
   "unknown": [
-    "tools/_delta_causal_verify.py",
     "tools/backtest_engine_v2/__init__.py",
     "tools/backtest_engine_v2/comparison.py",
     "tools/backtest_engine_v2/engine.py",
@@ -100,14 +93,6 @@
     "tools/backtest_engine_v2/policy.py",
     "tools/backtest_engine_v2/registry.py",
     "tools/backtest_engine_v2/scenario.py",
-    "tools/candidate_continuity.py",
-    "tools/candidate_path_observability.py",
-    "tools/decision_log_slim_index.py",
-    "tools/discovery_harness_validation.py",
-    "tools/edge_inventory_report.py",
-    "tools/eth_yes_fc_os_command_center.py",
-    "tools/ev_field_coverage.py",
-    "tools/executable_truth_overlay.py",
     "tools/flaos/README.md",
     "tools/flaos/__init__.py",
     "tools/flaos/bootstrap.py",
@@ -117,11 +102,21 @@
     "tools/flaos/memory_os.py",
     "tools/flaos/schemas.py",
     "tools/flaos/session_schema.py",
-    "tools/lifecycle_truth_tables.py",
-    "tools/phase_b_daily_evidence_collector.py",
-    "tools/phase_b_daily_report.py",
-    "tools/phase_b_run_daily_pipeline.py",
-    "tools/phase_b_snapshot_archiver.py",
-    "tools/phase_b_weekly_review_engine.py"
+    "tools/unknown/__init__.py",
+    "tools/unknown/_delta_causal_verify.py",
+    "tools/unknown/candidate_continuity.py",
+    "tools/unknown/candidate_path_observability.py",
+    "tools/unknown/decision_log_slim_index.py",
+    "tools/unknown/discovery_harness_validation.py",
+    "tools/unknown/edge_inventory_report.py",
+    "tools/unknown/eth_yes_fc_os_command_center.py",
+    "tools/unknown/ev_field_coverage.py",
+    "tools/unknown/executable_truth_overlay.py",
+    "tools/unknown/lifecycle_truth_tables.py",
+    "tools/unknown/phase_b_daily_evidence_collector.py",
+    "tools/unknown/phase_b_daily_report.py",
+    "tools/unknown/phase_b_run_daily_pipeline.py",
+    "tools/unknown/phase_b_snapshot_archiver.py",
+    "tools/unknown/phase_b_weekly_review_engine.py"
   ]
 }

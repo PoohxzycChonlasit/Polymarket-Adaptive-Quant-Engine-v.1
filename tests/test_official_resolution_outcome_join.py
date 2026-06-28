@@ -4,7 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from tools.official_resolution_outcome_join import join_official_outcomes
+from tools.outcome_truth.official_resolution_outcome_join import join_official_outcomes
 
 
 def _population_row(condition_id: str, epoch: int) -> dict:

@@ -700,9 +700,9 @@ def _daily_reproduce_lines(date: str, run_id: str | None = None) -> list[str]:
     run_arg = _command_run_id_arg(run_id)
     return [
         f"- replay: `python -m tools.replay_analyzer --date {date}{run_arg}`",
-        f"- no_entry: `python -m tools.no_entry_analyzer --date {date}{run_arg} --write-report`",
-        f"- session_eval: `python -m tools.session_runtime_evaluator --date {date}{run_arg} --write-report --verbose`",
-        f"- memory: `python -m tools.research_memory_writer --date {date}{run_arg} --write-index`",
+        f"- no_entry: `python -m tools.research.no_entry_analyzer --date {date}{run_arg} --write-report`",
+        f"- session_eval: `python -m tools.runtime.session_runtime_evaluator --date {date}{run_arg} --write-report --verbose`",
+        f"- memory: `python -m tools.research.research_memory_writer --date {date}{run_arg} --write-index`",
     ]
 
 
@@ -710,9 +710,9 @@ def _range_reproduce_lines(date_from: str, date_to: str, run_id: str | None = No
     run_arg = _command_run_id_arg(run_id)
     return [
         f"- replay: `python -m tools.replay_analyzer --from {date_from} --to {date_to}{run_arg}`",
-        f"- no_entry: run per date with `python -m tools.no_entry_analyzer --date YYYY-MM-DD{run_arg} --write-report`",
-        f"- session_eval: run per date with `python -m tools.session_runtime_evaluator --date YYYY-MM-DD{run_arg} --write-report --verbose`",
-        f"- memory: `python -m tools.research_memory_writer --from {date_from} --to {date_to}{run_arg} --write-index`",
+        f"- no_entry: run per date with `python -m tools.research.no_entry_analyzer --date YYYY-MM-DD{run_arg} --write-report`",
+        f"- session_eval: run per date with `python -m tools.runtime.session_runtime_evaluator --date YYYY-MM-DD{run_arg} --write-report --verbose`",
+        f"- memory: `python -m tools.research.research_memory_writer --from {date_from} --to {date_to}{run_arg} --write-index`",
     ]
 
 
@@ -1190,9 +1190,9 @@ def _compare_runs_markdown(date: str, summaries: list[dict[str, Any]], generated
         "- guardrail: no profitability, live-readiness, strategy, risk, or execution claims",
         "",
         "## Reproduce",
-        f"- list_run_ids: `python -m tools.research_memory_writer --date {date} --list-run-ids`",
-        f"- compare_runs: `python -m tools.research_memory_writer --date {date} --compare-runs --write-index`",
-        f"- per_run_memory: `python -m tools.research_memory_writer --date {date} --run-id RUN_ID --write-index`",
+        f"- list_run_ids: `python -m tools.research.research_memory_writer --date {date} --list-run-ids`",
+        f"- compare_runs: `python -m tools.research.research_memory_writer --date {date} --compare-runs --write-index`",
+        f"- per_run_memory: `python -m tools.research.research_memory_writer --date {date} --run-id RUN_ID --write-index`",
         "",
         "## NotebookLM Ingestion Note",
     ]

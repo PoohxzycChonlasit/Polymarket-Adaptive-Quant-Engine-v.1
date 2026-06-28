@@ -10,10 +10,10 @@ and correlation breakdowns by lifecycle_phase, skip_reason_category,
 dominant_latency_stage, and asset.
 
 Usage:
-    python -m tools.ev_field_coverage_audit --date 2026-05-15
-    python -m tools.ev_field_coverage_audit --date 2026-05-15 --write-report
-    python -m tools.ev_field_coverage_audit --date 2026-05-15 --run-id <id>
-    python -m tools.ev_field_coverage_audit --date 2026-05-15 --asset BTC
+    python -m tools.unknown.ev_field_coverage_audit --date 2026-05-15
+    python -m tools.unknown.ev_field_coverage_audit --date 2026-05-15 --write-report
+    python -m tools.unknown.ev_field_coverage_audit --date 2026-05-15 --run-id <id>
+    python -m tools.unknown.ev_field_coverage_audit --date 2026-05-15 --asset BTC
 
 Output:
     Console summary + optional runtime/reports/ev_field_coverage_YYYY-MM-DD.json

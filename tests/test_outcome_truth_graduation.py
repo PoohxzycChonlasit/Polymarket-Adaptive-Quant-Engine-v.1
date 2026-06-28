@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.outcome_truth_graduation import GraduationError, graduate_outcome_truth
+from tools.outcome_truth.outcome_truth_graduation import GraduationError, graduate_outcome_truth
 
 
 BUCKETS = ["[0.00,0.10)", "[0.10,0.20)", "[0.90,1.00]"]

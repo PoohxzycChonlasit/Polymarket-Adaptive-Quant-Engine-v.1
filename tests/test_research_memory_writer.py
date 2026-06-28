@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.research_memory_writer import NOTE_FOLDERS, RESEARCH_MEMORY_FOLDERS, main, write_research_memory
+from tools.research.research_memory_writer import NOTE_FOLDERS, RESEARCH_MEMORY_FOLDERS, main, write_research_memory
 
 
 DATE = "2026-05-08"
@@ -300,9 +300,9 @@ def test_research_memory_writer_can_create_compact_daily_index(tmp_path: Path) -
     assert f"# Daily Research Memory Index - {DATE}" in index
     assert "run_id: not_filtered" in index
     assert f"replay: `python -m tools.replay_analyzer --date {DATE}`" in index
-    assert f"no_entry: `python -m tools.no_entry_analyzer --date {DATE} --write-report`" in index
-    assert f"session_eval: `python -m tools.session_runtime_evaluator --date {DATE} --write-report --verbose`" in index
-    assert f"memory: `python -m tools.research_memory_writer --date {DATE} --write-index`" in index
+    assert f"no_entry: `python -m tools.research.no_entry_analyzer --date {DATE} --write-report`" in index
+    assert f"session_eval: `python -m tools.runtime.session_runtime_evaluator --date {DATE} --write-report --verbose`" in index
+    assert f"memory: `python -m tools.research.research_memory_writer --date {DATE} --write-index`" in index
     assert "## NotebookLM Ingestion Note" in index
     assert "Upload this index plus the linked topic notes for NotebookLM ingestion." in index
     assert f"## Window {DATE}_0100_to_0105" in index
@@ -389,9 +389,9 @@ def test_research_memory_writer_filters_reports_by_run_id(tmp_path: Path) -> Non
     index = index_path.read_text(encoding="utf-8")
     assert "run_id: run/target" in index
     assert f"python -m tools.replay_analyzer --date {DATE} --run-id run/target" in index
-    assert f"python -m tools.no_entry_analyzer --date {DATE} --run-id run/target --write-report" in index
-    assert f"python -m tools.session_runtime_evaluator --date {DATE} --run-id run/target --write-report --verbose" in index
-    assert f"python -m tools.research_memory_writer --date {DATE} --run-id run/target --write-index" in index
+    assert f"python -m tools.research.no_entry_analyzer --date {DATE} --run-id run/target --write-report" in index
+    assert f"python -m tools.runtime.session_runtime_evaluator --date {DATE} --run-id run/target --write-report --verbose" in index
+    assert f"python -m tools.research.research_memory_writer --date {DATE} --run-id run/target --write-index" in index
     assert f"## Window {DATE}_0100_to_0105_run_run_target" in index
     assert "source_reports:" in index
     assert f"reports/replay_report_{DATE}_0100_to_0105_run_run_target.json" in index
@@ -461,7 +461,7 @@ def test_research_memory_cli_writes_multi_day_index(tmp_path: Path, capsys) -> N
     index = index_path.read_text(encoding="utf-8")
     assert f"# Multi-Day Research Memory Index - {DATE}_to_{NEXT_DATE}" in index
     assert "run_id: not_filtered" in index
-    assert f"memory: `python -m tools.research_memory_writer --from {DATE} --to {NEXT_DATE} --write-index`" in index
+    assert f"memory: `python -m tools.research.research_memory_writer --from {DATE} --to {NEXT_DATE} --write-index`" in index
     assert "## NotebookLM Ingestion Note" in index
     assert "source_reports:" in index
     assert "dates_included: 2" in index

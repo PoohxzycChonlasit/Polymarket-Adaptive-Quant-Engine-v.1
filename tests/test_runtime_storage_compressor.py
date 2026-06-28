@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-import tools.runtime_storage_compressor as compressor
-from tools.runtime_storage_compressor import (
+import tools.runtime.runtime_storage_compressor as compressor
+from tools.runtime.runtime_storage_compressor import (
     MANIFEST_SCHEMA_VERSION,
     build_dry_run_manifest,
     main,

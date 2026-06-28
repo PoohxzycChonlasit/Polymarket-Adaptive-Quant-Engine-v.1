@@ -228,6 +228,9 @@
     "tools/airos/dependency_graph_builder.py": [
       "tests/test_airos_dependency_graph_builder.py"
     ],
+    "tools/airos/migration_analyzer.py": [
+      "tests/test_airos_migration_analyzer.py"
+    ],
     "tools/airos/repository_index_generator.py": [
       "tests/test_airos_repository_index_generator.py"
     ],
@@ -261,89 +264,17 @@
     "tools/backtest_engine_v2/scenario.py": [
       "tests/test_backtest_engine_v2.py"
     ],
-    "tools/candidate_continuity.py": [
-      "tests/test_candidate_continuity.py"
-    ],
-    "tools/candidate_path_observability.py": [
-      "tests/test_candidate_path_observability.py"
-    ],
     "tools/canonical/canonical_regime_export.py": [
       "tests/test_canonical_regime_export.py"
     ],
     "tools/canonical/canonical_trade_table_v1.py": [
       "tests/test_canonical_trade_table_v1.py"
     ],
-    "tools/canonical_trade_context_builder.py": [
-      "tests/test_canonical_trade_context_builder.py",
-      "tests/test_market_availability_engine.py",
-      "tests/test_shadow_policy.py"
-    ],
-    "tools/compact_run_summary.py": [
-      "tests/test_compact_run_summary.py",
-      "tests/test_identity_continuity_diagnostics.py"
-    ],
-    "tools/dashboard_state_aggregator.py": [
-      "tests/test_dashboard_state_aggregator.py"
-    ],
-    "tools/decision_log_slim_index.py": [
-      "tests/test_decision_log_slim_index.py"
-    ],
-    "tools/discovery_harness_validation.py": [
-      "tests/test_discovery_harness_validation.py"
-    ],
-    "tools/edge_inventory_report.py": [
-      "tests/test_edge_inventory_report.py"
-    ],
-    "tools/eth_yes_fc_os_command_center.py": [
-      "tests/test_eth_yes_fc_os_command_center.py"
-    ],
-    "tools/ev_field_coverage.py": [
-      "tests/test_ev_field_coverage.py"
-    ],
-    "tools/executable_truth_overlay.py": [
-      "tests/test_executable_truth_overlay.py"
-    ],
     "tools/execution_paper_runtime.py": [
       "tests/test_execution_paper_runtime.py"
     ],
     "tools/flaos/session_schema.py": [
       "tests/test_flaos_runtime_session.py"
-    ],
-    "tools/joined_records_builder.py": [
-      "tests/test_joined_records_builder.py"
-    ],
-    "tools/lifecycle_truth_tables.py": [
-      "tests/test_lifecycle_truth_tables.py"
-    ],
-    "tools/multi_session_runner.py": [
-      "tests/test_multi_session_runner.py"
-    ],
-    "tools/no_entry_analyzer.py": [
-      "tests/test_no_entry_analyzer.py"
-    ],
-    "tools/no_entry_root_cause_report.py": [
-      "tests/test_no_entry_root_cause_classifier.py"
-    ],
-    "tools/official_resolution_acquire_pilot.py": [
-      "tests/test_official_resolution_acquire_pilot.py"
-    ],
-    "tools/official_resolution_full_history_runner.py": [
-      "tests/test_official_resolution_full_history_runner.py",
-      "tests/test_outcome_truth_pipeline_integration.py"
-    ],
-    "tools/official_resolution_outcome_join.py": [
-      "tests/test_official_resolution_outcome_join.py",
-      "tests/test_outcome_truth_pipeline_integration.py"
-    ],
-    "tools/official_resolution_rpc_client.py": [
-      "tests/test_official_resolution_full_history_runner.py",
-      "tests/test_official_resolution_rpc_client.py"
-    ],
-    "tools/offline_telegram_summary.py": [
-      "tests/test_offline_telegram_summary.py"
-    ],
-    "tools/operator_summary.py": [
-      "tests/test_operator_summary.py"
     ],
     "tools/outcome_truth/free_outcome_truth_provisional.py": [
       "tests/test_free_outcome_truth_provisional.py"
@@ -354,39 +285,27 @@
     "tools/outcome_truth/free_outcome_truth_provisional_readiness.py": [
       "tests/test_free_outcome_truth_provisional_readiness.py"
     ],
-    "tools/outcome_truth_graduation.py": [
+    "tools/outcome_truth/official_resolution_acquire_pilot.py": [
+      "tests/test_official_resolution_acquire_pilot.py"
+    ],
+    "tools/outcome_truth/official_resolution_outcome_join.py": [
+      "tests/test_official_resolution_outcome_join.py",
+      "tests/test_outcome_truth_pipeline_integration.py"
+    ],
+    "tools/outcome_truth/official_resolution_rpc_client.py": [
+      "tests/test_official_resolution_full_history_runner.py",
+      "tests/test_official_resolution_rpc_client.py"
+    ],
+    "tools/outcome_truth/outcome_truth_graduation.py": [
       "tests/test_outcome_truth_graduation.py",
       "tests/test_outcome_truth_pipeline_integration.py"
     ],
-    "tools/outcome_truth_population_manifest.py": [
+    "tools/outcome_truth/outcome_truth_population_manifest.py": [
       "tests/test_outcome_truth_pipeline_integration.py",
       "tests/test_outcome_truth_population_manifest.py"
     ],
-    "tools/outcome_truth_streaming_scan.py": [
+    "tools/outcome_truth/outcome_truth_streaming_scan.py": [
       "tests/test_outcome_truth_streaming_scan.py"
-    ],
-    "tools/paper_evaluation_report.py": [
-      "tests/test_no_entry_analyzer.py",
-      "tests/test_paper_evaluation_report.py",
-      "tests/test_session_runtime_evaluator.py"
-    ],
-    "tools/phase_b_daily_evidence_collector.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
-    ],
-    "tools/phase_b_daily_report.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
-    ],
-    "tools/phase_b_run_daily_pipeline.py": [
-      "tests/test_phase_b_run_daily_pipeline.py"
-    ],
-    "tools/phase_b_snapshot_archiver.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
-    ],
-    "tools/phase_b_snapshot_summary.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
-    ],
-    "tools/phase_b_weekly_review_engine.py": [
-      "tests/test_phase_b_weekly_review_engine.py"
     ],
     "tools/probes/decision_cycle_timing_probe.py": [
       "tests/test_decision_cycle_timing_probe.py"
@@ -421,10 +340,6 @@
     "tools/probes/zero_size_risk_floor_probe.py": [
       "tests/test_zero_size_risk_floor_probe.py"
     ],
-    "tools/quant_data_quality.py": [
-      "tests/test_no_entry_analyzer.py",
-      "tests/test_quant_data_quality.py"
-    ],
     "tools/replay/commitment_regime_replay.py": [
       "tests/test_commitment_regime_replay.py"
     ],
@@ -440,6 +355,13 @@
     "tools/replay/lifecycle_truth_backfill.py": [
       "tests/test_lifecycle_truth_backfill.py"
     ],
+    "tools/replay/multi_session_runner.py": [
+      "tests/test_multi_session_runner.py"
+    ],
+    "tools/replay/official_resolution_full_history_runner.py": [
+      "tests/test_official_resolution_full_history_runner.py",
+      "tests/test_outcome_truth_pipeline_integration.py"
+    ],
     "tools/replay/runtime_event_replay.py": [
       "tests/test_runtime_event_stream.py"
     ],
@@ -450,23 +372,27 @@
       "tests/test_no_entry_analyzer.py",
       "tests/test_replay_analyzer.py"
     ],
+    "tools/research/no_entry_analyzer.py": [
+      "tests/test_no_entry_analyzer.py"
+    ],
+    "tools/research/no_entry_root_cause_report.py": [
+      "tests/test_no_entry_root_cause_classifier.py"
+    ],
+    "tools/research/quant_data_quality.py": [
+      "tests/test_no_entry_analyzer.py",
+      "tests/test_quant_data_quality.py"
+    ],
     "tools/research/quant_intelligence_engine.py": [
       "tests/test_quant_intelligence_engine.py"
     ],
-    "tools/research_gap_analyzer.py": [
+    "tools/research/research_gap_analyzer.py": [
       "tests/test_research_gap_analyzer.py"
     ],
-    "tools/research_memory_writer.py": [
+    "tools/research/research_memory_writer.py": [
       "tests/test_research_memory_writer.py"
     ],
-    "tools/research_state_writer.py": [
+    "tools/research/research_state_writer.py": [
       "tests/test_research_state_writer.py"
-    ],
-    "tools/runtime_storage_compressor.py": [
-      "tests/test_runtime_storage_compressor.py"
-    ],
-    "tools/session_runtime_evaluator.py": [
-      "tests/test_session_runtime_evaluator.py"
     ],
     "tools/shadow/cross_run_ev_blindness.py": [
       "tests/test_cross_run_ev_blindness.py"
@@ -491,6 +417,48 @@
     ],
     "tools/shadow/shadow_filter_evaluator.py": [
       "tests/test_shadow_filter_evaluator.py"
+    ],
+    "tools/unknown/candidate_continuity.py": [
+      "tests/test_candidate_continuity.py"
+    ],
+    "tools/unknown/candidate_path_observability.py": [
+      "tests/test_candidate_path_observability.py"
+    ],
+    "tools/unknown/decision_log_slim_index.py": [
+      "tests/test_decision_log_slim_index.py"
+    ],
+    "tools/unknown/discovery_harness_validation.py": [
+      "tests/test_discovery_harness_validation.py"
+    ],
+    "tools/unknown/edge_inventory_report.py": [
+      "tests/test_edge_inventory_report.py"
+    ],
+    "tools/unknown/eth_yes_fc_os_command_center.py": [
+      "tests/test_eth_yes_fc_os_command_center.py"
+    ],
+    "tools/unknown/ev_field_coverage.py": [
+      "tests/test_ev_field_coverage.py"
+    ],
+    "tools/unknown/executable_truth_overlay.py": [
+      "tests/test_executable_truth_overlay.py"
+    ],
+    "tools/unknown/lifecycle_truth_tables.py": [
+      "tests/test_lifecycle_truth_tables.py"
+    ],
+    "tools/unknown/phase_b_daily_evidence_collector.py": [
+      "tests/test_phase_b_daily_evidence_collector.py"
+    ],
+    "tools/unknown/phase_b_daily_report.py": [
+      "tests/test_phase_b_daily_evidence_collector.py"
+    ],
+    "tools/unknown/phase_b_run_daily_pipeline.py": [
+      "tests/test_phase_b_run_daily_pipeline.py"
+    ],
+    "tools/unknown/phase_b_snapshot_archiver.py": [
+      "tests/test_phase_b_daily_evidence_collector.py"
+    ],
+    "tools/unknown/phase_b_weekly_review_engine.py": [
+      "tests/test_phase_b_weekly_review_engine.py"
     ],
     "utils/no_entry_root_cause_classifier.py": [
       "tests/test_no_entry_root_cause_classifier.py"
@@ -521,6 +489,9 @@
     "tests/test_airos_dependency_graph_builder.py": [
       "tools/airos/dependency_graph_builder.py"
     ],
+    "tests/test_airos_migration_analyzer.py": [
+      "tools/airos/migration_analyzer.py"
+    ],
     "tests/test_airos_repository_index_generator.py": [
       "tools/airos/repository_index_generator.py"
     ],
@@ -549,7 +520,7 @@
       "polymarket/position_sizing.py"
     ],
     "tests/test_candidate_continuity.py": [
-      "tools/candidate_continuity.py"
+      "tools/unknown/candidate_continuity.py"
     ],
     "tests/test_candidate_identity.py": [
       "polymarket/delta_engine.py",
@@ -560,22 +531,16 @@
       "polymarket/trader.py"
     ],
     "tests/test_candidate_path_observability.py": [
-      "tools/candidate_path_observability.py"
+      "tools/unknown/candidate_path_observability.py"
     ],
     "tests/test_canonical_regime_export.py": [
       "tools/canonical/canonical_regime_export.py"
-    ],
-    "tests/test_canonical_trade_context_builder.py": [
-      "tools/canonical_trade_context_builder.py"
     ],
     "tests/test_canonical_trade_table_v1.py": [
       "tools/canonical/canonical_trade_table_v1.py"
     ],
     "tests/test_commitment_regime_replay.py": [
       "tools/replay/commitment_regime_replay.py"
-    ],
-    "tests/test_compact_run_summary.py": [
-      "tools/compact_run_summary.py"
     ],
     "tests/test_convergence_regime_classification_replay.py": [
       "tools/replay/convergence_regime_classification_replay.py"
@@ -589,14 +554,11 @@
     "tests/test_dashboard_api.py": [
       "api/dashboard_api.py"
     ],
-    "tests/test_dashboard_state_aggregator.py": [
-      "tools/dashboard_state_aggregator.py"
-    ],
     "tests/test_decision_cycle_timing_probe.py": [
       "tools/probes/decision_cycle_timing_probe.py"
     ],
     "tests/test_decision_log_slim_index.py": [
-      "tools/decision_log_slim_index.py"
+      "tools/unknown/decision_log_slim_index.py"
     ],
     "tests/test_delta_engine.py": [
       "polymarket/delta_engine.py",
@@ -608,13 +570,13 @@
       "polymarket/trader.py"
     ],
     "tests/test_discovery_harness_validation.py": [
-      "tools/discovery_harness_validation.py"
+      "tools/unknown/discovery_harness_validation.py"
     ],
     "tests/test_drift_audit.py": [
       "tools/audit/_drift_audit.py"
     ],
     "tests/test_edge_inventory_report.py": [
-      "tools/edge_inventory_report.py"
+      "tools/unknown/edge_inventory_report.py"
     ],
     "tests/test_empty_orderbook_fail_soft.py": [
       "polymarket/gamma_fetcher.py",
@@ -636,10 +598,10 @@
       "tools/probes/epoch_boundary_alignment_probe.py"
     ],
     "tests/test_eth_yes_fc_os_command_center.py": [
-      "tools/eth_yes_fc_os_command_center.py"
+      "tools/unknown/eth_yes_fc_os_command_center.py"
     ],
     "tests/test_ev_field_coverage.py": [
-      "tools/ev_field_coverage.py"
+      "tools/unknown/ev_field_coverage.py"
     ],
     "tests/test_ev_field_coverage_audit.py": [
       "tools/audit/ev_field_coverage_audit.py"
@@ -655,7 +617,7 @@
       "tools/probes/executable_state_persistence_probe.py"
     ],
     "tests/test_executable_truth_overlay.py": [
-      "tools/executable_truth_overlay.py"
+      "tools/unknown/executable_truth_overlay.py"
     ],
     "tests/test_execution_paper_runtime.py": [
       "tools/execution_paper_runtime.py"
@@ -722,12 +684,6 @@
       "polymarket/gamma_fetcher.py",
       "polymarket/trader.py"
     ],
-    "tests/test_identity_continuity_diagnostics.py": [
-      "tools/compact_run_summary.py"
-    ],
-    "tests/test_joined_records_builder.py": [
-      "tools/joined_records_builder.py"
-    ],
     "tests/test_latency_diagnostics.py": [
       "polymarket/trader.py"
     ],
@@ -750,7 +706,7 @@
       "tools/replay/lifecycle_truth_backfill.py"
     ],
     "tests/test_lifecycle_truth_tables.py": [
-      "tools/lifecycle_truth_tables.py"
+      "tools/unknown/lifecycle_truth_tables.py"
     ],
     "tests/test_liquidity_depth_observability.py": [
       "polymarket/client.py",
@@ -781,8 +737,7 @@
     ],
     "tests/test_market_availability_engine.py": [
       "polymarket/market_availability_engine.py",
-      "polymarket/trader.py",
-      "tools/canonical_trade_context_builder.py"
+      "polymarket/trader.py"
     ],
     "tests/test_market_readiness_admission_probe.py": [
       "tools/probes/market_readiness_admission_probe.py"
@@ -797,42 +752,35 @@
       "polymarket/trader.py"
     ],
     "tests/test_multi_session_runner.py": [
-      "tools/multi_session_runner.py"
+      "tools/replay/multi_session_runner.py"
     ],
     "tests/test_no_entry_analyzer.py": [
       "polymarket/risk_modes.py",
       "polymarket/trader.py",
-      "tools/no_entry_analyzer.py",
-      "tools/paper_evaluation_report.py",
-      "tools/quant_data_quality.py",
-      "tools/replay_analyzer.py"
+      "tools/replay_analyzer.py",
+      "tools/research/no_entry_analyzer.py",
+      "tools/research/quant_data_quality.py"
     ],
     "tests/test_no_entry_root_cause_classifier.py": [
       "polymarket/trader.py",
-      "tools/no_entry_root_cause_report.py",
+      "tools/research/no_entry_root_cause_report.py",
       "utils/no_entry_root_cause_classifier.py"
     ],
     "tests/test_official_resolution_acquire_pilot.py": [
-      "tools/official_resolution_acquire_pilot.py"
+      "tools/outcome_truth/official_resolution_acquire_pilot.py"
     ],
     "tests/test_official_resolution_full_history_runner.py": [
-      "tools/official_resolution_full_history_runner.py",
-      "tools/official_resolution_rpc_client.py"
+      "tools/outcome_truth/official_resolution_rpc_client.py",
+      "tools/replay/official_resolution_full_history_runner.py"
     ],
     "tests/test_official_resolution_outcome_join.py": [
-      "tools/official_resolution_outcome_join.py"
+      "tools/outcome_truth/official_resolution_outcome_join.py"
     ],
     "tests/test_official_resolution_rpc_client.py": [
-      "tools/official_resolution_rpc_client.py"
+      "tools/outcome_truth/official_resolution_rpc_client.py"
     ],
     "tests/test_offline_quant_report_dashboard.py": [
       "dashboard/offline_quant_report_dashboard.py"
-    ],
-    "tests/test_offline_telegram_summary.py": [
-      "tools/offline_telegram_summary.py"
-    ],
-    "tests/test_operator_summary.py": [
-      "tools/operator_summary.py"
     ],
     "tests/test_opportunity_scanner.py": [
       "polymarket/delta_engine.py",
@@ -850,26 +798,23 @@
       "polymarket/trader.py"
     ],
     "tests/test_outcome_truth_graduation.py": [
-      "tools/outcome_truth_graduation.py"
+      "tools/outcome_truth/outcome_truth_graduation.py"
     ],
     "tests/test_outcome_truth_patch.py": [
       "polymarket/risk_modes.py",
       "polymarket/trader.py"
     ],
     "tests/test_outcome_truth_pipeline_integration.py": [
-      "tools/official_resolution_full_history_runner.py",
-      "tools/official_resolution_outcome_join.py",
-      "tools/outcome_truth_graduation.py",
-      "tools/outcome_truth_population_manifest.py"
+      "tools/outcome_truth/official_resolution_outcome_join.py",
+      "tools/outcome_truth/outcome_truth_graduation.py",
+      "tools/outcome_truth/outcome_truth_population_manifest.py",
+      "tools/replay/official_resolution_full_history_runner.py"
     ],
     "tests/test_outcome_truth_population_manifest.py": [
-      "tools/outcome_truth_population_manifest.py"
+      "tools/outcome_truth/outcome_truth_population_manifest.py"
     ],
     "tests/test_outcome_truth_streaming_scan.py": [
-      "tools/outcome_truth_streaming_scan.py"
-    ],
-    "tests/test_paper_evaluation_report.py": [
-      "tools/paper_evaluation_report.py"
+      "tools/outcome_truth/outcome_truth_streaming_scan.py"
     ],
     "tests/test_paper_mode.py": [
       "polymarket/client.py",
@@ -881,16 +826,15 @@
       "polymarket/trader.py"
     ],
     "tests/test_phase_b_daily_evidence_collector.py": [
-      "tools/phase_b_daily_evidence_collector.py",
-      "tools/phase_b_daily_report.py",
-      "tools/phase_b_snapshot_archiver.py",
-      "tools/phase_b_snapshot_summary.py"
+      "tools/unknown/phase_b_daily_evidence_collector.py",
+      "tools/unknown/phase_b_daily_report.py",
+      "tools/unknown/phase_b_snapshot_archiver.py"
     ],
     "tests/test_phase_b_run_daily_pipeline.py": [
-      "tools/phase_b_run_daily_pipeline.py"
+      "tools/unknown/phase_b_run_daily_pipeline.py"
     ],
     "tests/test_phase_b_weekly_review_engine.py": [
-      "tools/phase_b_weekly_review_engine.py"
+      "tools/unknown/phase_b_weekly_review_engine.py"
     ],
     "tests/test_polymarket_client_v2.py": [
       "polymarket/client.py"
@@ -931,7 +875,7 @@
       "polymarket/trader.py"
     ],
     "tests/test_quant_data_quality.py": [
-      "tools/quant_data_quality.py"
+      "tools/research/quant_data_quality.py"
     ],
     "tests/test_quant_event_logger.py": [
       "utils/quant_event_logger.py"
@@ -965,13 +909,13 @@
       "tools/replay_analyzer.py"
     ],
     "tests/test_research_gap_analyzer.py": [
-      "tools/research_gap_analyzer.py"
+      "tools/research/research_gap_analyzer.py"
     ],
     "tests/test_research_memory_writer.py": [
-      "tools/research_memory_writer.py"
+      "tools/research/research_memory_writer.py"
     ],
     "tests/test_research_state_writer.py": [
-      "tools/research_state_writer.py"
+      "tools/research/research_state_writer.py"
     ],
     "tests/test_risk_modes.py": [
       "polymarket/risk_modes.py"
@@ -986,9 +930,6 @@
     "tests/test_runtime_shutdown.py": [
       "polymarket/oracle_price_feed.py",
       "polymarket/trader.py"
-    ],
-    "tests/test_runtime_storage_compressor.py": [
-      "tools/runtime_storage_compressor.py"
     ],
     "tests/test_schema_slimming_stage1.py": [
       "polymarket/trader.py"
@@ -1010,9 +951,7 @@
       "tools/shadow/semantic_c_shadow_pnl_truth.py"
     ],
     "tests/test_session_runtime_evaluator.py": [
-      "polymarket/trader.py",
-      "tools/paper_evaluation_report.py",
-      "tools/session_runtime_evaluator.py"
+      "polymarket/trader.py"
     ],
     "tests/test_shadow_filter_evaluator.py": [
       "tools/shadow/shadow_filter_evaluator.py"
@@ -1027,8 +966,7 @@
     ],
     "tests/test_shadow_policy.py": [
       "polymarket/shadow_policy.py",
-      "polymarket/trader.py",
-      "tools/canonical_trade_context_builder.py"
+      "polymarket/trader.py"
     ],
     "tests/test_signal_identity.py": [
       "polymarket/signal.py"

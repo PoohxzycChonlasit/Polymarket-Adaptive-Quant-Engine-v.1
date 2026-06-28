@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.quant_data_quality import scan_quant_data, write_quality_report
+from tools.research.quant_data_quality import scan_quant_data, write_quality_report
 
 
 DATE = "2026-05-08"

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 try:  # pragma: no cover - script execution path
-    from tools.ev_field_coverage import build_ev_field_coverage_report
+    from tools.unknown.ev_field_coverage import build_ev_field_coverage_report
     from tools.replay_analyzer import (
         DEFAULT_QUANT_DATA_DIR,
         DEFAULT_REPORT_DIR,
@@ -17,10 +17,10 @@ try:  # pragma: no cover - script execution path
         build_time_filter,
         load_replay_events,
     )
-    from tools.session_runtime_evaluator import evaluate_session_runtime
+    from tools.runtime.session_runtime_evaluator import evaluate_session_runtime
 except ModuleNotFoundError:  # pragma: no cover - direct `python tools/...` path
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from tools.ev_field_coverage import build_ev_field_coverage_report
+    from tools.unknown.ev_field_coverage import build_ev_field_coverage_report
     from tools.replay_analyzer import (
         DEFAULT_QUANT_DATA_DIR,
         DEFAULT_REPORT_DIR,
@@ -28,7 +28,7 @@ except ModuleNotFoundError:  # pragma: no cover - direct `python tools/...` path
         build_time_filter,
         load_replay_events,
     )
-    from tools.session_runtime_evaluator import evaluate_session_runtime
+    from tools.runtime.session_runtime_evaluator import evaluate_session_runtime
 
 
 IDENTITY_FIELDS = (

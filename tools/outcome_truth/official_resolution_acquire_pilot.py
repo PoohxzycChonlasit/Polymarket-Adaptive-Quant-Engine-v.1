@@ -13,7 +13,7 @@ from typing import Any, Callable
 
 import requests
 
-from tools.official_resolution_rpc_client import ArchiveRpcClient
+from tools.outcome_truth.official_resolution_rpc_client import ArchiveRpcClient
 
 
 SCHEMA_VERSION = "official_resolution_pilot_hardening_v1"

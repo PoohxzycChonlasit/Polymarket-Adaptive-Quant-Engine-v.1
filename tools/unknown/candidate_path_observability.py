@@ -14,11 +14,11 @@ if __package__ in {None, ""}:
     if str(repo_root) not in sys.path:
         sys.path.insert(0, str(repo_root))
 
-from tools.candidate_continuity import (
+from tools.unknown.candidate_continuity import (
     _parse_timestamp,
     build_candidate_continuity_report,
 )
-from tools.lifecycle_truth_tables import (
+from tools.unknown.lifecycle_truth_tables import (
     _asset_from,
     _date_part,
     _first_value,
