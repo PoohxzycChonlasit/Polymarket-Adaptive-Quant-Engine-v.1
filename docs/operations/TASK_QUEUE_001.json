@@ -64,6 +64,44 @@
       "notes": "Use BacktestEngineV2. Signal-driven rows only (886). Apply risk_mode=NORMAL filter. Grid: ev 0.0-0.25 × prob 0.60-0.70 × decision_score thresholds. Identify configs with Sharpe > 0 and n >= 50."
     },
     {
+      "priority": -4,
+      "task_id": "MARKET_AVAILABILITY_ENGINE_DESIGN_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design Market Availability Engine — scheduler states, Gamma API detection, resource governance, bankroll_rank schema clarification.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "outputs": [
+        "docs/architecture/MARKET_AVAILABILITY_ENGINE_001.md",
+        "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md"
+      ],
+      "notes": "DONE — 5 states (ACTIVE, BETWEEN_EPOCHS, MARKET_NOT_SCHEDULED, API_UNAVAILABLE, UNKNOWN). Gamma API slug pattern detection. bankroll_rank=tier-string, capital_score=float. 91% API call reduction in dead windows. Revert of 5458885 bankroll_rank type change required in impl task."
+    },
+    {
+      "priority": -4,
+      "task_id": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Implement Market Availability Engine as observability-only pre-scan guard. Wire into PolymarketTrader main loop. Fix bankroll_rank/capital_score schema.",
+      "blocked_by": "MARKET_AVAILABILITY_ENGINE_DESIGN_001",
+      "allowed_scope": [
+        "polymarket/market_availability_engine.py",
+        "polymarket/trader.py",
+        "utils/quant_event_logger.py",
+        "config/settings.py",
+        "tools/canonical_trade_context_builder.py",
+        "tests/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "polymarket/market_availability_engine.py",
+        "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md"
+      ],
+      "notes": "Class 5 OBSERVABILITY. Revert _last_bankroll_rank to tier-string. Add _last_capital_score float. Fix canonical builder bankroll_rank→string, capital_score→float. Add log_market_availability_check to QuantEventLogger. 8 new tests."
+    },
+    {
       "priority": 0,
       "task_id": "POSITION_TRACKER_PERSISTENCE_REFACTOR_001",
       "status": "DONE",

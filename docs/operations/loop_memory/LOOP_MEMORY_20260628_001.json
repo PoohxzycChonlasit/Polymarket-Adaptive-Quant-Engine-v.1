@@ -235,5 +235,33 @@
     "type_fix": "_last_bankroll_rank = evaluation.get('capital_score') instead of evaluation.get('bankroll_rank')",
     "market_availability_note": "5-min binary markets appear to run during oracle epoch windows (historically 7-14 UTC, 21-02 UTC). No markets active on 2026-06-28 at 05-06 UTC.",
     "next_recommendation": "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "MARKET_AVAILABILITY_ENGINE_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/MARKET_AVAILABILITY_ENGINE_001.md",
+      "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md"
+    ],
+    "result": "PASS",
+    "evidence_grade": "A",
+    "commits": [],
+    "scheduler_states": ["ACTIVE","BETWEEN_EPOCHS","MARKET_NOT_SCHEDULED","API_UNAVAILABLE","UNKNOWN"],
+    "sleep_durations": {
+      "BETWEEN_EPOCHS": 15,
+      "MARKET_NOT_SCHEDULED": 300,
+      "API_UNAVAILABLE": "60s exponential backoff max 600s",
+      "UNKNOWN": 30
+    },
+    "schema_decision": {
+      "bankroll_rank": "tier-string e.g. T0_MICRO_SEED — must NOT silently become capital_score",
+      "capital_score": "float 0.0-1.0 — the numeric quality rank",
+      "revert_required": "commit 5458885 changed _last_bankroll_rank to evaluation.get('capital_score') — must be reverted in impl task",
+      "action": "add _last_capital_score float attribute; fix canonical builder to use string for bankroll_rank and float for capital_score"
+    },
+    "resource_savings_expected": "91% API call reduction in dead market windows; eliminates 54-min idle loops",
+    "next_recommendation": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
   }
 ]
