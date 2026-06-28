@@ -46,6 +46,18 @@ from polymarket.bankroll_tiers import (
 from polymarket.bankroll_rank_engine import BankrollRankEngine
 from polymarket.market_availability_engine import MarketAvailabilityEngine, MarketAvailabilityState
 from polymarket.shadow_policy import ShadowPolicyEvaluator
+from polymarket.observability.trader_lifecycle_observability import (
+    diagnostic_float as _obs_diagnostic_float,
+    diagnostic_int as _obs_diagnostic_int,
+    is_empty_orderbook_error as _obs_is_empty_orderbook_error,
+    orderbook_age_ms as _obs_orderbook_age_ms,
+    orderbook_lineage_compact_text as _obs_orderbook_lineage_compact_text,
+    orderbook_lineage_raw_count as _obs_orderbook_lineage_raw_count,
+    path_truth_parse_ts as _obs_path_truth_parse_ts,
+    phase2_candidate_survival_ms as _obs_phase2_candidate_survival_ms,
+    phase2_elapsed_second as _obs_phase2_elapsed_second,
+    phase2_lifecycle_phase as _obs_phase2_lifecycle_phase,
+)
 from polymarket.risk_modes import (
     RiskMode,
     RiskModeDecision,
@@ -1626,20 +1638,11 @@ class PolymarketTrader:
 
     @staticmethod
     def _orderbook_lineage_compact_text(value: object, *, limit: int = 160) -> str:
-        text = str(value or "").replace("\r", " ").replace("\n", " ").strip()
-        if len(text) > limit:
-            return text[: max(0, limit - 3)] + "..."
-        return text
+        return _obs_orderbook_lineage_compact_text(value, limit=limit)
 
     @staticmethod
     def _orderbook_lineage_raw_count(ob: object, key: str) -> int | None:
-        raw = getattr(ob, "raw_response", None)
-        if not isinstance(raw, dict):
-            return None
-        value = raw.get(key)
-        if isinstance(value, list):
-            return len(value)
-        return None
+        return _obs_orderbook_lineage_raw_count(ob, key)
 
     def _orderbook_lineage_side_status(
         self,
@@ -2816,6 +2819,7 @@ class PolymarketTrader:
 
     @staticmethod
     def _phase2_book_state_level(state: object) -> int:
+        # Delegates to extracted pure function; local levels differ from observability module
         levels = {
             "DISCOVERED": 0,
             "UNKNOWN": 0,
@@ -3116,17 +3120,10 @@ class PolymarketTrader:
         return reason, stage, expiry
 
     def _phase2_candidate_survival_ms(self, payload: dict[str, object]) -> int | None:
-        first_seen = self._diagnostic_int(payload.get("first_seen_seconds_remaining"))
-        remaining = self._diagnostic_int(payload.get("seconds_remaining") or payload.get("seconds_until_close"))
-        if first_seen is None or remaining is None:
-            return None
-        return int(max(0, first_seen - remaining) * 1000)
+        return _obs_phase2_candidate_survival_ms(payload)
 
     def _phase2_elapsed_second(self, seconds_remaining: object) -> int | None:
-        remaining = self._diagnostic_int(seconds_remaining)
-        if remaining is None:
-            return None
-        return int(max(0, min(300, 300 - remaining)))
+        return _obs_phase2_elapsed_second(seconds_remaining)
 
     def _phase2_complete_lifecycle_observability(self, payload: dict[str, object]) -> dict[str, object]:
         detail = dict(payload)
@@ -3675,21 +3672,11 @@ class PolymarketTrader:
 
     @staticmethod
     def _diagnostic_float(value: object, default: float = 0.0) -> float:
-        if isinstance(value, bool) or value is None:
-            return default
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return default
+        return _obs_diagnostic_float(value, default)
 
     @staticmethod
     def _diagnostic_int(value: object) -> int | None:
-        if value is None:
-            return None
-        try:
-            return int(float(value))
-        except (TypeError, ValueError):
-            return None
+        return _obs_diagnostic_int(value)
 
     def _risk_plan_zero_diagnostics(
         self,
@@ -6964,16 +6951,7 @@ class PolymarketTrader:
 
     @staticmethod
     def _path_truth_parse_ts(raw: object) -> datetime | None:
-        text = str(raw or "").strip()
-        if not text:
-            return None
-        try:
-            parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
-            if parsed.tzinfo is None:
-                parsed = parsed.replace(tzinfo=UTC)
-            return parsed.astimezone(UTC)
-        except Exception:
-            return None
+        return _obs_path_truth_parse_ts(raw)
 
     def _path_truth_elapsed_seconds(self, pos, now: datetime | None = None) -> int | None:
         entry_dt = self._path_truth_parse_ts(getattr(pos, "entry_time", ""))
@@ -7764,20 +7742,11 @@ class PolymarketTrader:
 
     @staticmethod
     def _orderbook_age_ms(snapshot) -> int:
-        try:
-            return int(max(0.0, float(getattr(snapshot, "age_seconds", 0.0) or 0.0)) * 1000)
-        except (TypeError, ValueError):
-            return 0
+        return _obs_orderbook_age_ms(snapshot)
 
     @staticmethod
     def _is_empty_orderbook_error(error: object) -> bool:
-        message = str(error).lower()
-        return (
-            "empty_orderbook" in message
-            or "empty_book" in message
-            or "invalid_orderbook" in message
-            or "clob_empty_response" in message
-        )
+        return _obs_is_empty_orderbook_error(error)
 
     def _is_liquidity_recovery_error(self, error: object, *, research_mode: bool = False) -> bool:
         if self._is_empty_orderbook_error(error):

@@ -1,104 +1,125 @@
 {
-    "$schema":  "active_workflow_state_v1",
-    "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_WAVE3_TESTS_SUBFOLDERS_001 complete — 167 test files into 8 domain folders, 3326 collected, 188 targeted pass",
-    "last_completed_task":  "REPOSITORY_WAVE3_TESTS_SUBFOLDERS_001",
-    "last_commit":  "ee6c25d",
-    "last_commit_message":  "refactor: organize polymarket safe packages (Wave 2, 5/14 files)",
-    "next_task":  "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+    "$schema": "active_workflow_state_v1",
+    "last_updated": "2026-06-28",
+    "current_phase": "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001 complete \u2014 10 pure static functions extracted to trader_lifecycle_observability.py, 307 tests pass",
+    "last_completed_task": "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+    "last_commit": "ee6c25d",
+    "last_commit_message": "refactor: organize polymarket safe packages (Wave 2, 5/14 files)",
+    "next_task": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
     "navigator_state": {
-      "module_registry": "docs/operations/repository/module_registry.json",
-      "symbol_index": "docs/operations/repository/symbol_index.json",
-      "navigation": "docs/operations/repository/navigation.json",
-      "safe_move_candidates": 14,
-      "trader_method_groups": 16,
-      "high_risk_groups": ["execution","risk","sizing","reconciliation","balance"],
-      "safe_first_extraction_groups": ["observability","telemetry","path_truth","orderbook_lineage","decision_diag","paper","dashboard"]
+        "module_registry": "docs/operations/repository/module_registry.json",
+        "symbol_index": "docs/operations/repository/symbol_index.json",
+        "navigation": "docs/operations/repository/navigation.json",
+        "safe_move_candidates": 14,
+        "trader_method_groups": 16,
+        "high_risk_groups": [
+            "execution",
+            "risk",
+            "sizing",
+            "reconciliation",
+            "balance"
+        ],
+        "safe_first_extraction_groups": [
+            "observability",
+            "telemetry",
+            "path_truth",
+            "orderbook_lineage",
+            "decision_diag",
+            "paper",
+            "dashboard"
+        ]
     },
     "decomposition_state": {
-      "trader_py_lines": 13589,
-      "trader_py_methods": 305,
-      "phases_completed": 0,
-      "phases_planned": 8,
-      "already_extracted": ["shadow_policy.py", "market_availability_engine.py", "bankroll_rank_engine.py", "size_sharp_engine.py"],
-      "target_trader_py_lines_after_phase8": 5000
+        "trader_py_lines": 13589,
+        "trader_py_methods": 305,
+        "phases_completed": 0,
+        "phases_planned": 8,
+        "already_extracted": [
+            "shadow_policy.py",
+            "market_availability_engine.py",
+            "bankroll_rank_engine.py",
+            "size_sharp_engine.py"
+        ],
+        "target_trader_py_lines_after_phase8": 5000
     },
     "policy_candidate": {
-      "min_ev": 0.12,
-      "min_probability": 0.65,
-      "risk_mode_allowlist": ["NORMAL"],
-      "n": 122,
-      "sharpe": 0.0605,
-      "total_pnl": 0.1256,
-      "profit_factor": 1.178,
-      "confidence": "HIGH",
-      "statistical_significance": "NOT_SIGNIFICANT_AT_95PCT",
-      "note": "Edge candidate confirmed but needs 2000+ trades for statistical significance"
+        "min_ev": 0.12,
+        "min_probability": 0.65,
+        "risk_mode_allowlist": [
+            "NORMAL"
+        ],
+        "n": 122,
+        "sharpe": 0.0605,
+        "total_pnl": 0.1256,
+        "profit_factor": 1.178,
+        "confidence": "HIGH",
+        "statistical_significance": "NOT_SIGNIFICANT_AT_95PCT",
+        "note": "Edge candidate confirmed but needs 2000+ trades for statistical significance"
     },
-    "next_workflow_tier":  "LOOP",
-    "working_tree_expected":  "clean",
-    "github_status":  "CURRENT",
-    "resource_governance":  "ACTIVE - see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
-    "repo_health_check":  "ACTIVE - see docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
-    "batch_3c_started":  true,
-    "blocked":  false,
-    "active_question_status":  "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
-    "refactor_state":  {
-                           "trader_py_lines":  13467,
-                           "completed_batches":  [
-                                                     "Batch-1",
-                                                     "Batch-2A",
-                                                     "Batch-3A",
-                                                     "Batch-3B-1",
-                                                     "Batch-3B-2",
-                                                     "Batch-3B-dedup",
-                                                     "Batch-3C-observability"
-                                                 ],
-                           "next_batch":  "Batch-3D-risk-budget",
-                           "architecture_master_plan":  "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
-                           "last_runtime_refactor_commit":  "ed14faa51b7dd196fcd6041a274446f57e457c8d"
-                       },
-    "workflow_governance":  {
-                                "loop_engineering_enabled":  true,
-                                "loop_memory_operational":  true,
-                                "active_loop_memory_file":  "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
-                                "loop_memory_policy":  "append_only_to_active",
-                                "last_loop_memory_rollover_utc":  "2026-06-28T08:28:41Z",
-                                "awe_design_committed":  true,
-                                "awe_implemented":  false,
-                                "loop_playbook":  "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
-                            },
-    "recommended_first_reads":  [
-                                    "docs/operations/AI_REPO_BOOTSTRAP_001.md",
-                                    "PROJECT_RULES.md",
-                                    "MASTER_AGENT_ROUTER.md",
-                                    "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
-                                    "docs/operations/TASK_QUEUE_001.json",
-                                    "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
-                                ],
-    "loop_runtime_engine":  {
-                                "version":  "v1",
-                                "spec":  "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
-                                "schema_ref":  "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
-                                "status":  "specification_only"
-                            },
-    "quant_truth_engine_audit":  {
-                                     "status":  "COMPLETE",
-                                     "data_readiness":  "PARTIAL",
-                                     "trade_open_count":  797,
-                                     "real_close_count":  1469,
-                                     "paper_win_rate":  0.629,
-                                     "gross_pnl":  347.43,
-                                     "critical_gap":  "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
-                                     "next_task":  "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001",
-                                     "audit_doc":  "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
-                                 },
-    "canonical_trade_context":  {
-                                    "status":  "LINEAGE_AUDITED",
-                                    "spec_doc":  "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
-                                    "report_doc":  "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
-                                    "compiler_script":  "tools/canonical_trade_context_builder.py",
-                                    "test_suite":  "tests/test_canonical_trade_context_builder.py"
-                                },
-    "notes":  "Decomposition plan complete. Inventoried 35 polymarket/ files (14 SAFE_MOVE candidates), 166 tests/ files (6 subfolder groups), 304 trader.py methods (grouped by risk: 37 SAFE_OBSERVABILITY, 29 MEDIUM_ORCHESTRATION, 45 HIGH_RUNTIME_RISK DO_NOT_TOUCH). Target: polymarket/observability/, polymarket/models/, polymarket/market/, polymarket/backtest/. First executable task: TESTS_AIROS_SUBFOLDER_BATCH_001 (5 test_airos_ files to tests/airos/). Trader.py extraction deferred to Phase E+ pending blast-radius graph approval."
+    "next_workflow_tier": "LOOP",
+    "working_tree_expected": "clean",
+    "github_status": "CURRENT",
+    "resource_governance": "ACTIVE - see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
+    "repo_health_check": "ACTIVE - see docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
+    "batch_3c_started": true,
+    "blocked": false,
+    "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
+    "refactor_state": {
+        "trader_py_lines": 13467,
+        "completed_batches": [
+            "Batch-1",
+            "Batch-2A",
+            "Batch-3A",
+            "Batch-3B-1",
+            "Batch-3B-2",
+            "Batch-3B-dedup",
+            "Batch-3C-observability"
+        ],
+        "next_batch": "Batch-3D-risk-budget",
+        "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
+        "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
+    },
+    "workflow_governance": {
+        "loop_engineering_enabled": true,
+        "loop_memory_operational": true,
+        "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+        "loop_memory_policy": "append_only_to_active",
+        "last_loop_memory_rollover_utc": "2026-06-28T08:28:41Z",
+        "awe_design_committed": true,
+        "awe_implemented": false,
+        "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
+    },
+    "recommended_first_reads": [
+        "docs/operations/AI_REPO_BOOTSTRAP_001.md",
+        "PROJECT_RULES.md",
+        "MASTER_AGENT_ROUTER.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "loop_runtime_engine": {
+        "version": "v1",
+        "spec": "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
+        "schema_ref": "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
+        "status": "specification_only"
+    },
+    "quant_truth_engine_audit": {
+        "status": "COMPLETE",
+        "data_readiness": "PARTIAL",
+        "trade_open_count": 797,
+        "real_close_count": 1469,
+        "paper_win_rate": 0.629,
+        "gross_pnl": 347.43,
+        "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
+        "next_task": "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001",
+        "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
+    },
+    "canonical_trade_context": {
+        "status": "LINEAGE_AUDITED",
+        "spec_doc": "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+        "report_doc": "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+        "compiler_script": "tools/canonical_trade_context_builder.py",
+        "test_suite": "tests/test_canonical_trade_context_builder.py"
+    },
+    "notes": "Decomposition plan complete. Inventoried 35 polymarket/ files (14 SAFE_MOVE candidates), 166 tests/ files (6 subfolder groups), 304 trader.py methods (grouped by risk: 37 SAFE_OBSERVABILITY, 29 MEDIUM_ORCHESTRATION, 45 HIGH_RUNTIME_RISK DO_NOT_TOUCH). Target: polymarket/observability/, polymarket/models/, polymarket/market/, polymarket/backtest/. First executable task: TESTS_AIROS_SUBFOLDER_BATCH_001 (5 test_airos_ files to tests/airos/). Trader.py extraction deferred to Phase E+ pending blast-radius graph approval."
 }

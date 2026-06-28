@@ -1633,6 +1633,7 @@
     "polymarket/observability/__init__.py": [],
     "polymarket/observability/realtime_logger.py": [],
     "polymarket/observability/shadow_telemetry.py": [],
+    "polymarket/observability/trader_lifecycle_observability.py": [],
     "polymarket/observability/trader_presentation.py": [],
     "polymarket/opportunity_scanner.py": [
       "polymarket/bankroll_tiers.py",
@@ -1695,6 +1696,7 @@
       "polymarket/market_availability_engine.py",
       "polymarket/models/quant_indicators.py",
       "polymarket/observability/shadow_telemetry.py",
+      "polymarket/observability/trader_lifecycle_observability.py",
       "polymarket/observability/trader_presentation.py",
       "polymarket/opportunity_scanner.py",
       "polymarket/orchestration/trader_lifecycle.py",
@@ -2838,7 +2840,7 @@
     "web-dashboard/src/app/page.tsx": [],
     "web-dashboard/tsconfig.json": []
   },
-  "edge_count": 429,
+  "edge_count": 430,
   "edges": [
     [
       "polymarket/arbitrage.py",
@@ -3031,6 +3033,10 @@
     [
       "polymarket/trader.py",
       "polymarket/observability/shadow_telemetry.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_lifecycle_observability.py"
     ],
     [
       "polymarket/trader.py",
@@ -5077,7 +5083,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-28T17:06:40.929999Z",
+  "generated_at_utc": "2026-06-28T17:20:01.230921Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -14751,6 +14757,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "polymarket/observability/trader_lifecycle_observability.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "polymarket/observability/trader_presentation.py": {
       "blast_radius_score": 6,
       "inbound_dependencies_count": 2,
@@ -14854,10 +14866,10 @@
       "outbound_dependencies_count": 1
     },
     "polymarket/trader.py": {
-      "blast_radius_score": 270,
+      "blast_radius_score": 273,
       "inbound_dependencies_count": 52,
       "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 38
+      "outbound_dependencies_count": 39
     },
     "polymarket/trend_runner.py": {
       "blast_radius_score": 12,
@@ -18412,7 +18424,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2222,
+  "node_count": 2223,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -20026,6 +20038,7 @@
     "polymarket/observability/__init__.py",
     "polymarket/observability/realtime_logger.py",
     "polymarket/observability/shadow_telemetry.py",
+    "polymarket/observability/trader_lifecycle_observability.py",
     "polymarket/observability/trader_presentation.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
@@ -22371,6 +22384,9 @@
       "polymarket/trader.py",
       "tests/integration/test_shadow_filters.py"
     ],
+    "polymarket/observability/trader_lifecycle_observability.py": [
+      "polymarket/trader.py"
+    ],
     "polymarket/observability/trader_presentation.py": [
       "polymarket/orchestration/trader_observability.py",
       "polymarket/trader.py"
@@ -23536,6 +23552,7 @@
     "polymarket/observability/__init__.py",
     "polymarket/observability/realtime_logger.py",
     "polymarket/observability/shadow_telemetry.py",
+    "polymarket/observability/trader_lifecycle_observability.py",
     "polymarket/observability/trader_presentation.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
@@ -30679,6 +30696,14 @@
     },
     "polymarket/observability/shadow_telemetry.py": {
       "unresolved_external": [
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/trader_lifecycle_observability.py": {
+      "unresolved_external": [
+        "__future__",
+        "datetime",
         "typing"
       ],
       "unresolved_internal": []

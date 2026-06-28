@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T17:06:41.816828Z",
-  "module_count": 433,
+  "generated_at_utc": "2026-06-28T17:20:01.647933Z",
+  "module_count": 434,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -962,6 +962,24 @@
       "recommended_target_folder": null
     },
     {
+      "path": "polymarket/observability/trader_lifecycle_observability.py",
+      "module_name": "polymarket.observability.trader_lifecycle_observability",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 192,
+      "blast_radius_score": 3,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "polymarket/trader.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
       "path": "polymarket/observability/trader_presentation.py",
       "module_name": "polymarket.observability.trader_presentation",
       "domain": "polymarket",
@@ -1348,8 +1366,8 @@
       "module_name": "polymarket.trader",
       "domain": "polymarket",
       "package": "polymarket",
-      "line_count": 13589,
-      "blast_radius_score": 270,
+      "line_count": 13558,
+      "blast_radius_score": 273,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
       "do_not_touch": true,
@@ -1367,6 +1385,7 @@
         "polymarket/market_availability_engine.py",
         "polymarket/models/quant_indicators.py",
         "polymarket/observability/shadow_telemetry.py",
+        "polymarket/observability/trader_lifecycle_observability.py",
         "polymarket/observability/trader_presentation.py",
         "polymarket/opportunity_scanner.py",
         "polymarket/orchestration/trader_lifecycle.py",
