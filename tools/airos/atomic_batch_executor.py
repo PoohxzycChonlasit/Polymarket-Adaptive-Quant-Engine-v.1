@@ -57,12 +57,36 @@ def rewrite_imports_in_file(filepath, import_maps):
                     content = content.replace(old_from_tools, new_from_tools)
                     modified = True
 
+            # Pattern 4: monkeypatch/mock string literals "tools.abc.func" or 'tools.abc.func'
+            # Replace any quoted string that begins with old module path
+            for quote in ('"', "'"):
+                old_quoted = f"{quote}{old}."
+                new_quoted = f"{quote}{new}."
+                if old_quoted in content:
+                    content = content.replace(old_quoted, new_quoted)
+                    modified = True
+                # Also exact match (module only, no trailing dot)
+                old_exact = f"{quote}{old}{quote}"
+                new_exact = f"{quote}{new}{quote}"
+                if old_exact in content:
+                    content = content.replace(old_exact, new_exact)
+                    modified = True
+
+            # Pattern 5: importlib.import_module("tools.abc") or ('tools.abc')
+            for quote in ('"', "'"):
+                old_importlib = f"importlib.import_module({quote}{old}{quote})"
+                new_importlib = f"importlib.import_module({quote}{new}{quote})"
+                if old_importlib in content:
+                    content = content.replace(old_importlib, new_importlib)
+                    modified = True
+
         if modified:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(content)
             print(f"Rewrote imports in: {filepath}")
     except Exception as e:
         print(f"Error rewriting imports in {filepath}: {e}", file=sys.stderr)
+
 
 
 def run_command(cmd_str, repo_root):
@@ -181,7 +205,13 @@ def main():
             target_abs = os.path.join(repo_root, tp)
             
             # Ensure parent directories exist
-            os.makedirs(os.path.dirname(target_abs), exist_ok=True)
+            target_dir = os.path.dirname(target_abs)
+            os.makedirs(target_dir, exist_ok=True)
+            init_file = os.path.join(target_dir, "__init__.py")
+            if not os.path.exists(init_file):
+                with open(init_file, "w", encoding="utf-8") as f:
+                    f.write('"""AIROS package."""\n')
+                subprocess.run(["git", "add", init_file], cwd=repo_root, check=False)
             
             print(f"Moving: {sp} -> {tp}")
             # Run git mv

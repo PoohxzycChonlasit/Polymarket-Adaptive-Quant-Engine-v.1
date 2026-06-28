@@ -1531,5 +1531,46 @@
     },
     "verdict": "AIROS_NEXT_SAFE_BATCH_PASS",
     "next_recommendation": "REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "AIROS_MIGRATION_ANALYZER_AND_PATCH_PLANNER_001",
+    "task_class": 4,
+    "scope": [
+      "tools/airos/migration_analyzer.py",
+      "tools/airos/atomic_batch_executor.py",
+      "tests/test_airos_migration_analyzer.py",
+      "docs/operations/repository/migration_patch_plan.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "C",
+    "commits": ["pending"],
+    "files_changed": 4,
+    "net_lines": 350,
+    "acceptance_criteria": {
+      "analyzer_created": true,
+      "tests_pass": "14/14",
+      "detects_monkeypatch_strings": true,
+      "detects_path_literals": true,
+      "detects_repo_path_builds": true,
+      "detects_importlib_strings": true,
+      "detects_init_required": true,
+      "output_sorted_deterministic": true,
+      "cli_smoke_writes_plan": true,
+      "executor_pattern4_added": true,
+      "executor_pattern5_added": true,
+      "live_analysis_outcome_truth_batch": {
+        "monkeypatch_rewrites": 4,
+        "init_files_required": 1,
+        "path_literal_rewrites": 0,
+        "unresolved_patterns": 0
+      },
+      "active_loop_memory_updated": true
+    },
+    "verdict": "ANALYZER_TOOLING_PASS",
+    "next_recommendation": "RUN_OUTCOME_TRUTH_BATCH_WITH_ANALYZER_GUIDED_EXECUTION"
   }
 ]

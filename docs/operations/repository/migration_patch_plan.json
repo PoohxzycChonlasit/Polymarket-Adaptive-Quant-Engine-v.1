@@ -1,0 +1,303 @@
+{
+  "schema_version": "migration_patch_plan_v1",
+  "generated_at_utc": "2026-06-28T15:07:47Z",
+  "batch_id": "REPOSITORY_PHASE1_OUTCOME_TRUTH_BATCH_001",
+  "risk_level": "MEDIUM_ATOMIC",
+  "approval_required": false,
+  "source_paths": [
+    "tools/official_resolution_acquire_pilot.py",
+    "tools/official_resolution_outcome_join.py",
+    "tools/official_resolution_rpc_client.py",
+    "tools/outcome_truth_graduation.py",
+    "tools/outcome_truth_population_manifest.py",
+    "tools/outcome_truth_streaming_scan.py"
+  ],
+  "target_paths": [
+    "tools/outcome_truth/official_resolution_acquire_pilot.py",
+    "tools/outcome_truth/official_resolution_outcome_join.py",
+    "tools/outcome_truth/official_resolution_rpc_client.py",
+    "tools/outcome_truth/outcome_truth_graduation.py",
+    "tools/outcome_truth/outcome_truth_population_manifest.py",
+    "tools/outcome_truth/outcome_truth_streaming_scan.py"
+  ],
+  "module_rewrite_map": {
+    "tools.official_resolution_acquire_pilot": "tools.outcome_truth.official_resolution_acquire_pilot",
+    "tools.official_resolution_outcome_join": "tools.outcome_truth.official_resolution_outcome_join",
+    "tools.official_resolution_rpc_client": "tools.outcome_truth.official_resolution_rpc_client",
+    "tools.outcome_truth_graduation": "tools.outcome_truth.outcome_truth_graduation",
+    "tools.outcome_truth_population_manifest": "tools.outcome_truth.outcome_truth_population_manifest",
+    "tools.outcome_truth_streaming_scan": "tools.outcome_truth.outcome_truth_streaming_scan"
+  },
+  "file_path_rewrite_map": {
+    "tools/official_resolution_acquire_pilot.py": "tools/outcome_truth/official_resolution_acquire_pilot.py",
+    "tools/official_resolution_outcome_join.py": "tools/outcome_truth/official_resolution_outcome_join.py",
+    "tools/official_resolution_rpc_client.py": "tools/outcome_truth/official_resolution_rpc_client.py",
+    "tools/outcome_truth_graduation.py": "tools/outcome_truth/outcome_truth_graduation.py",
+    "tools/outcome_truth_population_manifest.py": "tools/outcome_truth/outcome_truth_population_manifest.py",
+    "tools/outcome_truth_streaming_scan.py": "tools/outcome_truth/outcome_truth_streaming_scan.py"
+  },
+  "affected_files": {
+    "tests/test_official_resolution_acquire_pilot.py": {
+      "import_statements": [
+        {
+          "line_no": 6,
+          "line_content": "from tools.official_resolution_acquire_pilot import (",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_official_resolution_full_history_runner.py": {
+      "import_statements": [
+        {
+          "line_no": 9,
+          "line_content": "from tools.official_resolution_rpc_client import ARCHIVE_RPC_ENV_VAR, ArchiveRpcError",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [
+        {
+          "line_no": 467,
+          "line_content": "\"tools.official_resolution_acquire_pilot.build_pilot_package\", build_pilot_package",
+          "pattern_type": "monkeypatch_string"
+        },
+        {
+          "line_no": 470,
+          "line_content": "\"tools.official_resolution_acquire_pilot.verify_pilot_package\", _fake_verifier",
+          "pattern_type": "monkeypatch_string"
+        },
+        {
+          "line_no": 513,
+          "line_content": "\"tools.official_resolution_acquire_pilot.build_pilot_package\", build_pilot_package",
+          "pattern_type": "monkeypatch_string"
+        },
+        {
+          "line_no": 516,
+          "line_content": "\"tools.official_resolution_acquire_pilot.verify_pilot_package\", _fake_verifier",
+          "pattern_type": "monkeypatch_string"
+        }
+      ],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_official_resolution_outcome_join.py": {
+      "import_statements": [
+        {
+          "line_no": 7,
+          "line_content": "from tools.official_resolution_outcome_join import join_official_outcomes",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_official_resolution_rpc_client.py": {
+      "import_statements": [
+        {
+          "line_no": 8,
+          "line_content": "from tools.official_resolution_rpc_client import (",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_outcome_truth_graduation.py": {
+      "import_statements": [
+        {
+          "line_no": 9,
+          "line_content": "from tools.outcome_truth_graduation import GraduationError, graduate_outcome_truth",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_outcome_truth_pipeline_integration.py": {
+      "import_statements": [
+        {
+          "line_no": 8,
+          "line_content": "from tools.official_resolution_outcome_join import join_official_outcomes",
+          "pattern_type": "import"
+        },
+        {
+          "line_no": 9,
+          "line_content": "from tools.outcome_truth_graduation import graduate_outcome_truth",
+          "pattern_type": "import"
+        },
+        {
+          "line_no": 10,
+          "line_content": "from tools.outcome_truth_population_manifest import generate_population_manifest",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_outcome_truth_population_manifest.py": {
+      "import_statements": [
+        {
+          "line_no": 10,
+          "line_content": "from tools.outcome_truth_population_manifest import (",
+          "pattern_type": "import"
+        },
+        {
+          "line_no": 237,
+          "line_content": "import tools.outcome_truth_population_manifest as target_module",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tests/test_outcome_truth_streaming_scan.py": {
+      "import_statements": [
+        {
+          "line_no": 9,
+          "line_content": "from tools.outcome_truth_streaming_scan import (",
+          "pattern_type": "import"
+        },
+        {
+          "line_no": 63,
+          "line_content": "import tools.outcome_truth_streaming_scan as target_module",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tools/official_resolution_acquire_pilot.py": {
+      "import_statements": [
+        {
+          "line_no": 16,
+          "line_content": "from tools.official_resolution_rpc_client import ArchiveRpcClient",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    },
+    "tools/official_resolution_full_history_runner.py": {
+      "import_statements": [
+        {
+          "line_no": 308,
+          "line_content": "from tools.official_resolution_acquire_pilot import (",
+          "pattern_type": "import"
+        },
+        {
+          "line_no": 313,
+          "line_content": "from tools.official_resolution_rpc_client import ArchiveRpcClient",
+          "pattern_type": "import"
+        }
+      ],
+      "monkeypatch_strings": [],
+      "path_literals": [],
+      "repo_path_builds": [],
+      "ast_source_readers": [],
+      "importlib_strings": []
+    }
+  },
+  "test_files": [
+    "tests/test_official_resolution_acquire_pilot.py",
+    "tests/test_official_resolution_full_history_runner.py",
+    "tests/test_official_resolution_outcome_join.py",
+    "tests/test_official_resolution_rpc_client.py",
+    "tests/test_outcome_truth_graduation.py",
+    "tests/test_outcome_truth_pipeline_integration.py",
+    "tests/test_outcome_truth_population_manifest.py",
+    "tests/test_outcome_truth_streaming_scan.py"
+  ],
+  "monkeypatch_rewrites": [
+    {
+      "file": "tests/test_official_resolution_full_history_runner.py",
+      "line_no": 467,
+      "old_string": "tools.official_resolution_acquire_pilot",
+      "new_string": "tools.outcome_truth.official_resolution_acquire_pilot",
+      "line_before": "\"tools.official_resolution_acquire_pilot.build_pilot_package\", build_pilot_package",
+      "line_after": "\"tools.outcome_truth.official_resolution_acquire_pilot.build_pilot_package\", build_pilot_package"
+    },
+    {
+      "file": "tests/test_official_resolution_full_history_runner.py",
+      "line_no": 470,
+      "old_string": "tools.official_resolution_acquire_pilot",
+      "new_string": "tools.outcome_truth.official_resolution_acquire_pilot",
+      "line_before": "\"tools.official_resolution_acquire_pilot.verify_pilot_package\", _fake_verifier",
+      "line_after": "\"tools.outcome_truth.official_resolution_acquire_pilot.verify_pilot_package\", _fake_verifier"
+    },
+    {
+      "file": "tests/test_official_resolution_full_history_runner.py",
+      "line_no": 513,
+      "old_string": "tools.official_resolution_acquire_pilot",
+      "new_string": "tools.outcome_truth.official_resolution_acquire_pilot",
+      "line_before": "\"tools.official_resolution_acquire_pilot.build_pilot_package\", build_pilot_package",
+      "line_after": "\"tools.outcome_truth.official_resolution_acquire_pilot.build_pilot_package\", build_pilot_package"
+    },
+    {
+      "file": "tests/test_official_resolution_full_history_runner.py",
+      "line_no": 516,
+      "old_string": "tools.official_resolution_acquire_pilot",
+      "new_string": "tools.outcome_truth.official_resolution_acquire_pilot",
+      "line_before": "\"tools.official_resolution_acquire_pilot.verify_pilot_package\", _fake_verifier",
+      "line_after": "\"tools.outcome_truth.official_resolution_acquire_pilot.verify_pilot_package\", _fake_verifier"
+    }
+  ],
+  "path_literal_rewrites": [],
+  "dynamic_import_rewrites": [],
+  "init_files_required": [
+    "tools/outcome_truth/__init__.py"
+  ],
+  "pre_move_patch_recommendations": [
+    "Rewrite 4 monkeypatch string literal(s) before or during move.",
+    "Create __init__.py in 1 target director(ies): ['tools/outcome_truth/__init__.py']."
+  ],
+  "post_move_validation_commands": [
+    ".venv\\Scripts\\python.exe -m py_compile tools\\outcome_truth\\official_resolution_acquire_pilot.py",
+    ".venv\\Scripts\\python.exe -m py_compile tools\\outcome_truth\\official_resolution_outcome_join.py",
+    ".venv\\Scripts\\python.exe -m py_compile tools\\outcome_truth\\official_resolution_rpc_client.py",
+    ".venv\\Scripts\\python.exe -m py_compile tools\\outcome_truth\\outcome_truth_graduation.py",
+    ".venv\\Scripts\\python.exe -m py_compile tools\\outcome_truth\\outcome_truth_population_manifest.py",
+    ".venv\\Scripts\\python.exe -m py_compile tools\\outcome_truth\\outcome_truth_streaming_scan.py",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_official_resolution_acquire_pilot.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_official_resolution_full_history_runner.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_official_resolution_outcome_join.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_official_resolution_rpc_client.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_outcome_truth_graduation.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_outcome_truth_pipeline_integration.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_outcome_truth_population_manifest.py -q",
+    ".venv\\Scripts\\python.exe -m pytest tests\\test_outcome_truth_streaming_scan.py -q",
+    "git grep \"tools.official_resolution_acquire_pilot\"",
+    "git grep \"tools.official_resolution_outcome_join\"",
+    "git grep \"tools.official_resolution_rpc_client\"",
+    "git grep \"tools.outcome_truth_graduation\"",
+    "git grep \"tools.outcome_truth_population_manifest\"",
+    "git grep \"tools.outcome_truth_streaming_scan\""
+  ],
+  "unresolved_patterns": []
+}

@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "AIROS_NEXT_SAFE_BATCH_EXECUTION_001 complete - Probes batch relocated",
-    "last_completed_task":  "AIROS_NEXT_SAFE_BATCH_EXECUTION_001",
-    "last_commit":  "pending-at-report-time",
-    "last_commit_message":  "refactor: execute next AIROS safe batch",
-    "next_task":  "REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001",
+    "current_phase":  "AIROS_MIGRATION_ANALYZER_AND_PATCH_PLANNER_001 complete",
+    "last_completed_task":  "AIROS_MIGRATION_ANALYZER_AND_PATCH_PLANNER_001",
+    "last_commit":  "pending",
+    "last_commit_message":  "feat: add AIROS migration analyzer",
+    "next_task":  "RUN_OUTCOME_TRUTH_BATCH_WITH_ANALYZER_GUIDED_EXECUTION",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -91,5 +91,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Phase 1H lifecycle truth tools move complete. Moved cross_run_lifecycle_truth.py into tools/shadow/ and lifecycle_truth_backfill.py into tools/replay/. Updated moved backfill import and two targeted tests. Reference validation found no active stale old module/path references in non-doc/non-JSON files. py_compile passed and targeted pytest passed 6/6. No polymarket, runtime trading code, strategy, sizing, risk, execution, dashboard, Telegram, .env, builders, backtests, paper runtime, or live runtime changed. Next dependency-aware plan should cover lifecycle_truth_tables.py because moved backfill still imports tools.lifecycle_truth_tables and that root tool has multiple direct importers."
+    "notes":  "AIROS migration analyzer created (tools/airos/migration_analyzer.py). Scans repo BEFORE any move for monkeypatch string refs, Path literal refs, repo path builds, importlib strings, and __init__.py requirements. Executor atomic_batch_executor.py upgraded with Pattern 4 (monkeypatch string literals) and Pattern 5 (importlib strings). Live analysis of OUTCOME_TRUTH_BATCH_001: 4 monkeypatch rewrites + 1 __init__.py required (root cause of all prior executor failures). Tests: 14/14 pass. Next: re-run OUTCOME_TRUTH batch."
 }
