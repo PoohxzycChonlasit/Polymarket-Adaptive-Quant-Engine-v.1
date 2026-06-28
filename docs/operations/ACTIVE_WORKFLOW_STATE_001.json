@@ -1,10 +1,10 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "Enterprise Market Intelligence Phase 1 complete - Market Intelligence Layer designed",
-    "last_completed_task":  "ENTERPRISE_MARKET_INTELLIGENCE_PHASE_1",
-    "last_commit":  "01328d1",
-    "last_commit_message":  "docs: add tools phase 1d complex move plan",
+    "current_phase":  "MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001 complete - Market Intelligence contracts designed",
+    "last_completed_task":  "MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001",
+    "last_commit":  "c33ee17",
+    "last_commit_message":  "docs: add market intelligence layer design",
     "next_task":  "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_001",
     "decomposition_state": {
       "trader_py_lines": 13589,

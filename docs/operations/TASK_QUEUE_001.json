@@ -1820,6 +1820,27 @@
         "docs/architecture/MARKET_INTELLIGENCE_LAYER_SPEC_001.md"
       ],
       "notes": "DONE. Created docs/architecture/MARKET_INTELLIGENCE_LAYER_SPEC_001.md outlining the layered intelligence engines, json schema, telemetry additions, replay compatibility, and lifecycle inventory integration."
+    },
+    {
+      "priority": 0,
+      "task_id": "MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Expand the existing Market Intelligence Layer design into enterprise-grade contracts, schemas, dependency graph, ownership model, state machine, and replay/observability interfaces.",
+      "blocked_by": "ENTERPRISE_MARKET_INTELLIGENCE_PHASE_1",
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/MARKET_INTELLIGENCE_CONTRACTS_001.md",
+        "docs/architecture/MARKET_STATE_SCHEMA_001.md",
+        "docs/architecture/MARKET_INTELLIGENCE_DEPENDENCY_GRAPH_001.md",
+        "docs/reports/MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001.md"
+      ],
+      "notes": "DONE. Created docs/architecture/MARKET_INTELLIGENCE_CONTRACTS_001.md, docs/architecture/MARKET_STATE_SCHEMA_001.md, docs/architecture/MARKET_INTELLIGENCE_DEPENDENCY_GRAPH_001.md, and docs/reports/MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001.md."
     }
   ]
 }
