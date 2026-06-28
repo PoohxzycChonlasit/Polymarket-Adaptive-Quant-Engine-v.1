@@ -2112,6 +2112,28 @@
         "docs/reports/AIROS_V2_STATIC_REPOSITORY_INDEX_GENERATOR_001.md"
       ],
       "notes": "DONE. Implemented tools/airos/repository_index_generator.py and its unit test suite. Generated the 4 JSON files (repository_index, tool_registry, test_registry, and repo_health)."
+    },
+    {
+      "priority": 0,
+      "task_id": "AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement the AIROS v2 dependency graph builder that consumes repository_index.json and emits dependency_graph.json with forward imports, reverse importers, test links, and blast-radius-ready metadata.",
+      "blocked_by": "AIROS_V2_STATIC_REPOSITORY_INDEX_GENERATOR_001",
+      "allowed_scope": [
+        "tools/airos/",
+        "tests/test_airos_dependency_graph_builder.py",
+        "docs/operations/repository/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/airos/dependency_graph_builder.py",
+        "tests/test_airos_dependency_graph_builder.py",
+        "docs/operations/repository/dependency_graph.json",
+        "docs/reports/AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001.md"
+      ],
+      "notes": "DONE. Implemented tools/airos/dependency_graph_builder.py and its unit test suite. Generated dependency_graph.json."
     }
   ]
 }
