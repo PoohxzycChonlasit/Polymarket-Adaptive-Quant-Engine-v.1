@@ -1716,7 +1716,7 @@
     {
       "priority": -1,
       "task_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 6,
       "description": "Move the selected canonical and replay tools into tools/canonical/ and tools/replay/ and update their tests.",
@@ -1734,7 +1734,24 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001.md"
       ],
-      "notes": "Move canonical_regime_export.py -> tools/canonical/ and runtime_event_replay.py -> tools/replay/. Update imports in test_canonical_regime_export.py and test_runtime_event_stream.py. Validate with old reference searches, py_compile, and targeted pytests. Do not run full tests/builders."
+      "notes": "DONE. Moved tools/canonical_regime_export.py -> tools/canonical/ and tools/runtime_event_replay.py -> tools/replay/. Updated targeted test imports, verified clean py_compile and 30/30 passing targeted tests."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design the next safe tools migration batch for high-reference/complex canonical tools.",
+      "blocked_by": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001.md"
+      ],
+      "notes": "Plan the move for deferred canonical tools (canonical_trade_context_builder.py, canonical_trade_table_v1.py) and their high-reference imports."
     }
   ]
 }

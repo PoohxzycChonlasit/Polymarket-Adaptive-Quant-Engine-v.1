@@ -2677,5 +2677,38 @@
     },
     "verdict": "CANONICAL_REPLAY_MOVE_PLAN_PASS",
     "next_recommendation": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
+    "task_class": 6,
+    "scope": [
+      "tools/canonical_regime_export.py -> tools/canonical/canonical_regime_export.py",
+      "tools/runtime_event_replay.py -> tools/replay/runtime_event_replay.py",
+      "tests/test_canonical_regime_export.py",
+      "tests/test_runtime_event_stream.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C",
+    "commits": ["pending-at-report-time"],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "key_findings": {
+      "canonical_regime_export_moved": true,
+      "runtime_event_replay_moved": true,
+      "test_imports_resolved": true,
+      "targeted_tests_all_pass": true
+    },
+    "acceptance_criteria": {
+      "renamed_successfully": true,
+      "targeted_tests_pass": true,
+      "no_runtime_logic_changes": true
+    },
+    "verdict": "CANONICAL_REPLAY_MOVE_PASS",
+    "next_recommendation": "REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001"
   }
 ]
