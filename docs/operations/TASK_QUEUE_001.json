@@ -2298,11 +2298,11 @@
     {
       "priority": 121,
       "task_id": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
-      "status": "READY",
+      "status": "BLOCKED",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Design the next trader.py observability extraction plan for the risk-boundary payload area before any implementation, with explicit dependency and side-effect classification.",
-      "blocked_by": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+      "blocked_by": "TRADER_REFACTOR_TEST_PATH_FIX_001",
       "allowed_scope": [
         "docs/reports/",
         "docs/operations/"
@@ -2310,7 +2310,44 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001.md"
       ],
-      "notes": "READY. Plan first because the likely next safe extraction target is observability-related but named around risk boundary, so dependency and side-effect classification should precede code movement."
+      "notes": "BLOCKED until deterministic path-reorg AST test failures are repaired or explicitly waived. Plan first because the likely next safe extraction target is observability-related but named around risk boundary, so dependency and side-effect classification should precede code movement."
+    },
+    {
+      "priority": 121,
+      "task_id": "TRADER_REFACTOR_TEST_BASELINE_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Establish the broad observability/polymarket test-failure baseline after trader decision diagnostics extraction and before further trader.py decomposition.",
+      "blocked_by": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md"
+      ],
+      "notes": "DONE. Current HEAD 360d5d0 and pre-Phase-2 commit 21a6703 both fail the same 15 node IDs in tests/observability tests/polymarket. Classification: 15 PRE_EXISTING, 0 CAUSED_BY_PHASE2, 3 PATH_REORG_RELATED, 11 TEST_FIX_SAFE, 4 UNKNOWN_NEEDS_REVIEW."
+    },
+    {
+      "priority": 122,
+      "task_id": "TRADER_REFACTOR_TEST_PATH_FIX_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Fix deterministic path-reorg AST tests that still point at tests/polymarket/trader.py or tests/polymarket/signal.py instead of repository source files.",
+      "blocked_by": "TRADER_REFACTOR_TEST_BASELINE_001",
+      "allowed_scope": [
+        "tests/observability/test_candidate_instance_shadow_propagation.py",
+        "tests/polymarket/test_signal_identity.py",
+        "tests/polymarket/test_signal_identity_propagation.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md"
+      ],
+      "notes": "READY. Test-only path fix; do not modify runtime behavior. Expected to clear 3 PATH_REORG_RELATED failures before further trader.py decomposition."
     }
   ]
 }

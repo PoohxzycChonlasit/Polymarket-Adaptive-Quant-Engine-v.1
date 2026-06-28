@@ -1953,5 +1953,41 @@
     },
     "safety_verdict": "OBSERVABILITY_ONLY_CONFIRMED",
     "next_recommendation": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "TRADER_REFACTOR_TEST_BASELINE_001",
+    "task_class": 5,
+    "result": "BASELINE_ESTABLISHED_NO_PHASE2_REGRESSION_DETECTED",
+    "evidence_grade": "A+C",
+    "scope": [
+      "tests/observability",
+      "tests/polymarket",
+      "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "baseline": {
+      "current_head": "360d5d0",
+      "current_result": "660 passed, 15 failed, 5 warnings",
+      "pre_phase2_ref": "21a6703",
+      "pre_phase2_result": "658 passed, 15 failed, 5 warnings",
+      "matching_failure_node_ids": true,
+      "caused_by_phase2": 0
+    },
+    "failure_classes": {
+      "PRE_EXISTING": 15,
+      "CAUSED_BY_PHASE2": 0,
+      "PATH_REORG_RELATED": 3,
+      "TEST_FIX_SAFE": 11,
+      "UNKNOWN_NEEDS_REVIEW": 4
+    },
+    "next_recommendation": "TRADER_REFACTOR_TEST_PATH_FIX_001"
   }
 ]

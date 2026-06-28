@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001 complete — _decision_diagnostics_payload extracted to trader_decision_diagnostics.py with wrapper compatibility and targeted tests passing",
-    "last_completed_task": "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+    "current_phase": "TRADER_REFACTOR_TEST_BASELINE_001 complete - broad observability/polymarket subset baseline established; 15 failures reproduced before and after Phase 2",
+    "last_completed_task": "TRADER_REFACTOR_TEST_BASELINE_001",
     "last_commit": "pending-at-commit-time",
-    "last_commit_message": "refactor: extract trader decision diagnostics builder",
-    "next_task": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001",
+    "last_commit_message": "docs: add trader refactor test baseline",
+    "next_task": "TRADER_REFACTOR_TEST_PATH_FIX_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -115,7 +115,7 @@
         "paper_win_rate": 0.629,
         "gross_pnl": 347.43,
         "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
-        "next_task": "CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001",
+        "next_task": "TRADER_REFACTOR_TEST_PATH_FIX_001",
         "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
     },
     "canonical_trade_context": {
