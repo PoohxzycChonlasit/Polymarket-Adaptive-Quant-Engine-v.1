@@ -1098,5 +1098,54 @@
     },
     "verdict": "REPLAY_STEPS_SHADOW_MOVE_PASS",
     "next_recommendation": "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001"
+  },
+  {
+    "timestamp_utc": "2026-06-28T16:30:00Z",
+    "task_id": "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: add cross-run lifecycle truth move plan"],
+    "files_moved": 0,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "selected_option": "move cross_run_lifecycle_truth.py plus lifecycle_truth_backfill.py together",
+      "cross_run_target": "tools/shadow/cross_run_lifecycle_truth.py",
+      "backfill_target": "tools/replay/lifecycle_truth_backfill.py",
+      "direct_tool_importer": "tools/lifecycle_truth_backfill.py",
+      "direct_test_importer": "tests/test_cross_run_lifecycle_truth.py",
+      "research_state_writer_imports_module": false,
+      "research_state_writer_uses_filename_prefix": true,
+      "polymarket_imports_found": false,
+      "full_pytest_run": false,
+      "builders_run": false,
+      "backtests_run": false,
+      "paper_live_runtime_run": false
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "active_loop_memory_pointer_used": true,
+      "airos_bootstrap_read": true,
+      "dependency_analysis_done": true,
+      "selected_batch_defined": true,
+      "validation_plan_defined": true,
+      "rollback_plan_defined": true,
+      "json_validation_required": true,
+      "diff_check_required": true,
+      "no_runtime_files_changed": true
+    },
+    "verdict": "CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_READY",
+    "next_recommendation": "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001"
   }
 ]

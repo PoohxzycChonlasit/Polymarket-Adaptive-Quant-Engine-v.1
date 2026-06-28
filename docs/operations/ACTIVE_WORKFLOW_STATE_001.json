@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_ATOMIC_MOVE_001 complete - replay-step shadow tools moved",
-    "last_completed_task":  "REPOSITORY_PHASE1G_TOOLS_REPLAY_STEPS_SHADOW_ATOMIC_MOVE_001",
+    "current_phase":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001 complete - dependency move plan ready",
+    "last_completed_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001",
     "last_commit":  "pending-at-report-time",
-    "last_commit_message":  "refactor: move remaining shadow replay step tools",
-    "next_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001",
+    "last_commit_message":  "docs: add cross-run lifecycle truth move plan",
+    "next_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -91,5 +91,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Phase 1G replay-step shadow tools move complete. Moved semantic_c_shadow_fill_replay, semantic_c_shadow_pnl_truth, and semantic_c_inventory_continuity_replay into tools/shadow/. Updated multi_session_runner module strings and four targeted tests. cross_run_lifecycle_truth deferred because lifecycle_truth_backfill imports it directly. Targeted pytest passed 239/239. No runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, .env, builder, backtest, paper, or live behavior changes."
+    "notes":  "Phase 1H cross-run lifecycle truth move plan complete. Selected paired future move: tools/cross_run_lifecycle_truth.py -> tools/shadow/cross_run_lifecycle_truth.py and tools/lifecycle_truth_backfill.py -> tools/replay/lifecycle_truth_backfill.py. Current source search found direct imports only in lifecycle_truth_backfill.py and tests/test_cross_run_lifecycle_truth.py; research_state_writer.py uses only the output filename prefix. No tool files, tests, runtime code, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, .env, builders, backtests, paper, or live behavior changed."
 }
