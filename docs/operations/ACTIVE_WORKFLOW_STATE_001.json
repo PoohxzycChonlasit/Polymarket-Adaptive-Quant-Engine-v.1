@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001 complete — 8-phase plan, tools/tests/docs structure designed, polymarket deferred",
-    "last_completed_task":  "REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001",
-    "last_commit":  "96cea93",
-    "last_commit_message":  "docs: trader module decomposition audit — 8-phase plan for 13k-line god class",
-    "next_task":  "REPOSITORY_PHASE0_ROOT_CLEANUP_001",
+    "current_phase":  "REPOSITORY_PHASE0_ROOT_CLEANUP_001 complete — root markdown handoffs and research/planning docs routed",
+    "last_completed_task":  "REPOSITORY_PHASE0_ROOT_CLEANUP_001",
+    "last_commit":  "pending-at-report-time",
+    "last_commit_message":  "docs: clean repository root markdown organization",
+    "next_task":  "REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -26,7 +26,7 @@
       "statistical_significance": "NOT_SIGNIFICANT_AT_95PCT",
       "note": "Edge candidate confirmed but needs 2000+ trades for statistical significance"
     },
-    "next_workflow_tier":  "STANDARD",
+    "next_workflow_tier":  "LOOP",
     "working_tree_expected":  "clean",
     "github_status":  "CURRENT",
     "resource_governance":  "ACTIVE — see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
@@ -87,5 +87,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Manual allowance approval check complete. Identified proxy wallet microstructure: since Signature Type 2 (Polymarket Proxy Wallet) holds funds directly in the CLOB exchange vault as collateral, standard ERC20 allowance is 0.00. The preflight check flags missing_allowance as a false positive. Verdict set to GO_WITH_WARNING."
+    "notes":  "Repository Phase 0 root cleanup complete. AI_HANDOFF files moved to docs/operations/handoffs/. Research/planning roadmap markdown moved to docs/research/. VULTR_PAPER_RUN moved to docs/operations/. Root forwarders KNOWN_ISSUES.md and PROJECT_STRUCTURE.md retained because canonical docs with those names already exist and startup docs still reference the root forwarders."
 }

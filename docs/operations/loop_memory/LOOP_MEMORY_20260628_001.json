@@ -263,5 +263,55 @@
     },
     "resource_savings_expected": "91% API call reduction in dead market windows; eliminates 54-min idle loops",
     "next_recommendation": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE0_ROOT_CLEANUP_001",
+    "task_class": 6,
+    "scope": [
+      "AI_HANDOFF_*.md",
+      "docs/operations/handoffs/",
+      "docs/research/",
+      "docs/operations/VULTR_PAPER_RUN.md",
+      "DOCUMENTATION_MAP.md",
+      "FILE_INDEX.md",
+      "docs/reports/REPOSITORY_PHASE0_ROOT_CLEANUP_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/graph_queries/QUERY-20260628-REPOSITORY_PHASE0_ROOT_CLEANUP_001.md",
+      "docs/operations/execution_contracts/REPOSITORY_PHASE0_ROOT_CLEANUP_001_CONTRACT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 2,
+    "evidence_grade": "A+B+D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["docs: clean repository root markdown organization"],
+    "files_moved": 14,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "handoffs_moved_not_deleted": 7,
+      "research_docs_moved": 6,
+      "operations_docs_moved": 1,
+      "root_markdown_remaining": 13,
+      "project_structure_forwarder_retained": true,
+      "known_issues_forwarder_retained": true,
+      "pytest_run": false,
+      "builders_run": false
+    },
+    "acceptance_criteria": {
+      "git_status_preflight_done": true,
+      "graph_query_done": true,
+      "execution_contract_done": true,
+      "folders_created": true,
+      "no_deletions": true,
+      "json_validation_done": true,
+      "no_runtime_files_changed": true
+    },
+    "next_recommendation": "REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001"
   }
 ]

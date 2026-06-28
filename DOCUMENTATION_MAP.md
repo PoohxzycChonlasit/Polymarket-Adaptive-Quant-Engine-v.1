@@ -18,7 +18,7 @@ Before initiating any development, testing, or research task, new AI agents must
 7. **[`KNOWN_ISSUES.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/KNOWN_ISSUES.md)**: Current live blockers, technical debt, and bugs.
 8. **[`FILE_INDEX.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/FILE_INDEX.md)**: Quick map of active runtime files, tests, directories, and legacy folders.
 9. **[`DOCUMENTATION_MAP.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/DOCUMENTATION_MAP.md)**: This overview guide mapping documentation folders.
-10. **[`QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_FUTURE_DECISION_ENGINE.md)**: Exactly 3 future options for research/runtime decisions.
+10. **[`docs/research/QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/QUANT_FUTURE_DECISION_ENGINE.md)**: Exactly 3 future options for research/runtime decisions.
 
 ---
 

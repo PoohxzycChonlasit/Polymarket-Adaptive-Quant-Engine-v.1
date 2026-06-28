@@ -38,7 +38,7 @@ The following core files remain in the root directory and must be read at the st
 | [`DOCUMENTATION_MAP.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/DOCUMENTATION_MAP.md) | Clean human/AI documentation map. |
 | [`KNOWN_ISSUES.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/KNOWN_ISSUES.md) | Quick pointer to known live issues and tickets. |
 | [`PROJECT_STRUCTURE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/PROJECT_STRUCTURE.md) | Quick pointer to canonical architecture. |
-| [`QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_FUTURE_DECISION_ENGINE.md) | Exactly 3 future options for research/runtime decisions. |
+| [`docs/research/QUANT_FUTURE_DECISION_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/QUANT_FUTURE_DECISION_ENGINE.md) | Exactly 3 future options for research/runtime decisions. |
 
 Use these only for specific task types:
 
@@ -48,11 +48,11 @@ Use these only for specific task types:
 | [`docs/PAPER_TRADING_RUNBOOK.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/PAPER_TRADING_RUNBOOK.md) | Paper run operation and post-run evaluation. |
 | [`docs/BANKROLL_TIER_SYSTEM.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/BANKROLL_TIER_SYSTEM.md) | Bankroll rank/tier context. |
 | [`docs/AGENT_WORKFLOW.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/AGENT_WORKFLOW.md) | How to use project role docs. |
-| [`QUANT_REGIME_PROBABILITY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_REGIME_PROBABILITY_ENGINE.md) | Phase 1 regime/probability diagnostics roadmap. |
-| [`INVENTORY_REPLAY_RESEARCH_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/INVENTORY_REPLAY_RESEARCH_PLAN.md) | Phase 2 paper-only reload/unload replay plan. |
-| [`BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md) | Phase 3 bounded multi-price inventory design target. |
-| [`QUANT_LIFECYCLE_INVENTORY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/QUANT_LIFECYCLE_INVENTORY_ENGINE.md) | Official future lifecycle inventory system specification. |
-| [`MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md) | Spread/liquidity/timing research plan. |
+| [`docs/research/QUANT_REGIME_PROBABILITY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/QUANT_REGIME_PROBABILITY_ENGINE.md) | Phase 1 regime/probability diagnostics roadmap. |
+| [`docs/research/INVENTORY_REPLAY_RESEARCH_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/INVENTORY_REPLAY_RESEARCH_PLAN.md) | Phase 2 paper-only reload/unload replay plan. |
+| [`docs/research/BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/BOUNDED_MULTI_PRICE_INVENTORY_ENGINE.md) | Phase 3 bounded multi-price inventory design target. |
+| [`docs/research/QUANT_LIFECYCLE_INVENTORY_ENGINE.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/QUANT_LIFECYCLE_INVENTORY_ENGINE.md) | Official future lifecycle inventory system specification. |
+| [`docs/research/MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/research/MARKET_MICROSTRUCTURE_RESEARCH_PLAN.md) | Spread/liquidity/timing research plan. |
 | [`CODEX_START_PROMPT.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/CODEX_START_PROMPT.md) | Reusable Codex startup prompt. |
 | [`CHATGPT_PROJECT_START_PROMPT.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/CHATGPT_PROJECT_START_PROMPT.md) | Reusable ChatGPT planning/review prompt. |
 | [`.codex/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/README.md) | Safe AI workflow harness overview for Codex / Claude / Gemini / ChatGPT. |
@@ -61,7 +61,7 @@ Use these only for specific task types:
 | [`.codex/prompts/`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/.codex/prompts/) | Reusable AI startup/review prompts; human-invoked only, no hooks. |
 | [`research/session_memory_template.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/research/session_memory_template.md) | Compact session handoff template for run/day memory. |
 | [`research/daily/README.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/research/daily/README.md) | Daily research note workflow to reduce cross-tool context loss. |
-| [`VULTR_PAPER_RUN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/VULTR_PAPER_RUN.md) | Experimental HFT paper utility deployment notes, not canonical live readiness. |
+| [`docs/operations/VULTR_PAPER_RUN.md`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/docs/operations/VULTR_PAPER_RUN.md) | Experimental HFT paper utility deployment notes, not canonical live readiness. |
 
 ---
 
@@ -208,7 +208,7 @@ Offline analysis, simulation, and evidence harvesting utilities (must remain off
 3. **Phase 3**: Bounded multi-price inventory engine with max inventory cap, max risk cap, stop loss, forced exit, and no martingale.
 4. **Phase 4**: Continuous probabilistic inventory trading only after paper evidence supports it.
 
-`QUANT_LIFECYCLE_INVENTORY_ENGINE.md` is the official spec for future lifecycle inventory design (OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, CLOSED_OR_UNSAFE).
+`docs/research/QUANT_LIFECYCLE_INVENTORY_ENGINE.md` is the official spec for future lifecycle inventory design (OPENING_SCAN, ACTIVE_INVENTORY_TRADING, PROFIT_MANAGEMENT, FINAL_DERISK, CLOSED_OR_UNSAFE).
 
 ---
 

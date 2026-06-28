@@ -1591,6 +1591,28 @@
       "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
       "outputs": ["docs/audits/LIVE_TRADING_READINESS_FINAL_CHECK_001.md"],
       "notes": "Final live readiness check."
+    },
+    {
+      "priority": -5,
+      "task_id": "REPOSITORY_PHASE0_ROOT_CLEANUP_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Clean repository root markdown by moving AI handoffs and research/planning docs into documentation folders without deleting historical context.",
+      "blocked_by": "REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001",
+      "allowed_scope": [
+        "AI_HANDOFF_*.md",
+        "docs/operations/handoffs/",
+        "docs/research/",
+        "DOCUMENTATION_MAP.md",
+        "FILE_INDEX.md",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE0_ROOT_CLEANUP_001.md"
+      ],
+      "notes": "DONE. Handoffs moved to docs/operations/handoffs/. Research/planning docs moved to docs/research/. VULTR_PAPER_RUN moved to docs/operations/. No runtime, strategy, sizing, risk, execution, dashboard, Telegram, tests, tools, .env, or live/paper behavior changes."
     }
   ]
 }
