@@ -1,11 +1,20 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_WAVE1_EXECUTE_001 complete — 39 tools files moved, 52 imports rewritten, 316 tests passed, registries HEALTHY",
-    "last_completed_task":  "REPOSITORY_WAVE1_EXECUTE_001",
-    "last_commit":  "e009a62",
-    "last_commit_message":  "docs: add repository wave migration optimizer",
+    "current_phase":  "REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001 complete — 430 modules, 14 safe-move candidates, trader.py 16-group method map, 54 tests pass",
+    "last_completed_task":  "REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001",
+    "last_commit":  "4002053",
+    "last_commit_message":  "refactor: execute repository wave 1 tools migration",
     "next_task":  "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001",
+    "navigator_state": {
+      "module_registry": "docs/operations/repository/module_registry.json",
+      "symbol_index": "docs/operations/repository/symbol_index.json",
+      "navigation": "docs/operations/repository/navigation.json",
+      "safe_move_candidates": 14,
+      "trader_method_groups": 16,
+      "high_risk_groups": ["execution","risk","sizing","reconciliation","balance"],
+      "safe_first_extraction_groups": ["observability","telemetry","path_truth","orderbook_lineage","decision_diag","paper","dashboard"]
+    },
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
