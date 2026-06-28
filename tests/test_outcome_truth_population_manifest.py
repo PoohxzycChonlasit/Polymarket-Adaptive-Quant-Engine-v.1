@@ -234,7 +234,8 @@ def test_model_ready_row_without_probability_fails_closed(tmp_path: Path) -> Non
 
 
 def test_source_jsonl_is_streamed_without_whole_file_loading() -> None:
-    source = Path("tools/outcome_truth_population_manifest.py").read_text(encoding="utf-8")
+    import tools.outcome_truth_population_manifest as target_module
+    source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     attributes = [
         node.func.attr

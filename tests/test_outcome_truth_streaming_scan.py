@@ -60,7 +60,8 @@ def _scan(
 
 
 def test_source_uses_line_iteration_without_whole_file_loading() -> None:
-    source = Path("tools/outcome_truth_streaming_scan.py").read_text(encoding="utf-8")
+    import tools.outcome_truth_streaming_scan as target_module
+    source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     calls = [
         node.func.attr

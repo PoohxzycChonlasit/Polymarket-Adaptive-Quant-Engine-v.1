@@ -691,7 +691,8 @@ def test_slim_index_output_matches_jsonl_mode_for_identical_fixture(tmp_path: Pa
 
 
 def test_no_forbidden_imports() -> None:
-    source = Path("tools/joined_records_builder.py").read_text(encoding="utf-8")
+    import tools.joined_records_builder as target_module
+    source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     imported = set()
     for node in ast.walk(tree):

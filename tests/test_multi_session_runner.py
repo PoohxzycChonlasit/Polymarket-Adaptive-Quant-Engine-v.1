@@ -281,7 +281,8 @@ def test_session_isolation_uses_distinct_report_directories(tmp_path: Path) -> N
 
 
 def test_no_runtime_import_ast_scan() -> None:
-    source = (_REPO / "tools" / "multi_session_runner.py").read_text(encoding="utf-8")
+    import tools.multi_session_runner as target_module
+    source = Path(target_module.__file__).read_text(encoding="utf-8")
     tree = ast.parse(source)
     forbidden = ("polymarket", "utils", "config", "main")
     for node in ast.walk(tree):

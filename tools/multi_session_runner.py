@@ -48,7 +48,15 @@ SCORE_C_ACCURACY_NOTE = (
 # Canonical policy registry — resolves naming drift between research vocabulary
 # and lifecycle_profit_management_replay's independent letter assignments.
 CANONICAL_SR60_POLICY_ID = "fixed_sr60_derisk"
-REGISTRY_PATH = Path(__file__).resolve().parents[1] / "research" / "replay_policy_registry.json"
+def _find_registry_path() -> Path:
+    current = Path(__file__).resolve().parent
+    while current.parent != current:
+        if (current / "research").exists():
+            return current / "research" / "replay_policy_registry.json"
+        current = current.parent
+    return Path(__file__).resolve().parents[1] / "research" / "replay_policy_registry.json"
+
+REGISTRY_PATH = _find_registry_path()
 _LIFECYCLE_PM_STEP = "lifecycle_profit_management_replay"
 
 

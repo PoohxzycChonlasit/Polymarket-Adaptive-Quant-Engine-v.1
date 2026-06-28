@@ -439,7 +439,8 @@ def test_resume_hash_verifies_committed_batches(tmp_path: Path) -> None:
 
 
 def test_no_runtime_module_imports() -> None:
-    source = Path("tools/official_resolution_full_history_runner.py").read_text(encoding="utf-8")
+    import tools.official_resolution_full_history_runner as target_module
+    source = Path(target_module.__file__).read_text(encoding="utf-8")
 
     forbidden = ("polymarket.", "utils.risk_manager", "main.py", "config.settings")
     assert all(item not in source for item in forbidden)

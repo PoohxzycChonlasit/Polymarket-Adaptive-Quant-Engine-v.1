@@ -187,7 +187,8 @@ def test_output_outside_scratch_fails_closed(tmp_path: Path) -> None:
 
 
 def test_no_forbidden_imports() -> None:
-    tree = ast.parse(Path("tools/decision_log_slim_index.py").read_text(encoding="utf-8"))
+    import tools.decision_log_slim_index as target_module
+    tree = ast.parse(Path(target_module.__file__).read_text(encoding="utf-8"))
     imports: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):

@@ -153,7 +153,8 @@ def test_missing_or_invalid_inputs_fail_closed(call, match: str) -> None:
 
 
 def test_module_has_no_runtime_trading_imports() -> None:
-    module_path = Path("tools/discovery_harness_validation.py")
+    import tools.discovery_harness_validation as target_module
+    module_path = Path(target_module.__file__)
     tree = ast.parse(module_path.read_text(encoding="utf-8"))
     imported: list[str] = []
     for node in ast.walk(tree):
