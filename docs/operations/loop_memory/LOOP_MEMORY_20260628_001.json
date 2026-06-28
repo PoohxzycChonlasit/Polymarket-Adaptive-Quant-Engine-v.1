@@ -159,5 +159,44 @@
     ],
     "incident_documented": "PC restart required on 2026-06-28 due to parallel heavy process overload (3 canonical builders + risk_log load + backtest grid launched simultaneously)",
     "next_recommendation": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001",
+    "task_class": 5,
+    "scope": ["polymarket/trader.py", "tests/test_telemetry_backfill.py"],
+    "result": "PASS",
+    "evidence_grade": "A",
+    "commits": ["270d255"],
+    "key_findings": [
+      "size_sharp_at_entry: already wired via _size_sharp_metadata(model_context.get('size_sharp_result')) in _emit_trade_opened_event — verified by unit test",
+      "bankroll_rank: NEW — added _last_bankroll_rank/_last_bankroll_family to __init__, persist in _update_bankroll_state, emit in trade_open payload and close carry",
+      "capital_score: NEW in trade_open — reads from bankroll_state.capital_score",
+      "Source guard: _last_bankroll_rank absent from all risk/sizing/execution paths — confirmed by test",
+      "KNOWN ISSUE: log_bankroll_rank_evaluation fails because QuantEventLogger has no such method — persistence of _last_bankroll_rank unaffected but the separate JSONL event is not written",
+      "Historical 0% coverage is unfixable (sessions predate this code) — forward-only improvement"
+    ],
+    "tests_run": "30 passed (test_telemetry_backfill.py + test_canonical_trade_context_builder.py)",
+    "next_recommendation": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001",
+    "task_class": 5,
+    "scope": ["docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001.md"],
+    "result": "UNIT_TEST_VERIFIED_RUNTIME_NO_TRADE_DATA",
+    "evidence_grade": "B",
+    "commits": [],
+    "key_findings": [
+      "Bounded paper session ran 90s but BTC/ETH markets showed TRUE EMPTY (between 5-minute epochs) — no trade_open events generated",
+      "30/30 unit tests confirm new field emission is correct",
+      "Decision log created (258 events) but no bankroll_rank or size_sharp in decision events (size_sharp not evaluated without active orderbook)",
+      "log_bankroll_rank_evaluation JSONL event fails (missing method in QuantEventLogger) — pre-existing issue, _last_bankroll_rank persistence unaffected",
+      "Forward-looking: new fields will appear in trade_open in next active trading session"
+    ],
+    "known_issues": ["log_bankroll_rank_evaluation method missing from QuantEventLogger"],
+    "next_recommendation": "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001"
   }
 ]

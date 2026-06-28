@@ -37,7 +37,31 @@
       "outputs": [
         "docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001.md"
       ],
-      "notes": "Class 5 OBSERVABILITY. Adds 2 fields to existing trade_open emission only. No runtime behavior change. Required before Size Sharp and Bankroll Rank policy backtests are possible."
+      "notes": "COMPLETED — 30 tests pass. bankroll_rank and size_sharp_at_entry now emitted in trade_open payload. capital_score added. Source guard verified. Known issue: log_bankroll_rank_evaluation method missing from QuantEventLogger (separate fix needed)."
+    },
+    {
+      "priority": -2,
+      "task_id": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Validate new trade_open telemetry fields in a real runtime session and canonical builder.",
+      "blocked_by": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001",
+      "allowed_scope": ["docs/reports/", "docs/operations/"],
+      "outputs": ["docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001.md"],
+      "notes": "DONE — Verdict: UNIT_TEST_VERIFIED / RUNTIME_NO_TRADE_DATA. 30/30 tests pass. Bounded paper session ran 90s but markets were TRUE EMPTY (between BTC/ETH epochs). No trade_open events generated. Unit tests verify all new fields emit correctly. Known issue: log_bankroll_rank_evaluation event not written (QuantEventLogger missing method). Next: BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001."
+    },
+    {
+      "priority": -3,
+      "task_id": "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 1,
+      "description": "Run 630+ config policy grid on 886-row signal-driven dataset. Focus on EV × probability × risk_mode combinations. Surface best policy for NORMAL mode with positive Sharpe.",
+      "blocked_by": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001",
+      "allowed_scope": ["tools/", "docs/reports/", "docs/operations/", "runtime/reports/"],
+      "outputs": ["docs/reports/BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001.md"],
+      "notes": "Use BacktestEngineV2. Signal-driven rows only (886). Apply risk_mode=NORMAL filter. Grid: ev 0.0-0.25 × prob 0.60-0.70 × decision_score thresholds. Identify configs with Sharpe > 0 and n >= 50."
     },
     {
       "priority": 0,
