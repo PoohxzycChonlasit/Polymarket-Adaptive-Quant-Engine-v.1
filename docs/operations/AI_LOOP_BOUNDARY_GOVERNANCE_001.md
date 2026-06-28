@@ -152,6 +152,31 @@ Task-specific names are preferred when they are clearer, for example `COMMIT_PHA
 
 ---
 
+## Commit Cohesion Rule (Single-Commit Task Completion)
+
+For all implementation/refactor tasks (Class 4, 5, 6, 7, 8), the following related artifacts must be staged and committed together in a single cohesive commit, rather than split across separate implementation and state-only commits:
+- code modifications or file moves
+- targeted test updates
+- final task execution report
+- `ACTIVE_WORKFLOW_STATE` JSON update
+- `TASK_QUEUE` JSON update
+- loop memory JSON update
+- execution contract and graph query artifacts
+
+### Avoid Pattern
+Split commits such as:
+1. `refactor: move tools` (commit 1)
+2. `docs: update workflow state for completion` (commit 2)
+
+### Allowed Exceptions
+Separation is allowed only if:
+1. The combined commit size or file count exceeds standard execution limits.
+2. The user/operator explicitly requests separate commits.
+3. The platform or environment encounters an error during the staging of specific files.
+In all exception cases, the reason for splitting the commit must be explicitly documented in the final task execution report.
+
+---
+
 ## Non-Goals
 
 - This document does not authorize runtime, strategy, sizing, risk, execution, dashboard, Telegram, `.env`, paper, or live changes.

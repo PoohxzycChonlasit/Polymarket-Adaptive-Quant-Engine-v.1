@@ -1752,6 +1752,23 @@
         "docs/reports/REPOSITORY_PHASE1D_TOOLS_COMPLEX_CANONICAL_MOVE_PLAN_001.md"
       ],
       "notes": "Plan the move for deferred canonical tools (canonical_trade_context_builder.py, canonical_trade_table_v1.py) and their high-reference imports."
+    },
+    {
+      "priority": 0,
+      "task_id": "REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 3,
+      "description": "Synchronize local repository commits with GitHub and refine commit-boundary governance before continuing Phase 1D tools reorganization.",
+      "blocked_by": "REPOSITORY_PHASE1C_TOOLS_CANONICAL_REPLAY_MOVE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md"
+      ],
+      "notes": "DONE. Pushed all 9 local commits to origin main. Updated docs/operations/AI_LOOP_BOUNDARY_GOVERNANCE_001.md to add the Commit Cohesion Rule."
     }
   ]
 }
