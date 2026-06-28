@@ -28,10 +28,10 @@ this tool derives the shadow values from the existing confidence/ev/raw_size_usd
 fields using the same formula.
 
 Usage:
-    python -m tools.semantic_c_shadow_observability_report --date 2026-05-16
-    python -m tools.semantic_c_shadow_observability_report --date 2026-05-16 --write-report
-    python -m tools.semantic_c_shadow_observability_report --date 2026-05-16 --run-id <id>
-    python -m tools.semantic_c_shadow_observability_report --date 2026-05-16 --asset BTC
+    python -m tools.shadow.semantic_c_shadow_observability_report --date 2026-05-16
+    python -m tools.shadow.semantic_c_shadow_observability_report --date 2026-05-16 --write-report
+    python -m tools.shadow.semantic_c_shadow_observability_report --date 2026-05-16 --run-id <id>
+    python -m tools.shadow.semantic_c_shadow_observability_report --date 2026-05-16 --asset BTC
 
 Output:
     Console summary + optional runtime/reports/sem_c_shadow_YYYY-MM-DD_HHMM.json

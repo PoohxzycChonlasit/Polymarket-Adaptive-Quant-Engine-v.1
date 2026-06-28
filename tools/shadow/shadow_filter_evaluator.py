@@ -11,7 +11,10 @@ def is_safe_scratch_path(path_str: str) -> bool:
     """
     abs_path = os.path.abspath(path_str)
     tools_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_root = os.path.dirname(tools_dir)
+    if os.path.basename(tools_dir) == "shadow" and os.path.basename(os.path.dirname(tools_dir)) == "tools":
+        workspace_root = os.path.dirname(os.path.dirname(tools_dir))
+    else:
+        workspace_root = os.path.dirname(tools_dir)
     scratch_dir = os.path.abspath(os.path.join(workspace_root, "scratch"))
     try:
         common = os.path.commonpath([scratch_dir, abs_path])

@@ -31,7 +31,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.semantic_c_shadow_observability_report import (
+from tools.shadow.semantic_c_shadow_observability_report import (
     _CONF_FLOOR,
     _CONF_SPAN,
     _EV_Q_FLOOR,
@@ -471,7 +471,7 @@ class TestNoRuntimeImports:
     def test_tool_does_not_import_runtime_modules(self):
         import ast
         import inspect
-        import tools.semantic_c_shadow_observability_report as mod
+        import tools.shadow.semantic_c_shadow_observability_report as mod
         src = inspect.getsource(mod)
         tree = ast.parse(src)
         imported = []

@@ -24,7 +24,7 @@
     {
       "priority": -1,
       "task_id": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 5,
       "description": "Emit size_sharp_at_entry, size_sharp_bucket, and bankroll_rank in the trade_open event payload so canonical builder can populate those fields for future policy backtests.",
@@ -1843,7 +1843,7 @@
     {
       "priority": -1,
       "task_id": "REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 6,
       "description": "Execute the Phase 1F shadow tools migration for the selected LOW_PATH_RISK batch into tools/shadow/.",
@@ -1861,7 +1861,7 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001.md"
       ],
-      "notes": "Move 4 LOW_PATH_RISK shadow files: shadow_filter_evaluator.py, semantic_c_bounded_reload_replay.py, semantic_c_shadow_observability_report.py, cross_run_ev_blindness.py. Update 5 test imports. Compile, targeted pytest, JSON validation, cohesive commit."
+      "notes": "DONE. Moved 4 LOW_PATH_RISK shadow files into tools/shadow/: shadow_filter_evaluator.py, semantic_c_bounded_reload_replay.py, semantic_c_shadow_observability_report.py, cross_run_ev_blindness.py. Updated 5 targeted tests and moved-module CLI examples. Repaired scratch-root detection after deeper path move. py_compile passed and targeted pytest passed 155/155. No full pytest, builders, backtests, paper/live runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, or .env changes."
     },
     {
       "priority": 0,

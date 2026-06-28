@@ -29,7 +29,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.semantic_c_bounded_reload_replay import (
+from tools.shadow.semantic_c_bounded_reload_replay import (
     _POLICY_D_EXPOSURE_CAP,
     _UNSAFE_EXPOSURE_PCT,
     _compute_pnl,
@@ -112,7 +112,7 @@ def _multi_ev(n: int, epoch_start_ts: int = 1_000_000, **kw) -> list[dict]:
 def _run_policy(policy_idx: int, events: list[dict], smap: dict,
                 bankroll_ref: float = 20.0) -> dict:
     sim = simulate_reload_policy(events, smap, POLICIES[policy_idx], bankroll_ref)
-    from tools.semantic_c_bounded_reload_replay import _policy_report
+    from tools.shadow.semantic_c_bounded_reload_replay import _policy_report
     baseline_pnl = 0.0
     if policy_idx > 0:
         sim_a = simulate_reload_policy(events, smap, POLICIES[0], bankroll_ref)
@@ -600,7 +600,7 @@ class TestNoRuntimeImports:
     def test_no_runtime_modules_imported(self):
         import ast
         import inspect
-        import tools.semantic_c_bounded_reload_replay as mod
+        import tools.shadow.semantic_c_bounded_reload_replay as mod
 
         src  = inspect.getsource(mod)
         tree = ast.parse(src)

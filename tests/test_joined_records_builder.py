@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from tools import shadow_filter_evaluator
+from tools.shadow import shadow_filter_evaluator
 from tools.joined_records_builder import build_joined_records, extract_json_string_field, is_safe_scratch_path, main
 
 

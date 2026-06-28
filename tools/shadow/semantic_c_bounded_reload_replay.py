@@ -41,10 +41,10 @@ PnL formula:
   pnl    = (settlement_price - entry_price) * tokens
 
 Usage:
-  python -m tools.semantic_c_bounded_reload_replay --date 2026-05-15
-  python -m tools.semantic_c_bounded_reload_replay --date 2026-05-15 --write-report
-  python -m tools.semantic_c_bounded_reload_replay --date 2026-05-15 --run-id <id>
-  python -m tools.semantic_c_bounded_reload_replay --date 2026-05-15 --asset BTC
+  python -m tools.shadow.semantic_c_bounded_reload_replay --date 2026-05-15
+  python -m tools.shadow.semantic_c_bounded_reload_replay --date 2026-05-15 --write-report
+  python -m tools.shadow.semantic_c_bounded_reload_replay --date 2026-05-15 --run-id <id>
+  python -m tools.shadow.semantic_c_bounded_reload_replay --date 2026-05-15 --asset BTC
 
 Output:
   Console summary + optional runtime/reports/sem_c_reload_YYYY-MM-DD_HHMM.json

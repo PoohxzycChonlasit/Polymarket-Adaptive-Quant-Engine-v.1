@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.cross_run_ev_blindness import (
+from tools.shadow.cross_run_ev_blindness import (
     build_cross_run_ev_blindness_report,
     main,
     write_cross_run_ev_blindness_report,

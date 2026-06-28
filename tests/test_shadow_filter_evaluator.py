@@ -4,7 +4,7 @@ import pytest
 import shutil
 from typing import Dict, Any, List
 
-from tools.shadow_filter_evaluator import (
+from tools.shadow.shadow_filter_evaluator import (
     evaluate_filter,
     calculate_metrics,
     get_pnl,
