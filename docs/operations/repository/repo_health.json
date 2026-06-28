@@ -1,0 +1,21 @@
+{
+  "active_workflow": {
+    "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+    "active_task_id": "REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001"
+  },
+  "git_state": {
+    "branch_ahead": 0,
+    "branch_behind": 0,
+    "dirty": true
+  },
+  "metrics": {
+    "runtime_files": 39,
+    "tests_count": 163,
+    "tools_count": 102,
+    "total_files": 2195,
+    "total_lines": 455230,
+    "total_size_bytes": 13695638197
+  },
+  "status": "HEALTHY",
+  "timestamp_utc": "2026-06-28T14:04:43.942724Z"
+}

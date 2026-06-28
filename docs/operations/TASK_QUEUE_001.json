@@ -2087,6 +2087,31 @@
         "docs/reports/AIROS_V2_BATCH_AUTOMATION_DESIGN_001.md"
       ],
       "notes": "DONE. Designed AIROS v2 batch automation layer, specifying registry artifacts, clustering algorithms, command generation rules, and rollback planning."
+    },
+    {
+      "priority": 0,
+      "task_id": "AIROS_V2_STATIC_REPOSITORY_INDEX_GENERATOR_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement the first AIROS v2 static repository index generator that scans the repository and emits machine-readable JSON registries for AI agents.",
+      "blocked_by": "AIROS_V2_BATCH_AUTOMATION_DESIGN_001",
+      "allowed_scope": [
+        "tools/airos/",
+        "tests/test_airos_repository_index_generator.py",
+        "docs/operations/repository/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "tools/airos/repository_index_generator.py",
+        "tests/test_airos_repository_index_generator.py",
+        "docs/operations/repository/repository_index.json",
+        "docs/operations/repository/tool_registry.json",
+        "docs/operations/repository/test_registry.json",
+        "docs/operations/repository/repo_health.json",
+        "docs/reports/AIROS_V2_STATIC_REPOSITORY_INDEX_GENERATOR_001.md"
+      ],
+      "notes": "DONE. Implemented tools/airos/repository_index_generator.py and its unit test suite. Generated the 4 JSON files (repository_index, tool_registry, test_registry, and repo_health)."
     }
   ]
 }
