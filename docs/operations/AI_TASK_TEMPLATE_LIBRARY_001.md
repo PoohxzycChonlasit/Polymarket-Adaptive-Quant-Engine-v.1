@@ -191,3 +191,40 @@ Required:
 
 No writes.
 ```
+
+## Enterprise Atomic Batch Migration
+
+```text
+TASK: <BATCH_TASK_ID>
+TASK_CLASS: 6 REFACTOR / BATCH MIGRATION
+
+Objective:
+Relocate multiple related candidate scripts into their target folders atomically.
+
+Batch Rules:
+- Stop micro-move rule: Batch files together rather than running plan/move splits.
+- Max size: 12 files or 1,500 lines diff.
+- Must use BATCH_MIGRATION_RISK_MODEL_001 to classify risk.
+
+Required preflight:
+- git status --short (must be clean)
+- git branch -vv (must be up to date)
+- active_loop_memory_file from ACTIVE_WORKFLOW_STATE
+
+Allowed changes:
+- Moves of listed files via git mv
+- Targeted test import updates
+- Docs index refresh (FILE_INDEX.md, etc.)
+- docs/reports/<BATCH_TASK_ID>.md execution report
+- ops state, queue, active loop memory updates
+
+Validation:
+- py_compile on all moved files
+- targeted pytest on all affected test suites
+- git diff --check
+- json.tool validation on all modified ops JSONs
+
+Commit/Push:
+- Stage and commit all deliverables together in a single cohesive commit.
+- Push immediately to origin main.
+```

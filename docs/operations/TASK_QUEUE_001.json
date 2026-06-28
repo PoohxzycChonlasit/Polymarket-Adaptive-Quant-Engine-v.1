@@ -2045,6 +2045,26 @@
         "docs/reports/AI_REPOSITORY_OPERATING_SYSTEM_V1_DESIGN_001.md"
       ],
       "notes": "DONE. AIROS v1 design created as docs-only navigation/kernel layer. No scripts implemented, no tools moved, no runtime code changed. Next implementation/refactor task remains REPOSITORY_PHASE1F_TOOLS_SHADOW_MOVE_001."
+    },
+    {
+      "priority": 0,
+      "task_id": "ENTERPRISE_BATCH_MIGRATION_SYSTEM_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 3,
+      "description": "Replace the current slow micro-move repository migration workflow with an enterprise-grade batch migration system using dependency graph, blast radius scoring, safe batch selection, atomic migration execution, and targeted validation.",
+      "blocked_by": "AI_REPOSITORY_OPERATING_SYSTEM_V1_DESIGN_001",
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/ENTERPRISE_BATCH_MIGRATION_SYSTEM_001.md",
+        "docs/operations/BATCH_MIGRATION_RISK_MODEL_001.md",
+        "docs/operations/BATCH_MIGRATION_TEMPLATE_001.md",
+        "docs/reports/ENTERPRISE_BATCH_MIGRATION_SYSTEM_001.md"
+      ],
+      "notes": "DONE. Created the enterprise batch migration system architecture, risk scoring model, reusable prompt templates, and updated task library, loop boundary, and health check governance."
     }
   ]
 }

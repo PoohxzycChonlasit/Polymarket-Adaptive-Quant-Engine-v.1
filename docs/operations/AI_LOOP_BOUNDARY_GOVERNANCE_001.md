@@ -204,3 +204,11 @@ To prevent fragmented operational memory and cross-AI loop drift, all agents mus
 - This document does not authorize runtime, strategy, sizing, risk, execution, dashboard, Telegram, `.env`, paper, or live changes.
 - This document does not require pushing after every local commit unless a separate task or operator instruction asks for it.
 - This document does not override operator instructions to intentionally leave a tree dirty.
+
+---
+
+## Batch Reorganization Transition Rules
+
+1. **Stop Micro-Move Splits:** Do not split low/medium repository cleanup tasks into separate plan-only and move-only tasks unless risk requires it (e.g. `PLAN_REQUIRED` or `DO_NOT_MOVE` levels under `BATCH_MIGRATION_RISK_MODEL_001.md`).
+2. **Prefer Atomic Batch Execution:** Always prefer atomic batch execution when the blast radius score is bounded (score $\le 6$, mapping to `SAFE_ATOMIC` or `MEDIUM_ATOMIC`).
+3. **Plan-Only Exception Criteria:** Plan-only phases are required only for batches involving runtime imports, unclear dependency graphs, missing test coverage, files on the execution/risk/sizing paths, or when explicitly requested by the operator.

@@ -169,3 +169,10 @@ Every final answer must include:
 - boundary state
 - whether next task can start immediately
 - exact commit task if not
+
+---
+
+## Batch Migration System Directives
+
+1. **Read Batch Migration System first:** For any repository cleanup, organization, or refactoring task, read `docs/operations/ENTERPRISE_BATCH_MIGRATION_SYSTEM_001.md` before generating or proposing tasks.
+2. **Apply Risk Model:** Apply the scoring system in `docs/operations/BATCH_MIGRATION_RISK_MODEL_001.md` to evaluate candidate file risks before recommending micro tasks or plan-only/move-only task splits.

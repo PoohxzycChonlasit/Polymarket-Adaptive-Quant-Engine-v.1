@@ -179,3 +179,16 @@ Repository health check must pass before:
 - Starting any Class 6+ implementation task
 
 It also integrates with [AI_LOOP_BOUNDARY_GOVERNANCE_001.md](AI_LOOP_BOUNDARY_GOVERNANCE_001.md), which defines the required final task boundary states and clean handoff contract.
+
+---
+
+## Batch Migration Health Checklist
+
+Before moving any files in a batch:
+1. **Working Tree Cleanliness:** Confirm `git status` shows a clean tree. No modified or staged files.
+2. **Dynamic Scan:** Run ripgrep on `multi_session_runner.py` and other task runners to ensure target modules are not dynamically loaded.
+3. **Required Classification:** Classify the batch risk according to `BATCH_MIGRATION_RISK_MODEL_001.md`.
+   - Score $\le 3$: `SAFE_ATOMIC` (Move directly)
+   - Score $4 - 7$: `MEDIUM_ATOMIC` (Confirm with dry run validation, execute atomically)
+   - Score $8 - 11$: `PLAN_REQUIRED` (Plan task first, wait for operator approval)
+   - Score $\ge 12$: `DO_NOT_MOVE` (Halt, escalate to architectural review)

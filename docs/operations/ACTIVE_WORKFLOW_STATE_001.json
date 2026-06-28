@@ -1,10 +1,10 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001 complete - lifecycle truth tools moved",
-    "last_completed_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001",
+    "current_phase":  "ENTERPRISE_BATCH_MIGRATION_SYSTEM_001 complete - Enterprise batch migration system established",
+    "last_completed_task":  "ENTERPRISE_BATCH_MIGRATION_SYSTEM_001",
     "last_commit":  "pending-at-report-time",
-    "last_commit_message":  "refactor: move lifecycle truth tools",
+    "last_commit_message":  "docs: add enterprise batch migration system",
     "next_task":  "REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
