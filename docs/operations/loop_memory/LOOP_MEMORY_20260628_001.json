@@ -359,5 +359,53 @@
       "no_tools_modified": true
     },
     "next_recommendation": "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
+    "task_class": 6,
+    "scope": [
+      "tools/silent_zone_selection_probe.py",
+      "tools/probes/silent_zone_selection_probe.py",
+      "docs/reports/REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/graph_queries/QUERY-20260628-REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001.md",
+      "docs/operations/execution_contracts/REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001_CONTRACT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "A+B+C+D",
+    "commits": ["pending-at-report-time"],
+    "commit_messages": ["refactor: move no-risk probe tool into probes folder"],
+    "files_moved": 1,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "moved_file": "tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py",
+      "usage_examples_updated": true,
+      "active_stale_references": 0,
+      "historical_or_scope_references_remaining": true,
+      "py_compile_passed": true,
+      "pytest_run": false,
+      "builders_run": false,
+      "backtests_run": false
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "graph_query_done": true,
+      "execution_contract_done": true,
+      "target_folder_created": true,
+      "file_moved": true,
+      "reference_validation_done": true,
+      "compile_done": true,
+      "json_validation_done": true,
+      "no_runtime_files_changed": true
+    },
+    "next_recommendation": "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001"
   }
 ]

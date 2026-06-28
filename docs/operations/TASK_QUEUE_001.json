@@ -1638,7 +1638,7 @@
     {
       "priority": -4,
       "task_id": "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 6,
       "description": "Move the single no-import-risk tool script into tools/probes/ and validate no stale references.",
@@ -1652,7 +1652,25 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001.md"
       ],
-      "notes": "Move only tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py. Validate with git diff --name-status, rg old path/module references, and py_compile moved script only. Do not run pytest, builders, backtests, live, or paper sessions."
+      "notes": "DONE. Moved tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py. Updated moved script usage examples to tools.probes.silent_zone_selection_probe. Reference scan found no active stale imports/tests; remaining hits are historical docs, ops scope records, filename regex consumers, or new module usage text. py_compile passed. No pytest, builders, backtests, live, or paper sessions."
+    },
+    {
+      "priority": -3,
+      "task_id": "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Plan the next low-path-risk tools migration batch before moving research/export/outcome truth scripts.",
+      "blocked_by": "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/architecture/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001.md"
+      ],
+      "notes": "Recommended next step after the single no-import-risk move. Keep design-only until exact low-path-risk files and reference updates are selected."
     }
   ]
 }

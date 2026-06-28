@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001 complete — tools migration plan written, no files moved",
-    "last_completed_task":  "REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001",
-    "last_commit":  "00af48b",
-    "last_commit_message":  "docs: clean repository root markdown organization",
-    "next_task":  "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
+    "current_phase":  "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001 complete - no-risk probe moved to tools/probes/",
+    "last_completed_task":  "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
+    "last_commit":  "pending-at-report-time",
+    "last_commit_message":  "refactor: move no-risk probe tool into probes folder",
+    "next_task":  "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -29,8 +29,8 @@
     "next_workflow_tier":  "LOOP",
     "working_tree_expected":  "clean",
     "github_status":  "CURRENT",
-    "resource_governance":  "ACTIVE — see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
-    "repo_health_check":  "ACTIVE — see docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
+    "resource_governance":  "ACTIVE - see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
+    "repo_health_check":  "ACTIVE - see docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
     "batch_3c_started":  true,
     "blocked":  false,
     "active_question_status":  "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
@@ -87,5 +87,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Repository Phase 1 tools audit complete. tools/ root contains 81 Python scripts; 73 have direct test references, 69 have docs references, and 4 have active ops references. No tools were moved. Next recommended move is the single no-import-risk script: tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py."
+    "notes":  "Repository Phase 1A move complete. Moved tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py. Updated the moved script usage examples to tools.probes.silent_zone_selection_probe. Reference scan found only historical audit/planning mentions, ops scope records, report filename regex consumers, and the new module usage text. py_compile passed. No pytest, builders, backtests, runtime, strategy, sizing, risk, execution, dashboard, Telegram, .env, or tests changed."
 }

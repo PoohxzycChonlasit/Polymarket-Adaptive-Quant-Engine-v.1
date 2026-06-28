@@ -11,10 +11,10 @@ to answer why a ~210s silent-zone exists after each epoch open:
   - What is the epoch-second distribution of successful vs early-return cycles?
 
 Usage:
-    python -m tools.silent_zone_selection_probe --date 2026-05-15
-    python -m tools.silent_zone_selection_probe --date 2026-05-15 --write-report
-    python -m tools.silent_zone_selection_probe --date 2026-05-15 --asset BTC
-    python -m tools.silent_zone_selection_probe --date 2026-05-15 --run-id <id>
+    python -m tools.probes.silent_zone_selection_probe --date 2026-05-15
+    python -m tools.probes.silent_zone_selection_probe --date 2026-05-15 --write-report
+    python -m tools.probes.silent_zone_selection_probe --date 2026-05-15 --asset BTC
+    python -m tools.probes.silent_zone_selection_probe --date 2026-05-15 --run-id <id>
 
 Output:
     Console summary + optional runtime/reports/silent_zone_selection_probe_YYYY-MM-DD.json
