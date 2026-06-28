@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "AIROS_MIGRATION_ANALYZER_AND_PATCH_PLANNER_001 complete",
-    "last_completed_task":  "AIROS_MIGRATION_ANALYZER_AND_PATCH_PLANNER_001",
+    "current_phase":  "POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001 complete",
+    "last_completed_task":  "POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001",
     "last_commit":  "pending",
-    "last_commit_message":  "feat: add AIROS migration analyzer",
-    "next_task":  "RUN_OUTCOME_TRUTH_BATCH_WITH_ANALYZER_GUIDED_EXECUTION",
+    "last_commit_message":  "docs: plan polymarket and trader orchestration decomposition",
+    "next_task":  "TESTS_AIROS_SUBFOLDER_BATCH_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -91,5 +91,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "AIROS migration analyzer created (tools/airos/migration_analyzer.py). Scans repo BEFORE any move for monkeypatch string refs, Path literal refs, repo path builds, importlib strings, and __init__.py requirements. Executor atomic_batch_executor.py upgraded with Pattern 4 (monkeypatch string literals) and Pattern 5 (importlib strings). Live analysis of OUTCOME_TRUTH_BATCH_001: 4 monkeypatch rewrites + 1 __init__.py required (root cause of all prior executor failures). Tests: 14/14 pass. Next: re-run OUTCOME_TRUTH batch."
+    "notes":  "Decomposition plan complete. Inventoried 35 polymarket/ files (14 SAFE_MOVE candidates), 166 tests/ files (6 subfolder groups), 304 trader.py methods (grouped by risk: 37 SAFE_OBSERVABILITY, 29 MEDIUM_ORCHESTRATION, 45 HIGH_RUNTIME_RISK DO_NOT_TOUCH). Target: polymarket/observability/, polymarket/models/, polymarket/market/, polymarket/backtest/. First executable task: TESTS_AIROS_SUBFOLDER_BATCH_001 (5 test_airos_ files to tests/airos/). Trader.py extraction deferred to Phase E+ pending blast-radius graph approval."
 }

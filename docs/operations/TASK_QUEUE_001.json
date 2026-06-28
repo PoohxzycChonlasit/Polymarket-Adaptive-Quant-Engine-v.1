@@ -2199,6 +2199,78 @@
         "docs/reports/AIROS_NEXT_SAFE_BATCH_EXECUTION_001.md"
       ],
       "notes": "DONE. Executed batch REPOSITORY_PHASE1_PROBES_BATCH_002 using atomic_batch_executor.py, relocating 11 probe files and updating tests."
+    },
+    {
+      "priority": 100,
+      "task_id": "POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design/audit plan for polymarket/ folder organization, tests/ folder organization, and trader.py orchestration decomposition. 35 polymarket files inventoried, 166 tests classified, 304 trader methods grouped.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/", "docs/operations/"],
+      "outputs": ["docs/reports/POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001.md"],
+      "notes": "DONE. 14 SAFE_MOVE polymarket files identified. 7 trader.py extraction phases planned. First executable: TESTS_AIROS_SUBFOLDER_BATCH_001."
+    },
+    {
+      "priority": 101,
+      "task_id": "TESTS_AIROS_SUBFOLDER_BATCH_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Move 5 test_airos_*.py files from tests/ to tests/airos/ subfolder. Create tests/airos/__init__.py. Update any monkeypatch strings. Run targeted pytest. Commit and push.",
+      "blocked_by": null,
+      "allowed_scope": ["tests/airos/", "tests/test_airos_*.py"],
+      "outputs": ["tests/airos/test_airos_atomic_batch_executor.py", "tests/airos/test_airos_batch_generator.py", "tests/airos/test_airos_dependency_graph_builder.py", "tests/airos/test_airos_migration_analyzer.py", "tests/airos/test_airos_repository_index_generator.py"],
+      "notes": "SAFE_ATOMIC. No polymarket imports in these files. Pure offline AIROS tooling tests."
+    },
+    {
+      "priority": 102,
+      "task_id": "POLYMARKET_OBSERVABILITY_SUBFOLDER_BATCH_001",
+      "status": "BLOCKED",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Move realtime_logger.py, regime_diagnostics.py, shadow_telemetry.py, trader_presentation.py from polymarket/ to polymarket/observability/. Update all import sites including trader.py, main.py, and affected tests.",
+      "blocked_by": "TESTS_AIROS_SUBFOLDER_BATCH_001",
+      "allowed_scope": ["polymarket/observability/", "polymarket/realtime_logger.py", "polymarket/regime_diagnostics.py", "polymarket/shadow_telemetry.py", "polymarket/trader_presentation.py", "tests/"],
+      "outputs": ["polymarket/observability/__init__.py", "polymarket/observability/realtime_logger.py", "polymarket/observability/regime_diagnostics.py", "polymarket/observability/shadow_telemetry.py", "polymarket/observability/trader_presentation.py"],
+      "notes": "MEDIUM_ATOMIC. trader.py imports all 4. Run migration_analyzer.py first."
+    },
+    {
+      "priority": 103,
+      "task_id": "POLYMARKET_MODELS_SUBFOLDER_BATCH_001",
+      "status": "BLOCKED",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Move probability_model.py, quant_indicators.py, expected_value.py, delta_engine.py from polymarket/ to polymarket/models/. Update import sites.",
+      "blocked_by": "POLYMARKET_OBSERVABILITY_SUBFOLDER_BATCH_001",
+      "allowed_scope": ["polymarket/models/", "tests/"],
+      "outputs": ["polymarket/models/__init__.py", "polymarket/models/probability_model.py", "polymarket/models/quant_indicators.py", "polymarket/models/expected_value.py", "polymarket/models/delta_engine.py"],
+      "notes": "SAFE_ATOMIC for pure model files. Run migration_analyzer.py before execution."
+    },
+    {
+      "priority": 104,
+      "task_id": "POLYMARKET_MARKET_SUBFOLDER_BATCH_001",
+      "status": "BLOCKED",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Move gamma_fetcher.py, five_min_monitor.py, trend_runner.py, lucky_shot.py, arbitrage.py from polymarket/ to polymarket/market/. Update import sites.",
+      "blocked_by": "POLYMARKET_MODELS_SUBFOLDER_BATCH_001",
+      "allowed_scope": ["polymarket/market/", "tests/"],
+      "outputs": ["polymarket/market/__init__.py"],
+      "notes": "SAFE_ATOMIC. Low blast radius. backtester_5m.py also moves to polymarket/backtest/."
+    },
+    {
+      "priority": 110,
+      "task_id": "TRADER_PY_OBSERVABILITY_EXTRACTION_BATCH1_001",
+      "status": "BLOCKED",
+      "workflow_tier": "GATE",
+      "task_class": 6,
+      "description": "Extract ~37 pure observability/timing methods from trader.py into polymarket/observability/trader_observability.py as a mixin. No order/risk/sizing/execution methods. Paper validation required before commit.",
+      "blocked_by": "POLYMARKET_OBSERVABILITY_SUBFOLDER_BATCH_001",
+      "allowed_scope": ["polymarket/observability/", "polymarket/trader.py"],
+      "outputs": ["polymarket/observability/trader_observability.py"],
+      "notes": "HIGH risk for trader.py changes. Requires Architecture Governance gate PASSED. Paper session validation required."
     }
   ]
 }

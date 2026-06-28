@@ -1572,5 +1572,36 @@
     },
     "verdict": "ANALYZER_TOOLING_PASS",
     "next_recommendation": "RUN_OUTCOME_TRUTH_BATCH_WITH_ANALYZER_GUIDED_EXECUTION"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B",
+    "commits": ["pending"],
+    "files_changed": 3,
+    "net_lines": 250,
+    "acceptance_criteria": {
+      "polymarket_inventory": "35 files, 14 SAFE_MOVE candidates",
+      "tests_inventory": "166 files, 6 subfolder groups",
+      "trader_method_groups": "304 methods, 15 groups classified",
+      "do_not_touch_list": true,
+      "safe_extraction_batches": "7 phases planned",
+      "target_structure": "polymarket/observability, models, market, backtest",
+      "task_queue_updated": true,
+      "workflow_state_updated": true,
+      "active_loop_memory_updated": true
+    },
+    "verdict": "DESIGN_PASS",
+    "next_recommendation": "TESTS_AIROS_SUBFOLDER_BATCH_001"
   }
 ]
