@@ -1789,7 +1789,7 @@
     {
       "priority": -1,
       "task_id": "REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_PLAN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Design the next migration plan for the remaining complex research and utility tools in the tools folder.",
@@ -1801,7 +1801,27 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_PLAN_001.md"
       ],
-      "notes": "Plan the move for remaining complex tools (e.g. replay_analyzer.py, lifecycle_truth_tables.py, and other high-dependency scripts)."
+      "notes": "DONE. Designed safe migration plan for the 7 root-level audit tools into tools/audit/ with references mapped."
+    },
+    {
+      "priority": -1,
+      "task_id": "REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Execute the Phase 1E tools migration for the selected Audit Batch.",
+      "blocked_by": "REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_PLAN_001",
+      "allowed_scope": [
+        "tools/audit/",
+        "tests/test_drift_audit.py",
+        "tests/test_ev_field_coverage_audit.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1E_TOOLS_COMPLEX_RESEARCH_MOVE_001.md"
+      ],
+      "notes": "Move 7 audit scripts to tools/audit/, update imports in test_drift_audit.py and test_ev_field_coverage_audit.py, compile and run targeted tests."
     },
     {
       "priority": 0,
