@@ -1,11 +1,19 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001 complete — POLICY_CANDIDATE_FOUND: min_ev=0.12 + prob=0.65 + NORMAL",
-    "last_completed_task":  "BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001",
-    "last_commit":  "d0888f2",
-    "last_commit_message":  "feat: add market availability scheduler and fix bankroll schema",
-    "next_task":  "DYNAMIC_RISK_BUDGET_ENGINE_DESIGN_001",
+    "current_phase":  "TRADER_MODULE_DECOMPOSITION_AUDIT_001 complete — 8-phase plan, 305 methods classified, do-not-touch list defined",
+    "last_completed_task":  "TRADER_MODULE_DECOMPOSITION_AUDIT_001",
+    "last_commit":  "b9739c6",
+    "last_commit_message":  "feat: add shadow policy evaluator for EV012/PROB065/NORMAL candidate",
+    "next_task":  "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+    "decomposition_state": {
+      "trader_py_lines": 13589,
+      "trader_py_methods": 305,
+      "phases_completed": 0,
+      "phases_planned": 8,
+      "already_extracted": ["shadow_policy.py", "market_availability_engine.py", "bankroll_rank_engine.py", "size_sharp_engine.py"],
+      "target_trader_py_lines_after_phase8": 5000
+    },
     "policy_candidate": {
       "min_ev": 0.12,
       "min_probability": 0.65,
