@@ -2177,6 +2177,28 @@
         "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md"
       ],
       "notes": "DONE. Implemented tools/airos/atomic_batch_executor.py and its unit test suite. Successfully executed batch REPOSITORY_PHASE1_CANONICAL_BATCH_001, moving tools/canonical_trade_table_v1.py and updating tests."
+    },
+    {
+      "priority": 0,
+      "task_id": "AIROS_NEXT_SAFE_BATCH_EXECUTION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Use the existing AIROS tooling to execute the next safe repository organization batch from docs/operations/repository/batch_candidates.json.",
+      "blocked_by": "AIROS_V2_ATOMIC_BATCH_EXECUTOR_001",
+      "allowed_scope": [
+        "tools/probes/",
+        "tests/",
+        "docs/operations/repository/",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/operations/repository/repository_index.json",
+        "docs/operations/repository/dependency_graph.json",
+        "docs/operations/repository/batch_candidates.json",
+        "docs/reports/AIROS_NEXT_SAFE_BATCH_EXECUTION_001.md"
+      ],
+      "notes": "DONE. Executed batch REPOSITORY_PHASE1_PROBES_BATCH_002 using atomic_batch_executor.py, relocating 11 probe files and updating tests."
     }
   ]
 }

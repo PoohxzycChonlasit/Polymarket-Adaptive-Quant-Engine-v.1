@@ -22,7 +22,7 @@ import pytest
 from utils.executable_state_persistence_classifier import (
     classify_executable_state_persistence,
 )
-from tools.executable_state_persistence_probe import (
+from tools.probes.executable_state_persistence_probe import (
     aggregate,
     extract_record,
 )
@@ -450,7 +450,7 @@ class TestAdditiveOnly:
 
     def test_no_runtime_imports_in_tool(self):
         import inspect
-        from tools import executable_state_persistence_probe as _tool
+        from tools.probes import executable_state_persistence_probe as _tool
         src = inspect.getsource(_tool)
         assert "from polymarket" not in src
         assert "import polymarket" not in src

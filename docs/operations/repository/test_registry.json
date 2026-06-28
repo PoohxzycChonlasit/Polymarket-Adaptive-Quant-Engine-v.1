@@ -285,9 +285,6 @@
     "tools/dashboard_state_aggregator.py": [
       "tests/test_dashboard_state_aggregator.py"
     ],
-    "tools/decision_cycle_timing_probe.py": [
-      "tests/test_decision_cycle_timing_probe.py"
-    ],
     "tools/decision_log_slim_index.py": [
       "tests/test_decision_log_slim_index.py"
     ],
@@ -297,26 +294,11 @@
     "tools/edge_inventory_report.py": [
       "tests/test_edge_inventory_report.py"
     ],
-    "tools/entry_budget_consumption_probe.py": [
-      "tests/test_entry_budget_consumption_probe.py"
-    ],
-    "tools/epoch_boundary_alignment_probe.py": [
-      "tests/test_epoch_boundary_alignment_probe.py"
-    ],
     "tools/eth_yes_fc_os_command_center.py": [
       "tests/test_eth_yes_fc_os_command_center.py"
     ],
     "tools/ev_field_coverage.py": [
       "tests/test_ev_field_coverage.py"
-    ],
-    "tools/event_driven_admission_simulation.py": [
-      "tests/test_event_driven_admission_simulation.py"
-    ],
-    "tools/event_driven_fair_value_simulation.py": [
-      "tests/test_event_driven_fair_value_simulation.py"
-    ],
-    "tools/executable_state_persistence_probe.py": [
-      "tests/test_executable_state_persistence_probe.py"
     ],
     "tools/executable_truth_overlay.py": [
       "tests/test_executable_truth_overlay.py"
@@ -330,17 +312,8 @@
     "tools/joined_records_builder.py": [
       "tests/test_joined_records_builder.py"
     ],
-    "tools/lifecycle_latency_report.py": [
-      "tests/test_lifecycle_latency_report.py"
-    ],
-    "tools/lifecycle_timing_report.py": [
-      "tests/test_lifecycle_timing_report.py"
-    ],
     "tools/lifecycle_truth_tables.py": [
       "tests/test_lifecycle_truth_tables.py"
-    ],
-    "tools/market_readiness_admission_probe.py": [
-      "tests/test_market_readiness_admission_probe.py"
     ],
     "tools/multi_session_runner.py": [
       "tests/test_multi_session_runner.py"
@@ -415,8 +388,38 @@
     "tools/phase_b_weekly_review_engine.py": [
       "tests/test_phase_b_weekly_review_engine.py"
     ],
-    "tools/probability_semantics_calibration_probe.py": [
+    "tools/probes/decision_cycle_timing_probe.py": [
+      "tests/test_decision_cycle_timing_probe.py"
+    ],
+    "tools/probes/entry_budget_consumption_probe.py": [
+      "tests/test_entry_budget_consumption_probe.py"
+    ],
+    "tools/probes/epoch_boundary_alignment_probe.py": [
+      "tests/test_epoch_boundary_alignment_probe.py"
+    ],
+    "tools/probes/event_driven_admission_simulation.py": [
+      "tests/test_event_driven_admission_simulation.py"
+    ],
+    "tools/probes/event_driven_fair_value_simulation.py": [
+      "tests/test_event_driven_fair_value_simulation.py"
+    ],
+    "tools/probes/executable_state_persistence_probe.py": [
+      "tests/test_executable_state_persistence_probe.py"
+    ],
+    "tools/probes/lifecycle_latency_report.py": [
+      "tests/test_lifecycle_latency_report.py"
+    ],
+    "tools/probes/lifecycle_timing_report.py": [
+      "tests/test_lifecycle_timing_report.py"
+    ],
+    "tools/probes/market_readiness_admission_probe.py": [
+      "tests/test_market_readiness_admission_probe.py"
+    ],
+    "tools/probes/probability_semantics_calibration_probe.py": [
       "tests/test_probability_semantics_calibration_probe.py"
+    ],
+    "tools/probes/zero_size_risk_floor_probe.py": [
+      "tests/test_zero_size_risk_floor_probe.py"
     ],
     "tools/quant_data_quality.py": [
       "tests/test_no_entry_analyzer.py",
@@ -488,9 +491,6 @@
     ],
     "tools/shadow/shadow_filter_evaluator.py": [
       "tests/test_shadow_filter_evaluator.py"
-    ],
-    "tools/zero_size_risk_floor_probe.py": [
-      "tests/test_zero_size_risk_floor_probe.py"
     ],
     "utils/no_entry_root_cause_classifier.py": [
       "tests/test_no_entry_root_cause_classifier.py"
@@ -593,7 +593,7 @@
       "tools/dashboard_state_aggregator.py"
     ],
     "tests/test_decision_cycle_timing_probe.py": [
-      "tools/decision_cycle_timing_probe.py"
+      "tools/probes/decision_cycle_timing_probe.py"
     ],
     "tests/test_decision_log_slim_index.py": [
       "tools/decision_log_slim_index.py"
@@ -626,14 +626,14 @@
     ],
     "tests/test_entry_budget_consumption_probe.py": [
       "polymarket/trader.py",
-      "tools/entry_budget_consumption_probe.py"
+      "tools/probes/entry_budget_consumption_probe.py"
     ],
     "tests/test_entry_model_truth_envelope_v1.py": [
       "polymarket/client.py",
       "polymarket/trader.py"
     ],
     "tests/test_epoch_boundary_alignment_probe.py": [
-      "tools/epoch_boundary_alignment_probe.py"
+      "tools/probes/epoch_boundary_alignment_probe.py"
     ],
     "tests/test_eth_yes_fc_os_command_center.py": [
       "tools/eth_yes_fc_os_command_center.py"
@@ -645,14 +645,14 @@
       "tools/audit/ev_field_coverage_audit.py"
     ],
     "tests/test_event_driven_admission_simulation.py": [
-      "tools/event_driven_admission_simulation.py"
+      "tools/probes/event_driven_admission_simulation.py"
     ],
     "tests/test_event_driven_fair_value_simulation.py": [
-      "tools/event_driven_fair_value_simulation.py"
+      "tools/probes/event_driven_fair_value_simulation.py"
     ],
     "tests/test_executable_state_persistence_probe.py": [
       "polymarket/trader.py",
-      "tools/executable_state_persistence_probe.py"
+      "tools/probes/executable_state_persistence_probe.py"
     ],
     "tests/test_executable_truth_overlay.py": [
       "tools/executable_truth_overlay.py"
@@ -735,7 +735,7 @@
       "polymarket/trader.py"
     ],
     "tests/test_lifecycle_latency_report.py": [
-      "tools/lifecycle_latency_report.py"
+      "tools/probes/lifecycle_latency_report.py"
     ],
     "tests/test_lifecycle_observability_completion.py": [
       "polymarket/trader.py"
@@ -744,7 +744,7 @@
       "tools/replay/lifecycle_profit_management_replay.py"
     ],
     "tests/test_lifecycle_timing_report.py": [
-      "tools/lifecycle_timing_report.py"
+      "tools/probes/lifecycle_timing_report.py"
     ],
     "tests/test_lifecycle_truth_backfill.py": [
       "tools/replay/lifecycle_truth_backfill.py"
@@ -785,7 +785,7 @@
       "tools/canonical_trade_context_builder.py"
     ],
     "tests/test_market_readiness_admission_probe.py": [
-      "tools/market_readiness_admission_probe.py"
+      "tools/probes/market_readiness_admission_probe.py"
     ],
     "tests/test_market_readiness_timing.py": [
       "polymarket/client.py",
@@ -924,7 +924,7 @@
       "polymarket/probability_model.py"
     ],
     "tests/test_probability_semantics_calibration_probe.py": [
-      "tools/probability_semantics_calibration_probe.py"
+      "tools/probes/probability_semantics_calibration_probe.py"
     ],
     "tests/test_proxy_allowance_semantics.py": [
       "polymarket/client.py",
@@ -1078,7 +1078,7 @@
     ],
     "tests/test_zero_size_risk_floor_probe.py": [
       "polymarket/trader.py",
-      "tools/zero_size_risk_floor_probe.py"
+      "tools/probes/zero_size_risk_floor_probe.py"
     ]
   }
 }

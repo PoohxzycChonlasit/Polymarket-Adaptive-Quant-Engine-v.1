@@ -22,7 +22,7 @@ _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from tools.lifecycle_latency_report import (
+from tools.probes.lifecycle_latency_report import (
     STAGE_FIELDS,
     _percentile,
     _pct_stats,
@@ -515,7 +515,7 @@ class TestAdditiveOnly:
         }
 
     def test_tool_has_no_runtime_imports(self):
-        import tools.lifecycle_latency_report as mod
+        import tools.probes.lifecycle_latency_report as mod
         source = Path(mod.__file__).read_text(encoding="utf-8")
         forbidden = ["polymarket.trader", "utils.risk_manager", "order_manager",
                      "virtual_ptb", "execute", "live_order"]

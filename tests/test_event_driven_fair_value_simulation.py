@@ -4,8 +4,8 @@ import json
 from types import SimpleNamespace
 from pathlib import Path
 
-import tools.event_driven_fair_value_simulation as fair_value_sim
-from tools.event_driven_fair_value_simulation import (
+import tools.probes.event_driven_fair_value_simulation as fair_value_sim
+from tools.probes.event_driven_fair_value_simulation import (
     build_event_driven_fair_value_cross_session_report,
     build_event_driven_fair_value_simulation_report,
     write_event_driven_fair_value_cross_session_report,

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from tools.event_driven_admission_simulation import (
+from tools.probes.event_driven_admission_simulation import (
     build_event_driven_admission_simulation_report,
     write_event_driven_admission_simulation_report,
 )

@@ -20,7 +20,7 @@ except Exception as exc:  # pragma: no cover - defensive offline audit path
     REAL_MODEL_IMPORT_ERROR = f"{type(exc).__name__}: {exc}"
 
 try:  # pragma: no cover - direct script execution path
-    from tools.event_driven_admission_simulation import (
+    from tools.probes.event_driven_admission_simulation import (
         ACTIVE_MODEL_PHASES,
         DEFAULT_MAX_BOOK_AGE_MS,
         DEFAULT_MAX_SIDE_SPREAD,
@@ -43,7 +43,7 @@ try:  # pragma: no cover - direct script execution path
     )
 except ModuleNotFoundError:  # pragma: no cover - `python tools/...` path
     sys.path.append(str(Path(__file__).resolve().parents[1]))
-    from tools.event_driven_admission_simulation import (
+    from tools.probes.event_driven_admission_simulation import (
         ACTIVE_MODEL_PHASES,
         DEFAULT_MAX_BOOK_AGE_MS,
         DEFAULT_MAX_SIDE_SPREAD,

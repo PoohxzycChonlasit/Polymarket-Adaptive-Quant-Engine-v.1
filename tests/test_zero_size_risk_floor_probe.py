@@ -24,7 +24,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.zero_size_risk_floor_probe import analyse, load_zero_size_events
+from tools.probes.zero_size_risk_floor_probe import analyse, load_zero_size_events
 
 
 # ---------------------------------------------------------------------------

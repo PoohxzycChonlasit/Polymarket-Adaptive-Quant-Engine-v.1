@@ -29,6 +29,7 @@
     "AI_HANDOFF_20260628_2105.md": [],
     "AI_HANDOFF_20260628_2111.md": [],
     "AI_HANDOFF_20260628_2118.md": [],
+    "AI_HANDOFF_20260628_2125.md": [],
     "CHATGPT_PROJECT_START_PROMPT.md": [],
     "CLAUDE.md": [],
     "CODEX_START_HERE.md": [],
@@ -663,6 +664,7 @@
     "docs/reports/AGENT_OS_DOCS_BATCH_1_COMMIT_REPORT_001.md": [],
     "docs/reports/AGENT_OS_DOCS_BATCH_1_REPORT.md": [],
     "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md": [],
+    "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md": [],
     "docs/reports/AIROS_V2_BATCH_AUTOMATION_DESIGN_001.md": [],
     "docs/reports/AIROS_V2_BATCH_GENERATOR_001.md": [],
     "docs/reports/AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001.md": [],
@@ -2085,7 +2087,7 @@
       "tools/dashboard_state_aggregator.py"
     ],
     "tests/test_decision_cycle_timing_probe.py": [
-      "tools/decision_cycle_timing_probe.py",
+      "tools/probes/decision_cycle_timing_probe.py",
       "utils/decision_cycle_timing_classifier.py"
     ],
     "tests/test_decision_log_slim_index.py": [
@@ -2121,7 +2123,7 @@
     ],
     "tests/test_entry_budget_consumption_probe.py": [
       "polymarket/trader.py",
-      "tools/entry_budget_consumption_probe.py"
+      "tools/probes/entry_budget_consumption_probe.py"
     ],
     "tests/test_entry_model_truth_envelope_v1.py": [
       "polymarket/client.py",
@@ -2130,7 +2132,7 @@
       "utils/risk_manager.py"
     ],
     "tests/test_epoch_boundary_alignment_probe.py": [
-      "tools/epoch_boundary_alignment_probe.py"
+      "tools/probes/epoch_boundary_alignment_probe.py"
     ],
     "tests/test_eth_yes_fc_os_command_center.py": [
       "tools/eth_yes_fc_os_command_center.py"
@@ -2142,14 +2144,14 @@
       "tools/audit/ev_field_coverage_audit.py"
     ],
     "tests/test_event_driven_admission_simulation.py": [
-      "tools/event_driven_admission_simulation.py"
+      "tools/probes/event_driven_admission_simulation.py"
     ],
     "tests/test_event_driven_fair_value_simulation.py": [
-      "tools/event_driven_fair_value_simulation.py"
+      "tools/probes/event_driven_fair_value_simulation.py"
     ],
     "tests/test_executable_state_persistence_probe.py": [
       "polymarket/trader.py",
-      "tools/executable_state_persistence_probe.py",
+      "tools/probes/executable_state_persistence_probe.py",
       "utils/executable_state_persistence_classifier.py"
     ],
     "tests/test_executable_truth_overlay.py": [
@@ -2260,7 +2262,7 @@
       "polymarket/trader.py"
     ],
     "tests/test_lifecycle_latency_report.py": [
-      "tools/lifecycle_latency_report.py"
+      "tools/probes/lifecycle_latency_report.py"
     ],
     "tests/test_lifecycle_observability_completion.py": [
       "polymarket/trader.py"
@@ -2269,7 +2271,7 @@
       "tools/replay/lifecycle_profit_management_replay.py"
     ],
     "tests/test_lifecycle_timing_report.py": [
-      "tools/lifecycle_timing_report.py"
+      "tools/probes/lifecycle_timing_report.py"
     ],
     "tests/test_lifecycle_truth_backfill.py": [
       "tools/replay/lifecycle_truth_backfill.py"
@@ -2318,7 +2320,7 @@
       "utils/quant_event_logger.py"
     ],
     "tests/test_market_readiness_admission_probe.py": [
-      "tools/market_readiness_admission_probe.py",
+      "tools/probes/market_readiness_admission_probe.py",
       "utils/admission_probe_classifier.py"
     ],
     "tests/test_market_readiness_timing.py": [
@@ -2474,7 +2476,7 @@
       "polymarket/probability_model.py"
     ],
     "tests/test_probability_semantics_calibration_probe.py": [
-      "tools/probability_semantics_calibration_probe.py"
+      "tools/probes/probability_semantics_calibration_probe.py"
     ],
     "tests/test_proxy_allowance_semantics.py": [
       "polymarket/client.py",
@@ -2655,7 +2657,7 @@
     ],
     "tests/test_zero_size_risk_floor_probe.py": [
       "polymarket/trader.py",
-      "tools/zero_size_risk_floor_probe.py"
+      "tools/probes/zero_size_risk_floor_probe.py"
     ],
     "tools/_delta_causal_verify.py": [],
     "tools/airos/__init__.py": [],
@@ -2724,30 +2726,15 @@
       "tools/session_runtime_evaluator.py"
     ],
     "tools/dashboard_state_aggregator.py": [],
-    "tools/decision_cycle_timing_probe.py": [
-      "utils/decision_cycle_timing_classifier.py"
-    ],
     "tools/decision_log_slim_index.py": [],
     "tools/discovery_harness_validation.py": [],
     "tools/edge_inventory_report.py": [],
-    "tools/entry_budget_consumption_probe.py": [],
-    "tools/epoch_boundary_alignment_probe.py": [],
     "tools/eth_yes_fc_os_command_center.py": [],
     "tools/ev_field_coverage.py": [
       "tools/candidate_continuity.py",
       "tools/candidate_path_observability.py",
       "tools/lifecycle_truth_tables.py",
       "tools/replay_analyzer.py"
-    ],
-    "tools/event_driven_admission_simulation.py": [
-      "tools/replay_analyzer.py"
-    ],
-    "tools/event_driven_fair_value_simulation.py": [
-      "polymarket/probability_model.py",
-      "tools/event_driven_admission_simulation.py"
-    ],
-    "tools/executable_state_persistence_probe.py": [
-      "utils/executable_state_persistence_classifier.py"
     ],
     "tools/executable_truth_overlay.py": [],
     "tools/execution_paper_runtime.py": [],
@@ -2762,15 +2749,8 @@
     "tools/flaos/schemas.py": [],
     "tools/flaos/session_schema.py": [],
     "tools/joined_records_builder.py": [],
-    "tools/lifecycle_latency_report.py": [],
-    "tools/lifecycle_timing_report.py": [
-      "tools/replay_analyzer.py"
-    ],
     "tools/lifecycle_truth_tables.py": [
       "tools/replay_analyzer.py"
-    ],
-    "tools/market_readiness_admission_probe.py": [
-      "utils/admission_probe_classifier.py"
     ],
     "tools/multi_session_runner.py": [],
     "tools/no_entry_analyzer.py": [
@@ -2808,8 +2788,31 @@
     "tools/phase_b_snapshot_archiver.py": [],
     "tools/phase_b_snapshot_summary.py": [],
     "tools/phase_b_weekly_review_engine.py": [],
-    "tools/probability_semantics_calibration_probe.py": [],
+    "tools/probes/decision_cycle_timing_probe.py": [
+      "utils/decision_cycle_timing_classifier.py"
+    ],
+    "tools/probes/entry_budget_consumption_probe.py": [],
+    "tools/probes/epoch_boundary_alignment_probe.py": [],
+    "tools/probes/event_driven_admission_simulation.py": [
+      "tools/replay_analyzer.py"
+    ],
+    "tools/probes/event_driven_fair_value_simulation.py": [
+      "polymarket/probability_model.py",
+      "tools/probes/event_driven_admission_simulation.py"
+    ],
+    "tools/probes/executable_state_persistence_probe.py": [
+      "utils/executable_state_persistence_classifier.py"
+    ],
+    "tools/probes/lifecycle_latency_report.py": [],
+    "tools/probes/lifecycle_timing_report.py": [
+      "tools/replay_analyzer.py"
+    ],
+    "tools/probes/market_readiness_admission_probe.py": [
+      "utils/admission_probe_classifier.py"
+    ],
+    "tools/probes/probability_semantics_calibration_probe.py": [],
     "tools/probes/silent_zone_selection_probe.py": [],
+    "tools/probes/zero_size_risk_floor_probe.py": [],
     "tools/quant_data_quality.py": [
       "tools/replay_analyzer.py"
     ],
@@ -2846,7 +2849,6 @@
     "tools/shadow/semantic_c_shadow_observability_report.py": [],
     "tools/shadow/semantic_c_shadow_pnl_truth.py": [],
     "tools/shadow/shadow_filter_evaluator.py": [],
-    "tools/zero_size_risk_floor_probe.py": [],
     "utils/__init__.py": [],
     "utils/admission_probe_classifier.py": [],
     "utils/config_validator.py": [],
@@ -3350,7 +3352,7 @@
     ],
     [
       "tests/test_decision_cycle_timing_probe.py",
-      "tools/decision_cycle_timing_probe.py"
+      "tools/probes/decision_cycle_timing_probe.py"
     ],
     [
       "tests/test_decision_cycle_timing_probe.py",
@@ -3422,7 +3424,7 @@
     ],
     [
       "tests/test_entry_budget_consumption_probe.py",
-      "tools/entry_budget_consumption_probe.py"
+      "tools/probes/entry_budget_consumption_probe.py"
     ],
     [
       "tests/test_entry_model_truth_envelope_v1.py",
@@ -3442,7 +3444,7 @@
     ],
     [
       "tests/test_epoch_boundary_alignment_probe.py",
-      "tools/epoch_boundary_alignment_probe.py"
+      "tools/probes/epoch_boundary_alignment_probe.py"
     ],
     [
       "tests/test_eth_yes_fc_os_command_center.py",
@@ -3458,11 +3460,11 @@
     ],
     [
       "tests/test_event_driven_admission_simulation.py",
-      "tools/event_driven_admission_simulation.py"
+      "tools/probes/event_driven_admission_simulation.py"
     ],
     [
       "tests/test_event_driven_fair_value_simulation.py",
-      "tools/event_driven_fair_value_simulation.py"
+      "tools/probes/event_driven_fair_value_simulation.py"
     ],
     [
       "tests/test_executable_state_persistence_probe.py",
@@ -3470,7 +3472,7 @@
     ],
     [
       "tests/test_executable_state_persistence_probe.py",
-      "tools/executable_state_persistence_probe.py"
+      "tools/probes/executable_state_persistence_probe.py"
     ],
     [
       "tests/test_executable_state_persistence_probe.py",
@@ -3718,7 +3720,7 @@
     ],
     [
       "tests/test_lifecycle_latency_report.py",
-      "tools/lifecycle_latency_report.py"
+      "tools/probes/lifecycle_latency_report.py"
     ],
     [
       "tests/test_lifecycle_observability_completion.py",
@@ -3730,7 +3732,7 @@
     ],
     [
       "tests/test_lifecycle_timing_report.py",
-      "tools/lifecycle_timing_report.py"
+      "tools/probes/lifecycle_timing_report.py"
     ],
     [
       "tests/test_lifecycle_truth_backfill.py",
@@ -3830,7 +3832,7 @@
     ],
     [
       "tests/test_market_readiness_admission_probe.py",
-      "tools/market_readiness_admission_probe.py"
+      "tools/probes/market_readiness_admission_probe.py"
     ],
     [
       "tests/test_market_readiness_admission_probe.py",
@@ -4166,7 +4168,7 @@
     ],
     [
       "tests/test_probability_semantics_calibration_probe.py",
-      "tools/probability_semantics_calibration_probe.py"
+      "tools/probes/probability_semantics_calibration_probe.py"
     ],
     [
       "tests/test_proxy_allowance_semantics.py",
@@ -4538,7 +4540,7 @@
     ],
     [
       "tests/test_zero_size_risk_floor_probe.py",
-      "tools/zero_size_risk_floor_probe.py"
+      "tools/probes/zero_size_risk_floor_probe.py"
     ],
     [
       "tools/backtest_engine_v2/__init__.py",
@@ -4653,10 +4655,6 @@
       "tools/session_runtime_evaluator.py"
     ],
     [
-      "tools/decision_cycle_timing_probe.py",
-      "utils/decision_cycle_timing_classifier.py"
-    ],
-    [
       "tools/ev_field_coverage.py",
       "tools/candidate_continuity.py"
     ],
@@ -4673,32 +4671,8 @@
       "tools/replay_analyzer.py"
     ],
     [
-      "tools/event_driven_admission_simulation.py",
-      "tools/replay_analyzer.py"
-    ],
-    [
-      "tools/event_driven_fair_value_simulation.py",
-      "polymarket/probability_model.py"
-    ],
-    [
-      "tools/event_driven_fair_value_simulation.py",
-      "tools/event_driven_admission_simulation.py"
-    ],
-    [
-      "tools/executable_state_persistence_probe.py",
-      "utils/executable_state_persistence_classifier.py"
-    ],
-    [
-      "tools/lifecycle_timing_report.py",
-      "tools/replay_analyzer.py"
-    ],
-    [
       "tools/lifecycle_truth_tables.py",
       "tools/replay_analyzer.py"
-    ],
-    [
-      "tools/market_readiness_admission_probe.py",
-      "utils/admission_probe_classifier.py"
     ],
     [
       "tools/no_entry_analyzer.py",
@@ -4731,6 +4705,34 @@
     [
       "tools/phase_b_daily_report.py",
       "tools/phase_b_daily_evidence_collector.py"
+    ],
+    [
+      "tools/probes/decision_cycle_timing_probe.py",
+      "utils/decision_cycle_timing_classifier.py"
+    ],
+    [
+      "tools/probes/event_driven_admission_simulation.py",
+      "tools/replay_analyzer.py"
+    ],
+    [
+      "tools/probes/event_driven_fair_value_simulation.py",
+      "polymarket/probability_model.py"
+    ],
+    [
+      "tools/probes/event_driven_fair_value_simulation.py",
+      "tools/probes/event_driven_admission_simulation.py"
+    ],
+    [
+      "tools/probes/executable_state_persistence_probe.py",
+      "utils/executable_state_persistence_classifier.py"
+    ],
+    [
+      "tools/probes/lifecycle_timing_report.py",
+      "tools/replay_analyzer.py"
+    ],
+    [
+      "tools/probes/market_readiness_admission_probe.py",
+      "utils/admission_probe_classifier.py"
     ],
     [
       "tools/quant_data_quality.py",
@@ -4851,7 +4853,7 @@
       "tools/dashboard_state_aggregator.py"
     ],
     "tests/test_decision_cycle_timing_probe.py": [
-      "tools/decision_cycle_timing_probe.py"
+      "tools/probes/decision_cycle_timing_probe.py"
     ],
     "tests/test_decision_log_slim_index.py": [
       "tools/decision_log_slim_index.py"
@@ -4884,14 +4886,14 @@
     ],
     "tests/test_entry_budget_consumption_probe.py": [
       "polymarket/trader.py",
-      "tools/entry_budget_consumption_probe.py"
+      "tools/probes/entry_budget_consumption_probe.py"
     ],
     "tests/test_entry_model_truth_envelope_v1.py": [
       "polymarket/client.py",
       "polymarket/trader.py"
     ],
     "tests/test_epoch_boundary_alignment_probe.py": [
-      "tools/epoch_boundary_alignment_probe.py"
+      "tools/probes/epoch_boundary_alignment_probe.py"
     ],
     "tests/test_eth_yes_fc_os_command_center.py": [
       "tools/eth_yes_fc_os_command_center.py"
@@ -4903,14 +4905,14 @@
       "tools/audit/ev_field_coverage_audit.py"
     ],
     "tests/test_event_driven_admission_simulation.py": [
-      "tools/event_driven_admission_simulation.py"
+      "tools/probes/event_driven_admission_simulation.py"
     ],
     "tests/test_event_driven_fair_value_simulation.py": [
-      "tools/event_driven_fair_value_simulation.py"
+      "tools/probes/event_driven_fair_value_simulation.py"
     ],
     "tests/test_executable_state_persistence_probe.py": [
       "polymarket/trader.py",
-      "tools/executable_state_persistence_probe.py"
+      "tools/probes/executable_state_persistence_probe.py"
     ],
     "tests/test_executable_truth_overlay.py": [
       "tools/executable_truth_overlay.py"
@@ -4993,7 +4995,7 @@
       "polymarket/trader.py"
     ],
     "tests/test_lifecycle_latency_report.py": [
-      "tools/lifecycle_latency_report.py"
+      "tools/probes/lifecycle_latency_report.py"
     ],
     "tests/test_lifecycle_observability_completion.py": [
       "polymarket/trader.py"
@@ -5002,7 +5004,7 @@
       "tools/replay/lifecycle_profit_management_replay.py"
     ],
     "tests/test_lifecycle_timing_report.py": [
-      "tools/lifecycle_timing_report.py"
+      "tools/probes/lifecycle_timing_report.py"
     ],
     "tests/test_lifecycle_truth_backfill.py": [
       "tools/replay/lifecycle_truth_backfill.py"
@@ -5043,7 +5045,7 @@
       "tools/canonical_trade_context_builder.py"
     ],
     "tests/test_market_readiness_admission_probe.py": [
-      "tools/market_readiness_admission_probe.py"
+      "tools/probes/market_readiness_admission_probe.py"
     ],
     "tests/test_market_readiness_timing.py": [
       "polymarket/client.py",
@@ -5182,7 +5184,7 @@
       "polymarket/probability_model.py"
     ],
     "tests/test_probability_semantics_calibration_probe.py": [
-      "tools/probability_semantics_calibration_probe.py"
+      "tools/probes/probability_semantics_calibration_probe.py"
     ],
     "tests/test_proxy_allowance_semantics.py": [
       "polymarket/client.py",
@@ -5336,10 +5338,10 @@
     ],
     "tests/test_zero_size_risk_floor_probe.py": [
       "polymarket/trader.py",
-      "tools/zero_size_risk_floor_probe.py"
+      "tools/probes/zero_size_risk_floor_probe.py"
     ]
   },
-  "generated_at_utc": "2026-06-28T14:25:19.365294Z",
+  "generated_at_utc": "2026-06-28T14:33:49.009638Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -5510,6 +5512,12 @@
       "outbound_dependencies_count": 0
     },
     "AI_HANDOFF_20260628_2118.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "AI_HANDOFF_20260628_2125.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -9314,6 +9322,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -17935,12 +17949,6 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
-    "tools/decision_cycle_timing_probe.py": {
-      "blast_radius_score": 2,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 1
-    },
     "tools/decision_log_slim_index.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 1,
@@ -17959,18 +17967,6 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
-    "tools/entry_budget_consumption_probe.py": {
-      "blast_radius_score": 1,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 0
-    },
-    "tools/epoch_boundary_alignment_probe.py": {
-      "blast_radius_score": 1,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 0
-    },
     "tools/eth_yes_fc_os_command_center.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 1,
@@ -17982,24 +17978,6 @@
       "inbound_dependencies_count": 2,
       "migration_safety_status": "MEDIUM_ATOMIC",
       "outbound_dependencies_count": 4
-    },
-    "tools/event_driven_admission_simulation.py": {
-      "blast_radius_score": 3,
-      "inbound_dependencies_count": 2,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 1
-    },
-    "tools/event_driven_fair_value_simulation.py": {
-      "blast_radius_score": 3,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 2
-    },
-    "tools/executable_state_persistence_probe.py": {
-      "blast_radius_score": 2,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 1
     },
     "tools/executable_truth_overlay.py": {
       "blast_radius_score": 1,
@@ -18079,28 +18057,10 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
-    "tools/lifecycle_latency_report.py": {
-      "blast_radius_score": 1,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 0
-    },
-    "tools/lifecycle_timing_report.py": {
-      "blast_radius_score": 2,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 1
-    },
     "tools/lifecycle_truth_tables.py": {
       "blast_radius_score": 6,
       "inbound_dependencies_count": 5,
       "migration_safety_status": "MEDIUM_ATOMIC",
-      "outbound_dependencies_count": 1
-    },
-    "tools/market_readiness_admission_probe.py": {
-      "blast_radius_score": 2,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 1
     },
     "tools/multi_session_runner.py": {
@@ -18235,7 +18195,61 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
-    "tools/probability_semantics_calibration_probe.py": {
+    "tools/probes/decision_cycle_timing_probe.py": {
+      "blast_radius_score": 2,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
+    "tools/probes/entry_budget_consumption_probe.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "tools/probes/epoch_boundary_alignment_probe.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "tools/probes/event_driven_admission_simulation.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 2,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
+    "tools/probes/event_driven_fair_value_simulation.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 2
+    },
+    "tools/probes/executable_state_persistence_probe.py": {
+      "blast_radius_score": 2,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
+    "tools/probes/lifecycle_latency_report.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "tools/probes/lifecycle_timing_report.py": {
+      "blast_radius_score": 2,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
+    "tools/probes/market_readiness_admission_probe.py": {
+      "blast_radius_score": 2,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
+    "tools/probes/probability_semantics_calibration_probe.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 1,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -18244,6 +18258,12 @@
     "tools/probes/silent_zone_selection_probe.py": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "tools/probes/zero_size_risk_floor_probe.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 1,
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
@@ -18380,12 +18400,6 @@
       "outbound_dependencies_count": 0
     },
     "tools/shadow/shadow_filter_evaluator.py": {
-      "blast_radius_score": 1,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "SAFE_ATOMIC",
-      "outbound_dependencies_count": 0
-    },
-    "tools/zero_size_risk_floor_probe.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 1,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -18620,7 +18634,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2213,
+  "node_count": 2215,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -18651,6 +18665,7 @@
     "AI_HANDOFF_20260628_2105.md",
     "AI_HANDOFF_20260628_2111.md",
     "AI_HANDOFF_20260628_2118.md",
+    "AI_HANDOFF_20260628_2125.md",
     "CHATGPT_PROJECT_START_PROMPT.md",
     "CLAUDE.md",
     "CODEX_START_HERE.md",
@@ -19285,6 +19300,7 @@
     "docs/reports/AGENT_OS_DOCS_BATCH_1_COMMIT_REPORT_001.md",
     "docs/reports/AGENT_OS_DOCS_BATCH_1_REPORT.md",
     "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md",
+    "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md",
     "docs/reports/AIROS_V2_BATCH_AUTOMATION_DESIGN_001.md",
     "docs/reports/AIROS_V2_BATCH_GENERATOR_001.md",
     "docs/reports/AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001.md",
@@ -20721,17 +20737,11 @@
     "tools/canonical_trade_context_builder.py",
     "tools/compact_run_summary.py",
     "tools/dashboard_state_aggregator.py",
-    "tools/decision_cycle_timing_probe.py",
     "tools/decision_log_slim_index.py",
     "tools/discovery_harness_validation.py",
     "tools/edge_inventory_report.py",
-    "tools/entry_budget_consumption_probe.py",
-    "tools/epoch_boundary_alignment_probe.py",
     "tools/eth_yes_fc_os_command_center.py",
     "tools/ev_field_coverage.py",
-    "tools/event_driven_admission_simulation.py",
-    "tools/event_driven_fair_value_simulation.py",
-    "tools/executable_state_persistence_probe.py",
     "tools/executable_truth_overlay.py",
     "tools/execution_paper_runtime.py",
     "tools/flaos/README.md",
@@ -20745,10 +20755,7 @@
     "tools/flaos/schemas.py",
     "tools/flaos/session_schema.py",
     "tools/joined_records_builder.py",
-    "tools/lifecycle_latency_report.py",
-    "tools/lifecycle_timing_report.py",
     "tools/lifecycle_truth_tables.py",
-    "tools/market_readiness_admission_probe.py",
     "tools/multi_session_runner.py",
     "tools/no_entry_analyzer.py",
     "tools/no_entry_root_cause_report.py",
@@ -20771,8 +20778,18 @@
     "tools/phase_b_snapshot_archiver.py",
     "tools/phase_b_snapshot_summary.py",
     "tools/phase_b_weekly_review_engine.py",
-    "tools/probability_semantics_calibration_probe.py",
+    "tools/probes/decision_cycle_timing_probe.py",
+    "tools/probes/entry_budget_consumption_probe.py",
+    "tools/probes/epoch_boundary_alignment_probe.py",
+    "tools/probes/event_driven_admission_simulation.py",
+    "tools/probes/event_driven_fair_value_simulation.py",
+    "tools/probes/executable_state_persistence_probe.py",
+    "tools/probes/lifecycle_latency_report.py",
+    "tools/probes/lifecycle_timing_report.py",
+    "tools/probes/market_readiness_admission_probe.py",
+    "tools/probes/probability_semantics_calibration_probe.py",
     "tools/probes/silent_zone_selection_probe.py",
+    "tools/probes/zero_size_risk_floor_probe.py",
     "tools/quant_data_quality.py",
     "tools/replay/commitment_regime_replay.py",
     "tools/replay/convergence_regime_classification_replay.py",
@@ -20796,7 +20813,6 @@
     "tools/shadow/semantic_c_shadow_observability_report.py",
     "tools/shadow/semantic_c_shadow_pnl_truth.py",
     "tools/shadow/shadow_filter_evaluator.py",
-    "tools/zero_size_risk_floor_probe.py",
     "utils/__init__.py",
     "utils/admission_probe_classifier.py",
     "utils/config_validator.py",
@@ -20866,6 +20882,7 @@
     "AI_HANDOFF_20260628_2105.md": [],
     "AI_HANDOFF_20260628_2111.md": [],
     "AI_HANDOFF_20260628_2118.md": [],
+    "AI_HANDOFF_20260628_2125.md": [],
     "CHATGPT_PROJECT_START_PROMPT.md": [],
     "CLAUDE.md": [],
     "CODEX_START_HERE.md": [],
@@ -21522,6 +21539,7 @@
     "docs/reports/AGENT_OS_DOCS_BATCH_1_COMMIT_REPORT_001.md": [],
     "docs/reports/AGENT_OS_DOCS_BATCH_1_REPORT.md": [],
     "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md": [],
+    "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md": [],
     "docs/reports/AIROS_V2_BATCH_AUTOMATION_DESIGN_001.md": [],
     "docs/reports/AIROS_V2_BATCH_GENERATOR_001.md": [],
     "docs/reports/AIROS_V2_DEPENDENCY_GRAPH_BUILDER_001.md": [],
@@ -22595,7 +22613,7 @@
       "polymarket/trader.py",
       "tests/test_prob_model_observability_v1.py",
       "tests/test_probability_model.py",
-      "tools/event_driven_fair_value_simulation.py"
+      "tools/probes/event_driven_fair_value_simulation.py"
     ],
     "polymarket/quant_indicators.py": [
       "polymarket/signal.py",
@@ -23269,9 +23287,6 @@
     "tools/dashboard_state_aggregator.py": [
       "tests/test_dashboard_state_aggregator.py"
     ],
-    "tools/decision_cycle_timing_probe.py": [
-      "tests/test_decision_cycle_timing_probe.py"
-    ],
     "tools/decision_log_slim_index.py": [
       "tests/test_decision_log_slim_index.py"
     ],
@@ -23281,28 +23296,12 @@
     "tools/edge_inventory_report.py": [
       "tests/test_edge_inventory_report.py"
     ],
-    "tools/entry_budget_consumption_probe.py": [
-      "tests/test_entry_budget_consumption_probe.py"
-    ],
-    "tools/epoch_boundary_alignment_probe.py": [
-      "tests/test_epoch_boundary_alignment_probe.py"
-    ],
     "tools/eth_yes_fc_os_command_center.py": [
       "tests/test_eth_yes_fc_os_command_center.py"
     ],
     "tools/ev_field_coverage.py": [
       "tests/test_ev_field_coverage.py",
       "tools/compact_run_summary.py"
-    ],
-    "tools/event_driven_admission_simulation.py": [
-      "tests/test_event_driven_admission_simulation.py",
-      "tools/event_driven_fair_value_simulation.py"
-    ],
-    "tools/event_driven_fair_value_simulation.py": [
-      "tests/test_event_driven_fair_value_simulation.py"
-    ],
-    "tools/executable_state_persistence_probe.py": [
-      "tests/test_executable_state_persistence_probe.py"
     ],
     "tools/executable_truth_overlay.py": [
       "tests/test_executable_truth_overlay.py"
@@ -23325,21 +23324,12 @@
     "tools/joined_records_builder.py": [
       "tests/test_joined_records_builder.py"
     ],
-    "tools/lifecycle_latency_report.py": [
-      "tests/test_lifecycle_latency_report.py"
-    ],
-    "tools/lifecycle_timing_report.py": [
-      "tests/test_lifecycle_timing_report.py"
-    ],
     "tools/lifecycle_truth_tables.py": [
       "tests/test_lifecycle_truth_tables.py",
       "tools/candidate_continuity.py",
       "tools/candidate_path_observability.py",
       "tools/ev_field_coverage.py",
       "tools/replay/lifecycle_truth_backfill.py"
-    ],
-    "tools/market_readiness_admission_probe.py": [
-      "tests/test_market_readiness_admission_probe.py"
     ],
     "tools/multi_session_runner.py": [
       "tests/test_multi_session_runner.py"
@@ -23418,10 +23408,41 @@
     "tools/phase_b_weekly_review_engine.py": [
       "tests/test_phase_b_weekly_review_engine.py"
     ],
-    "tools/probability_semantics_calibration_probe.py": [
+    "tools/probes/decision_cycle_timing_probe.py": [
+      "tests/test_decision_cycle_timing_probe.py"
+    ],
+    "tools/probes/entry_budget_consumption_probe.py": [
+      "tests/test_entry_budget_consumption_probe.py"
+    ],
+    "tools/probes/epoch_boundary_alignment_probe.py": [
+      "tests/test_epoch_boundary_alignment_probe.py"
+    ],
+    "tools/probes/event_driven_admission_simulation.py": [
+      "tests/test_event_driven_admission_simulation.py",
+      "tools/probes/event_driven_fair_value_simulation.py"
+    ],
+    "tools/probes/event_driven_fair_value_simulation.py": [
+      "tests/test_event_driven_fair_value_simulation.py"
+    ],
+    "tools/probes/executable_state_persistence_probe.py": [
+      "tests/test_executable_state_persistence_probe.py"
+    ],
+    "tools/probes/lifecycle_latency_report.py": [
+      "tests/test_lifecycle_latency_report.py"
+    ],
+    "tools/probes/lifecycle_timing_report.py": [
+      "tests/test_lifecycle_timing_report.py"
+    ],
+    "tools/probes/market_readiness_admission_probe.py": [
+      "tests/test_market_readiness_admission_probe.py"
+    ],
+    "tools/probes/probability_semantics_calibration_probe.py": [
       "tests/test_probability_semantics_calibration_probe.py"
     ],
     "tools/probes/silent_zone_selection_probe.py": [],
+    "tools/probes/zero_size_risk_floor_probe.py": [
+      "tests/test_zero_size_risk_floor_probe.py"
+    ],
     "tools/quant_data_quality.py": [
       "tests/test_no_entry_analyzer.py",
       "tests/test_quant_data_quality.py"
@@ -23454,10 +23475,10 @@
       "tools/candidate_path_observability.py",
       "tools/compact_run_summary.py",
       "tools/ev_field_coverage.py",
-      "tools/event_driven_admission_simulation.py",
-      "tools/lifecycle_timing_report.py",
       "tools/lifecycle_truth_tables.py",
       "tools/no_entry_analyzer.py",
+      "tools/probes/event_driven_admission_simulation.py",
+      "tools/probes/lifecycle_timing_report.py",
       "tools/quant_data_quality.py",
       "tools/replay/lifecycle_truth_backfill.py",
       "tools/session_runtime_evaluator.py",
@@ -23508,21 +23529,18 @@
     "tools/shadow/shadow_filter_evaluator.py": [
       "tests/test_shadow_filter_evaluator.py"
     ],
-    "tools/zero_size_risk_floor_probe.py": [
-      "tests/test_zero_size_risk_floor_probe.py"
-    ],
     "utils/__init__.py": [],
     "utils/admission_probe_classifier.py": [
       "polymarket/trader.py",
       "tests/test_market_readiness_admission_probe.py",
-      "tools/market_readiness_admission_probe.py"
+      "tools/probes/market_readiness_admission_probe.py"
     ],
     "utils/config_validator.py": [
       "tests/test_config_validation.py"
     ],
     "utils/decision_cycle_timing_classifier.py": [
       "tests/test_decision_cycle_timing_probe.py",
-      "tools/decision_cycle_timing_probe.py"
+      "tools/probes/decision_cycle_timing_probe.py"
     ],
     "utils/display.py": [
       "tests/test_paper_mode.py",
@@ -23531,7 +23549,7 @@
     "utils/executable_state_persistence_classifier.py": [
       "polymarket/trader.py",
       "tests/test_executable_state_persistence_probe.py",
-      "tools/executable_state_persistence_probe.py"
+      "tools/probes/executable_state_persistence_probe.py"
     ],
     "utils/logger.py": [
       "tests/test_logging_resilience.py",
@@ -24168,9 +24186,6 @@
     "tools/dashboard_state_aggregator.py": [
       "tests/test_dashboard_state_aggregator.py"
     ],
-    "tools/decision_cycle_timing_probe.py": [
-      "tests/test_decision_cycle_timing_probe.py"
-    ],
     "tools/decision_log_slim_index.py": [
       "tests/test_decision_log_slim_index.py"
     ],
@@ -24180,26 +24195,11 @@
     "tools/edge_inventory_report.py": [
       "tests/test_edge_inventory_report.py"
     ],
-    "tools/entry_budget_consumption_probe.py": [
-      "tests/test_entry_budget_consumption_probe.py"
-    ],
-    "tools/epoch_boundary_alignment_probe.py": [
-      "tests/test_epoch_boundary_alignment_probe.py"
-    ],
     "tools/eth_yes_fc_os_command_center.py": [
       "tests/test_eth_yes_fc_os_command_center.py"
     ],
     "tools/ev_field_coverage.py": [
       "tests/test_ev_field_coverage.py"
-    ],
-    "tools/event_driven_admission_simulation.py": [
-      "tests/test_event_driven_admission_simulation.py"
-    ],
-    "tools/event_driven_fair_value_simulation.py": [
-      "tests/test_event_driven_fair_value_simulation.py"
-    ],
-    "tools/executable_state_persistence_probe.py": [
-      "tests/test_executable_state_persistence_probe.py"
     ],
     "tools/executable_truth_overlay.py": [
       "tests/test_executable_truth_overlay.py"
@@ -24213,17 +24213,8 @@
     "tools/joined_records_builder.py": [
       "tests/test_joined_records_builder.py"
     ],
-    "tools/lifecycle_latency_report.py": [
-      "tests/test_lifecycle_latency_report.py"
-    ],
-    "tools/lifecycle_timing_report.py": [
-      "tests/test_lifecycle_timing_report.py"
-    ],
     "tools/lifecycle_truth_tables.py": [
       "tests/test_lifecycle_truth_tables.py"
-    ],
-    "tools/market_readiness_admission_probe.py": [
-      "tests/test_market_readiness_admission_probe.py"
     ],
     "tools/multi_session_runner.py": [
       "tests/test_multi_session_runner.py"
@@ -24298,8 +24289,38 @@
     "tools/phase_b_weekly_review_engine.py": [
       "tests/test_phase_b_weekly_review_engine.py"
     ],
-    "tools/probability_semantics_calibration_probe.py": [
+    "tools/probes/decision_cycle_timing_probe.py": [
+      "tests/test_decision_cycle_timing_probe.py"
+    ],
+    "tools/probes/entry_budget_consumption_probe.py": [
+      "tests/test_entry_budget_consumption_probe.py"
+    ],
+    "tools/probes/epoch_boundary_alignment_probe.py": [
+      "tests/test_epoch_boundary_alignment_probe.py"
+    ],
+    "tools/probes/event_driven_admission_simulation.py": [
+      "tests/test_event_driven_admission_simulation.py"
+    ],
+    "tools/probes/event_driven_fair_value_simulation.py": [
+      "tests/test_event_driven_fair_value_simulation.py"
+    ],
+    "tools/probes/executable_state_persistence_probe.py": [
+      "tests/test_executable_state_persistence_probe.py"
+    ],
+    "tools/probes/lifecycle_latency_report.py": [
+      "tests/test_lifecycle_latency_report.py"
+    ],
+    "tools/probes/lifecycle_timing_report.py": [
+      "tests/test_lifecycle_timing_report.py"
+    ],
+    "tools/probes/market_readiness_admission_probe.py": [
+      "tests/test_market_readiness_admission_probe.py"
+    ],
+    "tools/probes/probability_semantics_calibration_probe.py": [
       "tests/test_probability_semantics_calibration_probe.py"
+    ],
+    "tools/probes/zero_size_risk_floor_probe.py": [
+      "tests/test_zero_size_risk_floor_probe.py"
     ],
     "tools/quant_data_quality.py": [
       "tests/test_no_entry_analyzer.py",
@@ -24371,9 +24392,6 @@
     ],
     "tools/shadow/shadow_filter_evaluator.py": [
       "tests/test_shadow_filter_evaluator.py"
-    ],
-    "tools/zero_size_risk_floor_probe.py": [
-      "tests/test_zero_size_risk_floor_probe.py"
     ],
     "utils/no_entry_root_cause_classifier.py": [
       "tests/test_no_entry_root_cause_classifier.py"
@@ -24508,6 +24526,10 @@
       "unresolved_internal": []
     },
     "AI_HANDOFF_20260628_2118.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "AI_HANDOFF_20260628_2125.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -27051,6 +27073,10 @@
       "unresolved_internal": []
     },
     "docs/reports/AGENT_PIPELINE_ENABLEMENT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/AIROS_V2_ATOMIC_BATCH_EXECUTOR_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -32646,7 +32672,7 @@
         "typing"
       ],
       "unresolved_internal": [
-        "tools",
+        "tools.probes",
         "utils"
       ]
     },
@@ -34181,20 +34207,6 @@
       ],
       "unresolved_internal": []
     },
-    "tools/decision_cycle_timing_probe.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "json",
-        "os",
-        "pathlib",
-        "statistics",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
     "tools/decision_log_slim_index.py": {
       "unresolved_external": [
         "__future__",
@@ -34235,34 +34247,6 @@
       ],
       "unresolved_internal": []
     },
-    "tools/entry_budget_consumption_probe.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "pathlib",
-        "statistics",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/epoch_boundary_alignment_probe.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "pathlib",
-        "statistics",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
     "tools/eth_yes_fc_os_command_center.py": {
       "unresolved_external": [
         "__future__",
@@ -34285,48 +34269,6 @@
         "collections",
         "datetime",
         "json",
-        "pathlib",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/event_driven_admission_simulation.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "pathlib",
-        "re",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/event_driven_fair_value_simulation.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "math",
-        "pathlib",
-        "statistics",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/executable_state_persistence_probe.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "json",
-        "os",
         "pathlib",
         "sys",
         "typing"
@@ -34484,34 +34426,6 @@
       ],
       "unresolved_internal": []
     },
-    "tools/lifecycle_latency_report.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "pathlib",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/lifecycle_timing_report.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "dataclasses",
-        "datetime",
-        "json",
-        "pathlib",
-        "statistics",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
     "tools/lifecycle_truth_tables.py": {
       "unresolved_external": [
         "__future__",
@@ -34520,19 +34434,6 @@
         "datetime",
         "json",
         "pathlib",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/market_readiness_admission_probe.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "pathlib",
-        "sys",
         "typing"
       ],
       "unresolved_internal": []
@@ -34833,7 +34734,132 @@
       ],
       "unresolved_internal": []
     },
-    "tools/probability_semantics_calibration_probe.py": {
+    "tools/probes/decision_cycle_timing_probe.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "json",
+        "os",
+        "pathlib",
+        "statistics",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/entry_budget_consumption_probe.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "pathlib",
+        "statistics",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/epoch_boundary_alignment_probe.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "pathlib",
+        "statistics",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/event_driven_admission_simulation.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/event_driven_fair_value_simulation.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "math",
+        "pathlib",
+        "statistics",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/executable_state_persistence_probe.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "json",
+        "os",
+        "pathlib",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/lifecycle_latency_report.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "pathlib",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/lifecycle_timing_report.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "dataclasses",
+        "datetime",
+        "json",
+        "pathlib",
+        "statistics",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/market_readiness_admission_probe.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "pathlib",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/probability_semantics_calibration_probe.py": {
       "unresolved_external": [
         "__future__",
         "argparse",
@@ -34848,6 +34874,20 @@
       "unresolved_internal": []
     },
     "tools/probes/silent_zone_selection_probe.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "datetime",
+        "json",
+        "pathlib",
+        "statistics",
+        "sys",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/probes/zero_size_risk_floor_probe.py": {
       "unresolved_external": [
         "__future__",
         "argparse",
@@ -35168,20 +35208,6 @@
         "argparse",
         "json",
         "os",
-        "sys",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "tools/zero_size_risk_floor_probe.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "collections",
-        "datetime",
-        "json",
-        "pathlib",
-        "statistics",
         "sys",
         "typing"
       ],

@@ -22,7 +22,7 @@ from utils.decision_cycle_timing_classifier import (
     _ENTRY_CUTOFF_SECONDS,
     _EPOCH_SECONDS,
 )
-from tools.decision_cycle_timing_probe import (
+from tools.probes.decision_cycle_timing_probe import (
     aggregate,
     extract_record,
 )
@@ -366,7 +366,7 @@ class TestFailSoft:
 
     def test_no_runtime_imports_in_tool(self):
         import inspect
-        import tools.decision_cycle_timing_probe as mod
+        import tools.probes.decision_cycle_timing_probe as mod
         src = inspect.getsource(mod)
         for forbidden in ("polymarket.trader", "from polymarket", "import trader"):
             assert forbidden not in src, f"Forbidden import found: {forbidden}"
@@ -512,7 +512,7 @@ class TestAdditiveOnly:
 
     def test_no_paper_live_flags_in_tool(self):
         import inspect
-        import tools.decision_cycle_timing_probe as mod
+        import tools.probes.decision_cycle_timing_probe as mod
         src = inspect.getsource(mod)
         for forbidden in ("is_paper", "is_live", "paper_mode", "live_mode",
                           "arb_auto_execute", "order_intent"):

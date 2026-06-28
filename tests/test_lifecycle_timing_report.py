@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from tools.lifecycle_timing_report import analyze_lifecycle_timing, main as timing_main
+from tools.probes.lifecycle_timing_report import analyze_lifecycle_timing, main as timing_main
 
 
 DATE = "2026-05-15"

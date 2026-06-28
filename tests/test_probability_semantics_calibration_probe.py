@@ -28,7 +28,7 @@ _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from tools.probability_semantics_calibration_probe import (
+from tools.probes.probability_semantics_calibration_probe import (
     CONFIDENCE_FLOOR,
     CONFIDENCE_SPAN,
     EV_QUALITY_FLOOR,
@@ -500,7 +500,7 @@ class TestFailSoft:
 class TestNoRuntimeImports:
     def test_tool_does_not_import_trader(self):
         import ast, importlib, inspect
-        import tools.probability_semantics_calibration_probe as mod
+        import tools.probes.probability_semantics_calibration_probe as mod
         src = inspect.getsource(mod)
         tree = ast.parse(src)
         imported = []

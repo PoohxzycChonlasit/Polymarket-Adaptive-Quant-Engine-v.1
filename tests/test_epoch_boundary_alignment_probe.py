@@ -31,7 +31,7 @@ _repo_root = Path(__file__).resolve().parents[1]
 if str(_repo_root) not in sys.path:
     sys.path.insert(0, str(_repo_root))
 
-from tools.epoch_boundary_alignment_probe import (
+from tools.probes.epoch_boundary_alignment_probe import (
     EPOCH_DURATION_SECONDS,
     MIN_REAL_EPOCH_TS,
     _bool_field,
@@ -685,24 +685,24 @@ class TestWriteReport:
 
 class TestNoRuntimeImports:
     def test_no_polymarket_import(self):
-        import tools.epoch_boundary_alignment_probe as m
+        import tools.probes.epoch_boundary_alignment_probe as m
         src = Path(m.__file__).read_text()
         assert "from polymarket" not in src
         assert "import polymarket" not in src
 
     def test_no_config_settings_import(self):
-        import tools.epoch_boundary_alignment_probe as m
+        import tools.probes.epoch_boundary_alignment_probe as m
         src = Path(m.__file__).read_text()
         assert "from config" not in src
         assert "import config" not in src
 
     def test_no_utils_risk_manager_import(self):
-        import tools.epoch_boundary_alignment_probe as m
+        import tools.probes.epoch_boundary_alignment_probe as m
         src = Path(m.__file__).read_text()
         assert "risk_manager" not in src
 
     def test_no_live_execution_import(self):
-        import tools.epoch_boundary_alignment_probe as m
+        import tools.probes.epoch_boundary_alignment_probe as m
         src = Path(m.__file__).read_text()
         assert "order_manager" not in src
         assert "order_intent" not in src

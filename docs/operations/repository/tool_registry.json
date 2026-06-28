@@ -31,18 +31,18 @@
     "tools/outcome_truth_streaming_scan.py"
   ],
   "probes": [
-    "tools/decision_cycle_timing_probe.py",
-    "tools/entry_budget_consumption_probe.py",
-    "tools/epoch_boundary_alignment_probe.py",
-    "tools/event_driven_admission_simulation.py",
-    "tools/event_driven_fair_value_simulation.py",
-    "tools/executable_state_persistence_probe.py",
-    "tools/lifecycle_latency_report.py",
-    "tools/lifecycle_timing_report.py",
-    "tools/market_readiness_admission_probe.py",
-    "tools/probability_semantics_calibration_probe.py",
+    "tools/probes/decision_cycle_timing_probe.py",
+    "tools/probes/entry_budget_consumption_probe.py",
+    "tools/probes/epoch_boundary_alignment_probe.py",
+    "tools/probes/event_driven_admission_simulation.py",
+    "tools/probes/event_driven_fair_value_simulation.py",
+    "tools/probes/executable_state_persistence_probe.py",
+    "tools/probes/lifecycle_latency_report.py",
+    "tools/probes/lifecycle_timing_report.py",
+    "tools/probes/market_readiness_admission_probe.py",
+    "tools/probes/probability_semantics_calibration_probe.py",
     "tools/probes/silent_zone_selection_probe.py",
-    "tools/zero_size_risk_floor_probe.py"
+    "tools/probes/zero_size_risk_floor_probe.py"
   ],
   "replay": [
     "tools/multi_session_runner.py",

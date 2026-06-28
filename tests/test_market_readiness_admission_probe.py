@@ -32,7 +32,7 @@ from utils.admission_probe_classifier import (
     classify_admission_probe,
     _unknown_defaults,
 )
-from tools.market_readiness_admission_probe import (
+from tools.probes.market_readiness_admission_probe import (
     aggregate,
     extract_record,
     load_decision_events,
@@ -579,7 +579,7 @@ class TestAdditiveOnly:
             assert token not in source
 
     def test_tool_no_runtime_imports(self):
-        import tools.market_readiness_admission_probe as mod
+        import tools.probes.market_readiness_admission_probe as mod
         source = Path(mod.__file__).read_text(encoding="utf-8")
         forbidden = ["polymarket.trader", "utils.risk_manager", "order_manager",
                      "virtual_ptb", "live_order", "execute_order"]
