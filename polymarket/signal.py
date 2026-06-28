@@ -22,7 +22,7 @@ import pandas as pd
 
 from config.settings import get_settings
 from polymarket.market_feed import get_feed
-from polymarket.quant_indicators import get_quant_feed
+from polymarket.models.quant_indicators import get_quant_feed
 from polymarket.regime_diagnostics import classify_candle_regime
 
 LOGGER = logging.getLogger(__name__)

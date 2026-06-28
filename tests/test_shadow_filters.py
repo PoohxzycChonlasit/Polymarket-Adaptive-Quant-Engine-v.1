@@ -356,7 +356,7 @@ def test_phase_b_telemetry_fail_soft() -> None:
     trader = _setup_mocked_trader(paper_trading=True)
     trader.settings.shadow_telemetry_enabled = True
 
-    with patch("polymarket.shadow_telemetry.evaluate_shadow_filter", side_effect=RuntimeError("Test crash")):
+    with patch("polymarket.observability.shadow_telemetry.evaluate_shadow_filter", side_effect=RuntimeError("Test crash")):
         outcome = _run_evaluation(trader, p_yes=0.65, p_no=0.35, ev_yes=0.16, ev_no=0.01, side="YES")
         assert outcome.skipped is False
         assert outcome.decision == "buy"
@@ -402,7 +402,7 @@ def test_phase_b_telemetry_schema_completeness() -> None:
 
 
 def test_phase_b_telemetry_parity_with_offline_evaluator() -> None:
-    import polymarket.shadow_telemetry as st
+    import polymarket.observability.shadow_telemetry as st
 
     rec_btc = {"asset": "BTC", "edge": 0.06, "volatility_regime": "NORMAL_VOL"}
     res_btc = st.evaluate_shadow_filter(rec_btc, "block_btc_shadow")

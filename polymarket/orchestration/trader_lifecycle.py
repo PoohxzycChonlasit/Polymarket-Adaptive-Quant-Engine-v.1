@@ -157,7 +157,7 @@ class TraderLifecycleHelper:
             LOGGER.debug("[SHUTDOWN] PTB/oracle feed close failed: %s", exc)
         for module_name, attr_name in (
             ("polymarket.market_feed", "_feed"),
-            ("polymarket.quant_indicators", "_quant_feed"),
+            ("polymarket.models.quant_indicators", "_quant_feed"),
         ):
             try:
                 module = __import__(module_name, fromlist=[attr_name])

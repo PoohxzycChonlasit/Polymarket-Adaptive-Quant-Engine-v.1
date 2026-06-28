@@ -85,6 +85,12 @@
     "polymarket/market_availability_engine.py": [
       "tests/test_market_availability_engine.py"
     ],
+    "polymarket/observability/realtime_logger.py": [
+      "tests/test_logging_resilience.py"
+    ],
+    "polymarket/observability/shadow_telemetry.py": [
+      "tests/test_shadow_filters.py"
+    ],
     "polymarket/opportunity_scanner.py": [
       "tests/test_candidate_identity.py",
       "tests/test_opportunity_scanner.py",
@@ -124,9 +130,6 @@
       "tests/test_prob_model_observability_v1.py",
       "tests/test_probability_model.py"
     ],
-    "polymarket/realtime_logger.py": [
-      "tests/test_logging_resilience.py"
-    ],
     "polymarket/regime_diagnostics.py": [
       "tests/test_regime_diagnostics.py"
     ],
@@ -144,9 +147,6 @@
     ],
     "polymarket/shadow_policy.py": [
       "tests/test_shadow_policy.py"
-    ],
-    "polymarket/shadow_telemetry.py": [
-      "tests/test_shadow_filters.py"
     ],
     "polymarket/signal.py": [
       "tests/test_execution_risk_controls.py",
@@ -233,6 +233,9 @@
     ],
     "tools/airos/repository_index_generator.py": [
       "tests/test_airos_repository_index_generator.py"
+    ],
+    "tools/airos/repository_navigator.py": [
+      "tests/test_airos_repository_navigator.py"
     ],
     "tools/audit/_drift_audit.py": [
       "tests/test_drift_audit.py"
@@ -495,6 +498,9 @@
     "tests/test_airos_repository_index_generator.py": [
       "tools/airos/repository_index_generator.py"
     ],
+    "tests/test_airos_repository_navigator.py": [
+      "tools/airos/repository_navigator.py"
+    ],
     "tests/test_arbitrage_executor.py": [
       "polymarket/arbitrage.py",
       "polymarket/arbitrage_executor.py",
@@ -729,7 +735,7 @@
       "polymarket/trader.py"
     ],
     "tests/test_logging_resilience.py": [
-      "polymarket/realtime_logger.py"
+      "polymarket/observability/realtime_logger.py"
     ],
     "tests/test_lucky_shot.py": [
       "polymarket/bankroll_tiers.py",
@@ -960,8 +966,8 @@
       "polymarket/client.py",
       "polymarket/delta_engine.py",
       "polymarket/gamma_fetcher.py",
+      "polymarket/observability/shadow_telemetry.py",
       "polymarket/opportunity_scanner.py",
-      "polymarket/shadow_telemetry.py",
       "polymarket/trader.py"
     ],
     "tests/test_shadow_policy.py": [

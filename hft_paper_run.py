@@ -15,7 +15,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() not in ("utf-8","utf_8"):
 
 logging.basicConfig(level=logging.WARNING, format="%(asctime)s | %(message)s")
 for n in ("httpx","httpcore","websockets","hpack","polymarket.market_feed",
-          "polymarket.gamma_fetcher","polymarket.quant_indicators"):
+          "polymarket.gamma_fetcher","polymarket.models.quant_indicators"):
     logging.getLogger(n).setLevel(logging.ERROR)
 
 # ── Config ──────────────────────────────────────────────────────────────────────

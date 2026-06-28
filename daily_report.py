@@ -16,7 +16,7 @@ from pathlib import Path
 # ── allow running from project root ──────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 
-from polymarket.realtime_logger import RealtimeLogger
+from polymarket.observability.realtime_logger import RealtimeLogger
 
 # ── Rich ──────────────────────────────────────────────────────────────────────
 from rich.console import Console

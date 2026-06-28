@@ -138,7 +138,7 @@ def test_duplicate_paper_owner_blocks_before_runtime_work(monkeypatch: pytest.Mo
     monkeypatch.setitem(sys.modules, "polymarket.trader", SimpleNamespace(PolymarketTrader=Trader))
     monkeypatch.setitem(
         sys.modules,
-        "polymarket.realtime_logger",
+        "polymarket.observability.realtime_logger",
         SimpleNamespace(RealtimeLogger=RealtimeLogger, ScanRecord=object),
     )
     monkeypatch.setitem(sys.modules, "utils.display", SimpleNamespace(PolymarketRealtimeDisplay=Display))

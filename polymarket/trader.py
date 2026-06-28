@@ -35,7 +35,7 @@ from polymarket.size_sharp_engine import SizeSharpEngine, SizeSharpInput, SizeSh
 from polymarket.trade_frequency import frequency_multiplier_for_tier
 from polymarket.trend_runner import TrendRunnerInput, evaluate_trend_entry
 from polymarket.virtual_ptb import VirtualPriceToBeatTracker
-from polymarket.quant_indicators import get_quant_feed
+from polymarket.models.quant_indicators import get_quant_feed
 from polymarket.bankroll_tiers import (
     BankrollRankLock,
     BankrollRankLockResult,
@@ -64,8 +64,8 @@ from utils.risk_manager import (
 from utils.quant_event_logger import QuantEventLogger
 from utils.telegram_alerts import TelegramAlertLayer, emit_startup_config_telemetry
 from utils.no_entry_diagnostics import classify_time_bucket, normalize_skip_reason
-import polymarket.shadow_telemetry as shadow_telemetry
-from polymarket.trader_presentation import TraderPresentationHelper
+import polymarket.observability.shadow_telemetry as shadow_telemetry
+from polymarket.observability.trader_presentation import TraderPresentationHelper
 from polymarket.orchestration.trader_lifecycle import TraderLifecycleHelper
 from polymarket.orchestration.trader_observability import TraderObservabilityHelper
 

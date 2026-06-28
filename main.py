@@ -471,7 +471,7 @@ def run_polymarket_realtime(
         return 1
 
     from polymarket.trader import PolymarketTrader
-    from polymarket.realtime_logger import RealtimeLogger, ScanRecord
+    from polymarket.observability.realtime_logger import RealtimeLogger, ScanRecord
     from utils.display import PolymarketRealtimeDisplay
 
     trader   = PolymarketTrader()

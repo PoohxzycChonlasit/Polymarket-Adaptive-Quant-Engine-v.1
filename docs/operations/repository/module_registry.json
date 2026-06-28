@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T16:30:21.218228Z",
-  "module_count": 430,
+  "generated_at_utc": "2026-06-28T16:54:20.088375Z",
+  "module_count": 433,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -753,24 +753,6 @@
       "recommended_target_folder": "polymarket/models/"
     },
     {
-      "path": "polymarket/five_min_monitor.py",
-      "module_name": "polymarket.five_min_monitor",
-      "domain": "polymarket",
-      "package": "polymarket",
-      "line_count": 324,
-      "blast_radius_score": 3,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
-      "do_not_touch": false,
-      "direct_imports": [
-        "polymarket/price_to_beat_fetcher.py"
-      ],
-      "reverse_importers": [],
-      "tests": [],
-      "safe_move_status": "SAFE_MOVE",
-      "recommended_target_folder": "polymarket/market/"
-    },
-    {
       "path": "polymarket/gamma_fetcher.py",
       "module_name": "polymarket.gamma_fetcher",
       "domain": "polymarket",
@@ -823,6 +805,40 @@
       "recommended_target_folder": "polymarket/market/"
     },
     {
+      "path": "polymarket/market/__init__.py",
+      "module_name": "polymarket.market.__init__",
+      "domain": "polymarket",
+      "package": "polymarket/market",
+      "line_count": 0,
+      "blast_radius_score": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/market/five_min_monitor.py",
+      "module_name": "polymarket.market.five_min_monitor",
+      "domain": "polymarket",
+      "package": "polymarket/market",
+      "line_count": 324,
+      "blast_radius_score": 3,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/price_to_beat_fetcher.py"
+      ],
+      "reverse_importers": [],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
       "path": "polymarket/market_availability_engine.py",
       "module_name": "polymarket.market_availability_engine",
       "domain": "polymarket",
@@ -854,6 +870,113 @@
       "direct_imports": [],
       "reverse_importers": [
         "polymarket/signal.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/models/__init__.py",
+      "module_name": "polymarket.models.__init__",
+      "domain": "polymarket",
+      "package": "polymarket/models",
+      "line_count": 0,
+      "blast_radius_score": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/models/quant_indicators.py",
+      "module_name": "polymarket.models.quant_indicators",
+      "domain": "polymarket",
+      "package": "polymarket/models",
+      "line_count": 128,
+      "blast_radius_score": 6,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "polymarket/signal.py",
+        "polymarket/trader.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/__init__.py",
+      "module_name": "polymarket.observability.__init__",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 0,
+      "blast_radius_score": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/realtime_logger.py",
+      "module_name": "polymarket.observability.realtime_logger",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 368,
+      "blast_radius_score": 3,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "tests/test_logging_resilience.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/shadow_telemetry.py",
+      "module_name": "polymarket.observability.shadow_telemetry",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 75,
+      "blast_radius_score": 6,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "polymarket/trader.py",
+        "tests/test_shadow_filters.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/trader_presentation.py",
+      "module_name": "polymarket.observability.trader_presentation",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 206,
+      "blast_radius_score": 6,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "polymarket/orchestration/trader_observability.py",
+        "polymarket/trader.py"
       ],
       "tests": [],
       "safe_move_status": "DO_NOT_MOVE",
@@ -938,7 +1061,7 @@
       "do_not_touch": false,
       "direct_imports": [
         "config/settings.py",
-        "polymarket/trader_presentation.py"
+        "polymarket/observability/trader_presentation.py"
       ],
       "reverse_importers": [
         "polymarket/trader.py"
@@ -1062,7 +1185,7 @@
         "utils/rate_limiter.py"
       ],
       "reverse_importers": [
-        "polymarket/five_min_monitor.py"
+        "polymarket/market/five_min_monitor.py"
       ],
       "tests": [],
       "safe_move_status": "DO_NOT_MOVE",
@@ -1088,43 +1211,6 @@
       "tests": [],
       "safe_move_status": "SAFE_MOVE",
       "recommended_target_folder": "polymarket/models/"
-    },
-    {
-      "path": "polymarket/quant_indicators.py",
-      "module_name": "polymarket.quant_indicators",
-      "domain": "polymarket",
-      "package": "polymarket",
-      "line_count": 128,
-      "blast_radius_score": 6,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
-      "do_not_touch": false,
-      "direct_imports": [],
-      "reverse_importers": [
-        "polymarket/signal.py",
-        "polymarket/trader.py"
-      ],
-      "tests": [],
-      "safe_move_status": "SAFE_MOVE",
-      "recommended_target_folder": "polymarket/models/"
-    },
-    {
-      "path": "polymarket/realtime_logger.py",
-      "module_name": "polymarket.realtime_logger",
-      "domain": "polymarket",
-      "package": "polymarket",
-      "line_count": 368,
-      "blast_radius_score": 3,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
-      "do_not_touch": false,
-      "direct_imports": [],
-      "reverse_importers": [
-        "tests/test_logging_resilience.py"
-      ],
-      "tests": [],
-      "safe_move_status": "SAFE_MOVE",
-      "recommended_target_folder": "polymarket/observability/"
     },
     {
       "path": "polymarket/regime_diagnostics.py",
@@ -1194,25 +1280,6 @@
       "recommended_target_folder": null
     },
     {
-      "path": "polymarket/shadow_telemetry.py",
-      "module_name": "polymarket.shadow_telemetry",
-      "domain": "polymarket",
-      "package": "polymarket",
-      "line_count": 75,
-      "blast_radius_score": 6,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
-      "do_not_touch": false,
-      "direct_imports": [],
-      "reverse_importers": [
-        "polymarket/trader.py",
-        "tests/test_shadow_filters.py"
-      ],
-      "tests": [],
-      "safe_move_status": "SAFE_MOVE",
-      "recommended_target_folder": "polymarket/observability/"
-    },
-    {
       "path": "polymarket/signal.py",
       "module_name": "polymarket.signal",
       "domain": "polymarket",
@@ -1225,7 +1292,7 @@
       "direct_imports": [
         "config/settings.py",
         "polymarket/market_feed.py",
-        "polymarket/quant_indicators.py",
+        "polymarket/models/quant_indicators.py",
         "polymarket/regime_diagnostics.py"
       ],
       "reverse_importers": [
@@ -1303,6 +1370,9 @@
         "polymarket/gamma_fetcher.py",
         "polymarket/lucky_shot.py",
         "polymarket/market_availability_engine.py",
+        "polymarket/models/quant_indicators.py",
+        "polymarket/observability/shadow_telemetry.py",
+        "polymarket/observability/trader_presentation.py",
         "polymarket/opportunity_scanner.py",
         "polymarket/orchestration/trader_lifecycle.py",
         "polymarket/orchestration/trader_observability.py",
@@ -1310,15 +1380,12 @@
         "polymarket/order_manager.py",
         "polymarket/position_manager.py",
         "polymarket/probability_model.py",
-        "polymarket/quant_indicators.py",
         "polymarket/regime_diagnostics.py",
         "polymarket/risk_modes.py",
         "polymarket/shadow_policy.py",
-        "polymarket/shadow_telemetry.py",
         "polymarket/signal.py",
         "polymarket/size_sharp_engine.py",
         "polymarket/trade_frequency.py",
-        "polymarket/trader_presentation.py",
         "polymarket/trend_runner.py",
         "polymarket/virtual_ptb.py",
         "utils/admission_probe_classifier.py",
@@ -1391,25 +1458,6 @@
       "tests": [],
       "safe_move_status": "DO_NOT_MOVE",
       "recommended_target_folder": null
-    },
-    {
-      "path": "polymarket/trader_presentation.py",
-      "module_name": "polymarket.trader_presentation",
-      "domain": "polymarket",
-      "package": "polymarket",
-      "line_count": 206,
-      "blast_radius_score": 6,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
-      "do_not_touch": false,
-      "direct_imports": [],
-      "reverse_importers": [
-        "polymarket/orchestration/trader_observability.py",
-        "polymarket/trader.py"
-      ],
-      "tests": [],
-      "safe_move_status": "SAFE_MOVE",
-      "recommended_target_folder": "polymarket/observability/"
     },
     {
       "path": "polymarket/trend_runner.py",
@@ -2615,14 +2663,18 @@
       "domain": "tests",
       "package": "tests",
       "line_count": 421,
-      "blast_radius_score": 0,
-      "migration_safety_status": "UNKNOWN",
+      "blast_radius_score": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
       "do_not_touch": false,
-      "direct_imports": [],
+      "direct_imports": [
+        "tools/airos/repository_navigator.py"
+      ],
       "reverse_importers": [],
-      "tests": [],
-      "safe_move_status": "UNKNOWN",
+      "tests": [
+        "tools/airos/repository_navigator.py"
+      ],
+      "safe_move_status": "SAFE_ATOMIC",
       "recommended_target_folder": null
     },
     {
@@ -4212,12 +4264,12 @@
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [
-        "polymarket/realtime_logger.py",
+        "polymarket/observability/realtime_logger.py",
         "utils/logger.py"
       ],
       "reverse_importers": [],
       "tests": [
-        "polymarket/realtime_logger.py"
+        "polymarket/observability/realtime_logger.py"
       ],
       "safe_move_status": "SAFE_ATOMIC",
       "recommended_target_folder": null
@@ -5699,8 +5751,8 @@
         "polymarket/client.py",
         "polymarket/delta_engine.py",
         "polymarket/gamma_fetcher.py",
+        "polymarket/observability/shadow_telemetry.py",
         "polymarket/opportunity_scanner.py",
-        "polymarket/shadow_telemetry.py",
         "polymarket/trader.py"
       ],
       "reverse_importers": [],
@@ -5708,8 +5760,8 @@
         "polymarket/client.py",
         "polymarket/delta_engine.py",
         "polymarket/gamma_fetcher.py",
+        "polymarket/observability/shadow_telemetry.py",
         "polymarket/opportunity_scanner.py",
-        "polymarket/shadow_telemetry.py",
         "polymarket/trader.py"
       ],
       "safe_move_status": "MEDIUM_ATOMIC",
@@ -6159,14 +6211,16 @@
       "domain": "tools.airos",
       "package": "tools/airos",
       "line_count": 550,
-      "blast_radius_score": 0,
-      "migration_safety_status": "UNKNOWN",
+      "blast_radius_score": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [],
-      "reverse_importers": [],
+      "reverse_importers": [
+        "tests/test_airos_repository_navigator.py"
+      ],
       "tests": [],
-      "safe_move_status": "UNKNOWN",
+      "safe_move_status": "SAFE_ATOMIC",
       "recommended_target_folder": null
     },
     {

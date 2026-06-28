@@ -8,9 +8,9 @@ from requests import Timeout
 
 import pytest
 
-import polymarket.realtime_logger as realtime_logger
+import polymarket.observability.realtime_logger as realtime_logger
 import utils.logger as logger_utils
-from polymarket.realtime_logger import RealtimeLogger, ScanRecord
+from polymarket.observability.realtime_logger import RealtimeLogger, ScanRecord
 
 
 class _Secret:

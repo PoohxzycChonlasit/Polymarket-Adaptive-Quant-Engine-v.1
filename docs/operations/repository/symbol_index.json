@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T16:30:23.144186Z",
-  "file_count": 430,
+  "generated_at_utc": "2026-06-28T16:54:22.088194Z",
+  "file_count": 433,
   "files": [
     {
       "path": "polymarket/trader.py",
@@ -7666,96 +7666,6 @@
       "runtime_sensitive_symbols": []
     },
     {
-      "path": "polymarket/five_min_monitor.py",
-      "total_lines": 325,
-      "class_count": 0,
-      "top_function_count": 7,
-      "method_count": 0,
-      "classes": [],
-      "top_functions": [
-        {
-          "name": "_fmt_price",
-          "line": 59,
-          "size": 5,
-          "runtime_sensitive": false
-        },
-        {
-          "name": "_fmt_seconds",
-          "line": 66,
-          "size": 10,
-          "runtime_sensitive": false
-        },
-        {
-          "name": "_direction_emoji",
-          "line": 78,
-          "size": 6,
-          "runtime_sensitive": false
-        },
-        {
-          "name": "_signal_badge",
-          "line": 86,
-          "size": 8,
-          "runtime_sensitive": false
-        },
-        {
-          "name": "build_table",
-          "line": 103,
-          "size": 111,
-          "runtime_sensitive": false
-        },
-        {
-          "name": "run_monitor",
-          "line": 221,
-          "size": 67,
-          "runtime_sensitive": false
-        },
-        {
-          "name": "main",
-          "line": 294,
-          "size": 27,
-          "runtime_sensitive": false
-        }
-      ],
-      "largest_symbols": [
-        {
-          "name": "build_table",
-          "class": null,
-          "size": 111
-        },
-        {
-          "name": "run_monitor",
-          "class": null,
-          "size": 67
-        },
-        {
-          "name": "main",
-          "class": null,
-          "size": 27
-        },
-        {
-          "name": "_fmt_seconds",
-          "class": null,
-          "size": 10
-        },
-        {
-          "name": "_signal_badge",
-          "class": null,
-          "size": 8
-        },
-        {
-          "name": "_direction_emoji",
-          "class": null,
-          "size": 6
-        },
-        {
-          "name": "_fmt_price",
-          "class": null,
-          "size": 5
-        }
-      ],
-      "runtime_sensitive_symbols": []
-    },
-    {
       "path": "polymarket/gamma_fetcher.py",
       "total_lines": 298,
       "class_count": 4,
@@ -7919,6 +7829,107 @@
       "runtime_sensitive_symbols": [
         "_max_risk_pct"
       ]
+    },
+    {
+      "path": "polymarket/market/__init__.py",
+      "total_lines": 1,
+      "class_count": 0,
+      "top_function_count": 0,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [],
+      "largest_symbols": [],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/market/five_min_monitor.py",
+      "total_lines": 325,
+      "class_count": 0,
+      "top_function_count": 7,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "_fmt_price",
+          "line": 59,
+          "size": 5,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_fmt_seconds",
+          "line": 66,
+          "size": 10,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_direction_emoji",
+          "line": 78,
+          "size": 6,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_signal_badge",
+          "line": 86,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "build_table",
+          "line": 103,
+          "size": 111,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "run_monitor",
+          "line": 221,
+          "size": 67,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "main",
+          "line": 294,
+          "size": 27,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "build_table",
+          "class": null,
+          "size": 111
+        },
+        {
+          "name": "run_monitor",
+          "class": null,
+          "size": 67
+        },
+        {
+          "name": "main",
+          "class": null,
+          "size": 27
+        },
+        {
+          "name": "_fmt_seconds",
+          "class": null,
+          "size": 10
+        },
+        {
+          "name": "_signal_badge",
+          "class": null,
+          "size": 8
+        },
+        {
+          "name": "_direction_emoji",
+          "class": null,
+          "size": 6
+        },
+        {
+          "name": "_fmt_price",
+          "class": null,
+          "size": 5
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "polymarket/market_availability_engine.py",
@@ -8231,6 +8242,521 @@
       "runtime_sensitive_symbols": [
         "get_live_price"
       ]
+    },
+    {
+      "path": "polymarket/models/__init__.py",
+      "total_lines": 1,
+      "class_count": 0,
+      "top_function_count": 0,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [],
+      "largest_symbols": [],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/models/quant_indicators.py",
+      "total_lines": 129,
+      "class_count": 1,
+      "top_function_count": 1,
+      "method_count": 12,
+      "classes": [
+        {
+          "name": "QuantIndicatorsFeed",
+          "line": 18,
+          "method_count": 12,
+          "methods": [
+            {
+              "name": "__init__",
+              "line": 23,
+              "size": 9,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "start",
+              "line": 33,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_run_loop",
+              "line": 42,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_async_main",
+              "line": 50,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_poll_all",
+              "line": 59,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_fetch_oi",
+              "line": 67,
+              "size": 10,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_fetch_ls_ratio",
+              "line": 78,
+              "size": 17,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "get_quant_data",
+              "line": 96,
+              "size": 5,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "stop",
+              "line": 102,
+              "size": 5,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "close",
+              "line": 108,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "shutdown",
+              "line": 111,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "is_running",
+              "line": 114,
+              "size": 2,
+              "runtime_sensitive": false
+            }
+          ]
+        }
+      ],
+      "top_functions": [
+        {
+          "name": "get_quant_feed",
+          "line": 121,
+          "size": 8,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "_fetch_ls_ratio",
+          "class": "QuantIndicatorsFeed",
+          "size": 17
+        },
+        {
+          "name": "_fetch_oi",
+          "class": "QuantIndicatorsFeed",
+          "size": 10
+        },
+        {
+          "name": "__init__",
+          "class": "QuantIndicatorsFeed",
+          "size": 9
+        },
+        {
+          "name": "start",
+          "class": "QuantIndicatorsFeed",
+          "size": 8
+        },
+        {
+          "name": "_async_main",
+          "class": "QuantIndicatorsFeed",
+          "size": 8
+        },
+        {
+          "name": "get_quant_feed",
+          "class": null,
+          "size": 8
+        },
+        {
+          "name": "_run_loop",
+          "class": "QuantIndicatorsFeed",
+          "size": 7
+        },
+        {
+          "name": "_poll_all",
+          "class": "QuantIndicatorsFeed",
+          "size": 7
+        },
+        {
+          "name": "get_quant_data",
+          "class": "QuantIndicatorsFeed",
+          "size": 5
+        },
+        {
+          "name": "stop",
+          "class": "QuantIndicatorsFeed",
+          "size": 5
+        }
+      ],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/observability/__init__.py",
+      "total_lines": 1,
+      "class_count": 0,
+      "top_function_count": 0,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [],
+      "largest_symbols": [],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/observability/realtime_logger.py",
+      "total_lines": 369,
+      "class_count": 3,
+      "top_function_count": 0,
+      "method_count": 18,
+      "classes": [
+        {
+          "name": "ScanRecord",
+          "line": 17,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "DailySummary",
+          "line": 55,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "RealtimeLogger",
+          "line": 74,
+          "method_count": 18,
+          "methods": [
+            {
+              "name": "__init__",
+              "line": 77,
+              "size": 31,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_check_new_day",
+              "line": 109,
+              "size": 19,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_open_csv",
+              "line": 129,
+              "size": 32,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_close_csv",
+              "line": 162,
+              "size": 17,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_disable_csv_logger",
+              "line": 180,
+              "size": 16,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_safe_flush_csv",
+              "line": 197,
+              "size": 14,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "log_scan",
+              "line": 212,
+              "size": 52,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "log_trade_result",
+              "line": 265,
+              "size": 10,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "get_daily_pnl_pct",
+              "line": 276,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "target_hit",
+              "line": 281,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_save_daily_summary",
+              "line": 284,
+              "size": 49,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "force_save_summary",
+              "line": 334,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "close",
+              "line": 337,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "shutdown",
+              "line": 345,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "stop",
+              "line": 348,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "__enter__",
+              "line": 351,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "__exit__",
+              "line": 354,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "load_all_summaries",
+              "line": 358,
+              "size": 11,
+              "runtime_sensitive": false
+            }
+          ]
+        }
+      ],
+      "top_functions": [],
+      "largest_symbols": [
+        {
+          "name": "log_scan",
+          "class": "RealtimeLogger",
+          "size": 52
+        },
+        {
+          "name": "_save_daily_summary",
+          "class": "RealtimeLogger",
+          "size": 49
+        },
+        {
+          "name": "_open_csv",
+          "class": "RealtimeLogger",
+          "size": 32
+        },
+        {
+          "name": "__init__",
+          "class": "RealtimeLogger",
+          "size": 31
+        },
+        {
+          "name": "_check_new_day",
+          "class": "RealtimeLogger",
+          "size": 19
+        },
+        {
+          "name": "_close_csv",
+          "class": "RealtimeLogger",
+          "size": 17
+        },
+        {
+          "name": "_disable_csv_logger",
+          "class": "RealtimeLogger",
+          "size": 16
+        },
+        {
+          "name": "_safe_flush_csv",
+          "class": "RealtimeLogger",
+          "size": 14
+        },
+        {
+          "name": "load_all_summaries",
+          "class": "RealtimeLogger",
+          "size": 11
+        },
+        {
+          "name": "log_trade_result",
+          "class": "RealtimeLogger",
+          "size": 10
+        }
+      ],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/observability/shadow_telemetry.py",
+      "total_lines": 76,
+      "class_count": 0,
+      "top_function_count": 1,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "evaluate_shadow_filter",
+          "line": 5,
+          "size": 71,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "evaluate_shadow_filter",
+          "class": null,
+          "size": 71
+        }
+      ],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/observability/trader_presentation.py",
+      "total_lines": 207,
+      "class_count": 1,
+      "top_function_count": 0,
+      "method_count": 10,
+      "classes": [
+        {
+          "name": "TraderPresentationHelper",
+          "line": 13,
+          "method_count": 10,
+          "methods": [
+            {
+              "name": "momentum_label",
+              "line": 20,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "volatility_label",
+              "line": 27,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "liquidity_label",
+              "line": 34,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "edge_label",
+              "line": 41,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "display_field_present",
+              "line": 52,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "display_visibility_status",
+              "line": 59,
+              "size": 11,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "display_identity_readiness",
+              "line": 71,
+              "size": 19,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "display_dominant_model_gap",
+              "line": 91,
+              "size": 17,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "default_observability_health_display_state",
+              "line": 113,
+              "size": 30,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "event_driven_admission_packet_price_detail",
+              "line": 148,
+              "size": 59,
+              "runtime_sensitive": false
+            }
+          ]
+        }
+      ],
+      "top_functions": [],
+      "largest_symbols": [
+        {
+          "name": "event_driven_admission_packet_price_detail",
+          "class": "TraderPresentationHelper",
+          "size": 59
+        },
+        {
+          "name": "default_observability_health_display_state",
+          "class": "TraderPresentationHelper",
+          "size": 30
+        },
+        {
+          "name": "display_identity_readiness",
+          "class": "TraderPresentationHelper",
+          "size": 19
+        },
+        {
+          "name": "display_dominant_model_gap",
+          "class": "TraderPresentationHelper",
+          "size": 17
+        },
+        {
+          "name": "display_visibility_status",
+          "class": "TraderPresentationHelper",
+          "size": 11
+        },
+        {
+          "name": "momentum_label",
+          "class": "TraderPresentationHelper",
+          "size": 6
+        },
+        {
+          "name": "volatility_label",
+          "class": "TraderPresentationHelper",
+          "size": 6
+        },
+        {
+          "name": "liquidity_label",
+          "class": "TraderPresentationHelper",
+          "size": 6
+        },
+        {
+          "name": "edge_label",
+          "class": "TraderPresentationHelper",
+          "size": 6
+        },
+        {
+          "name": "display_field_present",
+          "class": "TraderPresentationHelper",
+          "size": 6
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "polymarket/opportunity_scanner.py",
@@ -9549,345 +10075,6 @@
       "runtime_sensitive_symbols": []
     },
     {
-      "path": "polymarket/quant_indicators.py",
-      "total_lines": 129,
-      "class_count": 1,
-      "top_function_count": 1,
-      "method_count": 12,
-      "classes": [
-        {
-          "name": "QuantIndicatorsFeed",
-          "line": 18,
-          "method_count": 12,
-          "methods": [
-            {
-              "name": "__init__",
-              "line": 23,
-              "size": 9,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "start",
-              "line": 33,
-              "size": 8,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_run_loop",
-              "line": 42,
-              "size": 7,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_async_main",
-              "line": 50,
-              "size": 8,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_poll_all",
-              "line": 59,
-              "size": 7,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_fetch_oi",
-              "line": 67,
-              "size": 10,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_fetch_ls_ratio",
-              "line": 78,
-              "size": 17,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "get_quant_data",
-              "line": 96,
-              "size": 5,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "stop",
-              "line": 102,
-              "size": 5,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "close",
-              "line": 108,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "shutdown",
-              "line": 111,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "is_running",
-              "line": 114,
-              "size": 2,
-              "runtime_sensitive": false
-            }
-          ]
-        }
-      ],
-      "top_functions": [
-        {
-          "name": "get_quant_feed",
-          "line": 121,
-          "size": 8,
-          "runtime_sensitive": false
-        }
-      ],
-      "largest_symbols": [
-        {
-          "name": "_fetch_ls_ratio",
-          "class": "QuantIndicatorsFeed",
-          "size": 17
-        },
-        {
-          "name": "_fetch_oi",
-          "class": "QuantIndicatorsFeed",
-          "size": 10
-        },
-        {
-          "name": "__init__",
-          "class": "QuantIndicatorsFeed",
-          "size": 9
-        },
-        {
-          "name": "start",
-          "class": "QuantIndicatorsFeed",
-          "size": 8
-        },
-        {
-          "name": "_async_main",
-          "class": "QuantIndicatorsFeed",
-          "size": 8
-        },
-        {
-          "name": "get_quant_feed",
-          "class": null,
-          "size": 8
-        },
-        {
-          "name": "_run_loop",
-          "class": "QuantIndicatorsFeed",
-          "size": 7
-        },
-        {
-          "name": "_poll_all",
-          "class": "QuantIndicatorsFeed",
-          "size": 7
-        },
-        {
-          "name": "get_quant_data",
-          "class": "QuantIndicatorsFeed",
-          "size": 5
-        },
-        {
-          "name": "stop",
-          "class": "QuantIndicatorsFeed",
-          "size": 5
-        }
-      ],
-      "runtime_sensitive_symbols": []
-    },
-    {
-      "path": "polymarket/realtime_logger.py",
-      "total_lines": 369,
-      "class_count": 3,
-      "top_function_count": 0,
-      "method_count": 18,
-      "classes": [
-        {
-          "name": "ScanRecord",
-          "line": 17,
-          "method_count": 0,
-          "methods": []
-        },
-        {
-          "name": "DailySummary",
-          "line": 55,
-          "method_count": 0,
-          "methods": []
-        },
-        {
-          "name": "RealtimeLogger",
-          "line": 74,
-          "method_count": 18,
-          "methods": [
-            {
-              "name": "__init__",
-              "line": 77,
-              "size": 31,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_check_new_day",
-              "line": 109,
-              "size": 19,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_open_csv",
-              "line": 129,
-              "size": 32,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_close_csv",
-              "line": 162,
-              "size": 17,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_disable_csv_logger",
-              "line": 180,
-              "size": 16,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_safe_flush_csv",
-              "line": 197,
-              "size": 14,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "log_scan",
-              "line": 212,
-              "size": 52,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "log_trade_result",
-              "line": 265,
-              "size": 10,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "get_daily_pnl_pct",
-              "line": 276,
-              "size": 4,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "target_hit",
-              "line": 281,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "_save_daily_summary",
-              "line": 284,
-              "size": 49,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "force_save_summary",
-              "line": 334,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "close",
-              "line": 337,
-              "size": 7,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "shutdown",
-              "line": 345,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "stop",
-              "line": 348,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "__enter__",
-              "line": 351,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "__exit__",
-              "line": 354,
-              "size": 2,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "load_all_summaries",
-              "line": 358,
-              "size": 11,
-              "runtime_sensitive": false
-            }
-          ]
-        }
-      ],
-      "top_functions": [],
-      "largest_symbols": [
-        {
-          "name": "log_scan",
-          "class": "RealtimeLogger",
-          "size": 52
-        },
-        {
-          "name": "_save_daily_summary",
-          "class": "RealtimeLogger",
-          "size": 49
-        },
-        {
-          "name": "_open_csv",
-          "class": "RealtimeLogger",
-          "size": 32
-        },
-        {
-          "name": "__init__",
-          "class": "RealtimeLogger",
-          "size": 31
-        },
-        {
-          "name": "_check_new_day",
-          "class": "RealtimeLogger",
-          "size": 19
-        },
-        {
-          "name": "_close_csv",
-          "class": "RealtimeLogger",
-          "size": 17
-        },
-        {
-          "name": "_disable_csv_logger",
-          "class": "RealtimeLogger",
-          "size": 16
-        },
-        {
-          "name": "_safe_flush_csv",
-          "class": "RealtimeLogger",
-          "size": 14
-        },
-        {
-          "name": "load_all_summaries",
-          "class": "RealtimeLogger",
-          "size": 11
-        },
-        {
-          "name": "log_trade_result",
-          "class": "RealtimeLogger",
-          "size": 10
-        }
-      ],
-      "runtime_sensitive_symbols": []
-    },
-    {
       "path": "polymarket/regime_diagnostics.py",
       "total_lines": 436,
       "class_count": 1,
@@ -10206,30 +10393,6 @@
           "name": "to_dict",
           "class": "ShadowPolicyResult",
           "size": 15
-        }
-      ],
-      "runtime_sensitive_symbols": []
-    },
-    {
-      "path": "polymarket/shadow_telemetry.py",
-      "total_lines": 76,
-      "class_count": 0,
-      "top_function_count": 1,
-      "method_count": 0,
-      "classes": [],
-      "top_functions": [
-        {
-          "name": "evaluate_shadow_filter",
-          "line": 5,
-          "size": 71,
-          "runtime_sensitive": false
-        }
-      ],
-      "largest_symbols": [
-        {
-          "name": "evaluate_shadow_filter",
-          "class": null,
-          "size": 71
         }
       ],
       "runtime_sensitive_symbols": []
@@ -10682,136 +10845,6 @@
           "name": "evaluate_trade_frequency",
           "class": null,
           "size": 2
-        }
-      ],
-      "runtime_sensitive_symbols": []
-    },
-    {
-      "path": "polymarket/trader_presentation.py",
-      "total_lines": 207,
-      "class_count": 1,
-      "top_function_count": 0,
-      "method_count": 10,
-      "classes": [
-        {
-          "name": "TraderPresentationHelper",
-          "line": 13,
-          "method_count": 10,
-          "methods": [
-            {
-              "name": "momentum_label",
-              "line": 20,
-              "size": 6,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "volatility_label",
-              "line": 27,
-              "size": 6,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "liquidity_label",
-              "line": 34,
-              "size": 6,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "edge_label",
-              "line": 41,
-              "size": 6,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "display_field_present",
-              "line": 52,
-              "size": 6,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "display_visibility_status",
-              "line": 59,
-              "size": 11,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "display_identity_readiness",
-              "line": 71,
-              "size": 19,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "display_dominant_model_gap",
-              "line": 91,
-              "size": 17,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "default_observability_health_display_state",
-              "line": 113,
-              "size": 30,
-              "runtime_sensitive": false
-            },
-            {
-              "name": "event_driven_admission_packet_price_detail",
-              "line": 148,
-              "size": 59,
-              "runtime_sensitive": false
-            }
-          ]
-        }
-      ],
-      "top_functions": [],
-      "largest_symbols": [
-        {
-          "name": "event_driven_admission_packet_price_detail",
-          "class": "TraderPresentationHelper",
-          "size": 59
-        },
-        {
-          "name": "default_observability_health_display_state",
-          "class": "TraderPresentationHelper",
-          "size": 30
-        },
-        {
-          "name": "display_identity_readiness",
-          "class": "TraderPresentationHelper",
-          "size": 19
-        },
-        {
-          "name": "display_dominant_model_gap",
-          "class": "TraderPresentationHelper",
-          "size": 17
-        },
-        {
-          "name": "display_visibility_status",
-          "class": "TraderPresentationHelper",
-          "size": 11
-        },
-        {
-          "name": "momentum_label",
-          "class": "TraderPresentationHelper",
-          "size": 6
-        },
-        {
-          "name": "volatility_label",
-          "class": "TraderPresentationHelper",
-          "size": 6
-        },
-        {
-          "name": "liquidity_label",
-          "class": "TraderPresentationHelper",
-          "size": 6
-        },
-        {
-          "name": "edge_label",
-          "class": "TraderPresentationHelper",
-          "size": 6
-        },
-        {
-          "name": "display_field_present",
-          "class": "TraderPresentationHelper",
-          "size": 6
         }
       ],
       "runtime_sensitive_symbols": []

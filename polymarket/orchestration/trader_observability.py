@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from config.settings import Settings
-from polymarket.trader_presentation import TraderPresentationHelper
+from polymarket.observability.trader_presentation import TraderPresentationHelper
 
 LOGGER = logging.getLogger(__name__)
 

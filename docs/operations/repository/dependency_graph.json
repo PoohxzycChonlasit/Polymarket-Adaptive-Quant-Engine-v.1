@@ -622,8 +622,11 @@
     "docs/operations/repository/batch_candidates.json": [],
     "docs/operations/repository/dependency_graph.json": [],
     "docs/operations/repository/migration_patch_plan.json": [],
+    "docs/operations/repository/module_registry.json": [],
+    "docs/operations/repository/navigation.json": [],
     "docs/operations/repository/repo_health.json": [],
     "docs/operations/repository/repository_index.json": [],
+    "docs/operations/repository/symbol_index.json": [],
     "docs/operations/repository/test_registry.json": [],
     "docs/operations/repository/tool_registry.json": [],
     "docs/operations/skills/SKILL_REGISTRY_001.json": [],
@@ -875,6 +878,7 @@
     "docs/reports/REPLAY_ANALYTICS_V1_DESIGN_COMMIT_REPORT_001.md": [],
     "docs/reports/REPLAY_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001.md": [],
+    "docs/reports/REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001.md": [],
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_001.md": [],
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_COMMIT_REPORT_001.md": [],
     "docs/reports/REPOSITORY_PHASE0_ROOT_CLEANUP_001.md": [],
@@ -894,6 +898,7 @@
     "docs/reports/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001.md": [],
     "docs/reports/REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001.md": [],
     "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md": [],
+    "docs/reports/REPOSITORY_WAVE1_EXECUTE_001.md": [],
     "docs/reports/REPOSITORY_WAVE_OPTIMIZER_001.md": [],
     "docs/reports/RESEARCH_ANALYTICS_V1_COMMIT_REPORT_001.md": [],
     "docs/reports/RESEARCH_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
@@ -1582,6 +1587,7 @@
     "logs/polytrade_bot_20260628_191322_18280.log.2": [],
     "logs/polytrade_bot_20260628_191322_18280.log.3": [],
     "logs/polytrade_bot_20260628_191322_18280.log.4": [],
+    "logs/polytrade_bot_20260628_191322_18280.log.5": [],
     "main.py": [],
     "memory/MEMORY.md": [],
     "memory/project_exit_convergence_replay.md": [],
@@ -1609,17 +1615,24 @@
     ],
     "polymarket/delta_engine.py": [],
     "polymarket/expected_value.py": [],
-    "polymarket/five_min_monitor.py": [
-      "polymarket/price_to_beat_fetcher.py"
-    ],
     "polymarket/gamma_fetcher.py": [
       "config/settings.py"
     ],
     "polymarket/lucky_shot.py": [
       "polymarket/bankroll_tiers.py"
     ],
+    "polymarket/market/__init__.py": [],
+    "polymarket/market/five_min_monitor.py": [
+      "polymarket/price_to_beat_fetcher.py"
+    ],
     "polymarket/market_availability_engine.py": [],
     "polymarket/market_feed.py": [],
+    "polymarket/models/__init__.py": [],
+    "polymarket/models/quant_indicators.py": [],
+    "polymarket/observability/__init__.py": [],
+    "polymarket/observability/realtime_logger.py": [],
+    "polymarket/observability/shadow_telemetry.py": [],
+    "polymarket/observability/trader_presentation.py": [],
     "polymarket/opportunity_scanner.py": [
       "polymarket/bankroll_tiers.py",
       "polymarket/delta_engine.py",
@@ -1634,7 +1647,7 @@
     ],
     "polymarket/orchestration/trader_observability.py": [
       "config/settings.py",
-      "polymarket/trader_presentation.py"
+      "polymarket/observability/trader_presentation.py"
     ],
     "polymarket/order_intent.py": [
       "polymarket/client.py"
@@ -1654,16 +1667,13 @@
       "utils/rate_limiter.py"
     ],
     "polymarket/probability_model.py": [],
-    "polymarket/quant_indicators.py": [],
-    "polymarket/realtime_logger.py": [],
     "polymarket/regime_diagnostics.py": [],
     "polymarket/risk_modes.py": [],
     "polymarket/shadow_policy.py": [],
-    "polymarket/shadow_telemetry.py": [],
     "polymarket/signal.py": [
       "config/settings.py",
       "polymarket/market_feed.py",
-      "polymarket/quant_indicators.py",
+      "polymarket/models/quant_indicators.py",
       "polymarket/regime_diagnostics.py"
     ],
     "polymarket/size_sharp_engine.py": [],
@@ -1682,6 +1692,9 @@
       "polymarket/gamma_fetcher.py",
       "polymarket/lucky_shot.py",
       "polymarket/market_availability_engine.py",
+      "polymarket/models/quant_indicators.py",
+      "polymarket/observability/shadow_telemetry.py",
+      "polymarket/observability/trader_presentation.py",
       "polymarket/opportunity_scanner.py",
       "polymarket/orchestration/trader_lifecycle.py",
       "polymarket/orchestration/trader_observability.py",
@@ -1689,15 +1702,12 @@
       "polymarket/order_manager.py",
       "polymarket/position_manager.py",
       "polymarket/probability_model.py",
-      "polymarket/quant_indicators.py",
       "polymarket/regime_diagnostics.py",
       "polymarket/risk_modes.py",
       "polymarket/shadow_policy.py",
-      "polymarket/shadow_telemetry.py",
       "polymarket/signal.py",
       "polymarket/size_sharp_engine.py",
       "polymarket/trade_frequency.py",
-      "polymarket/trader_presentation.py",
       "polymarket/trend_runner.py",
       "polymarket/virtual_ptb.py",
       "utils/admission_probe_classifier.py",
@@ -1710,7 +1720,6 @@
       "utils/telegram_alerts.py",
       "utils/telegram_reporter.py"
     ],
-    "polymarket/trader_presentation.py": [],
     "polymarket/trend_runner.py": [
       "polymarket/bankroll_tiers.py",
       "polymarket/delta_engine.py"
@@ -2026,6 +2035,9 @@
     "tests/test_airos_repository_index_generator.py": [
       "tools/airos/repository_index_generator.py"
     ],
+    "tests/test_airos_repository_navigator.py": [
+      "tools/airos/repository_navigator.py"
+    ],
     "tests/test_arbitrage_executor.py": [
       "polymarket/arbitrage.py",
       "polymarket/arbitrage_executor.py",
@@ -2307,7 +2319,7 @@
       "utils/telegram_alerts.py"
     ],
     "tests/test_logging_resilience.py": [
-      "polymarket/realtime_logger.py",
+      "polymarket/observability/realtime_logger.py",
       "utils/logger.py"
     ],
     "tests/test_lucky_shot.py": [
@@ -2578,8 +2590,8 @@
       "polymarket/client.py",
       "polymarket/delta_engine.py",
       "polymarket/gamma_fetcher.py",
+      "polymarket/observability/shadow_telemetry.py",
       "polymarket/opportunity_scanner.py",
-      "polymarket/shadow_telemetry.py",
       "polymarket/trader.py"
     ],
     "tests/test_shadow_policy.py": [
@@ -2655,6 +2667,7 @@
     "tools/airos/dependency_graph_builder.py": [],
     "tools/airos/migration_analyzer.py": [],
     "tools/airos/repository_index_generator.py": [],
+    "tools/airos/repository_navigator.py": [],
     "tools/audit/_audit_cs_btc.py": [],
     "tools/audit/_audit_decision_state.py": [],
     "tools/audit/_audit_w21_w22.py": [],
@@ -2862,7 +2875,7 @@
     "web-dashboard/src/app/page.tsx": [],
     "web-dashboard/tsconfig.json": []
   },
-  "edge_count": 449,
+  "edge_count": 450,
   "edges": [
     [
       "polymarket/arbitrage.py",
@@ -2905,16 +2918,16 @@
       "config/settings.py"
     ],
     [
-      "polymarket/five_min_monitor.py",
-      "polymarket/price_to_beat_fetcher.py"
-    ],
-    [
       "polymarket/gamma_fetcher.py",
       "config/settings.py"
     ],
     [
       "polymarket/lucky_shot.py",
       "polymarket/bankroll_tiers.py"
+    ],
+    [
+      "polymarket/market/five_min_monitor.py",
+      "polymarket/price_to_beat_fetcher.py"
     ],
     [
       "polymarket/opportunity_scanner.py",
@@ -2950,7 +2963,7 @@
     ],
     [
       "polymarket/orchestration/trader_observability.py",
-      "polymarket/trader_presentation.py"
+      "polymarket/observability/trader_presentation.py"
     ],
     [
       "polymarket/order_intent.py",
@@ -2994,7 +3007,7 @@
     ],
     [
       "polymarket/signal.py",
-      "polymarket/quant_indicators.py"
+      "polymarket/models/quant_indicators.py"
     ],
     [
       "polymarket/signal.py",
@@ -3050,6 +3063,18 @@
     ],
     [
       "polymarket/trader.py",
+      "polymarket/models/quant_indicators.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/shadow_telemetry.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_presentation.py"
+    ],
+    [
+      "polymarket/trader.py",
       "polymarket/opportunity_scanner.py"
     ],
     [
@@ -3078,10 +3103,6 @@
     ],
     [
       "polymarket/trader.py",
-      "polymarket/quant_indicators.py"
-    ],
-    [
-      "polymarket/trader.py",
       "polymarket/regime_diagnostics.py"
     ],
     [
@@ -3094,10 +3115,6 @@
     ],
     [
       "polymarket/trader.py",
-      "polymarket/shadow_telemetry.py"
-    ],
-    [
-      "polymarket/trader.py",
       "polymarket/signal.py"
     ],
     [
@@ -3107,10 +3124,6 @@
     [
       "polymarket/trader.py",
       "polymarket/trade_frequency.py"
-    ],
-    [
-      "polymarket/trader.py",
-      "polymarket/trader_presentation.py"
     ],
     [
       "polymarket/trader.py",
@@ -3187,6 +3200,10 @@
     [
       "tests/test_airos_repository_index_generator.py",
       "tools/airos/repository_index_generator.py"
+    ],
+    [
+      "tests/test_airos_repository_navigator.py",
+      "tools/airos/repository_navigator.py"
     ],
     [
       "tests/test_arbitrage_executor.py",
@@ -3754,7 +3771,7 @@
     ],
     [
       "tests/test_logging_resilience.py",
-      "polymarket/realtime_logger.py"
+      "polymarket/observability/realtime_logger.py"
     ],
     [
       "tests/test_logging_resilience.py",
@@ -4306,11 +4323,11 @@
     ],
     [
       "tests/test_shadow_filters.py",
-      "polymarket/opportunity_scanner.py"
+      "polymarket/observability/shadow_telemetry.py"
     ],
     [
       "tests/test_shadow_filters.py",
-      "polymarket/shadow_telemetry.py"
+      "polymarket/opportunity_scanner.py"
     ],
     [
       "tests/test_shadow_filters.py",
@@ -4677,6 +4694,9 @@
     "tests/test_airos_repository_index_generator.py": [
       "tools/airos/repository_index_generator.py"
     ],
+    "tests/test_airos_repository_navigator.py": [
+      "tools/airos/repository_navigator.py"
+    ],
     "tests/test_arbitrage_executor.py": [
       "polymarket/arbitrage.py",
       "polymarket/arbitrage_executor.py",
@@ -4911,7 +4931,7 @@
       "polymarket/trader.py"
     ],
     "tests/test_logging_resilience.py": [
-      "polymarket/realtime_logger.py"
+      "polymarket/observability/realtime_logger.py"
     ],
     "tests/test_lucky_shot.py": [
       "polymarket/bankroll_tiers.py",
@@ -5142,8 +5162,8 @@
       "polymarket/client.py",
       "polymarket/delta_engine.py",
       "polymarket/gamma_fetcher.py",
+      "polymarket/observability/shadow_telemetry.py",
       "polymarket/opportunity_scanner.py",
-      "polymarket/shadow_telemetry.py",
       "polymarket/trader.py"
     ],
     "tests/test_shadow_policy.py": [
@@ -5201,7 +5221,7 @@
       "tools/probes/zero_size_risk_floor_probe.py"
     ]
   },
-  "generated_at_utc": "2026-06-28T16:12:38.411634Z",
+  "generated_at_utc": "2026-06-28T16:54:19.310466Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -8935,6 +8955,18 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "docs/operations/repository/module_registry.json": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/repository/navigation.json": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "docs/operations/repository/repo_health.json": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -8942,6 +8974,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/operations/repository/repository_index.json": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/repository/symbol_index.json": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -10453,6 +10491,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -10562,6 +10606,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/REPOSITORY_WAVE1_EXECUTE_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -14695,6 +14745,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "logs/polytrade_bot_20260628_191322_18280.log.5": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "main.py": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -14767,12 +14823,6 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
-    "polymarket/five_min_monitor.py": {
-      "blast_radius_score": 3,
-      "inbound_dependencies_count": 0,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 1
-    },
     "polymarket/gamma_fetcher.py": {
       "blast_radius_score": 39,
       "inbound_dependencies_count": 12,
@@ -14785,6 +14835,18 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 1
     },
+    "polymarket/market/__init__.py": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/market/five_min_monitor.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 1
+    },
     "polymarket/market_availability_engine.py": {
       "blast_radius_score": 6,
       "inbound_dependencies_count": 2,
@@ -14794,6 +14856,42 @@
     "polymarket/market_feed.py": {
       "blast_radius_score": 3,
       "inbound_dependencies_count": 1,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/models/__init__.py": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/models/quant_indicators.py": {
+      "blast_radius_score": 6,
+      "inbound_dependencies_count": 2,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/observability/__init__.py": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/observability/realtime_logger.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/observability/shadow_telemetry.py": {
+      "blast_radius_score": 6,
+      "inbound_dependencies_count": 2,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/observability/trader_presentation.py": {
+      "blast_radius_score": 6,
+      "inbound_dependencies_count": 2,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
@@ -14857,18 +14955,6 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
-    "polymarket/quant_indicators.py": {
-      "blast_radius_score": 6,
-      "inbound_dependencies_count": 2,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 0
-    },
-    "polymarket/realtime_logger.py": {
-      "blast_radius_score": 3,
-      "inbound_dependencies_count": 1,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 0
-    },
     "polymarket/regime_diagnostics.py": {
       "blast_radius_score": 9,
       "inbound_dependencies_count": 3,
@@ -14882,12 +14968,6 @@
       "outbound_dependencies_count": 0
     },
     "polymarket/shadow_policy.py": {
-      "blast_radius_score": 6,
-      "inbound_dependencies_count": 2,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 0
-    },
-    "polymarket/shadow_telemetry.py": {
       "blast_radius_score": 6,
       "inbound_dependencies_count": 2,
       "migration_safety_status": "DO_NOT_MOVE",
@@ -14916,12 +14996,6 @@
       "inbound_dependencies_count": 55,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 38
-    },
-    "polymarket/trader_presentation.py": {
-      "blast_radius_score": 6,
-      "inbound_dependencies_count": 2,
-      "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 0
     },
     "polymarket/trend_runner.py": {
       "blast_radius_score": 12,
@@ -16723,6 +16797,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 1
     },
+    "tests/test_airos_repository_navigator.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
     "tests/test_arbitrage_executor.py": {
       "blast_radius_score": 3,
       "inbound_dependencies_count": 0,
@@ -17725,6 +17805,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "tools/airos/repository_navigator.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "tools/audit/_audit_cs_btc.py": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -18518,7 +18604,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2219,
+  "node_count": 2230,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -19142,8 +19228,11 @@
     "docs/operations/repository/batch_candidates.json",
     "docs/operations/repository/dependency_graph.json",
     "docs/operations/repository/migration_patch_plan.json",
+    "docs/operations/repository/module_registry.json",
+    "docs/operations/repository/navigation.json",
     "docs/operations/repository/repo_health.json",
     "docs/operations/repository/repository_index.json",
+    "docs/operations/repository/symbol_index.json",
     "docs/operations/repository/test_registry.json",
     "docs/operations/repository/tool_registry.json",
     "docs/operations/skills/SKILL_REGISTRY_001.json",
@@ -19395,6 +19484,7 @@
     "docs/reports/REPLAY_ANALYTICS_V1_DESIGN_COMMIT_REPORT_001.md",
     "docs/reports/REPLAY_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md",
     "docs/reports/REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001.md",
+    "docs/reports/REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001.md",
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_001.md",
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_COMMIT_REPORT_001.md",
     "docs/reports/REPOSITORY_PHASE0_ROOT_CLEANUP_001.md",
@@ -19414,6 +19504,7 @@
     "docs/reports/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001.md",
     "docs/reports/REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001.md",
     "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md",
+    "docs/reports/REPOSITORY_WAVE1_EXECUTE_001.md",
     "docs/reports/REPOSITORY_WAVE_OPTIMIZER_001.md",
     "docs/reports/RESEARCH_ANALYTICS_V1_COMMIT_REPORT_001.md",
     "docs/reports/RESEARCH_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md",
@@ -20102,6 +20193,7 @@
     "logs/polytrade_bot_20260628_191322_18280.log.2",
     "logs/polytrade_bot_20260628_191322_18280.log.3",
     "logs/polytrade_bot_20260628_191322_18280.log.4",
+    "logs/polytrade_bot_20260628_191322_18280.log.5",
     "main.py",
     "memory/MEMORY.md",
     "memory/project_exit_convergence_replay.md",
@@ -20114,11 +20206,18 @@
     "polymarket/client.py",
     "polymarket/delta_engine.py",
     "polymarket/expected_value.py",
-    "polymarket/five_min_monitor.py",
     "polymarket/gamma_fetcher.py",
     "polymarket/lucky_shot.py",
+    "polymarket/market/__init__.py",
+    "polymarket/market/five_min_monitor.py",
     "polymarket/market_availability_engine.py",
     "polymarket/market_feed.py",
+    "polymarket/models/__init__.py",
+    "polymarket/models/quant_indicators.py",
+    "polymarket/observability/__init__.py",
+    "polymarket/observability/realtime_logger.py",
+    "polymarket/observability/shadow_telemetry.py",
+    "polymarket/observability/trader_presentation.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
     "polymarket/orchestration/trader_lifecycle.py",
@@ -20129,17 +20228,13 @@
     "polymarket/position_sizing.py",
     "polymarket/price_to_beat_fetcher.py",
     "polymarket/probability_model.py",
-    "polymarket/quant_indicators.py",
-    "polymarket/realtime_logger.py",
     "polymarket/regime_diagnostics.py",
     "polymarket/risk_modes.py",
     "polymarket/shadow_policy.py",
-    "polymarket/shadow_telemetry.py",
     "polymarket/signal.py",
     "polymarket/size_sharp_engine.py",
     "polymarket/trade_frequency.py",
     "polymarket/trader.py",
-    "polymarket/trader_presentation.py",
     "polymarket/trend_runner.py",
     "polymarket/virtual_ptb.py",
     "pytest.ini",
@@ -20440,6 +20535,7 @@
     "tests/test_airos_dependency_graph_builder.py",
     "tests/test_airos_migration_analyzer.py",
     "tests/test_airos_repository_index_generator.py",
+    "tests/test_airos_repository_navigator.py",
     "tests/test_arbitrage_executor.py",
     "tests/test_backtest_engine_v2.py",
     "tests/test_bankroll_rank_engine.py",
@@ -20607,6 +20703,7 @@
     "tools/airos/dependency_graph_builder.py",
     "tools/airos/migration_analyzer.py",
     "tools/airos/repository_index_generator.py",
+    "tools/airos/repository_navigator.py",
     "tools/audit/_audit_cs_btc.py",
     "tools/audit/_audit_decision_state.py",
     "tools/audit/_audit_w21_w22.py",
@@ -21385,8 +21482,11 @@
     "docs/operations/repository/batch_candidates.json": [],
     "docs/operations/repository/dependency_graph.json": [],
     "docs/operations/repository/migration_patch_plan.json": [],
+    "docs/operations/repository/module_registry.json": [],
+    "docs/operations/repository/navigation.json": [],
     "docs/operations/repository/repo_health.json": [],
     "docs/operations/repository/repository_index.json": [],
+    "docs/operations/repository/symbol_index.json": [],
     "docs/operations/repository/test_registry.json": [],
     "docs/operations/repository/tool_registry.json": [],
     "docs/operations/skills/SKILL_REGISTRY_001.json": [],
@@ -21638,6 +21738,7 @@
     "docs/reports/REPLAY_ANALYTICS_V1_DESIGN_COMMIT_REPORT_001.md": [],
     "docs/reports/REPLAY_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/REPOSITORY_FOLDER_REORGANIZATION_AUDIT_001.md": [],
+    "docs/reports/REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001.md": [],
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_001.md": [],
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_COMMIT_REPORT_001.md": [],
     "docs/reports/REPOSITORY_PHASE0_ROOT_CLEANUP_001.md": [],
@@ -21657,6 +21758,7 @@
     "docs/reports/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001.md": [],
     "docs/reports/REPOSITORY_PHASE1_TOOLS_AUDIT_REORGANIZATION_001.md": [],
     "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md": [],
+    "docs/reports/REPOSITORY_WAVE1_EXECUTE_001.md": [],
     "docs/reports/REPOSITORY_WAVE_OPTIMIZER_001.md": [],
     "docs/reports/RESEARCH_ANALYTICS_V1_COMMIT_REPORT_001.md": [],
     "docs/reports/RESEARCH_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
@@ -22345,6 +22447,7 @@
     "logs/polytrade_bot_20260628_191322_18280.log.2": [],
     "logs/polytrade_bot_20260628_191322_18280.log.3": [],
     "logs/polytrade_bot_20260628_191322_18280.log.4": [],
+    "logs/polytrade_bot_20260628_191322_18280.log.5": [],
     "main.py": [],
     "memory/MEMORY.md": [],
     "memory/project_exit_convergence_replay.md": [],
@@ -22429,7 +22532,6 @@
       "tests/test_expected_value.py",
       "tests/test_opportunity_scanner.py"
     ],
-    "polymarket/five_min_monitor.py": [],
     "polymarket/gamma_fetcher.py": [
       "polymarket/trader.py",
       "tests/test_delta_shadow.py",
@@ -22448,12 +22550,31 @@
       "polymarket/trader.py",
       "tests/test_lucky_shot.py"
     ],
+    "polymarket/market/__init__.py": [],
+    "polymarket/market/five_min_monitor.py": [],
     "polymarket/market_availability_engine.py": [
       "polymarket/trader.py",
       "tests/test_market_availability_engine.py"
     ],
     "polymarket/market_feed.py": [
       "polymarket/signal.py"
+    ],
+    "polymarket/models/__init__.py": [],
+    "polymarket/models/quant_indicators.py": [
+      "polymarket/signal.py",
+      "polymarket/trader.py"
+    ],
+    "polymarket/observability/__init__.py": [],
+    "polymarket/observability/realtime_logger.py": [
+      "tests/test_logging_resilience.py"
+    ],
+    "polymarket/observability/shadow_telemetry.py": [
+      "polymarket/trader.py",
+      "tests/test_shadow_filters.py"
+    ],
+    "polymarket/observability/trader_presentation.py": [
+      "polymarket/orchestration/trader_observability.py",
+      "polymarket/trader.py"
     ],
     "polymarket/opportunity_scanner.py": [
       "polymarket/trader.py",
@@ -22503,20 +22624,13 @@
       "tests/test_trade_frequency.py"
     ],
     "polymarket/price_to_beat_fetcher.py": [
-      "polymarket/five_min_monitor.py"
+      "polymarket/market/five_min_monitor.py"
     ],
     "polymarket/probability_model.py": [
       "polymarket/trader.py",
       "tests/test_prob_model_observability_v1.py",
       "tests/test_probability_model.py",
       "tools/probes/event_driven_fair_value_simulation.py"
-    ],
-    "polymarket/quant_indicators.py": [
-      "polymarket/signal.py",
-      "polymarket/trader.py"
-    ],
-    "polymarket/realtime_logger.py": [
-      "tests/test_logging_resilience.py"
     ],
     "polymarket/regime_diagnostics.py": [
       "polymarket/signal.py",
@@ -22539,10 +22653,6 @@
     "polymarket/shadow_policy.py": [
       "polymarket/trader.py",
       "tests/test_shadow_policy.py"
-    ],
-    "polymarket/shadow_telemetry.py": [
-      "polymarket/trader.py",
-      "tests/test_shadow_filters.py"
     ],
     "polymarket/signal.py": [
       "polymarket/backtester_5m.py",
@@ -22617,10 +22727,6 @@
       "tests/test_trade_open_model_visibility_serialization.py",
       "tests/test_verify_mode.py",
       "tests/test_zero_size_risk_floor_probe.py"
-    ],
-    "polymarket/trader_presentation.py": [
-      "polymarket/orchestration/trader_observability.py",
-      "polymarket/trader.py"
     ],
     "polymarket/trend_runner.py": [
       "polymarket/trader.py",
@@ -22927,6 +23033,7 @@
     "tests/test_airos_dependency_graph_builder.py": [],
     "tests/test_airos_migration_analyzer.py": [],
     "tests/test_airos_repository_index_generator.py": [],
+    "tests/test_airos_repository_navigator.py": [],
     "tests/test_arbitrage_executor.py": [],
     "tests/test_backtest_engine_v2.py": [],
     "tests/test_bankroll_rank_engine.py": [],
@@ -23103,6 +23210,9 @@
     ],
     "tools/airos/repository_index_generator.py": [
       "tests/test_airos_repository_index_generator.py"
+    ],
+    "tools/airos/repository_navigator.py": [
+      "tests/test_airos_repository_navigator.py"
     ],
     "tools/audit/_audit_cs_btc.py": [],
     "tools/audit/_audit_decision_state.py": [],
@@ -23648,11 +23758,18 @@
     "polymarket/client.py",
     "polymarket/delta_engine.py",
     "polymarket/expected_value.py",
-    "polymarket/five_min_monitor.py",
     "polymarket/gamma_fetcher.py",
     "polymarket/lucky_shot.py",
+    "polymarket/market/__init__.py",
+    "polymarket/market/five_min_monitor.py",
     "polymarket/market_availability_engine.py",
     "polymarket/market_feed.py",
+    "polymarket/models/__init__.py",
+    "polymarket/models/quant_indicators.py",
+    "polymarket/observability/__init__.py",
+    "polymarket/observability/realtime_logger.py",
+    "polymarket/observability/shadow_telemetry.py",
+    "polymarket/observability/trader_presentation.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
     "polymarket/orchestration/trader_lifecycle.py",
@@ -23663,17 +23780,13 @@
     "polymarket/position_sizing.py",
     "polymarket/price_to_beat_fetcher.py",
     "polymarket/probability_model.py",
-    "polymarket/quant_indicators.py",
-    "polymarket/realtime_logger.py",
     "polymarket/regime_diagnostics.py",
     "polymarket/risk_modes.py",
     "polymarket/shadow_policy.py",
-    "polymarket/shadow_telemetry.py",
     "polymarket/signal.py",
     "polymarket/size_sharp_engine.py",
     "polymarket/trade_frequency.py",
     "polymarket/trader.py",
-    "polymarket/trader_presentation.py",
     "polymarket/trend_runner.py",
     "polymarket/virtual_ptb.py",
     "research_cockpit/src/mock/execution_reality_mock.json",
@@ -23851,6 +23964,12 @@
     "polymarket/market_availability_engine.py": [
       "tests/test_market_availability_engine.py"
     ],
+    "polymarket/observability/realtime_logger.py": [
+      "tests/test_logging_resilience.py"
+    ],
+    "polymarket/observability/shadow_telemetry.py": [
+      "tests/test_shadow_filters.py"
+    ],
     "polymarket/opportunity_scanner.py": [
       "tests/test_candidate_identity.py",
       "tests/test_opportunity_scanner.py",
@@ -23890,9 +24009,6 @@
       "tests/test_prob_model_observability_v1.py",
       "tests/test_probability_model.py"
     ],
-    "polymarket/realtime_logger.py": [
-      "tests/test_logging_resilience.py"
-    ],
     "polymarket/regime_diagnostics.py": [
       "tests/test_regime_diagnostics.py"
     ],
@@ -23910,9 +24026,6 @@
     ],
     "polymarket/shadow_policy.py": [
       "tests/test_shadow_policy.py"
-    ],
-    "polymarket/shadow_telemetry.py": [
-      "tests/test_shadow_filters.py"
     ],
     "polymarket/signal.py": [
       "tests/test_execution_risk_controls.py",
@@ -23999,6 +24112,9 @@
     ],
     "tools/airos/repository_index_generator.py": [
       "tests/test_airos_repository_index_generator.py"
+    ],
+    "tools/airos/repository_navigator.py": [
+      "tests/test_airos_repository_navigator.py"
     ],
     "tools/audit/_drift_audit.py": [
       "tests/test_drift_audit.py"
@@ -26741,11 +26857,23 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/operations/repository/module_registry.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/repository/navigation.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/operations/repository/repo_health.json": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
     "docs/operations/repository/repository_index.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/repository/symbol_index.json": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -27753,6 +27881,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/REPOSITORY_NAVIGATOR_AND_SYMBOL_INDEX_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/REPOSITORY_OUTPUT_LOCATION_POLICY_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -27826,6 +27958,10 @@
       "unresolved_internal": []
     },
     "docs/reports/REPOSITORY_SYNC_AND_COMMIT_BOUNDARY_REVIEW_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/REPOSITORY_WAVE1_EXECUTE_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -30581,6 +30717,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "logs/polytrade_bot_20260628_191322_18280.log.5": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "main.py": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -30684,25 +30824,6 @@
       ],
       "unresolved_internal": []
     },
-    "polymarket/five_min_monitor.py": {
-      "unresolved_external": [
-        "__future__",
-        "argparse",
-        "datetime",
-        "io",
-        "logging",
-        "rich",
-        "rich.console",
-        "rich.live",
-        "rich.panel",
-        "rich.table",
-        "rich.text",
-        "signal",
-        "sys",
-        "time"
-      ],
-      "unresolved_internal": []
-    },
     "polymarket/gamma_fetcher.py": {
       "unresolved_external": [
         "__future__",
@@ -30721,6 +30842,29 @@
       "unresolved_external": [
         "__future__",
         "dataclasses"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/market/__init__.py": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "polymarket/market/five_min_monitor.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "datetime",
+        "io",
+        "logging",
+        "rich",
+        "rich.console",
+        "rich.live",
+        "rich.panel",
+        "rich.table",
+        "rich.text",
+        "signal",
+        "sys",
+        "time"
       ],
       "unresolved_internal": []
     },
@@ -30749,6 +30893,51 @@
         "time",
         "typing",
         "websockets"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/models/__init__.py": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "polymarket/models/quant_indicators.py": {
+      "unresolved_external": [
+        "asyncio",
+        "httpx",
+        "logging",
+        "threading",
+        "time",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/__init__.py": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/realtime_logger.py": {
+      "unresolved_external": [
+        "__future__",
+        "csv",
+        "dataclasses",
+        "datetime",
+        "json",
+        "logging",
+        "os",
+        "pathlib"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/shadow_telemetry.py": {
+      "unresolved_external": [
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/trader_presentation.py": {
+      "unresolved_external": [
+        "__future__",
+        "typing"
       ],
       "unresolved_internal": []
     },
@@ -30854,30 +31043,6 @@
       ],
       "unresolved_internal": []
     },
-    "polymarket/quant_indicators.py": {
-      "unresolved_external": [
-        "asyncio",
-        "httpx",
-        "logging",
-        "threading",
-        "time",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "polymarket/realtime_logger.py": {
-      "unresolved_external": [
-        "__future__",
-        "csv",
-        "dataclasses",
-        "datetime",
-        "json",
-        "logging",
-        "os",
-        "pathlib"
-      ],
-      "unresolved_internal": []
-    },
     "polymarket/regime_diagnostics.py": {
       "unresolved_external": [
         "__future__",
@@ -30898,12 +31063,6 @@
       "unresolved_external": [
         "__future__",
         "dataclasses",
-        "typing"
-      ],
-      "unresolved_internal": []
-    },
-    "polymarket/shadow_telemetry.py": {
-      "unresolved_external": [
         "typing"
       ],
       "unresolved_internal": []
@@ -30959,13 +31118,6 @@
       "unresolved_internal": [
         "tools.runtime.session_runtime_evaluator"
       ]
-    },
-    "polymarket/trader_presentation.py": {
-      "unresolved_external": [
-        "__future__",
-        "typing"
-      ],
-      "unresolved_internal": []
     },
     "polymarket/trend_runner.py": {
       "unresolved_external": [
@@ -32211,6 +32363,17 @@
         "shutil",
         "subprocess",
         "tempfile"
+      ],
+      "unresolved_internal": []
+    },
+    "tests/test_airos_repository_navigator.py": {
+      "unresolved_external": [
+        "__future__",
+        "ast",
+        "json",
+        "pathlib",
+        "pytest",
+        "textwrap"
       ],
       "unresolved_internal": []
     },
@@ -33855,6 +34018,21 @@
         "os",
         "subprocess",
         "sys"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/airos/repository_navigator.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "ast",
+        "datetime",
+        "json",
+        "os",
+        "pathlib",
+        "re",
+        "sys",
+        "typing"
       ],
       "unresolved_internal": []
     },

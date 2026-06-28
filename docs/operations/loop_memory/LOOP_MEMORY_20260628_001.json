@@ -1847,5 +1847,44 @@
       "balance"
     ],
     "next_recommendation": "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001",
+    "task_class": 6,
+    "scope": [
+      "polymarket/",
+      "main.py",
+      "daily_report.py",
+      "hft_paper_run.py",
+      "tests/"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS_PARTIAL",
+    "evidence_grade": "A",
+    "files_moved": 5,
+    "files_deferred": 9,
+    "imports_rewritten": 10,
+    "target_packages": [
+      "polymarket/market/",
+      "polymarket/models/",
+      "polymarket/observability/"
+    ],
+    "pre_existing_failures": 11,
+    "repo_health": "HEALTHY",
+    "deferred_reason": "blast_radius > 7 per wave optimizer stop condition",
+    "deferred_files": [
+      "arbitrage.py",
+      "backtester_5m.py",
+      "delta_engine.py",
+      "expected_value.py",
+      "gamma_fetcher.py",
+      "lucky_shot.py",
+      "probability_model.py",
+      "regime_diagnostics.py",
+      "trend_runner.py"
+    ],
+    "next_recommendation": "REPOSITORY_WAVE3_TESTS_SUBFOLDERS_001"
   }
 ]

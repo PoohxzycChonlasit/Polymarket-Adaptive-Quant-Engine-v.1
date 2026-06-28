@@ -5,7 +5,8 @@
     "tools/airos/batch_generator.py",
     "tools/airos/dependency_graph_builder.py",
     "tools/airos/migration_analyzer.py",
-    "tools/airos/repository_index_generator.py"
+    "tools/airos/repository_index_generator.py",
+    "tools/airos/repository_navigator.py"
   ],
   "audit": [
     "tools/audit/_audit_cs_btc.py",

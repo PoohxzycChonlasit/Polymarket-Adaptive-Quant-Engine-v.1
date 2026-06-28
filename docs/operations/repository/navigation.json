@@ -1,11 +1,11 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T16:30:23.218572Z",
+  "generated_at_utc": "2026-06-28T16:54:22.166433Z",
   "major_domains": {
     "polymarket": {
       "description": "Runtime trading modules \u2014 execution loop, market data, models, signals",
-      "module_count": 37,
-      "safe_move_candidates": 14,
+      "module_count": 40,
+      "safe_move_candidates": 9,
       "do_not_touch_count": 20
     },
     "tools": {
@@ -38,7 +38,10 @@
     "crypto_scalper/freqtrade_strategies": 1,
     "dashboard": 6,
     "hft": 10,
-    "polymarket": 35,
+    "polymarket": 30,
+    "polymarket/market": 2,
+    "polymarket/models": 2,
+    "polymarket/observability": 4,
     "polymarket/orchestration": 2,
     "research": 2,
     "scratch": 60,
@@ -63,30 +66,21 @@
     "polymarket/models/": [
       "polymarket/delta_engine.py",
       "polymarket/expected_value.py",
-      "polymarket/probability_model.py",
-      "polymarket/quant_indicators.py"
+      "polymarket/probability_model.py"
     ],
     "polymarket/market/": [
       "polymarket/arbitrage.py",
       "polymarket/backtester_5m.py",
       "polymarket/delta_engine.py",
       "polymarket/expected_value.py",
-      "polymarket/five_min_monitor.py",
       "polymarket/gamma_fetcher.py",
       "polymarket/lucky_shot.py",
       "polymarket/probability_model.py",
-      "polymarket/quant_indicators.py",
-      "polymarket/realtime_logger.py",
       "polymarket/regime_diagnostics.py",
-      "polymarket/shadow_telemetry.py",
-      "polymarket/trader_presentation.py",
       "polymarket/trend_runner.py"
     ],
     "polymarket/observability/": [
-      "polymarket/realtime_logger.py",
-      "polymarket/regime_diagnostics.py",
-      "polymarket/shadow_telemetry.py",
-      "polymarket/trader_presentation.py"
+      "polymarket/regime_diagnostics.py"
     ],
     "polymarket/backtest/": [
       "polymarket/backtester_5m.py"
@@ -591,10 +585,6 @@
         "target": "polymarket/models/"
       },
       {
-        "path": "polymarket/five_min_monitor.py",
-        "target": "polymarket/market/"
-      },
-      {
         "path": "polymarket/gamma_fetcher.py",
         "target": "polymarket/market/"
       },
@@ -607,23 +597,7 @@
         "target": "polymarket/models/"
       },
       {
-        "path": "polymarket/quant_indicators.py",
-        "target": "polymarket/models/"
-      },
-      {
-        "path": "polymarket/realtime_logger.py",
-        "target": "polymarket/observability/"
-      },
-      {
         "path": "polymarket/regime_diagnostics.py",
-        "target": "polymarket/observability/"
-      },
-      {
-        "path": "polymarket/shadow_telemetry.py",
-        "target": "polymarket/observability/"
-      },
-      {
-        "path": "polymarket/trader_presentation.py",
         "target": "polymarket/observability/"
       },
       {
