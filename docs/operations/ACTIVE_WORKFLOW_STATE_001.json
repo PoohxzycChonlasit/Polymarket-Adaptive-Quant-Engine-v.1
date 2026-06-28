@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001 complete - no-risk probe moved to tools/probes/",
-    "last_completed_task":  "REPOSITORY_PHASE1A_TOOLS_NO_IMPORT_RISK_MOVE_001",
-    "last_commit":  "pending-at-report-time",
+    "current_phase":  "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001 complete - provisional outcome-truth batch selected",
+    "last_completed_task":  "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
+    "last_commit":  "6a33fec",
     "last_commit_message":  "refactor: move no-risk probe tool into probes folder",
-    "next_task":  "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
+    "next_task":  "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -87,5 +87,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Repository Phase 1A move complete. Moved tools/silent_zone_selection_probe.py -> tools/probes/silent_zone_selection_probe.py. Updated the moved script usage examples to tools.probes.silent_zone_selection_probe. Reference scan found only historical audit/planning mentions, ops scope records, report filename regex consumers, and the new module usage text. py_compile passed. No pytest, builders, backtests, runtime, strategy, sizing, risk, execution, dashboard, Telegram, .env, or tests changed."
+    "notes":  "Repository Phase 1B move plan complete. Selected a small outcome-truth provisional free-source trio for the next Class 6 move: free_outcome_truth_provisional.py, free_outcome_truth_provisional_join.py, and free_outcome_truth_provisional_readiness.py. This task was design-only: no tools moved, no tests changed, no pytest, no builders, and no backtests. Next task should move only those three files into tools/outcome_truth/ and update their three targeted tests."
 }

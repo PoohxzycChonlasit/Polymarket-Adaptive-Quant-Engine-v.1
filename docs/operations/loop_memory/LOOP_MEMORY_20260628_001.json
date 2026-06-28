@@ -407,5 +407,56 @@
       "no_runtime_files_changed": true
     },
     "next_recommendation": "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-28",
+    "loop_id": "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS_DESIGN_ONLY",
+    "repairs": 0,
+    "evidence_grade": "A+B+D",
+    "commits": [],
+    "files_changed": 4,
+    "tools_moved": 0,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "selected_batch": "outcome_truth/provisional_free_source_trio",
+    "move_candidates": [
+      "tools/free_outcome_truth_provisional.py -> tools/outcome_truth/free_outcome_truth_provisional.py",
+      "tools/free_outcome_truth_provisional_join.py -> tools/outcome_truth/free_outcome_truth_provisional_join.py",
+      "tools/free_outcome_truth_provisional_readiness.py -> tools/outcome_truth/free_outcome_truth_provisional_readiness.py"
+    ],
+    "key_findings": {
+      "active_ops_references": 0,
+      "active_test_files_to_update": 3,
+      "old_module_imports_to_update": 3,
+      "old_path_source_checks_to_update": 2,
+      "active_cli_examples_found": 0,
+      "pytest_run": false,
+      "builders_run": false,
+      "backtests_run": false
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "phase1_audit_reviewed": true,
+      "target_structure_reviewed": true,
+      "one_safe_batch_selected": true,
+      "move_list_defined": true,
+      "reference_update_plan_defined": true,
+      "validation_plan_defined": true,
+      "rollback_plan_defined": true,
+      "no_tools_moved": true
+    },
+    "next_recommendation": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001"
   }
 ]

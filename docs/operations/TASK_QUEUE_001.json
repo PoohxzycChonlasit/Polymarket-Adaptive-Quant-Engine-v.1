@@ -1657,7 +1657,7 @@
     {
       "priority": -3,
       "task_id": "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Plan the next low-path-risk tools migration batch before moving research/export/outcome truth scripts.",
@@ -1670,7 +1670,31 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001.md"
       ],
-      "notes": "Recommended next step after the single no-import-risk move. Keep design-only until exact low-path-risk files and reference updates are selected."
+      "notes": "DONE. Selected a small outcome-truth provisional batch: tools/free_outcome_truth_provisional.py, tools/free_outcome_truth_provisional_join.py, and tools/free_outcome_truth_provisional_readiness.py -> tools/outcome_truth/. Execution task must update only the three targeted tests, compile moved files, run targeted tests, and avoid full pytest/builders/backtests."
+    },
+    {
+      "priority": -2,
+      "task_id": "REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Move the three provisional free-source outcome-truth tools into tools/outcome_truth/ and update their targeted tests.",
+      "blocked_by": "REPOSITORY_PHASE1B_TOOLS_LOW_PATH_RISK_MOVE_PLAN_001",
+      "allowed_scope": [
+        "tools/free_outcome_truth_provisional.py",
+        "tools/free_outcome_truth_provisional_join.py",
+        "tools/free_outcome_truth_provisional_readiness.py",
+        "tools/outcome_truth/",
+        "tests/test_free_outcome_truth_provisional.py",
+        "tests/test_free_outcome_truth_provisional_join.py",
+        "tests/test_free_outcome_truth_provisional_readiness.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1B_OUTCOME_TRUTH_PROVISIONAL_MOVE_001.md"
+      ],
+      "notes": "Move only the provisional outcome-truth trio. Update imports to tools.outcome_truth.* and path source checks to tools/outcome_truth/*.py. Validate with rg old paths/modules, py_compile moved files only, and targeted pytest for the three listed test files. Do not run full pytest, builders, backtests, paper, or live runtime."
     }
   ]
 }
