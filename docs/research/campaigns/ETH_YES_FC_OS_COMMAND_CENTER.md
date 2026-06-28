@@ -1,6 +1,6 @@
 # ETH_YES_FC_OS Command Center
 
-Generated: 2026-06-21T01:01:30Z
+Generated: 2026-06-28T01:05:37Z
 
 Source evidence: `canonical_export:runtime/research_exports/canonical_regime_enriched_trades_v1.csv`
 
@@ -16,21 +16,21 @@ Non-authorization: this report does not change strategy, risk, execution, sizing
 
 | Gate | Criterion | Status | Current |
 |---|---|---|---|
-| P1 | n >= 100 | OPEN | Canonical n = 97 |
-| P2 | WR > 52% | PASS | 56.7% |
-| P3 | PF > 1.5 | PASS | 2.133 |
-| P4 | p < 0.05 at or before n=100 | OPEN | p=0.111; n_required=143 |
-| P5 | >= 3 calendar weeks | PASS | 5 weeks (2026-W21, 2026-W22, 2026-W23, 2026-W24, 2026-W25) |
+| P1 | n >= 100 | PASS | Canonical n = 105 |
+| P2 | WR > 52% | PASS | 57.1% |
+| P3 | PF > 1.5 | PASS | 2.134 |
+| P4 | p < 0.05 at or before n=100 | OPEN | p=0.086; n_required=128 |
+| P5 | >= 3 calendar weeks | PASS | 6 weeks (2026-W21, 2026-W22, 2026-W23, 2026-W24, 2026-W25, 2026-W26) |
 
 ### Canonical Count
 
 | Metric | Value |
 |---|---:|
-| Raw filtered rows | 98 |
+| Raw filtered rows | 106 |
 | Duplicate rows removed | 1 |
-| Canonical n | 97 |
+| Canonical n | 105 |
 | Remaining to n=70 | 0 |
-| Remaining to n=100 | 3 |
+| Remaining to n=100 | 0 |
 
 ### Runtime Integrity
 
@@ -47,20 +47,20 @@ Non-authorization: this report does not change strategy, risk, execution, sizing
 ## Panel B: Progress Rail
 
 ```text
-n = 97 / 100  [#######################################-]  97.0%
+n = 105 / 100  [########################################]  105.0%
 ```
 
 | Metric | Current | Target | Gap |
 |---|---:|---:|---:|
-| WR | 56.7% | >52.0% | 4.7% |
-| PF | 2.133 | >1.500 | 0.633 |
-| p-value | 0.111 | <0.050 | n_required=143 |
+| WR | 57.1% | >52.0% | 5.1% |
+| PF | 2.134 | >1.500 | 0.634 |
+| p-value | 0.086 | <0.050 | n_required=128 |
 
 ### P4 Transform
 
 | WR scenario | n required for p < 0.05 |
 |---|---:|
-| Current WR (56.7%) | 143 |
+| Current WR (57.1%) | 128 |
 | 59.0% | 78 |
 | 60.0% | 62 |
 
@@ -68,9 +68,9 @@ n = 97 / 100  [#######################################-]  97.0%
 
 | Velocity basis | Rate | ETA to n=70 |
 |---|---:|---:|
-| 7-day rolling | 3.43/day | 0 days |
-| 14-day rolling | 2.57/day | 0 days |
-| Historical campaign | 2.85/day | 0 days |
+| 7-day rolling | 1.14/day | 0 days |
+| 14-day rolling | 2.29/day | 0 days |
+| Historical campaign | 2.56/day | 0 days |
 
 ---
 
@@ -80,7 +80,7 @@ n = 97 / 100  [#######################################-]  97.0%
 
 | Metric | Value |
 |---|---:|
-| Current nc_PF window=20 | 2.521 |
+| Current nc_PF window=20 | 1.580 |
 | Consecutive below 1.0 | 0 |
 | Trough index | 45 |
 | Trough value | 0.596 |
@@ -92,35 +92,35 @@ n = 97 / 100  [#######################################-]  97.0%
 | Metric | Value |
 |---|---|
 | Decision log scan window | 1 dated files |
-| Latest decision date | [MANUAL REQUIRED] |
-| ETH COMPRESSION share latest | [MANUAL REQUIRED] |
-| ETH COMPRESSION share 7d | [MANUAL REQUIRED] |
+| Latest decision date | 2026-06-28 |
+| ETH COMPRESSION share latest | 0.0% |
+| ETH COMPRESSION share 7d | 0.0% |
 | Historical COMPRESSION share | 43.1% |
 | Last COMPRESSION date >5% | [MANUAL REQUIRED] |
 | COMPRESSION absence days | [MANUAL REQUIRED] |
-| BTC regime latest | [MANUAL REQUIRED] |
-| Latest decision count | [MANUAL REQUIRED] |
+| BTC regime latest | COMPRESSION |
+| Latest decision count | 51 |
 
 ### Velocity And Stall
 
 | Metric | Value |
 |---|---:|
 | Qualifying trades today | 0 |
-| Days since last qualifying trade | 1 |
-| 7d velocity | 3.43/day |
-| 14d velocity | 2.57/day |
+| Days since last qualifying trade | 3 |
+| 7d velocity | 1.14/day |
+| 14d velocity | 2.29/day |
 | Velocity status | ACTIVE |
 
 ### Last-5 Regime Sequence
 
 ```text
-SIDEWAY -> SIDEWAY -> COMPRESSION -> SIDEWAY -> COMPRESSION
+TREND_DOWN -> COMPRESSION -> TREND_UP -> TREND_DOWN -> SIDEWAY
 ```
 
 Regime mix:
 
 ```text
-COMPRESSION:24, SIDEWAY:30, TREND_DOWN:26, TREND_UP:17
+COMPRESSION:25, SIDEWAY:32, TREND_DOWN:28, TREND_UP:20
 ```
 
 ---
@@ -129,10 +129,10 @@ COMPRESSION:24, SIDEWAY:30, TREND_DOWN:26, TREND_UP:17
 
 | Guard | Criterion | Status | Current |
 |---|---|---|---|
-| K1 | New-block WR < 48% on >=30 new trades | PASS | n_new=36; WR=55.6%; PF=2.331 |
-| K2 | Cumulative PF < 1.3 at n>=80 | PASS | PF=2.133; buffer=0.833 |
-| K3 | BTC WR > 40% on n_BTC>=20 | INACTIVE | n_BTC=17; WR=23.5% |
-| K4 | Excl. top-5 PF < 1.0 at n=100 | INACTIVE | excl_top_5_pf=1.677 |
+| K1 | New-block WR < 48% on >=30 new trades | PASS | n_new=44; WR=56.8%; PF=2.264 |
+| K2 | Cumulative PF < 1.3 at n>=80 | PASS | PF=2.134; buffer=0.834 |
+| K3 | BTC WR > 40% on n_BTC>=20 | INACTIVE | n_BTC=19; WR=21.1% |
+| K4 | Excl. top-5 PF < 1.0 at n=100 | PASS | excl_top_5_pf=1.691 |
 | nc_PF | >10 consecutive below 1.0 advisory | CLEAR | 0/10 |
 
 ---
@@ -141,12 +141,12 @@ COMPRESSION:24, SIDEWAY:30, TREND_DOWN:26, TREND_UP:17
 
 | Metric | Value |
 |---|---:|
-| Wins | 55 |
-| Losses | 42 |
-| Gross win PnL | +0.620165 |
-| Gross loss PnL | -0.290699 |
-| Net PnL | +0.329465 |
-| Median PnL | +0.005520 |
+| Wins | 60 |
+| Losses | 45 |
+| Gross win PnL | +0.734053 |
+| Gross loss PnL | -0.343983 |
+| Net PnL | +0.390070 |
+| Median PnL | +0.005657 |
 
 ## Governor Read
 
