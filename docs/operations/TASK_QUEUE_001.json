@@ -1909,7 +1909,7 @@
     {
       "priority": 0,
       "task_id": "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Execute the approved paired migration for cross-run lifecycle truth and lifecycle truth backfill tooling.",
@@ -1929,7 +1929,24 @@
       "outputs": [
         "docs/reports/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001.md"
       ],
-      "notes": "READY. Follow docs/reports/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001.md. Do not run full pytest, builders, backtests, paper/live runtime, or change polymarket/runtime/strategy/sizing/risk/execution/dashboard/Telegram/.env."
+      "notes": "DONE. Moved tools/cross_run_lifecycle_truth.py to tools/shadow/cross_run_lifecycle_truth.py and tools/lifecycle_truth_backfill.py to tools/replay/lifecycle_truth_backfill.py. Updated moved backfill import plus tests/test_cross_run_lifecycle_truth.py and tests/test_lifecycle_truth_backfill.py. py_compile passed and targeted pytest passed 6/6. No full pytest, builders, backtests, paper/live runtime, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, or .env changes."
+    },
+    {
+      "priority": 0,
+      "task_id": "REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design a dependency-aware migration plan for tools/lifecycle_truth_tables.py and its direct importers before any move.",
+      "blocked_by": "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001.md"
+      ],
+      "notes": "READY. Source search after Phase 1H found tools.lifecycle_truth_tables imported by tools/replay/lifecycle_truth_backfill.py, tools/candidate_path_observability.py, tools/candidate_continuity.py, tools/ev_field_coverage.py, and tests/test_lifecycle_truth_tables.py. Plan first; do not move files in the design task."
     },
     {
       "priority": 0,

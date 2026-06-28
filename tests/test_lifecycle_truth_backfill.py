@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.lifecycle_truth_backfill import build_lifecycle_truth_backfill, main, write_lifecycle_truth_backfill_manifest
+from tools.replay.lifecycle_truth_backfill import build_lifecycle_truth_backfill, main, write_lifecycle_truth_backfill_manifest
 
 
 DATE = "2026-05-08"

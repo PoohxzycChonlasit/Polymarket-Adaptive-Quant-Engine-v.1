@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001 complete - dependency move plan ready",
-    "last_completed_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_PLAN_001",
+    "current_phase":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001 complete - lifecycle truth tools moved",
+    "last_completed_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001",
     "last_commit":  "pending-at-report-time",
-    "last_commit_message":  "docs: add cross-run lifecycle truth move plan",
-    "next_task":  "REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001",
+    "last_commit_message":  "refactor: move lifecycle truth tools",
+    "next_task":  "REPOSITORY_PHASE1I_LIFECYCLE_TRUTH_TABLES_MOVE_PLAN_001",
     "decomposition_state": {
       "trader_py_lines": 13589,
       "trader_py_methods": 305,
@@ -91,5 +91,5 @@
                                     "compiler_script":  "tools/canonical_trade_context_builder.py",
                                     "test_suite":  "tests/test_canonical_trade_context_builder.py"
                                 },
-    "notes":  "Phase 1H cross-run lifecycle truth move plan complete. Selected paired future move: tools/cross_run_lifecycle_truth.py -> tools/shadow/cross_run_lifecycle_truth.py and tools/lifecycle_truth_backfill.py -> tools/replay/lifecycle_truth_backfill.py. Current source search found direct imports only in lifecycle_truth_backfill.py and tests/test_cross_run_lifecycle_truth.py; research_state_writer.py uses only the output filename prefix. No tool files, tests, runtime code, polymarket, strategy, sizing, risk, execution, dashboard, Telegram, .env, builders, backtests, paper, or live behavior changed."
+    "notes":  "Phase 1H lifecycle truth tools move complete. Moved cross_run_lifecycle_truth.py into tools/shadow/ and lifecycle_truth_backfill.py into tools/replay/. Updated moved backfill import and two targeted tests. Reference validation found no active stale old module/path references in non-doc/non-JSON files. py_compile passed and targeted pytest passed 6/6. No polymarket, runtime trading code, strategy, sizing, risk, execution, dashboard, Telegram, .env, builders, backtests, paper runtime, or live runtime changed. Next dependency-aware plan should cover lifecycle_truth_tables.py because moved backfill still imports tools.lifecycle_truth_tables and that root tool has multiple direct importers."
 }

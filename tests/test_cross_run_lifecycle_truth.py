@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from tools.cross_run_lifecycle_truth import (
+from tools.shadow.cross_run_lifecycle_truth import (
     build_cross_run_lifecycle_truth,
     main,
     write_cross_run_lifecycle_truth,

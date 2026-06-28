@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from tools.cross_run_lifecycle_truth import (
+from tools.shadow.cross_run_lifecycle_truth import (
     DEFAULT_MEMORY_INDEX_DIR,
     build_cross_run_lifecycle_truth,
     write_cross_run_lifecycle_truth,
