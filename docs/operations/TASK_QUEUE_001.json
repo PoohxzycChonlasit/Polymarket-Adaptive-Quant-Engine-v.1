@@ -2302,7 +2302,7 @@
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Design the next trader.py observability extraction plan for the risk-boundary payload area before any implementation, with explicit dependency and side-effect classification.",
-      "blocked_by": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001",
+      "blocked_by": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001",
       "allowed_scope": [
         "docs/reports/",
         "docs/operations/"
@@ -2310,7 +2310,7 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001.md"
       ],
-      "notes": "BLOCKED until remaining safe test-fixture baseline repairs are completed or explicitly waived. Plan first because the likely next safe extraction target is observability-related but named around risk boundary, so dependency and side-effect classification should precede code movement."
+      "notes": "BLOCKED until remaining baseline failures are reviewed or explicitly waived. Fixture-only repairs reduced the bounded subset to 2 failures; remaining issues are candidate identity propagation semantics and selected_token_id initialization in _analyze_market_quant."
     },
     {
       "priority": 121,
@@ -2352,7 +2352,7 @@
     {
       "priority": 123,
       "task_id": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 5,
       "description": "Repair safe test-fixture-only baseline failures after path-sensitive tests were fixed, without modifying runtime behavior.",
@@ -2360,6 +2360,8 @@
       "allowed_scope": [
         "tests/observability/test_trade_open_model_visibility_serialization.py",
         "tests/polymarket/test_live_fill_loop.py",
+        "tests/polymarket/test_empty_orderbook_fail_soft.py",
+        "tests/polymarket/test_polymarket_trader.py",
         "tests/polymarket/test_stale_feed_kill_switch.py",
         "docs/reports/",
         "docs/operations/"
@@ -2367,7 +2369,27 @@
       "outputs": [
         "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md"
       ],
-      "notes": "READY. Fixture-only repairs identified by baseline: missing _last_bankroll_rank in trade-open fixtures, MagicMock live_kill_switch_file in live-fill loop fixtures, and missing token mapping in stale-feed fresh-path fixture. Do not change runtime behavior."
+      "notes": "DONE. Fixture/mock repairs applied without production code changes. Exact repaired tests pass 10/10. Broad tests/observability tests/polymarket improved from 663 passed / 12 failed to 673 passed / 2 failed. Remaining failures require focused semantic/production review, not fixture-only repair."
+    },
+    {
+      "priority": 124,
+      "task_id": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Review and resolve or explicitly waive the two remaining bounded trader refactor baseline failures after safe fixture repairs.",
+      "blocked_by": "TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001",
+      "allowed_scope": [
+        "tests/observability/test_candidate_instance_shadow_propagation.py",
+        "tests/polymarket/test_stale_feed_kill_switch.py",
+        "polymarket/trader.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001.md"
+      ],
+      "notes": "Focus only on candidate-instance identity propagation semantics and the selected_token_id UnboundLocalError exposed by the fresh-feed stale-feed test. Production changes require explicit compatibility/bug-fix evidence and no execution/risk/sizing behavior expansion."
     }
   ]
 }

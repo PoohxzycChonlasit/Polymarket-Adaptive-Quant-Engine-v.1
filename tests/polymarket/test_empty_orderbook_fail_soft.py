@@ -45,6 +45,7 @@ def _settings() -> SimpleNamespace:
         max_active_positions_per_market=1,
         max_entries_per_market=1,
         max_feed_age_seconds=10.0,
+        enable_market_availability_guard=False,
         micro_adaptive_timing_enabled=False,
         hybrid_phase_v1_enabled=False,
     )

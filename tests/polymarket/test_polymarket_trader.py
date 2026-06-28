@@ -150,6 +150,7 @@ class PolymarketTraderPaperModeTests(unittest.TestCase):
             kelly_fraction_cap=0.25,
             crypto_pairs=["BTC/USDT"],
             bankroll_floor=5.0,
+            enable_market_availability_guard=False,
         )
         return trader
 

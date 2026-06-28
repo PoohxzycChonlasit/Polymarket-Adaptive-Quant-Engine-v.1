@@ -141,6 +141,7 @@ class TestWaitForFillTerminalStatuses:
         mock_settings.api_retry_backoff_base = 0.1
         mock_settings.api_circuit_breaker_threshold = 5
         mock_settings.api_circuit_breaker_cooldown = 60
+        mock_settings.live_kill_switch_file = "runtime/__unit_test_no_kill_switch__"
 
         client = PolymarketClient.__new__(PolymarketClient)
         client.settings = mock_settings
@@ -181,6 +182,7 @@ class TestPlaceLimitOrderTimeout:
         mock_settings.api_retry_backoff_base = 0.1
         mock_settings.api_circuit_breaker_threshold = 5
         mock_settings.api_circuit_breaker_cooldown = 60
+        mock_settings.live_kill_switch_file = "runtime/__unit_test_no_kill_switch__"
 
         client = PolymarketClient.__new__(PolymarketClient)
         client.settings = mock_settings
@@ -214,6 +216,7 @@ class TestPlaceLimitOrderTimeout:
         mock_settings.api_retry_backoff_base = 0.1
         mock_settings.api_circuit_breaker_threshold = 5
         mock_settings.api_circuit_breaker_cooldown = 60
+        mock_settings.live_kill_switch_file = "runtime/__unit_test_no_kill_switch__"
 
         client = PolymarketClient.__new__(PolymarketClient)
         client.settings = mock_settings

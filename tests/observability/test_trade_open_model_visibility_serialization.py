@@ -49,6 +49,9 @@ def _trader() -> PolymarketTrader:
     trader._real_token_ids = {"BTC": ("yes-token", "no-token")}
     trader._market_first_seen_seconds_remaining = {}
     trader._market_readiness_timestamps = {}
+    trader._last_bankroll_rank = None
+    trader._last_bankroll_family = None
+    trader._last_capital_score = None
     trader.last_quant_details = {}
     trader._observability_health_display_state = {}
     return trader

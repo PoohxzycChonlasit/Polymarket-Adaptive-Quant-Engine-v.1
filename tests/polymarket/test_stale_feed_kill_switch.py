@@ -64,6 +64,13 @@ def _trader(settings=None) -> PolymarketTrader:
         kelly_fraction_cap=trader.settings.kelly_fraction_cap,
     )
     trader.client = MagicMock()
+    trader._real_token_ids["BTC"] = ("yes-token", "no-token")
+    trader._market_token_meta["BTC"] = {
+        "slug": "btc-updown-5m",
+        "condition_id": "condition-btc",
+        "yes_token_id": "yes-token",
+        "no_token_id": "no-token",
+    }
     return trader
 
 
@@ -140,7 +147,10 @@ class StaleFeedKillSwitchTests(unittest.TestCase):
         trader = _trader()
         trader.ptb_tracker = MagicMock()
         trader.ptb_tracker.get_market_ptb.return_value = _ptb(age_seconds=1.0)
-        trader.client.get_orderbook.return_value = OrderbookSnapshot("yes-token", 0.49, 0.50, 0.01, 10, 10)
+        trader.client.get_orderbook.side_effect = [
+            OrderbookSnapshot("yes-token", 0.49, 0.50, 0.01, 10, 10),
+            OrderbookSnapshot("no-token", 0.49, 0.50, 0.01, 10, 10),
+        ]
         signal = SignalResult(
             asset="BTC",
             side="YES",
