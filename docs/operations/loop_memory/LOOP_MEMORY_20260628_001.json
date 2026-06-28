@@ -2058,5 +2058,43 @@
       "tests/polymarket/test_stale_feed_kill_switch.py::StaleFeedKillSwitchTests::test_fresh_feed_allows_normal_analysis_to_continue"
     ],
     "next_recommendation": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001",
+    "task_class": 5,
+    "result": "PASS_BASELINE_CLEAN",
+    "evidence_grade": "A+B+C",
+    "scope": [
+      "polymarket/observability/trader_decision_diagnostics.py",
+      "polymarket/trader.py",
+      "docs/reports/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/repository/"
+    ],
+    "forbidden_scope_confirmed": true,
+    "order_submission_modified": false,
+    "risk_logic_modified": false,
+    "sizing_logic_modified": false,
+    "strategy_thresholds_modified": false,
+    "wallet_balance_modified": false,
+    "live_execution_modified": false,
+    "config_modified": false,
+    "live_trading_enabled": false,
+    "root_causes": {
+      "candidate_identity": "decision diagnostics copied candidate_id but not candidate_instance shadow identity fields",
+      "selected_token_id": "observability metadata used selected_token_id outside optional shadow-telemetry assignment branch"
+    },
+    "validation": {
+      "exact_two_tests": "2 passed, 5 warnings",
+      "bounded_subset": "675 passed, 5 warnings",
+      "py_compile_changed_python": "PASS",
+      "airos_registry_refresh": "PASS"
+    },
+    "remaining_failures": 0,
+    "next_recommendation": "TRADER_PHASE3_RISK_BOUNDARY_PAYLOAD_EXTRACTION_PLAN_001"
   }
 ]

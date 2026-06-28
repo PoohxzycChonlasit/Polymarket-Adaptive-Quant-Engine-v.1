@@ -94,6 +94,12 @@ def build_decision_diagnostics_payload(source: Any, outcome: Any, *, ticker: str
     for field_name in (
         "lifecycle_phase",
         "candidate_id",
+        "candidate_instance_id",
+        "candidate_instance_trace_id",
+        "candidate_instance_created_at",
+        "candidate_instance_identity_schema_version",
+        "candidate_instance_identity_source",
+        "legacy_candidate_identity_source",
         "signal_id",
         "token_ready_at",
         "token_ready_seconds_remaining",

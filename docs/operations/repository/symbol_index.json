@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T17:34:49.879082Z",
+  "generated_at_utc": "2026-06-28T18:24:21.490240Z",
   "file_count": 436,
   "files": [
     {
@@ -8630,7 +8630,7 @@
     },
     {
       "path": "polymarket/observability/trader_decision_diagnostics.py",
-      "total_lines": 563,
+      "total_lines": 569,
       "class_count": 0,
       "top_function_count": 1,
       "method_count": 0,
@@ -8639,7 +8639,7 @@
         {
           "name": "build_decision_diagnostics_payload",
           "line": 27,
-          "size": 536,
+          "size": 542,
           "runtime_sensitive": false
         }
       ],
@@ -8647,7 +8647,7 @@
         {
           "name": "build_decision_diagnostics_payload",
           "class": null,
-          "size": 536
+          "size": 542
         }
       ],
       "runtime_sensitive_symbols": []
@@ -22011,37 +22011,37 @@
     },
     {
       "path": "tests/observability/test_candidate_instance_shadow_propagation.py",
-      "total_lines": 215,
+      "total_lines": 216,
       "class_count": 1,
       "top_function_count": 6,
       "method_count": 4,
       "classes": [
         {
           "name": "_CollectingQuantLogger",
-          "line": 22,
+          "line": 23,
           "method_count": 4,
           "methods": [
             {
               "name": "__init__",
-              "line": 23,
+              "line": 24,
               "size": 5,
               "runtime_sensitive": false
             },
             {
               "name": "log_decision",
-              "line": 29,
+              "line": 30,
               "size": 3,
               "runtime_sensitive": false
             },
             {
               "name": "log_risk_event",
-              "line": 33,
+              "line": 34,
               "size": 3,
               "runtime_sensitive": true
             },
             {
               "name": "_with_candidate_trace_identity",
-              "line": 37,
+              "line": 38,
               "size": 2,
               "runtime_sensitive": false
             }
@@ -22051,37 +22051,37 @@
       "top_functions": [
         {
           "name": "_trader",
-          "line": 41,
+          "line": 42,
           "size": 10,
           "runtime_sensitive": false
         },
         {
           "name": "test_active_candidate_identity_is_copied_to_quant_detail_with_shadow_names_only",
-          "line": 53,
+          "line": 54,
           "size": 39,
           "runtime_sensitive": false
         },
         {
           "name": "test_shadow_identity_reaches_decision_only_and_preserves_legacy_candidate_id",
-          "line": 94,
+          "line": 95,
           "size": 38,
           "runtime_sensitive": false
         },
         {
           "name": "test_shadow_identity_does_not_reach_execution_or_position_metadata",
-          "line": 134,
+          "line": 135,
           "size": 34,
           "runtime_sensitive": true
         },
         {
           "name": "test_pre_signal_skip_does_not_fabricate_candidate_instance_identity",
-          "line": 170,
+          "line": 171,
           "size": 26,
           "runtime_sensitive": false
         },
         {
           "name": "test_candidate_instance_trace_does_not_replace_legacy_canonical_trace",
-          "line": 198,
+          "line": 199,
           "size": 17,
           "runtime_sensitive": false
         }
@@ -23035,7 +23035,7 @@
     },
     {
       "path": "tests/observability/test_trade_open_model_visibility_serialization.py",
-      "total_lines": 227,
+      "total_lines": 230,
       "class_count": 1,
       "top_function_count": 10,
       "method_count": 2,
@@ -23070,54 +23070,54 @@
         {
           "name": "_trader",
           "line": 32,
-          "size": 23,
+          "size": 26,
           "runtime_sensitive": false
         },
         {
           "name": "_risk_plan",
-          "line": 57,
+          "line": 60,
           "size": 14,
           "runtime_sensitive": true
         },
         {
           "name": "_receipt",
-          "line": 73,
+          "line": 76,
           "size": 10,
           "runtime_sensitive": false
         },
         {
           "name": "_emit_open",
-          "line": 85,
+          "line": 88,
           "size": 28,
           "runtime_sensitive": false
         },
         {
           "name": "test_trade_open_preserves_model_fields_from_decision_context",
-          "line": 115,
+          "line": 118,
           "size": 35,
           "runtime_sensitive": false
         },
         {
           "name": "test_trade_open_missing_model_fields_fails_soft_to_default_visibility",
-          "line": 152,
+          "line": 155,
           "size": 10,
           "runtime_sensitive": false
         },
         {
           "name": "test_trade_open_preserves_confidence_when_model_context_is_visible",
-          "line": 164,
+          "line": 167,
           "size": 17,
           "runtime_sensitive": false
         },
         {
           "name": "test_trade_open_selects_side_specific_probability",
-          "line": 183,
+          "line": 186,
           "size": 25,
           "runtime_sensitive": false
         },
         {
           "name": "test_trade_open_preserves_paper_trade_replay_key",
-          "line": 210,
+          "line": 213,
           "size": 17,
           "runtime_sensitive": false
         }
@@ -23134,14 +23134,14 @@
           "size": 28
         },
         {
+          "name": "_trader",
+          "class": null,
+          "size": 26
+        },
+        {
           "name": "test_trade_open_selects_side_specific_probability",
           "class": null,
           "size": 25
-        },
-        {
-          "name": "_trader",
-          "class": null,
-          "size": 23
         },
         {
           "name": "test_trade_open_preserves_confidence_when_model_context_is_visible",
@@ -25329,7 +25329,7 @@
     },
     {
       "path": "tests/polymarket/test_empty_orderbook_fail_soft.py",
-      "total_lines": 155,
+      "total_lines": 156,
       "class_count": 1,
       "top_function_count": 6,
       "method_count": 2,
@@ -25358,36 +25358,36 @@
         {
           "name": "_settings",
           "line": 28,
-          "size": 23,
+          "size": 24,
           "runtime_sensitive": false
         },
         {
           "name": "_trader",
-          "line": 53,
+          "line": 54,
           "size": 14,
           "runtime_sensitive": false
         },
         {
           "name": "_market",
-          "line": 69,
+          "line": 70,
           "size": 8,
           "runtime_sensitive": false
         },
         {
           "name": "_ptb_info",
-          "line": 79,
+          "line": 80,
           "size": 12,
           "runtime_sensitive": false
         },
         {
           "name": "test_empty_orderbook_fetch_failure_skips_without_unbound_orderbook_reference",
-          "line": 93,
+          "line": 94,
           "size": 29,
           "runtime_sensitive": false
         },
         {
           "name": "test_market_analysis_exception_event_serializes_context",
-          "line": 124,
+          "line": 125,
           "size": 31,
           "runtime_sensitive": false
         }
@@ -25406,7 +25406,7 @@
         {
           "name": "_settings",
           "class": null,
-          "size": 23
+          "size": 24
         },
         {
           "name": "_trader",
@@ -26496,7 +26496,7 @@
     },
     {
       "path": "tests/polymarket/test_live_fill_loop.py",
-      "total_lines": 236,
+      "total_lines": 239,
       "class_count": 5,
       "top_function_count": 0,
       "method_count": 20,
@@ -26625,12 +26625,12 @@
             {
               "name": "test_wait_for_fill_returns_on_filled_status",
               "line": 135,
-              "size": 23,
+              "size": 24,
               "runtime_sensitive": false
             },
             {
               "name": "test_wait_for_fill_cancel_on_timeout_method_exists",
-              "line": 159,
+              "line": 160,
               "size": 9,
               "runtime_sensitive": false
             }
@@ -26638,19 +26638,19 @@
         },
         {
           "name": "TestPlaceLimitOrderTimeout",
-          "line": 174,
+          "line": 175,
           "method_count": 2,
           "methods": [
             {
               "name": "test_place_limit_order_calls_wait_for_fill_when_timeout_sec_given",
-              "line": 175,
-              "size": 32,
+              "line": 176,
+              "size": 33,
               "runtime_sensitive": true
             },
             {
               "name": "test_place_limit_order_no_wait_when_no_timeout",
-              "line": 208,
-              "size": 28,
+              "line": 210,
+              "size": 29,
               "runtime_sensitive": true
             }
           ]
@@ -26661,17 +26661,17 @@
         {
           "name": "test_place_limit_order_calls_wait_for_fill_when_timeout_sec_given",
           "class": "TestPlaceLimitOrderTimeout",
-          "size": 32
+          "size": 33
         },
         {
           "name": "test_place_limit_order_no_wait_when_no_timeout",
           "class": "TestPlaceLimitOrderTimeout",
-          "size": 28
+          "size": 29
         },
         {
           "name": "test_wait_for_fill_returns_on_filled_status",
           "class": "TestWaitForFillTerminalStatuses",
-          "size": 23
+          "size": 24
         },
         {
           "name": "test_terminal_statuses_include_filled",
@@ -28380,7 +28380,7 @@
     },
     {
       "path": "tests/polymarket/test_polymarket_trader.py",
-      "total_lines": 427,
+      "total_lines": 428,
       "class_count": 4,
       "top_function_count": 2,
       "method_count": 22,
@@ -28470,7 +28470,7 @@
             {
               "name": "_make_trader",
               "line": 143,
-              "size": 12,
+              "size": 13,
               "runtime_sensitive": false,
               "trader_group": "unknown",
               "safe_first_extraction": false,
@@ -28478,7 +28478,7 @@
             },
             {
               "name": "test_run_single_cycle_skips_when_no_markets",
-              "line": 156,
+              "line": 157,
               "size": 7,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -28487,7 +28487,7 @@
             },
             {
               "name": "test_run_single_cycle_returns_skipped_signal_outcome",
-              "line": 164,
+              "line": 165,
               "size": 18,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -28496,7 +28496,7 @@
             },
             {
               "name": "test_submit_order_returns_paper_buy_receipt",
-              "line": 183,
+              "line": 184,
               "size": 18,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -28505,7 +28505,7 @@
             },
             {
               "name": "test_submit_order_blocks_paper_sell_without_inventory",
-              "line": 202,
+              "line": 203,
               "size": 13,
               "runtime_sensitive": true,
               "trader_group": "paper",
@@ -28514,7 +28514,7 @@
             },
             {
               "name": "test_run_single_cycle_skips_on_zero_position_size_outcome",
-              "line": 216,
+              "line": 217,
               "size": 19,
               "runtime_sensitive": true,
               "trader_group": "lifecycle_infra",
@@ -28523,7 +28523,7 @@
             },
             {
               "name": "test_run_single_cycle_handles_market_analysis_exception",
-              "line": 236,
+              "line": 237,
               "size": 12,
               "runtime_sensitive": false,
               "trader_group": "lifecycle_infra",
@@ -28532,7 +28532,7 @@
             },
             {
               "name": "test_select_markets_returns_active_btc_eth_markets",
-              "line": 249,
+              "line": 250,
               "size": 9,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -28541,7 +28541,7 @@
             },
             {
               "name": "test_select_markets_caches_real_token_ids",
-              "line": 259,
+              "line": 260,
               "size": 10,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -28550,7 +28550,7 @@
             },
             {
               "name": "test_select_markets_reuses_current_token_cache_without_gamma",
-              "line": 270,
+              "line": 271,
               "size": 24,
               "runtime_sensitive": false,
               "trader_group": "market_evaluation",
@@ -28559,7 +28559,7 @@
             },
             {
               "name": "test_refresh_token_ids_promotes_preloaded_current_epoch",
-              "line": 295,
+              "line": 296,
               "size": 20,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -28568,7 +28568,7 @@
             },
             {
               "name": "test_refresh_token_ids_preloads_next_window_near_cutoff",
-              "line": 316,
+              "line": 317,
               "size": 38,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -28577,7 +28577,7 @@
             },
             {
               "name": "test_refresh_token_ids_warms_orderbooks_once_when_connected",
-              "line": 355,
+              "line": 356,
               "size": 30,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -28588,12 +28588,12 @@
         },
         {
           "name": "TradeOutcomeTests",
-          "line": 387,
+          "line": 388,
           "method_count": 2,
           "methods": [
             {
               "name": "test_skipped_outcome_has_no_receipt",
-              "line": 388,
+              "line": 389,
               "size": 13,
               "runtime_sensitive": false,
               "trader_group": "unknown",
@@ -28602,7 +28602,7 @@
             },
             {
               "name": "test_executed_outcome_has_receipt",
-              "line": 402,
+              "line": 403,
               "size": 21,
               "runtime_sensitive": true,
               "trader_group": "unknown",
@@ -30431,7 +30431,7 @@
     },
     {
       "path": "tests/polymarket/test_signal_identity.py",
-      "total_lines": 63,
+      "total_lines": 64,
       "class_count": 0,
       "top_function_count": 2,
       "method_count": 0,
@@ -30439,13 +30439,13 @@
       "top_functions": [
         {
           "name": "test_signal_result_identity_defaults_preserve_existing_constructors",
-          "line": 28,
+          "line": 29,
           "size": 13,
           "runtime_sensitive": false
         },
         {
           "name": "test_every_signal_result_producer_declares_canonical_identity_metadata",
-          "line": 43,
+          "line": 44,
           "size": 20,
           "runtime_sensitive": false
         }
@@ -30466,37 +30466,37 @@
     },
     {
       "path": "tests/polymarket/test_signal_identity_propagation.py",
-      "total_lines": 195,
+      "total_lines": 196,
       "class_count": 1,
       "top_function_count": 8,
       "method_count": 4,
       "classes": [
         {
           "name": "_CollectingQuantLogger",
-          "line": 13,
+          "line": 14,
           "method_count": 4,
           "methods": [
             {
               "name": "__init__",
-              "line": 14,
+              "line": 15,
               "size": 5,
               "runtime_sensitive": false
             },
             {
               "name": "log_decision",
-              "line": 20,
+              "line": 21,
               "size": 3,
               "runtime_sensitive": false
             },
             {
               "name": "log_risk_event",
-              "line": 24,
+              "line": 25,
               "size": 3,
               "runtime_sensitive": true
             },
             {
               "name": "_with_candidate_trace_identity",
-              "line": 28,
+              "line": 29,
               "size": 2,
               "runtime_sensitive": false
             }
@@ -30506,49 +30506,49 @@
       "top_functions": [
         {
           "name": "_trader",
-          "line": 32,
+          "line": 33,
           "size": 10,
           "runtime_sensitive": false
         },
         {
           "name": "_decision_payload",
-          "line": 44,
+          "line": 45,
           "size": 18,
           "runtime_sensitive": false
         },
         {
           "name": "test_active_analysis_handoff_copies_signal_identity_into_quant_detail",
-          "line": 64,
+          "line": 65,
           "size": 23,
           "runtime_sensitive": false
         },
         {
           "name": "test_signal_identity_survives_quant_detail_cache_and_decision_payload",
-          "line": 89,
+          "line": 90,
           "size": 16,
           "runtime_sensitive": false
         },
         {
           "name": "test_pre_signal_decision_does_not_fabricate_signal_identity",
-          "line": 107,
+          "line": 108,
           "size": 15,
           "runtime_sensitive": false
         },
         {
           "name": "test_two_tier_attribution_model_approved_yes",
-          "line": 124,
+          "line": 125,
           "size": 22,
           "runtime_sensitive": false
         },
         {
           "name": "test_two_tier_attribution_model_approved_no",
-          "line": 148,
+          "line": 149,
           "size": 22,
           "runtime_sensitive": false
         },
         {
           "name": "test_two_tier_attribution_non_model_approved",
-          "line": 172,
+          "line": 173,
           "size": 22,
           "runtime_sensitive": false
         }
@@ -30723,38 +30723,38 @@
     },
     {
       "path": "tests/polymarket/test_stale_feed_kill_switch.py",
-      "total_lines": 165,
+      "total_lines": 175,
       "class_count": 1,
       "top_function_count": 4,
       "method_count": 4,
       "classes": [
         {
           "name": "StaleFeedKillSwitchTests",
-          "line": 95,
+          "line": 102,
           "method_count": 4,
           "methods": [
             {
               "name": "test_stale_oracle_ptb_feed_skips_before_signal_and_order",
-              "line": 96,
+              "line": 103,
               "size": 14,
               "runtime_sensitive": false
             },
             {
               "name": "test_missing_feed_timestamp_skips_before_signal_and_order",
-              "line": 111,
+              "line": 118,
               "size": 14,
               "runtime_sensitive": false
             },
             {
               "name": "test_live_mode_stale_feed_never_submits_order",
-              "line": 126,
+              "line": 133,
               "size": 12,
               "runtime_sensitive": true
             },
             {
               "name": "test_fresh_feed_allows_normal_analysis_to_continue",
-              "line": 139,
-              "size": 22,
+              "line": 146,
+              "size": 25,
               "runtime_sensitive": false
             }
           ]
@@ -30770,18 +30770,18 @@
         {
           "name": "_trader",
           "line": 56,
-          "size": 12,
+          "size": 19,
           "runtime_sensitive": false
         },
         {
           "name": "_market",
-          "line": 70,
+          "line": 77,
           "size": 8,
           "runtime_sensitive": false
         },
         {
           "name": "_ptb",
-          "line": 80,
+          "line": 87,
           "size": 13,
           "runtime_sensitive": false
         }
@@ -30795,7 +30795,12 @@
         {
           "name": "test_fresh_feed_allows_normal_analysis_to_continue",
           "class": "StaleFeedKillSwitchTests",
-          "size": 22
+          "size": 25
+        },
+        {
+          "name": "_trader",
+          "class": null,
+          "size": 19
         },
         {
           "name": "test_stale_oracle_ptb_feed_skips_before_signal_and_order",
@@ -30815,11 +30820,6 @@
         {
           "name": "test_live_mode_stale_feed_never_submits_order",
           "class": "StaleFeedKillSwitchTests",
-          "size": 12
-        },
-        {
-          "name": "_trader",
-          "class": null,
           "size": 12
         },
         {
@@ -71481,7 +71481,7 @@
       "file": "polymarket/observability/trader_decision_diagnostics.py",
       "name": "build_decision_diagnostics_payload",
       "class": null,
-      "size": 536
+      "size": 542
     },
     {
       "file": "tools/unknown/ev_field_coverage.py",

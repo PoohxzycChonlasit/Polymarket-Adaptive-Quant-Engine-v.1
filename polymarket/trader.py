@@ -9130,6 +9130,7 @@ class PolymarketTrader:
         ev_result = scored.ev_result if scored else None
         model_side = ev_result.side if ev_result else "SKIP"
         entry_price = yes_ask if model_side == "YES" else no_ask if model_side == "NO" else yes_ask
+        selected_token_id = yes_token_id if model_side != "NO" else no_token_id
         model_ev = ev_result.ev_yes if model_side == "YES" and ev_result else ev_result.ev_no if model_side == "NO" and ev_result else 0.0
         self._paper_record_model(confidence, model_ev, opportunity_found=scan.best_trade is not None)
         frequency_multiplier = frequency_multiplier_for_tier(tier_config, trades_last_hour, liquidity=ob_liquidity_usd)
@@ -9247,7 +9248,6 @@ class PolymarketTrader:
                     run_fragment = self.quant_events.run_id[:8] if self.quant_events.run_id else "norund"
                     replay_chain_id = f"rc_{run_fragment}_{candidate_trace_id[3:]}" if candidate_trace_id else "rc_missing"
 
-                    selected_token_id = yes_token_id if model_side == "YES" else no_token_id
                     paper_trade_replay_key = f"{meta.get('condition_id', '')}|{ptb_info.epoch_start_ts}|{ticker}|{model_side}|{selected_token_id}"
                     timestamp_utc = self.quant_events._timestamp()
 

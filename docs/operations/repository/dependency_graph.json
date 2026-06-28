@@ -589,6 +589,9 @@
     "docs/operations/execution_contracts/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": [],
     "docs/operations/graph_queries/GRAPH_QUERY_SMOKE_TEST_RESULTS_001.md": [],
     "docs/operations/graph_queries/QUERY-20260628-MICRO_LIVE-001.md": [],
     "docs/operations/graph_queries/QUERY-20260628-POSITION_TRACKER_PERSISTENCE_REFACTOR_001.md": [],
@@ -988,6 +991,7 @@
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md": [],
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md": [],
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md": [],
+    "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md": [],
@@ -995,6 +999,9 @@
     "docs/reports/TRADER_REFACTOR_BATCH_003B1_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_003B2_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md": [],
+    "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md": [],
+    "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md": [],
+    "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md": [],
     "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md": [],
     "docs/reports/VENV_REBUILD_DESKTOP_001.md": [],
     "docs/reports/WEEKLY_REVIEW_ENGINE_SOURCE_OF_TRUTH_PATCH_REPORT_001.md": [],
@@ -5123,7 +5130,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-28T17:34:46.985028Z",
+  "generated_at_utc": "2026-06-28T18:24:15.232228Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -8659,6 +8666,24 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/operations/graph_queries/GRAPH_QUERY_SMOKE_TEST_RESULTS_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -11053,6 +11078,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -11090,6 +11121,24 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
@@ -18488,7 +18537,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2227,
+  "node_count": 2234,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -19079,6 +19128,9 @@
     "docs/operations/execution_contracts/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md",
     "docs/operations/graph_queries/GRAPH_QUERY_SMOKE_TEST_RESULTS_001.md",
     "docs/operations/graph_queries/QUERY-20260628-MICRO_LIVE-001.md",
     "docs/operations/graph_queries/QUERY-20260628-POSITION_TRACKER_PERSISTENCE_REFACTOR_001.md",
@@ -19478,6 +19530,7 @@
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md",
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md",
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md",
+    "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md",
@@ -19485,6 +19538,9 @@
     "docs/reports/TRADER_REFACTOR_BATCH_003B1_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_003B2_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md",
+    "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md",
+    "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md",
+    "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md",
     "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
     "docs/reports/VENV_REBUILD_DESKTOP_001.md",
     "docs/reports/WEEKLY_REVIEW_ENGINE_SOURCE_OF_TRUTH_PATCH_REPORT_001.md",
@@ -21329,6 +21385,9 @@
     "docs/operations/execution_contracts/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": [],
     "docs/operations/graph_queries/GRAPH_QUERY_SMOKE_TEST_RESULTS_001.md": [],
     "docs/operations/graph_queries/QUERY-20260628-MICRO_LIVE-001.md": [],
     "docs/operations/graph_queries/QUERY-20260628-POSITION_TRACKER_PERSISTENCE_REFACTOR_001.md": [],
@@ -21728,6 +21787,7 @@
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md": [],
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md": [],
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md": [],
+    "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md": [],
@@ -21735,6 +21795,9 @@
     "docs/reports/TRADER_REFACTOR_BATCH_003B1_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_003B2_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md": [],
+    "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md": [],
+    "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md": [],
+    "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md": [],
     "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md": [],
     "docs/reports/VENV_REBUILD_DESKTOP_001.md": [],
     "docs/reports/WEEKLY_REVIEW_ENGINE_SOURCE_OF_TRUTH_PATCH_REPORT_001.md": [],
@@ -23559,6 +23622,9 @@
     "docs/operations/execution_contracts/REPOSITORY_PHASE1H_CROSS_RUN_LIFECYCLE_TRUTH_MOVE_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md",
     "docs/quant_agent_setup_md/roles/03_RISK_MANAGER_AGENT.md",
     "docs/quant_agent_setup_md/roles/04_EXIT_EXECUTION_AGENT.md",
@@ -23579,6 +23645,7 @@
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md",
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md",
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md",
+    "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md",
@@ -23586,6 +23653,9 @@
     "docs/reports/TRADER_REFACTOR_BATCH_003B1_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_003B2_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md",
+    "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md",
+    "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md",
+    "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md",
     "docs/research/EXECUTION_BANKROLL_AND_SURVIVABILITY_AUDIT_001.md",
     "docs/research/EXECUTION_MODE_ARCHITECTURE_DECISION_001.md",
     "docs/research/EXECUTION_PAPER_RUNTIME_DESIGN_001.md",
@@ -26574,6 +26644,18 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/operations/graph_queries/GRAPH_QUERY_SMOKE_TEST_RESULTS_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -28170,6 +28252,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -28195,6 +28281,18 @@
       "unresolved_internal": []
     },
     "docs/reports/TRADER_REFACTOR_BATCH_003C_REPORT.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_REFACTOR_TEST_BASELINE_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_REFACTOR_TEST_PATH_FIX_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
