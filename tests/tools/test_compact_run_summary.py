@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from tools import compact_run_summary
+from tools.runtime import compact_run_summary
 
 
 DATE = "2026-05-12"

@@ -1,11 +1,11 @@
 {
     "$schema":  "active_workflow_state_v1",
     "last_updated":  "2026-06-28",
-    "current_phase":  "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001 complete — 5 of 14 moved (blast<=7), 9 deferred, 10 imports rewritten, tests pass",
-    "last_completed_task":  "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001",
-    "last_commit":  "847d287",
-    "last_commit_message":  "feat: add repository navigator and symbol index",
-    "next_task":  "REPOSITORY_WAVE3_TESTS_SUBFOLDERS_001",
+    "current_phase":  "REPOSITORY_WAVE3_TESTS_SUBFOLDERS_001 complete — 167 test files into 8 domain folders, 3326 collected, 188 targeted pass",
+    "last_completed_task":  "REPOSITORY_WAVE3_TESTS_SUBFOLDERS_001",
+    "last_commit":  "ee6c25d",
+    "last_commit_message":  "refactor: organize polymarket safe packages (Wave 2, 5/14 files)",
+    "next_task":  "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
     "navigator_state": {
       "module_registry": "docs/operations/repository/module_registry.json",
       "symbol_index": "docs/operations/repository/symbol_index.json",

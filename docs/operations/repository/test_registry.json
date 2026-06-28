@@ -1,512 +1,809 @@
 {
   "source_to_test": {
     "api/dashboard_api.py": [
-      "tests/test_dashboard_api.py"
+      "tests/other/test_dashboard_api.py"
     ],
     "crypto_scalper/realtime_feed.py": [
-      "tests/test_realtime_feed.py"
+      "tests/polymarket/test_realtime_feed.py"
     ],
     "dashboard/offline_quant_report_dashboard.py": [
-      "tests/test_offline_quant_report_dashboard.py"
+      "tests/other/test_offline_quant_report_dashboard.py"
     ],
     "polymarket/arbitrage.py": [
-      "tests/test_arbitrage_executor.py",
-      "tests/test_polymarket_trader.py"
+      "tests/polymarket/test_arbitrage_executor.py",
+      "tests/polymarket/test_polymarket_trader.py"
     ],
     "polymarket/arbitrage_executor.py": [
-      "tests/test_arbitrage_executor.py"
+      "tests/polymarket/test_arbitrage_executor.py"
     ],
     "polymarket/bankroll_rank_engine.py": [
-      "tests/test_bankroll_rank_engine.py"
+      "tests/polymarket/test_bankroll_rank_engine.py"
     ],
     "polymarket/bankroll_tiers.py": [
-      "tests/test_bankroll_tiers.py",
-      "tests/test_execution_risk_controls.py",
-      "tests/test_lucky_shot.py",
-      "tests/test_trade_frequency.py"
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/polymarket/test_bankroll_tiers.py",
+      "tests/polymarket/test_lucky_shot.py",
+      "tests/polymarket/test_trade_frequency.py"
     ],
     "polymarket/client.py": [
-      "tests/test_arbitrage_executor.py",
-      "tests/test_entry_attribution_snapshot.py",
-      "tests/test_entry_model_truth_envelope_v1.py",
-      "tests/test_execution_risk_controls.py",
-      "tests/test_execution_timestamp_phase1.py",
-      "tests/test_execution_timestamp_phase2.py",
-      "tests/test_execution_timestamp_phase3.py",
-      "tests/test_execution_timestamp_phase6.py",
-      "tests/test_exit_agent.py",
-      "tests/test_liquidity_depth_observability.py",
-      "tests/test_live_allowance_preflight.py",
-      "tests/test_live_credential_and_allowance_readiness.py",
-      "tests/test_live_fill_loop.py",
-      "tests/test_market_readiness_timing.py",
-      "tests/test_micro_live_safety_controls.py",
-      "tests/test_option_d_shadow.py",
-      "tests/test_paper_mode.py",
-      "tests/test_polymarket_client_v2.py",
-      "tests/test_polymarket_trader.py",
-      "tests/test_proxy_allowance_semantics.py",
-      "tests/test_quote_age_phase5.py",
-      "tests/test_quote_lineage_phase4.py",
-      "tests/test_shadow_filters.py",
-      "tests/test_stale_feed_kill_switch.py",
-      "tests/test_stop_loss_shadow.py",
-      "tests/test_trade_open_model_visibility_serialization.py"
+      "tests/integration/test_entry_attribution_snapshot.py",
+      "tests/integration/test_entry_model_truth_envelope_v1.py",
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/integration/test_execution_timestamp_phase1.py",
+      "tests/integration/test_execution_timestamp_phase2.py",
+      "tests/integration/test_execution_timestamp_phase3.py",
+      "tests/integration/test_execution_timestamp_phase6.py",
+      "tests/integration/test_liquidity_depth_observability.py",
+      "tests/integration/test_market_readiness_timing.py",
+      "tests/integration/test_option_d_shadow.py",
+      "tests/integration/test_quote_age_phase5.py",
+      "tests/integration/test_quote_lineage_phase4.py",
+      "tests/integration/test_shadow_filters.py",
+      "tests/integration/test_stop_loss_shadow.py",
+      "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/polymarket/test_arbitrage_executor.py",
+      "tests/polymarket/test_exit_agent.py",
+      "tests/polymarket/test_live_allowance_preflight.py",
+      "tests/polymarket/test_live_credential_and_allowance_readiness.py",
+      "tests/polymarket/test_live_fill_loop.py",
+      "tests/polymarket/test_micro_live_safety_controls.py",
+      "tests/polymarket/test_polymarket_client_v2.py",
+      "tests/polymarket/test_polymarket_trader.py",
+      "tests/polymarket/test_proxy_allowance_semantics.py",
+      "tests/polymarket/test_stale_feed_kill_switch.py"
     ],
     "polymarket/delta_engine.py": [
-      "tests/test_candidate_identity.py",
-      "tests/test_delta_engine.py",
-      "tests/test_delta_shadow.py",
-      "tests/test_opportunity_scanner.py",
-      "tests/test_shadow_filters.py",
-      "tests/test_trend_runner.py"
+      "tests/integration/test_delta_shadow.py",
+      "tests/integration/test_shadow_filters.py",
+      "tests/other/test_candidate_identity.py",
+      "tests/polymarket/test_delta_engine.py",
+      "tests/polymarket/test_opportunity_scanner.py",
+      "tests/polymarket/test_trend_runner.py"
     ],
     "polymarket/expected_value.py": [
-      "tests/test_candidate_identity.py",
-      "tests/test_expected_value.py",
-      "tests/test_opportunity_scanner.py"
+      "tests/other/test_candidate_identity.py",
+      "tests/polymarket/test_expected_value.py",
+      "tests/polymarket/test_opportunity_scanner.py"
     ],
     "polymarket/gamma_fetcher.py": [
-      "tests/test_delta_shadow.py",
-      "tests/test_empty_orderbook_fail_soft.py",
-      "tests/test_execution_risk_controls.py",
-      "tests/test_exit_agent.py",
-      "tests/test_hybrid_v1_observability.py",
-      "tests/test_polymarket_trader.py",
-      "tests/test_preload_next_market.py",
-      "tests/test_prob_model_observability_v1.py",
-      "tests/test_record_quant_detail_ticker_duplication.py",
-      "tests/test_shadow_filters.py",
-      "tests/test_stale_feed_kill_switch.py"
+      "tests/integration/test_delta_shadow.py",
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/integration/test_hybrid_v1_observability.py",
+      "tests/integration/test_prob_model_observability_v1.py",
+      "tests/integration/test_record_quant_detail_ticker_duplication.py",
+      "tests/integration/test_shadow_filters.py",
+      "tests/polymarket/test_empty_orderbook_fail_soft.py",
+      "tests/polymarket/test_exit_agent.py",
+      "tests/polymarket/test_polymarket_trader.py",
+      "tests/polymarket/test_preload_next_market.py",
+      "tests/polymarket/test_stale_feed_kill_switch.py"
     ],
     "polymarket/lucky_shot.py": [
-      "tests/test_lucky_shot.py"
+      "tests/polymarket/test_lucky_shot.py"
     ],
     "polymarket/market_availability_engine.py": [
-      "tests/test_market_availability_engine.py"
+      "tests/polymarket/test_market_availability_engine.py"
     ],
     "polymarket/observability/realtime_logger.py": [
-      "tests/test_logging_resilience.py"
+      "tests/polymarket/test_logging_resilience.py"
     ],
     "polymarket/observability/shadow_telemetry.py": [
-      "tests/test_shadow_filters.py"
+      "tests/integration/test_shadow_filters.py"
     ],
     "polymarket/opportunity_scanner.py": [
-      "tests/test_candidate_identity.py",
-      "tests/test_opportunity_scanner.py",
-      "tests/test_shadow_filters.py"
-    ],
-    "polymarket/oracle_price_feed.py": [
-      "tests/test_runtime_shutdown.py"
+      "tests/integration/test_shadow_filters.py",
+      "tests/other/test_candidate_identity.py",
+      "tests/polymarket/test_opportunity_scanner.py"
     ],
     "polymarket/order_intent.py": [
-      "tests/test_execution_risk_controls.py",
-      "tests/test_execution_timestamp_phase1.py",
-      "tests/test_execution_timestamp_phase2.py",
-      "tests/test_execution_timestamp_phase3.py",
-      "tests/test_execution_timestamp_phase6.py",
-      "tests/test_micro_live_safety_controls.py",
-      "tests/test_paper_mode.py",
-      "tests/test_polymarket_trader.py",
-      "tests/test_quote_age_phase5.py",
-      "tests/test_quote_lineage_phase4.py"
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/integration/test_execution_timestamp_phase1.py",
+      "tests/integration/test_execution_timestamp_phase2.py",
+      "tests/integration/test_execution_timestamp_phase3.py",
+      "tests/integration/test_execution_timestamp_phase6.py",
+      "tests/integration/test_quote_age_phase5.py",
+      "tests/integration/test_quote_lineage_phase4.py",
+      "tests/polymarket/test_micro_live_safety_controls.py",
+      "tests/polymarket/test_polymarket_trader.py"
     ],
     "polymarket/order_manager.py": [
-      "tests/test_bankroll_tiers.py",
-      "tests/test_execution_risk_controls.py",
-      "tests/test_exit_agent.py",
-      "tests/test_paper_mode.py",
-      "tests/test_stale_feed_kill_switch.py"
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/polymarket/test_bankroll_tiers.py",
+      "tests/polymarket/test_exit_agent.py",
+      "tests/polymarket/test_stale_feed_kill_switch.py"
     ],
     "polymarket/position_manager.py": [
-      "tests/test_position_manager.py"
+      "tests/polymarket/test_position_manager.py"
     ],
     "polymarket/position_sizing.py": [
-      "tests/test_bankroll_tiers.py",
-      "tests/test_delta_engine.py",
-      "tests/test_trade_frequency.py"
+      "tests/polymarket/test_bankroll_tiers.py",
+      "tests/polymarket/test_delta_engine.py",
+      "tests/polymarket/test_trade_frequency.py"
     ],
     "polymarket/probability_model.py": [
-      "tests/test_prob_model_observability_v1.py",
-      "tests/test_probability_model.py"
+      "tests/integration/test_prob_model_observability_v1.py",
+      "tests/polymarket/test_probability_model.py"
     ],
     "polymarket/regime_diagnostics.py": [
-      "tests/test_regime_diagnostics.py"
+      "tests/polymarket/test_regime_diagnostics.py"
     ],
     "polymarket/risk_modes.py": [
-      "tests/test_execution_risk_controls.py",
-      "tests/test_execution_timestamp_phase1.py",
-      "tests/test_execution_timestamp_phase2.py",
-      "tests/test_execution_timestamp_phase3.py",
-      "tests/test_execution_timestamp_phase6.py",
-      "tests/test_no_entry_analyzer.py",
-      "tests/test_outcome_truth_patch.py",
-      "tests/test_quote_age_phase5.py",
-      "tests/test_quote_lineage_phase4.py",
-      "tests/test_risk_modes.py"
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/integration/test_execution_timestamp_phase1.py",
+      "tests/integration/test_execution_timestamp_phase2.py",
+      "tests/integration/test_execution_timestamp_phase3.py",
+      "tests/integration/test_execution_timestamp_phase6.py",
+      "tests/integration/test_quote_age_phase5.py",
+      "tests/integration/test_quote_lineage_phase4.py",
+      "tests/polymarket/test_risk_modes.py",
+      "tests/tools/test_no_entry_analyzer.py",
+      "tests/tools/test_outcome_truth_patch.py"
     ],
     "polymarket/shadow_policy.py": [
-      "tests/test_shadow_policy.py"
+      "tests/polymarket/test_shadow_policy.py"
     ],
     "polymarket/signal.py": [
-      "tests/test_execution_risk_controls.py",
-      "tests/test_signal_identity.py",
-      "tests/test_stale_feed_kill_switch.py"
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/polymarket/test_signal_identity.py",
+      "tests/polymarket/test_stale_feed_kill_switch.py"
     ],
     "polymarket/size_sharp_engine.py": [
-      "tests/test_size_sharp_engine.py"
+      "tests/polymarket/test_size_sharp_engine.py"
     ],
     "polymarket/trade_frequency.py": [
-      "tests/test_trade_frequency.py"
+      "tests/polymarket/test_trade_frequency.py"
     ],
     "polymarket/trader.py": [
-      "tests/test_bankroll_rank_engine.py",
-      "tests/test_candidate_instance_shadow_propagation.py",
-      "tests/test_delta_shadow.py",
-      "tests/test_empty_orderbook_fail_soft.py",
-      "tests/test_entry_attribution_snapshot.py",
-      "tests/test_entry_budget_consumption_probe.py",
-      "tests/test_entry_model_truth_envelope_v1.py",
-      "tests/test_executable_state_persistence_probe.py",
-      "tests/test_execution_risk_controls.py",
-      "tests/test_execution_timestamp_phase1.py",
-      "tests/test_execution_timestamp_phase2.py",
-      "tests/test_execution_timestamp_phase3.py",
-      "tests/test_execution_timestamp_phase6.py",
-      "tests/test_exit_agent.py",
-      "tests/test_hybrid_v1_observability.py",
-      "tests/test_latency_diagnostics.py",
-      "tests/test_lifecycle_early_snapshot.py",
-      "tests/test_lifecycle_observability_completion.py",
-      "tests/test_liquidity_depth_observability.py",
-      "tests/test_live_credential_and_allowance_readiness.py",
-      "tests/test_live_reconciliation_timer.py",
-      "tests/test_live_telegram_visibility.py",
-      "tests/test_market_availability_engine.py",
-      "tests/test_market_readiness_timing.py",
-      "tests/test_micro_live_safety_controls.py",
-      "tests/test_no_entry_analyzer.py",
-      "tests/test_no_entry_root_cause_classifier.py",
-      "tests/test_option_d_shadow.py",
-      "tests/test_orderbook_handoff_diagnostics.py",
-      "tests/test_orderbook_lineage_probe_v1.py",
-      "tests/test_outcome_truth_patch.py",
-      "tests/test_paper_mode.py",
-      "tests/test_path_truth_checkpoints.py",
-      "tests/test_polymarket_trader.py",
-      "tests/test_position_reconciliation.py",
-      "tests/test_preload_next_market.py",
-      "tests/test_prob_model_observability_v1.py",
-      "tests/test_proxy_allowance_semantics.py",
-      "tests/test_quote_age_phase5.py",
-      "tests/test_quote_lineage_phase4.py",
-      "tests/test_record_quant_detail_ticker_duplication.py",
-      "tests/test_runtime_shutdown.py",
-      "tests/test_schema_slimming_stage1.py",
-      "tests/test_semantic_c_shadow_observability_report.py",
-      "tests/test_session_runtime_evaluator.py",
-      "tests/test_shadow_filters.py",
-      "tests/test_shadow_policy.py",
-      "tests/test_signal_identity_propagation.py",
-      "tests/test_size_sharp_engine.py",
-      "tests/test_stale_feed_kill_switch.py",
-      "tests/test_stop_loss_shadow.py",
-      "tests/test_telemetry_backfill.py",
-      "tests/test_trade_open_model_visibility_serialization.py",
-      "tests/test_verify_mode.py",
-      "tests/test_zero_size_risk_floor_probe.py"
+      "tests/integration/test_delta_shadow.py",
+      "tests/integration/test_entry_attribution_snapshot.py",
+      "tests/integration/test_entry_budget_consumption_probe.py",
+      "tests/integration/test_entry_model_truth_envelope_v1.py",
+      "tests/integration/test_executable_state_persistence_probe.py",
+      "tests/integration/test_execution_risk_controls.py",
+      "tests/integration/test_execution_timestamp_phase1.py",
+      "tests/integration/test_execution_timestamp_phase2.py",
+      "tests/integration/test_execution_timestamp_phase3.py",
+      "tests/integration/test_execution_timestamp_phase6.py",
+      "tests/integration/test_hybrid_v1_observability.py",
+      "tests/integration/test_latency_diagnostics.py",
+      "tests/integration/test_lifecycle_early_snapshot.py",
+      "tests/integration/test_lifecycle_observability_completion.py",
+      "tests/integration/test_liquidity_depth_observability.py",
+      "tests/integration/test_market_readiness_timing.py",
+      "tests/integration/test_option_d_shadow.py",
+      "tests/integration/test_orderbook_handoff_diagnostics.py",
+      "tests/integration/test_orderbook_lineage_probe_v1.py",
+      "tests/integration/test_path_truth_checkpoints.py",
+      "tests/integration/test_prob_model_observability_v1.py",
+      "tests/integration/test_quote_age_phase5.py",
+      "tests/integration/test_quote_lineage_phase4.py",
+      "tests/integration/test_record_quant_detail_ticker_duplication.py",
+      "tests/integration/test_shadow_filters.py",
+      "tests/integration/test_stop_loss_shadow.py",
+      "tests/observability/test_candidate_instance_shadow_propagation.py",
+      "tests/observability/test_telemetry_backfill.py",
+      "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_zero_size_risk_floor_probe.py",
+      "tests/polymarket/test_bankroll_rank_engine.py",
+      "tests/polymarket/test_empty_orderbook_fail_soft.py",
+      "tests/polymarket/test_exit_agent.py",
+      "tests/polymarket/test_live_credential_and_allowance_readiness.py",
+      "tests/polymarket/test_live_reconciliation_timer.py",
+      "tests/polymarket/test_live_telegram_visibility.py",
+      "tests/polymarket/test_market_availability_engine.py",
+      "tests/polymarket/test_micro_live_safety_controls.py",
+      "tests/polymarket/test_polymarket_trader.py",
+      "tests/polymarket/test_position_reconciliation.py",
+      "tests/polymarket/test_preload_next_market.py",
+      "tests/polymarket/test_proxy_allowance_semantics.py",
+      "tests/polymarket/test_shadow_policy.py",
+      "tests/polymarket/test_signal_identity_propagation.py",
+      "tests/polymarket/test_size_sharp_engine.py",
+      "tests/polymarket/test_stale_feed_kill_switch.py",
+      "tests/polymarket/test_verify_mode.py",
+      "tests/replay/test_semantic_c_shadow_observability_report.py",
+      "tests/tools/test_no_entry_analyzer.py",
+      "tests/tools/test_no_entry_root_cause_classifier.py",
+      "tests/tools/test_outcome_truth_patch.py",
+      "tests/tools/test_session_runtime_evaluator.py"
     ],
     "polymarket/trend_runner.py": [
-      "tests/test_trend_runner.py"
+      "tests/polymarket/test_trend_runner.py"
     ],
     "tools/airos/atomic_batch_executor.py": [
-      "tests/test_airos_atomic_batch_executor.py"
+      "tests/airos/test_airos_atomic_batch_executor.py"
     ],
     "tools/airos/batch_generator.py": [
-      "tests/test_airos_batch_generator.py"
+      "tests/airos/test_airos_batch_generator.py"
     ],
     "tools/airos/dependency_graph_builder.py": [
-      "tests/test_airos_dependency_graph_builder.py"
+      "tests/airos/test_airos_dependency_graph_builder.py"
     ],
     "tools/airos/migration_analyzer.py": [
-      "tests/test_airos_migration_analyzer.py"
+      "tests/airos/test_airos_migration_analyzer.py"
     ],
     "tools/airos/repository_index_generator.py": [
-      "tests/test_airos_repository_index_generator.py"
+      "tests/airos/test_airos_repository_index_generator.py"
     ],
     "tools/airos/repository_navigator.py": [
-      "tests/test_airos_repository_navigator.py"
+      "tests/airos/test_airos_repository_navigator.py"
     ],
     "tools/audit/_drift_audit.py": [
-      "tests/test_drift_audit.py"
+      "tests/observability/test_drift_audit.py"
     ],
     "tools/audit/ev_field_coverage_audit.py": [
-      "tests/test_ev_field_coverage_audit.py"
+      "tests/tools/test_ev_field_coverage_audit.py"
     ],
     "tools/backtest_engine_v2/comparison.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/engine.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/equity.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/exporter.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/metrics.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/policy.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/registry.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/backtest_engine_v2/scenario.py": [
-      "tests/test_backtest_engine_v2.py"
+      "tests/replay/test_backtest_engine_v2.py"
     ],
     "tools/canonical/canonical_regime_export.py": [
-      "tests/test_canonical_regime_export.py"
+      "tests/replay/test_canonical_regime_export.py"
     ],
     "tools/canonical/canonical_trade_table_v1.py": [
-      "tests/test_canonical_trade_table_v1.py"
-    ],
-    "tools/execution_paper_runtime.py": [
-      "tests/test_execution_paper_runtime.py"
+      "tests/replay/test_canonical_trade_table_v1.py"
     ],
     "tools/flaos/session_schema.py": [
-      "tests/test_flaos_runtime_session.py"
+      "tests/tools/test_flaos_runtime_session.py"
     ],
     "tools/outcome_truth/free_outcome_truth_provisional.py": [
-      "tests/test_free_outcome_truth_provisional.py"
+      "tests/tools/test_free_outcome_truth_provisional.py"
     ],
     "tools/outcome_truth/free_outcome_truth_provisional_join.py": [
-      "tests/test_free_outcome_truth_provisional_join.py"
+      "tests/tools/test_free_outcome_truth_provisional_join.py"
     ],
     "tools/outcome_truth/free_outcome_truth_provisional_readiness.py": [
-      "tests/test_free_outcome_truth_provisional_readiness.py"
+      "tests/tools/test_free_outcome_truth_provisional_readiness.py"
     ],
     "tools/outcome_truth/official_resolution_acquire_pilot.py": [
-      "tests/test_official_resolution_acquire_pilot.py"
+      "tests/tools/test_official_resolution_acquire_pilot.py"
     ],
     "tools/outcome_truth/official_resolution_outcome_join.py": [
-      "tests/test_official_resolution_outcome_join.py",
-      "tests/test_outcome_truth_pipeline_integration.py"
+      "tests/tools/test_official_resolution_outcome_join.py",
+      "tests/tools/test_outcome_truth_pipeline_integration.py"
     ],
     "tools/outcome_truth/official_resolution_rpc_client.py": [
-      "tests/test_official_resolution_full_history_runner.py",
-      "tests/test_official_resolution_rpc_client.py"
+      "tests/tools/test_official_resolution_full_history_runner.py",
+      "tests/tools/test_official_resolution_rpc_client.py"
     ],
     "tools/outcome_truth/outcome_truth_graduation.py": [
-      "tests/test_outcome_truth_graduation.py",
-      "tests/test_outcome_truth_pipeline_integration.py"
+      "tests/tools/test_outcome_truth_graduation.py",
+      "tests/tools/test_outcome_truth_pipeline_integration.py"
     ],
     "tools/outcome_truth/outcome_truth_population_manifest.py": [
-      "tests/test_outcome_truth_pipeline_integration.py",
-      "tests/test_outcome_truth_population_manifest.py"
+      "tests/tools/test_outcome_truth_pipeline_integration.py",
+      "tests/tools/test_outcome_truth_population_manifest.py"
     ],
     "tools/outcome_truth/outcome_truth_streaming_scan.py": [
-      "tests/test_outcome_truth_streaming_scan.py"
+      "tests/tools/test_outcome_truth_streaming_scan.py"
     ],
     "tools/probes/decision_cycle_timing_probe.py": [
-      "tests/test_decision_cycle_timing_probe.py"
+      "tests/other/test_decision_cycle_timing_probe.py"
     ],
     "tools/probes/entry_budget_consumption_probe.py": [
-      "tests/test_entry_budget_consumption_probe.py"
+      "tests/integration/test_entry_budget_consumption_probe.py"
     ],
     "tools/probes/epoch_boundary_alignment_probe.py": [
-      "tests/test_epoch_boundary_alignment_probe.py"
+      "tests/integration/test_epoch_boundary_alignment_probe.py"
     ],
     "tools/probes/event_driven_admission_simulation.py": [
-      "tests/test_event_driven_admission_simulation.py"
+      "tests/integration/test_event_driven_admission_simulation.py"
     ],
     "tools/probes/event_driven_fair_value_simulation.py": [
-      "tests/test_event_driven_fair_value_simulation.py"
+      "tests/integration/test_event_driven_fair_value_simulation.py"
     ],
     "tools/probes/executable_state_persistence_probe.py": [
-      "tests/test_executable_state_persistence_probe.py"
+      "tests/integration/test_executable_state_persistence_probe.py"
     ],
     "tools/probes/lifecycle_latency_report.py": [
-      "tests/test_lifecycle_latency_report.py"
+      "tests/integration/test_lifecycle_latency_report.py"
     ],
     "tools/probes/lifecycle_timing_report.py": [
-      "tests/test_lifecycle_timing_report.py"
+      "tests/integration/test_lifecycle_timing_report.py"
     ],
     "tools/probes/market_readiness_admission_probe.py": [
-      "tests/test_market_readiness_admission_probe.py"
+      "tests/integration/test_market_readiness_admission_probe.py"
     ],
     "tools/probes/probability_semantics_calibration_probe.py": [
-      "tests/test_probability_semantics_calibration_probe.py"
+      "tests/other/test_probability_semantics_calibration_probe.py"
     ],
     "tools/probes/zero_size_risk_floor_probe.py": [
-      "tests/test_zero_size_risk_floor_probe.py"
+      "tests/observability/test_zero_size_risk_floor_probe.py"
     ],
     "tools/replay/commitment_regime_replay.py": [
-      "tests/test_commitment_regime_replay.py"
+      "tests/replay/test_commitment_regime_replay.py"
     ],
     "tools/replay/convergence_regime_classification_replay.py": [
-      "tests/test_convergence_regime_classification_replay.py"
+      "tests/replay/test_convergence_regime_classification_replay.py"
     ],
     "tools/replay/exit_convergence_intelligence_replay.py": [
-      "tests/test_exit_convergence_intelligence_replay.py"
+      "tests/replay/test_exit_convergence_intelligence_replay.py"
     ],
     "tools/replay/lifecycle_profit_management_replay.py": [
-      "tests/test_lifecycle_profit_management_replay.py"
+      "tests/replay/test_lifecycle_profit_management_replay.py"
     ],
     "tools/replay/lifecycle_truth_backfill.py": [
-      "tests/test_lifecycle_truth_backfill.py"
+      "tests/tools/test_lifecycle_truth_backfill.py"
     ],
     "tools/replay/multi_session_runner.py": [
-      "tests/test_multi_session_runner.py"
+      "tests/tools/test_multi_session_runner.py"
     ],
     "tools/replay/official_resolution_full_history_runner.py": [
-      "tests/test_official_resolution_full_history_runner.py",
-      "tests/test_outcome_truth_pipeline_integration.py"
-    ],
-    "tools/replay/runtime_event_replay.py": [
-      "tests/test_runtime_event_stream.py"
+      "tests/tools/test_official_resolution_full_history_runner.py",
+      "tests/tools/test_outcome_truth_pipeline_integration.py"
     ],
     "tools/replay/stabilization_survival_replay.py": [
-      "tests/test_stabilization_survival_replay.py"
+      "tests/replay/test_stabilization_survival_replay.py"
     ],
     "tools/replay_analyzer.py": [
-      "tests/test_no_entry_analyzer.py",
-      "tests/test_replay_analyzer.py"
+      "tests/replay/test_replay_analyzer.py",
+      "tests/tools/test_no_entry_analyzer.py"
     ],
     "tools/research/no_entry_analyzer.py": [
-      "tests/test_no_entry_analyzer.py"
+      "tests/tools/test_no_entry_analyzer.py"
     ],
     "tools/research/no_entry_root_cause_report.py": [
-      "tests/test_no_entry_root_cause_classifier.py"
+      "tests/tools/test_no_entry_root_cause_classifier.py"
     ],
     "tools/research/quant_data_quality.py": [
-      "tests/test_no_entry_analyzer.py",
-      "tests/test_quant_data_quality.py"
+      "tests/tools/test_no_entry_analyzer.py",
+      "tests/tools/test_quant_data_quality.py"
     ],
     "tools/research/quant_intelligence_engine.py": [
-      "tests/test_quant_intelligence_engine.py"
+      "tests/integration/test_quant_intelligence_engine.py"
     ],
     "tools/research/research_gap_analyzer.py": [
-      "tests/test_research_gap_analyzer.py"
+      "tests/tools/test_research_gap_analyzer.py"
     ],
     "tools/research/research_memory_writer.py": [
-      "tests/test_research_memory_writer.py"
+      "tests/tools/test_research_memory_writer.py"
     ],
     "tools/research/research_state_writer.py": [
-      "tests/test_research_state_writer.py"
+      "tests/tools/test_research_state_writer.py"
     ],
     "tools/shadow/cross_run_ev_blindness.py": [
-      "tests/test_cross_run_ev_blindness.py"
+      "tests/replay/test_cross_run_ev_blindness.py"
     ],
     "tools/shadow/cross_run_lifecycle_truth.py": [
-      "tests/test_cross_run_lifecycle_truth.py"
+      "tests/tools/test_cross_run_lifecycle_truth.py"
     ],
     "tools/shadow/semantic_c_bounded_reload_replay.py": [
-      "tests/test_semantic_c_bounded_reload_replay.py"
+      "tests/replay/test_semantic_c_bounded_reload_replay.py"
     ],
     "tools/shadow/semantic_c_inventory_continuity_replay.py": [
-      "tests/test_semantic_c_inventory_continuity_replay.py"
+      "tests/replay/test_semantic_c_inventory_continuity_replay.py"
     ],
     "tools/shadow/semantic_c_shadow_fill_replay.py": [
-      "tests/test_semantic_c_shadow_fill_replay.py"
+      "tests/replay/test_semantic_c_shadow_fill_replay.py"
     ],
     "tools/shadow/semantic_c_shadow_observability_report.py": [
-      "tests/test_semantic_c_shadow_observability_report.py"
+      "tests/replay/test_semantic_c_shadow_observability_report.py"
     ],
     "tools/shadow/semantic_c_shadow_pnl_truth.py": [
-      "tests/test_semantic_c_shadow_pnl_truth.py"
+      "tests/replay/test_semantic_c_shadow_pnl_truth.py"
     ],
     "tools/shadow/shadow_filter_evaluator.py": [
-      "tests/test_shadow_filter_evaluator.py"
+      "tests/replay/test_shadow_filter_evaluator.py"
     ],
     "tools/unknown/candidate_continuity.py": [
-      "tests/test_candidate_continuity.py"
+      "tests/tools/test_candidate_continuity.py"
     ],
     "tools/unknown/candidate_path_observability.py": [
-      "tests/test_candidate_path_observability.py"
+      "tests/tools/test_candidate_path_observability.py"
     ],
     "tools/unknown/decision_log_slim_index.py": [
-      "tests/test_decision_log_slim_index.py"
+      "tests/tools/test_decision_log_slim_index.py"
     ],
     "tools/unknown/discovery_harness_validation.py": [
-      "tests/test_discovery_harness_validation.py"
+      "tests/tools/test_discovery_harness_validation.py"
     ],
     "tools/unknown/edge_inventory_report.py": [
-      "tests/test_edge_inventory_report.py"
+      "tests/tools/test_edge_inventory_report.py"
     ],
     "tools/unknown/eth_yes_fc_os_command_center.py": [
-      "tests/test_eth_yes_fc_os_command_center.py"
+      "tests/tools/test_eth_yes_fc_os_command_center.py"
     ],
     "tools/unknown/ev_field_coverage.py": [
-      "tests/test_ev_field_coverage.py"
+      "tests/tools/test_ev_field_coverage.py"
     ],
     "tools/unknown/executable_truth_overlay.py": [
-      "tests/test_executable_truth_overlay.py"
+      "tests/tools/test_executable_truth_overlay.py"
     ],
     "tools/unknown/lifecycle_truth_tables.py": [
-      "tests/test_lifecycle_truth_tables.py"
+      "tests/tools/test_lifecycle_truth_tables.py"
     ],
     "tools/unknown/phase_b_daily_evidence_collector.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
+      "tests/tools/test_phase_b_daily_evidence_collector.py"
     ],
     "tools/unknown/phase_b_daily_report.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
+      "tests/tools/test_phase_b_daily_evidence_collector.py"
     ],
     "tools/unknown/phase_b_run_daily_pipeline.py": [
-      "tests/test_phase_b_run_daily_pipeline.py"
+      "tests/tools/test_phase_b_run_daily_pipeline.py"
     ],
     "tools/unknown/phase_b_snapshot_archiver.py": [
-      "tests/test_phase_b_daily_evidence_collector.py"
+      "tests/tools/test_phase_b_daily_evidence_collector.py"
     ],
     "tools/unknown/phase_b_weekly_review_engine.py": [
-      "tests/test_phase_b_weekly_review_engine.py"
+      "tests/tools/test_phase_b_weekly_review_engine.py"
     ],
     "utils/no_entry_root_cause_classifier.py": [
-      "tests/test_no_entry_root_cause_classifier.py"
+      "tests/tools/test_no_entry_root_cause_classifier.py"
     ],
     "utils/position_tracker.py": [
-      "tests/test_position_tracker.py"
+      "tests/polymarket/test_position_tracker.py"
     ],
     "utils/quant_event_logger.py": [
-      "tests/test_quant_event_logger.py"
-    ],
-    "utils/runtime_event_stream.py": [
-      "tests/test_runtime_event_stream.py"
-    ],
-    "utils/runtime_ownership.py": [
-      "tests/test_runtime_ownership.py"
+      "tests/polymarket/test_quant_event_logger.py"
     ],
     "utils/telegram_alerts.py": [
-      "tests/test_telegram_alerts.py"
+      "tests/polymarket/test_telegram_alerts.py"
     ]
   },
   "test_to_source": {
-    "tests/test_airos_atomic_batch_executor.py": [
+    "tests/airos/test_airos_atomic_batch_executor.py": [
       "tools/airos/atomic_batch_executor.py"
     ],
-    "tests/test_airos_batch_generator.py": [
+    "tests/airos/test_airos_batch_generator.py": [
       "tools/airos/batch_generator.py"
     ],
-    "tests/test_airos_dependency_graph_builder.py": [
+    "tests/airos/test_airos_dependency_graph_builder.py": [
       "tools/airos/dependency_graph_builder.py"
     ],
-    "tests/test_airos_migration_analyzer.py": [
+    "tests/airos/test_airos_migration_analyzer.py": [
       "tools/airos/migration_analyzer.py"
     ],
-    "tests/test_airos_repository_index_generator.py": [
+    "tests/airos/test_airos_repository_index_generator.py": [
       "tools/airos/repository_index_generator.py"
     ],
-    "tests/test_airos_repository_navigator.py": [
+    "tests/airos/test_airos_repository_navigator.py": [
       "tools/airos/repository_navigator.py"
     ],
-    "tests/test_arbitrage_executor.py": [
+    "tests/integration/test_delta_shadow.py": [
+      "polymarket/delta_engine.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_entry_attribution_snapshot.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_entry_budget_consumption_probe.py": [
+      "polymarket/trader.py",
+      "tools/probes/entry_budget_consumption_probe.py"
+    ],
+    "tests/integration/test_entry_model_truth_envelope_v1.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_epoch_boundary_alignment_probe.py": [
+      "tools/probes/epoch_boundary_alignment_probe.py"
+    ],
+    "tests/integration/test_event_driven_admission_simulation.py": [
+      "tools/probes/event_driven_admission_simulation.py"
+    ],
+    "tests/integration/test_event_driven_fair_value_simulation.py": [
+      "tools/probes/event_driven_fair_value_simulation.py"
+    ],
+    "tests/integration/test_executable_state_persistence_probe.py": [
+      "polymarket/trader.py",
+      "tools/probes/executable_state_persistence_probe.py"
+    ],
+    "tests/integration/test_execution_risk_controls.py": [
+      "polymarket/bankroll_tiers.py",
+      "polymarket/client.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/order_intent.py",
+      "polymarket/order_manager.py",
+      "polymarket/risk_modes.py",
+      "polymarket/signal.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_execution_timestamp_phase1.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/risk_modes.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_execution_timestamp_phase2.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/risk_modes.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_execution_timestamp_phase3.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/risk_modes.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_execution_timestamp_phase6.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/risk_modes.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_hybrid_v1_observability.py": [
+      "polymarket/gamma_fetcher.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_latency_diagnostics.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_lifecycle_early_snapshot.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_lifecycle_latency_report.py": [
+      "tools/probes/lifecycle_latency_report.py"
+    ],
+    "tests/integration/test_lifecycle_observability_completion.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_lifecycle_timing_report.py": [
+      "tools/probes/lifecycle_timing_report.py"
+    ],
+    "tests/integration/test_liquidity_depth_observability.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_market_readiness_admission_probe.py": [
+      "tools/probes/market_readiness_admission_probe.py"
+    ],
+    "tests/integration/test_market_readiness_timing.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_option_d_shadow.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_orderbook_handoff_diagnostics.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_orderbook_lineage_probe_v1.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_path_truth_checkpoints.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_prob_model_observability_v1.py": [
+      "polymarket/gamma_fetcher.py",
+      "polymarket/probability_model.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_quant_intelligence_engine.py": [
+      "tools/research/quant_intelligence_engine.py"
+    ],
+    "tests/integration/test_quote_age_phase5.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/risk_modes.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_quote_lineage_phase4.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/risk_modes.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_record_quant_detail_ticker_duplication.py": [
+      "polymarket/gamma_fetcher.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_shadow_filters.py": [
+      "polymarket/client.py",
+      "polymarket/delta_engine.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/observability/shadow_telemetry.py",
+      "polymarket/opportunity_scanner.py",
+      "polymarket/trader.py"
+    ],
+    "tests/integration/test_stop_loss_shadow.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_candidate_instance_shadow_propagation.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_drift_audit.py": [
+      "tools/audit/_drift_audit.py"
+    ],
+    "tests/observability/test_telemetry_backfill.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trade_open_model_visibility_serialization.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_zero_size_risk_floor_probe.py": [
+      "polymarket/trader.py",
+      "tools/probes/zero_size_risk_floor_probe.py"
+    ],
+    "tests/other/test_candidate_identity.py": [
+      "polymarket/delta_engine.py",
+      "polymarket/expected_value.py",
+      "polymarket/opportunity_scanner.py"
+    ],
+    "tests/other/test_dashboard_api.py": [
+      "api/dashboard_api.py"
+    ],
+    "tests/other/test_decision_cycle_timing_probe.py": [
+      "tools/probes/decision_cycle_timing_probe.py"
+    ],
+    "tests/other/test_offline_quant_report_dashboard.py": [
+      "dashboard/offline_quant_report_dashboard.py"
+    ],
+    "tests/other/test_probability_semantics_calibration_probe.py": [
+      "tools/probes/probability_semantics_calibration_probe.py"
+    ],
+    "tests/polymarket/test_arbitrage_executor.py": [
       "polymarket/arbitrage.py",
       "polymarket/arbitrage_executor.py",
       "polymarket/client.py"
     ],
-    "tests/test_backtest_engine_v2.py": [
+    "tests/polymarket/test_bankroll_rank_engine.py": [
+      "polymarket/bankroll_rank_engine.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_bankroll_tiers.py": [
+      "polymarket/bankroll_tiers.py",
+      "polymarket/order_manager.py",
+      "polymarket/position_sizing.py"
+    ],
+    "tests/polymarket/test_delta_engine.py": [
+      "polymarket/delta_engine.py",
+      "polymarket/position_sizing.py"
+    ],
+    "tests/polymarket/test_empty_orderbook_fail_soft.py": [
+      "polymarket/gamma_fetcher.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_exit_agent.py": [
+      "polymarket/client.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/order_manager.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_expected_value.py": [
+      "polymarket/expected_value.py"
+    ],
+    "tests/polymarket/test_live_allowance_preflight.py": [
+      "polymarket/client.py"
+    ],
+    "tests/polymarket/test_live_credential_and_allowance_readiness.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_live_fill_loop.py": [
+      "polymarket/client.py"
+    ],
+    "tests/polymarket/test_live_reconciliation_timer.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_live_telegram_visibility.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_logging_resilience.py": [
+      "polymarket/observability/realtime_logger.py"
+    ],
+    "tests/polymarket/test_lucky_shot.py": [
+      "polymarket/bankroll_tiers.py",
+      "polymarket/lucky_shot.py"
+    ],
+    "tests/polymarket/test_market_availability_engine.py": [
+      "polymarket/market_availability_engine.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_micro_live_safety_controls.py": [
+      "polymarket/client.py",
+      "polymarket/order_intent.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_opportunity_scanner.py": [
+      "polymarket/delta_engine.py",
+      "polymarket/expected_value.py",
+      "polymarket/opportunity_scanner.py"
+    ],
+    "tests/polymarket/test_polymarket_client_v2.py": [
+      "polymarket/client.py"
+    ],
+    "tests/polymarket/test_polymarket_trader.py": [
+      "polymarket/arbitrage.py",
+      "polymarket/client.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/order_intent.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_position_manager.py": [
+      "polymarket/position_manager.py"
+    ],
+    "tests/polymarket/test_position_reconciliation.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_position_tracker.py": [
+      "utils/position_tracker.py"
+    ],
+    "tests/polymarket/test_preload_next_market.py": [
+      "polymarket/gamma_fetcher.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_probability_model.py": [
+      "polymarket/probability_model.py"
+    ],
+    "tests/polymarket/test_proxy_allowance_semantics.py": [
+      "polymarket/client.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_quant_event_logger.py": [
+      "utils/quant_event_logger.py"
+    ],
+    "tests/polymarket/test_realtime_feed.py": [
+      "crypto_scalper/realtime_feed.py"
+    ],
+    "tests/polymarket/test_regime_diagnostics.py": [
+      "polymarket/regime_diagnostics.py"
+    ],
+    "tests/polymarket/test_risk_modes.py": [
+      "polymarket/risk_modes.py"
+    ],
+    "tests/polymarket/test_shadow_policy.py": [
+      "polymarket/shadow_policy.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_signal_identity.py": [
+      "polymarket/signal.py"
+    ],
+    "tests/polymarket/test_signal_identity_propagation.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_size_sharp_engine.py": [
+      "polymarket/size_sharp_engine.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_stale_feed_kill_switch.py": [
+      "polymarket/client.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/order_manager.py",
+      "polymarket/signal.py",
+      "polymarket/trader.py"
+    ],
+    "tests/polymarket/test_telegram_alerts.py": [
+      "utils/telegram_alerts.py"
+    ],
+    "tests/polymarket/test_trade_frequency.py": [
+      "polymarket/bankroll_tiers.py",
+      "polymarket/position_sizing.py",
+      "polymarket/trade_frequency.py"
+    ],
+    "tests/polymarket/test_trend_runner.py": [
+      "polymarket/delta_engine.py",
+      "polymarket/trend_runner.py"
+    ],
+    "tests/polymarket/test_verify_mode.py": [
+      "polymarket/trader.py"
+    ],
+    "tests/replay/test_backtest_engine_v2.py": [
       "tools/backtest_engine_v2/comparison.py",
       "tools/backtest_engine_v2/engine.py",
       "tools/backtest_engine_v2/equity.py",
@@ -516,513 +813,172 @@
       "tools/backtest_engine_v2/registry.py",
       "tools/backtest_engine_v2/scenario.py"
     ],
-    "tests/test_bankroll_rank_engine.py": [
-      "polymarket/bankroll_rank_engine.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_bankroll_tiers.py": [
-      "polymarket/bankroll_tiers.py",
-      "polymarket/order_manager.py",
-      "polymarket/position_sizing.py"
-    ],
-    "tests/test_candidate_continuity.py": [
-      "tools/unknown/candidate_continuity.py"
-    ],
-    "tests/test_candidate_identity.py": [
-      "polymarket/delta_engine.py",
-      "polymarket/expected_value.py",
-      "polymarket/opportunity_scanner.py"
-    ],
-    "tests/test_candidate_instance_shadow_propagation.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_candidate_path_observability.py": [
-      "tools/unknown/candidate_path_observability.py"
-    ],
-    "tests/test_canonical_regime_export.py": [
+    "tests/replay/test_canonical_regime_export.py": [
       "tools/canonical/canonical_regime_export.py"
     ],
-    "tests/test_canonical_trade_table_v1.py": [
+    "tests/replay/test_canonical_trade_table_v1.py": [
       "tools/canonical/canonical_trade_table_v1.py"
     ],
-    "tests/test_commitment_regime_replay.py": [
+    "tests/replay/test_commitment_regime_replay.py": [
       "tools/replay/commitment_regime_replay.py"
     ],
-    "tests/test_convergence_regime_classification_replay.py": [
+    "tests/replay/test_convergence_regime_classification_replay.py": [
       "tools/replay/convergence_regime_classification_replay.py"
     ],
-    "tests/test_cross_run_ev_blindness.py": [
+    "tests/replay/test_cross_run_ev_blindness.py": [
       "tools/shadow/cross_run_ev_blindness.py"
     ],
-    "tests/test_cross_run_lifecycle_truth.py": [
-      "tools/shadow/cross_run_lifecycle_truth.py"
-    ],
-    "tests/test_dashboard_api.py": [
-      "api/dashboard_api.py"
-    ],
-    "tests/test_decision_cycle_timing_probe.py": [
-      "tools/probes/decision_cycle_timing_probe.py"
-    ],
-    "tests/test_decision_log_slim_index.py": [
-      "tools/unknown/decision_log_slim_index.py"
-    ],
-    "tests/test_delta_engine.py": [
-      "polymarket/delta_engine.py",
-      "polymarket/position_sizing.py"
-    ],
-    "tests/test_delta_shadow.py": [
-      "polymarket/delta_engine.py",
-      "polymarket/gamma_fetcher.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_discovery_harness_validation.py": [
-      "tools/unknown/discovery_harness_validation.py"
-    ],
-    "tests/test_drift_audit.py": [
-      "tools/audit/_drift_audit.py"
-    ],
-    "tests/test_edge_inventory_report.py": [
-      "tools/unknown/edge_inventory_report.py"
-    ],
-    "tests/test_empty_orderbook_fail_soft.py": [
-      "polymarket/gamma_fetcher.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_entry_attribution_snapshot.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_entry_budget_consumption_probe.py": [
-      "polymarket/trader.py",
-      "tools/probes/entry_budget_consumption_probe.py"
-    ],
-    "tests/test_entry_model_truth_envelope_v1.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_epoch_boundary_alignment_probe.py": [
-      "tools/probes/epoch_boundary_alignment_probe.py"
-    ],
-    "tests/test_eth_yes_fc_os_command_center.py": [
-      "tools/unknown/eth_yes_fc_os_command_center.py"
-    ],
-    "tests/test_ev_field_coverage.py": [
-      "tools/unknown/ev_field_coverage.py"
-    ],
-    "tests/test_ev_field_coverage_audit.py": [
-      "tools/audit/ev_field_coverage_audit.py"
-    ],
-    "tests/test_event_driven_admission_simulation.py": [
-      "tools/probes/event_driven_admission_simulation.py"
-    ],
-    "tests/test_event_driven_fair_value_simulation.py": [
-      "tools/probes/event_driven_fair_value_simulation.py"
-    ],
-    "tests/test_executable_state_persistence_probe.py": [
-      "polymarket/trader.py",
-      "tools/probes/executable_state_persistence_probe.py"
-    ],
-    "tests/test_executable_truth_overlay.py": [
-      "tools/unknown/executable_truth_overlay.py"
-    ],
-    "tests/test_execution_paper_runtime.py": [
-      "tools/execution_paper_runtime.py"
-    ],
-    "tests/test_execution_risk_controls.py": [
-      "polymarket/bankroll_tiers.py",
-      "polymarket/client.py",
-      "polymarket/gamma_fetcher.py",
-      "polymarket/order_intent.py",
-      "polymarket/order_manager.py",
-      "polymarket/risk_modes.py",
-      "polymarket/signal.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_execution_timestamp_phase1.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/risk_modes.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_execution_timestamp_phase2.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/risk_modes.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_execution_timestamp_phase3.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/risk_modes.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_execution_timestamp_phase6.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/risk_modes.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_exit_agent.py": [
-      "polymarket/client.py",
-      "polymarket/gamma_fetcher.py",
-      "polymarket/order_manager.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_exit_convergence_intelligence_replay.py": [
+    "tests/replay/test_exit_convergence_intelligence_replay.py": [
       "tools/replay/exit_convergence_intelligence_replay.py"
     ],
-    "tests/test_expected_value.py": [
-      "polymarket/expected_value.py"
-    ],
-    "tests/test_flaos_runtime_session.py": [
-      "tools/flaos/session_schema.py"
-    ],
-    "tests/test_free_outcome_truth_provisional.py": [
-      "tools/outcome_truth/free_outcome_truth_provisional.py"
-    ],
-    "tests/test_free_outcome_truth_provisional_join.py": [
-      "tools/outcome_truth/free_outcome_truth_provisional_join.py"
-    ],
-    "tests/test_free_outcome_truth_provisional_readiness.py": [
-      "tools/outcome_truth/free_outcome_truth_provisional_readiness.py"
-    ],
-    "tests/test_hybrid_v1_observability.py": [
-      "polymarket/gamma_fetcher.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_latency_diagnostics.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_lifecycle_early_snapshot.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_lifecycle_latency_report.py": [
-      "tools/probes/lifecycle_latency_report.py"
-    ],
-    "tests/test_lifecycle_observability_completion.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_lifecycle_profit_management_replay.py": [
+    "tests/replay/test_lifecycle_profit_management_replay.py": [
       "tools/replay/lifecycle_profit_management_replay.py"
     ],
-    "tests/test_lifecycle_timing_report.py": [
-      "tools/probes/lifecycle_timing_report.py"
+    "tests/replay/test_replay_analyzer.py": [
+      "tools/replay_analyzer.py"
     ],
-    "tests/test_lifecycle_truth_backfill.py": [
+    "tests/replay/test_semantic_c_bounded_reload_replay.py": [
+      "tools/shadow/semantic_c_bounded_reload_replay.py"
+    ],
+    "tests/replay/test_semantic_c_inventory_continuity_replay.py": [
+      "tools/shadow/semantic_c_inventory_continuity_replay.py"
+    ],
+    "tests/replay/test_semantic_c_shadow_fill_replay.py": [
+      "tools/shadow/semantic_c_shadow_fill_replay.py"
+    ],
+    "tests/replay/test_semantic_c_shadow_observability_report.py": [
+      "polymarket/trader.py",
+      "tools/shadow/semantic_c_shadow_observability_report.py"
+    ],
+    "tests/replay/test_semantic_c_shadow_pnl_truth.py": [
+      "tools/shadow/semantic_c_shadow_pnl_truth.py"
+    ],
+    "tests/replay/test_shadow_filter_evaluator.py": [
+      "tools/shadow/shadow_filter_evaluator.py"
+    ],
+    "tests/replay/test_stabilization_survival_replay.py": [
+      "tools/replay/stabilization_survival_replay.py"
+    ],
+    "tests/tools/test_candidate_continuity.py": [
+      "tools/unknown/candidate_continuity.py"
+    ],
+    "tests/tools/test_candidate_path_observability.py": [
+      "tools/unknown/candidate_path_observability.py"
+    ],
+    "tests/tools/test_cross_run_lifecycle_truth.py": [
+      "tools/shadow/cross_run_lifecycle_truth.py"
+    ],
+    "tests/tools/test_decision_log_slim_index.py": [
+      "tools/unknown/decision_log_slim_index.py"
+    ],
+    "tests/tools/test_discovery_harness_validation.py": [
+      "tools/unknown/discovery_harness_validation.py"
+    ],
+    "tests/tools/test_edge_inventory_report.py": [
+      "tools/unknown/edge_inventory_report.py"
+    ],
+    "tests/tools/test_eth_yes_fc_os_command_center.py": [
+      "tools/unknown/eth_yes_fc_os_command_center.py"
+    ],
+    "tests/tools/test_ev_field_coverage.py": [
+      "tools/unknown/ev_field_coverage.py"
+    ],
+    "tests/tools/test_ev_field_coverage_audit.py": [
+      "tools/audit/ev_field_coverage_audit.py"
+    ],
+    "tests/tools/test_executable_truth_overlay.py": [
+      "tools/unknown/executable_truth_overlay.py"
+    ],
+    "tests/tools/test_flaos_runtime_session.py": [
+      "tools/flaos/session_schema.py"
+    ],
+    "tests/tools/test_free_outcome_truth_provisional.py": [
+      "tools/outcome_truth/free_outcome_truth_provisional.py"
+    ],
+    "tests/tools/test_free_outcome_truth_provisional_join.py": [
+      "tools/outcome_truth/free_outcome_truth_provisional_join.py"
+    ],
+    "tests/tools/test_free_outcome_truth_provisional_readiness.py": [
+      "tools/outcome_truth/free_outcome_truth_provisional_readiness.py"
+    ],
+    "tests/tools/test_lifecycle_truth_backfill.py": [
       "tools/replay/lifecycle_truth_backfill.py"
     ],
-    "tests/test_lifecycle_truth_tables.py": [
+    "tests/tools/test_lifecycle_truth_tables.py": [
       "tools/unknown/lifecycle_truth_tables.py"
     ],
-    "tests/test_liquidity_depth_observability.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_live_allowance_preflight.py": [
-      "polymarket/client.py"
-    ],
-    "tests/test_live_credential_and_allowance_readiness.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_live_fill_loop.py": [
-      "polymarket/client.py"
-    ],
-    "tests/test_live_reconciliation_timer.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_live_telegram_visibility.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_logging_resilience.py": [
-      "polymarket/observability/realtime_logger.py"
-    ],
-    "tests/test_lucky_shot.py": [
-      "polymarket/bankroll_tiers.py",
-      "polymarket/lucky_shot.py"
-    ],
-    "tests/test_market_availability_engine.py": [
-      "polymarket/market_availability_engine.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_market_readiness_admission_probe.py": [
-      "tools/probes/market_readiness_admission_probe.py"
-    ],
-    "tests/test_market_readiness_timing.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_micro_live_safety_controls.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_multi_session_runner.py": [
+    "tests/tools/test_multi_session_runner.py": [
       "tools/replay/multi_session_runner.py"
     ],
-    "tests/test_no_entry_analyzer.py": [
+    "tests/tools/test_no_entry_analyzer.py": [
       "polymarket/risk_modes.py",
       "polymarket/trader.py",
       "tools/replay_analyzer.py",
       "tools/research/no_entry_analyzer.py",
       "tools/research/quant_data_quality.py"
     ],
-    "tests/test_no_entry_root_cause_classifier.py": [
+    "tests/tools/test_no_entry_root_cause_classifier.py": [
       "polymarket/trader.py",
       "tools/research/no_entry_root_cause_report.py",
       "utils/no_entry_root_cause_classifier.py"
     ],
-    "tests/test_official_resolution_acquire_pilot.py": [
+    "tests/tools/test_official_resolution_acquire_pilot.py": [
       "tools/outcome_truth/official_resolution_acquire_pilot.py"
     ],
-    "tests/test_official_resolution_full_history_runner.py": [
+    "tests/tools/test_official_resolution_full_history_runner.py": [
       "tools/outcome_truth/official_resolution_rpc_client.py",
       "tools/replay/official_resolution_full_history_runner.py"
     ],
-    "tests/test_official_resolution_outcome_join.py": [
+    "tests/tools/test_official_resolution_outcome_join.py": [
       "tools/outcome_truth/official_resolution_outcome_join.py"
     ],
-    "tests/test_official_resolution_rpc_client.py": [
+    "tests/tools/test_official_resolution_rpc_client.py": [
       "tools/outcome_truth/official_resolution_rpc_client.py"
     ],
-    "tests/test_offline_quant_report_dashboard.py": [
-      "dashboard/offline_quant_report_dashboard.py"
-    ],
-    "tests/test_opportunity_scanner.py": [
-      "polymarket/delta_engine.py",
-      "polymarket/expected_value.py",
-      "polymarket/opportunity_scanner.py"
-    ],
-    "tests/test_option_d_shadow.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_orderbook_handoff_diagnostics.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_orderbook_lineage_probe_v1.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_outcome_truth_graduation.py": [
+    "tests/tools/test_outcome_truth_graduation.py": [
       "tools/outcome_truth/outcome_truth_graduation.py"
     ],
-    "tests/test_outcome_truth_patch.py": [
+    "tests/tools/test_outcome_truth_patch.py": [
       "polymarket/risk_modes.py",
       "polymarket/trader.py"
     ],
-    "tests/test_outcome_truth_pipeline_integration.py": [
+    "tests/tools/test_outcome_truth_pipeline_integration.py": [
       "tools/outcome_truth/official_resolution_outcome_join.py",
       "tools/outcome_truth/outcome_truth_graduation.py",
       "tools/outcome_truth/outcome_truth_population_manifest.py",
       "tools/replay/official_resolution_full_history_runner.py"
     ],
-    "tests/test_outcome_truth_population_manifest.py": [
+    "tests/tools/test_outcome_truth_population_manifest.py": [
       "tools/outcome_truth/outcome_truth_population_manifest.py"
     ],
-    "tests/test_outcome_truth_streaming_scan.py": [
+    "tests/tools/test_outcome_truth_streaming_scan.py": [
       "tools/outcome_truth/outcome_truth_streaming_scan.py"
     ],
-    "tests/test_paper_mode.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/order_manager.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_path_truth_checkpoints.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_phase_b_daily_evidence_collector.py": [
+    "tests/tools/test_phase_b_daily_evidence_collector.py": [
       "tools/unknown/phase_b_daily_evidence_collector.py",
       "tools/unknown/phase_b_daily_report.py",
       "tools/unknown/phase_b_snapshot_archiver.py"
     ],
-    "tests/test_phase_b_run_daily_pipeline.py": [
+    "tests/tools/test_phase_b_run_daily_pipeline.py": [
       "tools/unknown/phase_b_run_daily_pipeline.py"
     ],
-    "tests/test_phase_b_weekly_review_engine.py": [
+    "tests/tools/test_phase_b_weekly_review_engine.py": [
       "tools/unknown/phase_b_weekly_review_engine.py"
     ],
-    "tests/test_polymarket_client_v2.py": [
-      "polymarket/client.py"
-    ],
-    "tests/test_polymarket_trader.py": [
-      "polymarket/arbitrage.py",
-      "polymarket/client.py",
-      "polymarket/gamma_fetcher.py",
-      "polymarket/order_intent.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_position_manager.py": [
-      "polymarket/position_manager.py"
-    ],
-    "tests/test_position_reconciliation.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_position_tracker.py": [
-      "utils/position_tracker.py"
-    ],
-    "tests/test_preload_next_market.py": [
-      "polymarket/gamma_fetcher.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_prob_model_observability_v1.py": [
-      "polymarket/gamma_fetcher.py",
-      "polymarket/probability_model.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_probability_model.py": [
-      "polymarket/probability_model.py"
-    ],
-    "tests/test_probability_semantics_calibration_probe.py": [
-      "tools/probes/probability_semantics_calibration_probe.py"
-    ],
-    "tests/test_proxy_allowance_semantics.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_quant_data_quality.py": [
+    "tests/tools/test_quant_data_quality.py": [
       "tools/research/quant_data_quality.py"
     ],
-    "tests/test_quant_event_logger.py": [
-      "utils/quant_event_logger.py"
-    ],
-    "tests/test_quant_intelligence_engine.py": [
-      "tools/research/quant_intelligence_engine.py"
-    ],
-    "tests/test_quote_age_phase5.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/risk_modes.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_quote_lineage_phase4.py": [
-      "polymarket/client.py",
-      "polymarket/order_intent.py",
-      "polymarket/risk_modes.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_realtime_feed.py": [
-      "crypto_scalper/realtime_feed.py"
-    ],
-    "tests/test_record_quant_detail_ticker_duplication.py": [
-      "polymarket/gamma_fetcher.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_regime_diagnostics.py": [
-      "polymarket/regime_diagnostics.py"
-    ],
-    "tests/test_replay_analyzer.py": [
-      "tools/replay_analyzer.py"
-    ],
-    "tests/test_research_gap_analyzer.py": [
+    "tests/tools/test_research_gap_analyzer.py": [
       "tools/research/research_gap_analyzer.py"
     ],
-    "tests/test_research_memory_writer.py": [
+    "tests/tools/test_research_memory_writer.py": [
       "tools/research/research_memory_writer.py"
     ],
-    "tests/test_research_state_writer.py": [
+    "tests/tools/test_research_state_writer.py": [
       "tools/research/research_state_writer.py"
     ],
-    "tests/test_risk_modes.py": [
-      "polymarket/risk_modes.py"
-    ],
-    "tests/test_runtime_event_stream.py": [
-      "tools/replay/runtime_event_replay.py",
-      "utils/runtime_event_stream.py"
-    ],
-    "tests/test_runtime_ownership.py": [
-      "utils/runtime_ownership.py"
-    ],
-    "tests/test_runtime_shutdown.py": [
-      "polymarket/oracle_price_feed.py",
+    "tests/tools/test_session_runtime_evaluator.py": [
       "polymarket/trader.py"
-    ],
-    "tests/test_schema_slimming_stage1.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_semantic_c_bounded_reload_replay.py": [
-      "tools/shadow/semantic_c_bounded_reload_replay.py"
-    ],
-    "tests/test_semantic_c_inventory_continuity_replay.py": [
-      "tools/shadow/semantic_c_inventory_continuity_replay.py"
-    ],
-    "tests/test_semantic_c_shadow_fill_replay.py": [
-      "tools/shadow/semantic_c_shadow_fill_replay.py"
-    ],
-    "tests/test_semantic_c_shadow_observability_report.py": [
-      "polymarket/trader.py",
-      "tools/shadow/semantic_c_shadow_observability_report.py"
-    ],
-    "tests/test_semantic_c_shadow_pnl_truth.py": [
-      "tools/shadow/semantic_c_shadow_pnl_truth.py"
-    ],
-    "tests/test_session_runtime_evaluator.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_shadow_filter_evaluator.py": [
-      "tools/shadow/shadow_filter_evaluator.py"
-    ],
-    "tests/test_shadow_filters.py": [
-      "polymarket/client.py",
-      "polymarket/delta_engine.py",
-      "polymarket/gamma_fetcher.py",
-      "polymarket/observability/shadow_telemetry.py",
-      "polymarket/opportunity_scanner.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_shadow_policy.py": [
-      "polymarket/shadow_policy.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_signal_identity.py": [
-      "polymarket/signal.py"
-    ],
-    "tests/test_signal_identity_propagation.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_size_sharp_engine.py": [
-      "polymarket/size_sharp_engine.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_stabilization_survival_replay.py": [
-      "tools/replay/stabilization_survival_replay.py"
-    ],
-    "tests/test_stale_feed_kill_switch.py": [
-      "polymarket/client.py",
-      "polymarket/gamma_fetcher.py",
-      "polymarket/order_manager.py",
-      "polymarket/signal.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_stop_loss_shadow.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_telegram_alerts.py": [
-      "utils/telegram_alerts.py"
-    ],
-    "tests/test_telemetry_backfill.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_trade_frequency.py": [
-      "polymarket/bankroll_tiers.py",
-      "polymarket/position_sizing.py",
-      "polymarket/trade_frequency.py"
-    ],
-    "tests/test_trade_open_model_visibility_serialization.py": [
-      "polymarket/client.py",
-      "polymarket/trader.py"
-    ],
-    "tests/test_trend_runner.py": [
-      "polymarket/delta_engine.py",
-      "polymarket/trend_runner.py"
-    ],
-    "tests/test_verify_mode.py": [
-      "polymarket/trader.py"
-    ],
-    "tests/test_zero_size_risk_floor_probe.py": [
-      "polymarket/trader.py",
-      "tools/probes/zero_size_risk_floor_probe.py"
     ]
   }
 }

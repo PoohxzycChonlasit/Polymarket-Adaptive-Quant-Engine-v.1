@@ -4,7 +4,7 @@ import json
 from io import StringIO
 from pathlib import Path
 
-from tools import operator_summary
+from tools.runtime import operator_summary
 
 
 def _summary() -> dict:

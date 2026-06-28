@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "tools"))
 
 from flaos.knowledge_graph import (
     KnowledgeGraph,
@@ -53,7 +53,7 @@ class TestGraphLoading:
 
     def test_no_polymarket_import(self):
         """Verify knowledge_graph.py does not import polymarket."""
-        src = (Path(__file__).resolve().parents[1] / "tools" / "flaos" / "knowledge_graph.py").read_text(encoding="utf-8")
+        src = (Path(__file__).resolve().parents[2] / "tools" / "flaos" / "knowledge_graph.py").read_text(encoding="utf-8")
         assert "import polymarket" not in src
         assert "from polymarket" not in src
 

@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-28T16:54:22.166433Z",
+  "generated_at_utc": "2026-06-28T17:06:44.300047Z",
   "major_domains": {
     "polymarket": {
       "description": "Runtime trading modules \u2014 execution loop, market data, models, signals",
@@ -46,7 +46,14 @@
     "research": 2,
     "scratch": 60,
     "scripts": 3,
-    "tests": 167,
+    "tests/airos": 6,
+    "tests/integration": 37,
+    "tests/observability": 6,
+    "tests/other": 5,
+    "tests/polymarket": 39,
+    "tests/replay": 17,
+    "tests/runtime": 9,
+    "tests/tools": 48,
     "tools": 2,
     "tools/airos": 7,
     "tools/audit": 7,
