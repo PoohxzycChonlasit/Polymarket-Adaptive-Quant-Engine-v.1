@@ -81,25 +81,22 @@
     {
       "priority": -4,
       "task_id": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 5,
       "description": "Implement Market Availability Engine as observability-only pre-scan guard. Wire into PolymarketTrader main loop. Fix bankroll_rank/capital_score schema.",
       "blocked_by": "MARKET_AVAILABILITY_ENGINE_DESIGN_001",
       "allowed_scope": [
-        "polymarket/market_availability_engine.py",
-        "polymarket/trader.py",
-        "utils/quant_event_logger.py",
-        "config/settings.py",
-        "tools/canonical_trade_context_builder.py",
-        "tests/",
+        "polymarket/observability/market_availability.py",
+        "tests/observability/",
         "docs/reports/"
       ],
       "outputs": [
-        "polymarket/market_availability_engine.py",
+        "polymarket/observability/market_availability.py",
+        "tests/observability/test_market_availability.py",
         "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md"
       ],
-      "notes": "Class 5 OBSERVABILITY. Revert _last_bankroll_rank to tier-string. Add _last_capital_score float. Fix canonical builder bankroll_rank→string, capital_score→float. Add log_market_availability_check to QuantEventLogger. 8 new tests."
+      "notes": "Observability-only scope (narrowed from stale queue entry). Created pure Tier-1 market_availability.py with 6 TypedDicts, 4 builders, 9 reason codes. 62 focused tests, 953 acceptance tests pass. No trader.py, no QuantEventLogger, no config changes."
     },
     {
       "priority": 0,

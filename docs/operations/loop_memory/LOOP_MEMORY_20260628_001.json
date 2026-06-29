@@ -2298,7 +2298,7 @@
       "test_suite_passed": true,
       "tests_added": 26,
       "tests_total": 727,
-      "repair_note": "test_golden_lifecycle_phase_computed: epoch_start offset fixed from -50 to -20 (50s since open > 35s threshold → ACTIVE not OPENING_SCAN)"
+      "repair_note": "test_golden_lifecycle_phase_computed: epoch_start offset fixed from -50 to -20 (50s since open > 35s threshold \u2192 ACTIVE not OPENING_SCAN)"
     },
     "acceptance_criteria": {
       "git_preflight_done": true,
@@ -2345,7 +2345,13 @@
       "richest_extraction_target": "phase2 lifecycle observability builders (~520 lines, 8 methods)",
       "top_pure_candidate": "_phase2_pre_model_gate_detail (97L, zero self.* reads or writes)",
       "deferred_cluster": "_phase2_mark_readiness (214L, self-mutates readiness store), _active_window_alignment_detail (1 self write)",
-      "do_not_touch_zones_confirmed": ["execution", "risk exits", "balance/wallet", "reconciliation", "coordinator"],
+      "do_not_touch_zones_confirmed": [
+        "execution",
+        "risk exits",
+        "balance/wallet",
+        "reconciliation",
+        "coordinator"
+      ],
       "next_batch_estimated_loc_reduction": 520
     },
     "acceptance_criteria": {
@@ -2514,7 +2520,9 @@
     "live_trading_enabled": false,
     "key_findings": {
       "root_hygiene_success": true,
-      "root_handoffs_moved": ["AI_HANDOFF_20260629_0621.md"],
+      "root_handoffs_moved": [
+        "AI_HANDOFF_20260629_0621.md"
+      ],
       "heatmap_created": true,
       "trader_py_lines": 11863,
       "trader_py_methods": 298
@@ -2954,11 +2962,11 @@
       "tier_1_functions": 9,
       "tier_3_functions": 1,
       "import_dependencies": "stdlib only (typing.Any)",
-      "naming_coherence": "PARTIAL — name accurate for 48% of LOC only",
+      "naming_coherence": "PARTIAL \u2014 name accurate for 48% of LOC only",
       "growth_since_creation": "91% (+320L in 3 phases)",
       "split_recommendation": "SPLIT",
-      "split_module_a": "trader_reconciliation_carry.py — 6 Phase-3F carry helpers (~255L)",
-      "split_module_b": "trader_trade_event_payload.py — 4 Phase-3H/3J/3K event builders (~345L)",
+      "split_module_a": "trader_reconciliation_carry.py \u2014 6 Phase-3F carry helpers (~255L)",
+      "split_module_b": "trader_trade_event_payload.py \u2014 4 Phase-3H/3J/3K event builders (~345L)",
       "schema_contract_recommendation": "ADD TypedDicts for TradeOpenedPayload, TradeClosedPayload, TradePositionMetadata",
       "golden_snapshot_recommendation": "ADD frozen JSON fixtures for build_trade_opened_payload and build_trade_closed_payload",
       "coverage_gaps": "No public-symbol gaps; _trade_open_context_value_available tested indirectly only; Phase-3F helpers have 1 test each (thin)"
@@ -3076,8 +3084,12 @@
     "repair_notes": "Fixed test_exception_returns_empty_dict: utc_timestamp=None does not raise, produces computed_at=None. Updated test to reflect actual behavior.",
     "evidence_grade": "A",
     "files_changed": 7,
-    "new_modules": ["polymarket/observability/contracts.py"],
-    "new_test_files": ["tests/observability/test_trade_payload_schema_contracts.py"],
+    "new_modules": [
+      "polymarket/observability/contracts.py"
+    ],
+    "new_test_files": [
+      "tests/observability/test_trade_payload_schema_contracts.py"
+    ],
     "typedicts_defined": 9,
     "annotations_updated": 8,
     "new_tests_added": 37,
@@ -3098,5 +3110,25 @@
     },
     "verdict": "PASS",
     "next_recommendation": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "LOOP_20260629_MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001",
+    "task_class": 5,
+    "scope": [
+      "polymarket/observability/market_availability.py",
+      "tests/observability/test_market_availability.py",
+      "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md"
+    ],
+    "verdict": "PASS",
+    "summary": "Implemented market availability observability layer. Created pure Tier-1 module with 6 TypedDicts (AvailabilityReason, AvailabilityScore, AvailabilitySnapshot, AvailabilitySummary, AvailabilityHealth, AvailabilityDiagnostics), 4 builder functions, and 9 reason codes (all reachable via evaluate_market_availability). UNKNOWN fires on crossed orderbook (bid > ask). Schema version market_availability_obs_v1 distinct from engine market_availability_v1. 62 focused tests including golden snapshots and precedence table. 953 acceptance tests pass (891 prior + 62 new).",
+    "modules_created": [
+      "polymarket/observability/market_availability.py"
+    ],
+    "tests_added": 62,
+    "acceptance_total": 953,
+    "safety_notes": "Observability-only. No trader.py, no QuantEventLogger, no config, no risk/sizing/execution changes.",
+    "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
   }
 ]

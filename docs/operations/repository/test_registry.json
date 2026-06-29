@@ -88,6 +88,9 @@
     "polymarket/observability/contracts.py": [
       "tests/observability/test_trade_payload_schema_contracts.py"
     ],
+    "polymarket/observability/market_availability.py": [
+      "tests/observability/test_market_availability.py"
+    ],
     "polymarket/observability/realtime_logger.py": [
       "tests/polymarket/test_logging_resilience.py"
     ],
@@ -672,6 +675,9 @@
     ],
     "tests/observability/test_drift_audit.py": [
       "tools/audit/_drift_audit.py"
+    ],
+    "tests/observability/test_market_availability.py": [
+      "polymarket/observability/market_availability.py"
     ],
     "tests/observability/test_telemetry_backfill.py": [
       "polymarket/trader.py"

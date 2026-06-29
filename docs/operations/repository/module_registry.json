@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T11:25:56.405591Z",
-  "module_count": 453,
+  "generated_at_utc": "2026-06-29T11:59:28.958817Z",
+  "module_count": 455,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -942,6 +942,24 @@
         "polymarket/observability/trader_reconciliation_carry.py",
         "polymarket/observability/trader_trade_event_payload.py",
         "tests/observability/test_trade_payload_schema_contracts.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/market_availability.py",
+      "module_name": "polymarket.observability.market_availability",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 636,
+      "blast_radius_score": 3,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "tests/observability/test_market_availability.py"
       ],
       "tests": [],
       "safe_move_status": "DO_NOT_MOVE",
@@ -3821,6 +3839,26 @@
       "reverse_importers": [],
       "tests": [
         "tools/audit/_drift_audit.py"
+      ],
+      "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tests/observability/test_market_availability.py",
+      "module_name": "tests.observability.test_market_availability",
+      "domain": "tests",
+      "package": "tests/observability",
+      "line_count": 532,
+      "blast_radius_score": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/market_availability.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "polymarket/observability/market_availability.py"
       ],
       "safe_move_status": "SAFE_ATOMIC",
       "recommended_target_folder": null

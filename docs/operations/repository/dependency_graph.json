@@ -1019,6 +1019,7 @@
     "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
     "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md": [],
+    "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md": [],
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
@@ -1670,6 +1671,7 @@
     "polymarket/models/quant_indicators.py": [],
     "polymarket/observability/__init__.py": [],
     "polymarket/observability/contracts.py": [],
+    "polymarket/observability/market_availability.py": [],
     "polymarket/observability/realtime_logger.py": [],
     "polymarket/observability/shadow_telemetry.py": [],
     "polymarket/observability/trader_decision_diagnostics.py": [
@@ -2315,6 +2317,9 @@
     ],
     "tests/observability/test_drift_audit.py": [
       "tools/audit/_drift_audit.py"
+    ],
+    "tests/observability/test_market_availability.py": [
+      "polymarket/observability/market_availability.py"
     ],
     "tests/observability/test_telemetry_backfill.py": [
       "config/settings.py",
@@ -2965,7 +2970,7 @@
     "web-dashboard/src/app/page.tsx": [],
     "web-dashboard/tsconfig.json": []
   },
-  "edge_count": 475,
+  "edge_count": 476,
   "edges": [
     [
       "polymarket/arbitrage.py",
@@ -3850,6 +3855,10 @@
     [
       "tests/observability/test_drift_audit.py",
       "tools/audit/_drift_audit.py"
+    ],
+    [
+      "tests/observability/test_market_availability.py",
+      "polymarket/observability/market_availability.py"
     ],
     [
       "tests/observability/test_telemetry_backfill.py",
@@ -5036,6 +5045,9 @@
     "tests/observability/test_drift_audit.py": [
       "tools/audit/_drift_audit.py"
     ],
+    "tests/observability/test_market_availability.py": [
+      "polymarket/observability/market_availability.py"
+    ],
     "tests/observability/test_telemetry_backfill.py": [
       "polymarket/trader.py"
     ],
@@ -5428,7 +5440,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T11:25:54.635882Z",
+  "generated_at_utc": "2026-06-29T11:59:22.021142Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -11544,6 +11556,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -15324,6 +15342,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "polymarket/observability/market_availability.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "polymarket/observability/realtime_logger.py": {
       "blast_radius_score": 3,
       "inbound_dependencies_count": 1,
@@ -17562,6 +17586,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 1
     },
+    "tests/observability/test_market_availability.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
     "tests/observability/test_telemetry_backfill.py": {
       "blast_radius_score": 4,
       "inbound_dependencies_count": 0,
@@ -19141,7 +19171,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2285,
+  "node_count": 2288,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -20162,6 +20192,7 @@
     "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
     "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md",
     "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md",
+    "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md",
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
@@ -20792,6 +20823,7 @@
     "polymarket/models/quant_indicators.py",
     "polymarket/observability/__init__.py",
     "polymarket/observability/contracts.py",
+    "polymarket/observability/market_availability.py",
     "polymarket/observability/realtime_logger.py",
     "polymarket/observability/shadow_telemetry.py",
     "polymarket/observability/trader_decision_diagnostics.py",
@@ -21165,6 +21197,7 @@
     "tests/integration/test_stop_loss_shadow.py",
     "tests/observability/test_candidate_instance_shadow_propagation.py",
     "tests/observability/test_drift_audit.py",
+    "tests/observability/test_market_availability.py",
     "tests/observability/test_telemetry_backfill.py",
     "tests/observability/test_terminal_dashboard_display.py",
     "tests/observability/test_trade_open_model_visibility_serialization.py",
@@ -22470,6 +22503,7 @@
     "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
     "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md": [],
+    "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md": [],
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
@@ -23202,6 +23236,9 @@
       "polymarket/observability/trader_trade_event_payload.py",
       "tests/observability/test_trade_payload_schema_contracts.py"
     ],
+    "polymarket/observability/market_availability.py": [
+      "tests/observability/test_market_availability.py"
+    ],
     "polymarket/observability/realtime_logger.py": [
       "tests/polymarket/test_logging_resilience.py"
     ],
@@ -23766,6 +23803,7 @@
     "tests/integration/test_stop_loss_shadow.py": [],
     "tests/observability/test_candidate_instance_shadow_propagation.py": [],
     "tests/observability/test_drift_audit.py": [],
+    "tests/observability/test_market_availability.py": [],
     "tests/observability/test_telemetry_backfill.py": [],
     "tests/observability/test_terminal_dashboard_display.py": [],
     "tests/observability/test_trade_open_model_visibility_serialization.py": [],
@@ -24424,6 +24462,7 @@
     "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
     "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md",
     "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md",
+    "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md",
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
@@ -24482,6 +24521,7 @@
     "polymarket/models/quant_indicators.py",
     "polymarket/observability/__init__.py",
     "polymarket/observability/contracts.py",
+    "polymarket/observability/market_availability.py",
     "polymarket/observability/realtime_logger.py",
     "polymarket/observability/shadow_telemetry.py",
     "polymarket/observability/trader_decision_diagnostics.py",
@@ -24698,6 +24738,9 @@
     ],
     "polymarket/observability/contracts.py": [
       "tests/observability/test_trade_payload_schema_contracts.py"
+    ],
+    "polymarket/observability/market_availability.py": [
+      "tests/observability/test_market_availability.py"
     ],
     "polymarket/observability/realtime_logger.py": [
       "tests/polymarket/test_logging_resilience.py"
@@ -29200,6 +29243,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -31833,6 +31880,13 @@
       ],
       "unresolved_internal": []
     },
+    "polymarket/observability/market_availability.py": {
+      "unresolved_external": [
+        "__future__",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
     "polymarket/observability/realtime_logger.py": {
       "unresolved_external": [
         "__future__",
@@ -33740,6 +33794,13 @@
       "unresolved_external": [
         "__future__",
         "datetime",
+        "pytest"
+      ],
+      "unresolved_internal": []
+    },
+    "tests/observability/test_market_availability.py": {
+      "unresolved_external": [
+        "json",
         "pytest"
       ],
       "unresolved_internal": []

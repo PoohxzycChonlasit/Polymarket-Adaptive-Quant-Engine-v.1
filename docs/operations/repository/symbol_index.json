@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T11:26:04.428808Z",
-  "file_count": 453,
+  "generated_at_utc": "2026-06-29T11:59:31.903962Z",
+  "file_count": 455,
   "files": [
     {
       "path": "polymarket/trader.py",
@@ -8478,6 +8478,111 @@
       ],
       "top_functions": [],
       "largest_symbols": [],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "polymarket/observability/market_availability.py",
+      "total_lines": 637,
+      "class_count": 6,
+      "top_function_count": 5,
+      "method_count": 0,
+      "classes": [
+        {
+          "name": "AvailabilityReason",
+          "line": 84,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "AvailabilityScore",
+          "line": 92,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "AvailabilitySnapshot",
+          "line": 106,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "AvailabilitySummary",
+          "line": 134,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "AvailabilityHealth",
+          "line": 157,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "AvailabilityDiagnostics",
+          "line": 173,
+          "method_count": 0,
+          "methods": []
+        }
+      ],
+      "top_functions": [
+        {
+          "name": "_compute_availability_score",
+          "line": 225,
+          "size": 34,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "evaluate_market_availability",
+          "line": 266,
+          "size": 194,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "summarize_market_availability",
+          "line": 462,
+          "size": 66,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "build_availability_health",
+          "line": 530,
+          "size": 60,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "build_market_availability_payload",
+          "line": 592,
+          "size": 45,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "evaluate_market_availability",
+          "class": null,
+          "size": 194
+        },
+        {
+          "name": "summarize_market_availability",
+          "class": null,
+          "size": 66
+        },
+        {
+          "name": "build_availability_health",
+          "class": null,
+          "size": 60
+        },
+        {
+          "name": "build_market_availability_payload",
+          "class": null,
+          "size": 45
+        },
+        {
+          "name": "_compute_availability_score",
+          "class": null,
+          "size": 34
+        }
+      ],
       "runtime_sensitive_symbols": []
     },
     {
@@ -22799,6 +22904,359 @@
           "name": "test_validate_passes_canonical_schema",
           "class": null,
           "size": 3
+        }
+      ],
+      "runtime_sensitive_symbols": []
+    },
+    {
+      "path": "tests/observability/test_market_availability.py",
+      "total_lines": 533,
+      "class_count": 7,
+      "top_function_count": 4,
+      "method_count": 36,
+      "classes": [
+        {
+          "name": "TestReasonCodeConstants",
+          "line": 143,
+          "method_count": 3,
+          "methods": [
+            {
+              "name": "test_all_nine_codes_in_tuple",
+              "line": 144,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_reason_codes_are_distinct_strings",
+              "line": 152,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_reason_active_not_in_reason_codes",
+              "line": 157,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestAllTypeDictsImportable",
+          "line": 167,
+          "method_count": 3,
+          "methods": [
+            {
+              "name": "test_six_typedicts_importable",
+              "line": 168,
+              "size": 10,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_typeddict_constructors_produce_dicts",
+              "line": 179,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_availability_score_constructor",
+              "line": 184,
+              "size": 4,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestEvaluateMarketAvailabilityPrecedence",
+          "line": 283,
+          "method_count": 3,
+          "methods": [
+            {
+              "name": "test_reason_code_precedence",
+              "line": 285,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_is_tradable_only_for_active",
+              "line": 293,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_all_nine_reason_codes_covered",
+              "line": 300,
+              "size": 4,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestEvaluateMarketAvailabilityGoldenSnapshot",
+          "line": 311,
+          "method_count": 5,
+          "methods": [
+            {
+              "name": "test_golden_snapshot_exact_match",
+              "line": 312,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_golden_snapshot_key_count",
+              "line": 316,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_no_unexpected_keys",
+              "line": 320,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_reason_is_nested_dict",
+              "line": 324,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_schema_version_distinct_from_engine",
+              "line": 329,
+              "size": 4,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestSummarizeMarketAvailability",
+          "line": 366,
+          "method_count": 5,
+          "methods": [
+            {
+              "name": "test_empty_snapshots",
+              "line": 367,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_all_tradable",
+              "line": 375,
+              "size": 9,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_mixed_tradable_and_closed",
+              "line": 385,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_overall_state_from_arg",
+              "line": 393,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_api_error_propagated",
+              "line": 400,
+              "size": 8,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestBuildAvailabilityHealth",
+          "line": 415,
+          "method_count": 8,
+          "methods": [
+            {
+              "name": "test_active_state_healthy",
+              "line": 416,
+              "size": 7,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_between_epochs_degraded",
+              "line": 424,
+              "size": 5,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_market_not_scheduled_degraded",
+              "line": 430,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_api_unavailable_unavailable",
+              "line": 435,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_unknown_state_unavailable_grade_f",
+              "line": 442,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_embeds_availability_score",
+              "line": 447,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_score_reflects_latency_penalty",
+              "line": 456,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_health_schema_version",
+              "line": 461,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestBuildMarketAvailabilityPayloadGoldenSnapshot",
+          "line": 471,
+          "method_count": 9,
+          "methods": [
+            {
+              "name": "test_golden_snapshot_exact_match",
+              "line": 472,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_golden_snapshot_key_count",
+              "line": 476,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_no_unexpected_keys",
+              "line": 480,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_health_embedded_as_dict",
+              "line": 484,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_schema_version_distinct_from_engine",
+              "line": 493,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_json_serializable",
+              "line": 498,
+              "size": 6,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_between_epochs_reason_code",
+              "line": 505,
+              "size": 9,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_api_unavailable_reason_code",
+              "line": 515,
+              "size": 11,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_symbols_available_defaults_to_empty_list",
+              "line": 527,
+              "size": 6,
+              "runtime_sensitive": false
+            }
+          ]
+        }
+      ],
+      "top_functions": [
+        {
+          "name": "_make_eval_snapshot_active",
+          "line": 69,
+          "size": 14,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_btc_active_snap",
+          "line": 340,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_eth_active_snap",
+          "line": 349,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_btc_closed_snap",
+          "line": 358,
+          "size": 6,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "_make_eval_snapshot_active",
+          "class": null,
+          "size": 14
+        },
+        {
+          "name": "test_api_unavailable_reason_code",
+          "class": "TestBuildMarketAvailabilityPayloadGoldenSnapshot",
+          "size": 11
+        },
+        {
+          "name": "test_six_typedicts_importable",
+          "class": "TestAllTypeDictsImportable",
+          "size": 10
+        },
+        {
+          "name": "test_all_tradable",
+          "class": "TestSummarizeMarketAvailability",
+          "size": 9
+        },
+        {
+          "name": "test_between_epochs_reason_code",
+          "class": "TestBuildMarketAvailabilityPayloadGoldenSnapshot",
+          "size": 9
+        },
+        {
+          "name": "test_api_error_propagated",
+          "class": "TestSummarizeMarketAvailability",
+          "size": 8
+        },
+        {
+          "name": "test_embeds_availability_score",
+          "class": "TestBuildAvailabilityHealth",
+          "size": 8
+        },
+        {
+          "name": "test_health_embedded_as_dict",
+          "class": "TestBuildMarketAvailabilityPayloadGoldenSnapshot",
+          "size": 8
+        },
+        {
+          "name": "test_all_nine_codes_in_tuple",
+          "class": "TestReasonCodeConstants",
+          "size": 7
+        },
+        {
+          "name": "test_empty_snapshots",
+          "class": "TestSummarizeMarketAvailability",
+          "size": 7
         }
       ],
       "runtime_sensitive_symbols": []

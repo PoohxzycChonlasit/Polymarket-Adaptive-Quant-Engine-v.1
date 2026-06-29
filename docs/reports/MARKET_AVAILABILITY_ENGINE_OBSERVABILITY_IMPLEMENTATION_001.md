@@ -169,3 +169,48 @@ The implementation track is now stable:
 - Bankroll rank schema is correct (string tier, float score)
 
 Ready to proceed with policy grid expansion on the 886-row signal-driven dataset.
+
+---
+
+## ADDENDUM — OBSERVABILITY MODULE (2026-06-29)
+
+**Scope:** Added `polymarket/observability/market_availability.py` — a pure, trader-free
+observability layer that describes WHY a market is or is not tradable. Companion to the
+existing runtime engine (not a replacement). No changes to trader.py, config, or any
+execution path.
+
+### Module: `polymarket/observability/market_availability.py`
+
+**Schema version:** `market_availability_obs_v1` (distinct from engine's `market_availability_v1`)
+
+**6 TypedDicts (all `total=False`):**
+
+| TypedDict | Purpose |
+|---|---|
+| `AvailabilityReason` | Per-market reason with code, detail, severity |
+| `AvailabilityScore` | Dimensional scores: bid_ask, liquidity, latency, penalty, final |
+| `AvailabilitySnapshot` | Single-market evaluation (20 fields) |
+| `AvailabilitySummary` | Aggregate across multiple snapshots (15 fields) |
+| `AvailabilityHealth` | Health verdict + grade + embedded AvailabilityScore |
+| `AvailabilityDiagnostics` | Debug diagnostics sub-field |
+
+**9 reason codes (all reachable via `evaluate_market_availability`):**
+CLIENT_ERROR → TOKEN_NOT_FOUND → MARKET_CLOSED → STALE_FEED →
+ORDERBOOK_NOT_READY → EMPTY_ORDERBOOK → UNKNOWN (crossed book) →
+LOW_LIQUIDITY → HIGH_SPREAD
+
+**4 builder functions:**
+- `evaluate_market_availability()` — per-market snapshot with precedence logic
+- `summarize_market_availability()` — aggregate across snapshots
+- `build_availability_health()` — health verdict + AvailabilityScore embedding
+- `build_market_availability_payload()` — full observability payload (15 top-level keys)
+
+**62 new tests** (`tests/observability/test_market_availability.py`):
+- Precedence table: all 9 codes + ACTIVE (parametrized, 17 cases)
+- Golden snapshots: exact match for evaluate_market_availability (20 keys) and build_market_availability_payload (15 keys, health nested)
+- JSON serializability: all builders
+- Health verdicts: HEALTHY / DEGRADED / UNAVAILABLE per state
+
+**Acceptance:** 953 tests pass (891 prior + 62 new).
+
+**Safety:** Observability-only. stdlib-only leaf. No trader.py, no QuantEventLogger, no config, no risk/sizing/execution.
