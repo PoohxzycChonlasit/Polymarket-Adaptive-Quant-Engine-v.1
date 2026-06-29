@@ -2865,6 +2865,24 @@
         "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md"
       ],
       "notes": "DONE. Created contracts.py with 9 TypedDicts (EntryModelTruthEnvelope, EntryModelTruthEnvelopeWrapper, SizeSharpMetadata, SizeSharpCloseCarry, CarryMetadata, TradeOpenContext, TradePositionMetadata, TradeOpenedPayload, TradeClosedPayload). Updated return annotations on 5 carry helpers and 3 event payload builders. 37 new schema contract tests (including golden snapshots). 891/891 tests pass."
+    },
+    {
+      "priority": 1.848,
+      "task_id": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "Repair canonical builder missing-field detection so blockers=[] and reason_codes=[] are treated as valid empty-list sentinels, not flagged as missing.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+      "allowed_scope": [
+        "tools/runtime/canonical_trade_context_builder.py",
+        "tests/replay/test_canonical_trade_context_builder.py",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md"
+      ],
+      "notes": "DONE. Added _EMPTY_COLLECTION_SENTINEL_FIELDS frozenset (blockers, reason_codes — schema-confirmed §3.B). Updated missing-field detection to exclude sentinel fields when empty. 3 new regression tests (blockers explicit, blockers absent, non-sentinel still flags). 25 canonical builder tests pass, 31 decision engine tests pass. Batch impact: future builds only (existing JSONL stores pre-fix missing_fields). size_sharp and shadow_policy sentinel fix deferred to CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001."
     }
   ]
 }

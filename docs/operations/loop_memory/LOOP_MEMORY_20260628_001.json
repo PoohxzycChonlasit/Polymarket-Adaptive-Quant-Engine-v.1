@@ -3665,5 +3665,45 @@
     "verdict": "KEEP_SEVERITY_POLICY",
     "safety_verdict": "SAFE_OFFLINE_REVIEW_ONLY",
     "next_recommendation": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
+    "task_class": 5,
+    "scope": [
+      "tools/runtime/canonical_trade_context_builder.py",
+      "tests/replay/test_canonical_trade_context_builder.py",
+      "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "A",
+    "commits": [],
+    "files_changed": 2,
+    "net_lines": 35,
+    "acceptance_criteria": {
+      "bug_confirmed": true,
+      "schema_confirmation_checked": true,
+      "sentinel_set_narrow": true,
+      "blockers_empty_not_flagged": true,
+      "blockers_absent_not_flagged": true,
+      "non_sentinel_still_flagged": true,
+      "py_compile_passed": true,
+      "canonical_builder_tests_pass": "25 passed",
+      "decision_engine_tests_pass": "31 passed",
+      "airos_refreshed": true,
+      "report_written": true,
+      "ops_files_updated": true,
+      "runtime_code_modified": false,
+      "trader_py_modified": false
+    },
+    "fix_description": "Added _EMPTY_COLLECTION_SENTINEL_FIELDS = frozenset({'blockers', 'reason_codes'}) and updated missing-field detection to exclude these fields when empty. Schema-confirmed §3.B list fields only.",
+    "data_flow_finding": "validate_trade_context reads stored row['missing_fields'] from JSONL; fix applies to future builder runs only — existing JSONL unchanged",
+    "excluded_pending": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs", "shadow_policy_reasons"],
+    "exclusion_reason": "Not in §3.B schema doc; task spec says schema-confirmed only; INFO-severity so not urgent",
+    "safety_verdict": "SAFE_OFFLINE_TOOLING",
+    "next_recommendation": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
   }
 ]

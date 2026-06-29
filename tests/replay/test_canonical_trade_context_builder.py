@@ -663,3 +663,152 @@ def test_canonical_context_grade_downgrade_when_intended_price_missing(temp_quan
     assert "intended_price" in row["missing_fields"]
     # Should be downgraded to grade C because intended_price is a critical field!
     assert row["data_quality_grade"] == "C"
+
+
+# ---------------------------------------------------------------------------
+# Empty-collection sentinel tests (CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001)
+# ---------------------------------------------------------------------------
+
+def test_blockers_empty_list_not_flagged_as_missing(temp_quant_data):
+    """blockers=[] is a schema-valid sentinel (§3.B list[str]); must not appear in missing_fields."""
+    date_str = "2026-06-28"
+    run_id = "run_blockers_sentinel"
+    replay_key = "cond_bl|1234567890|BTC|NO|token_bl"
+
+    open_event = {
+        "timestamp_utc": "2026-06-28T10:00:00.000000Z",
+        "event_type": "trade_open",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_blockers",
+            "ticker": "BTC",
+            "outcome": "NO",
+            "entry_price": 0.45,
+            "size": 5.0,
+            "blockers": [],
+        },
+    }
+    close_event = {
+        "timestamp_utc": "2026-06-28T10:01:00.000000Z",
+        "event_type": "trade_close",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_blockers",
+            "exit_price": 0.35,
+            "pnl": 0.50,
+        },
+    }
+
+    with open(temp_quant_data / "trade_journal" / f"{date_str}.jsonl", "w") as f:
+        f.write(json.dumps(open_event) + "\n")
+        f.write(json.dumps(close_event) + "\n")
+
+    builder = CanonicalContextBuilder(temp_quant_data, [date_str])
+    builder.load_all()
+    rows, _ = builder.compile()
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["blockers"] == []
+    assert "blockers" not in row["missing_fields"]
+
+
+def test_blockers_absent_from_payload_not_flagged_as_missing(temp_quant_data):
+    """When blockers is absent from events it defaults to []; still not flagged missing."""
+    date_str = "2026-06-28"
+    run_id = "run_no_blockers"
+    replay_key = "cond_nbl|1234567890|ETH|YES|token_nbl"
+
+    open_event = {
+        "timestamp_utc": "2026-06-28T10:00:00.000000Z",
+        "event_type": "trade_open",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_no_blockers",
+            "ticker": "ETH",
+            "outcome": "YES",
+            "entry_price": 0.55,
+            "size": 4.0,
+            # no blockers key — builder defaults to []
+        },
+    }
+    close_event = {
+        "timestamp_utc": "2026-06-28T10:01:00.000000Z",
+        "event_type": "trade_close",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_no_blockers",
+            "exit_price": 0.60,
+            "pnl": 0.20,
+        },
+    }
+
+    with open(temp_quant_data / "trade_journal" / f"{date_str}.jsonl", "w") as f:
+        f.write(json.dumps(open_event) + "\n")
+        f.write(json.dumps(close_event) + "\n")
+
+    builder = CanonicalContextBuilder(temp_quant_data, [date_str])
+    builder.load_all()
+    rows, _ = builder.compile()
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["blockers"] == []
+    assert "blockers" not in row["missing_fields"]
+
+
+def test_non_sentinel_empty_collection_still_flagged_as_missing(temp_quant_data):
+    """Non-sentinel empty collections (size_sharp_component_scores={}) still appear in missing_fields.
+
+    Proves the sentinel allowlist is narrow, not global.
+    """
+    date_str = "2026-06-28"
+    run_id = "run_no_size_sharp"
+    replay_key = "cond_nss|1234567890|BTC|YES|token_nss"
+
+    open_event = {
+        "timestamp_utc": "2026-06-28T10:00:00.000000Z",
+        "event_type": "trade_open",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_no_size_sharp",
+            "ticker": "BTC",
+            "outcome": "YES",
+            "entry_price": 0.50,
+            "size": 5.0,
+            # no size_sharp_component_scores — builder defaults to {}
+        },
+    }
+    close_event = {
+        "timestamp_utc": "2026-06-28T10:01:00.000000Z",
+        "event_type": "trade_close",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_no_size_sharp",
+            "exit_price": 0.55,
+            "pnl": 0.25,
+        },
+    }
+
+    with open(temp_quant_data / "trade_journal" / f"{date_str}.jsonl", "w") as f:
+        f.write(json.dumps(open_event) + "\n")
+        f.write(json.dumps(close_event) + "\n")
+
+    builder = CanonicalContextBuilder(temp_quant_data, [date_str])
+    builder.load_all()
+    rows, _ = builder.compile()
+
+    assert len(rows) == 1
+    row = rows[0]
+    # size_sharp_component_scores is not a sentinel field — empty dict must still flag
+    assert row["size_sharp_component_scores"] == {}
+    assert "size_sharp_component_scores" in row["missing_fields"]
+    # blockers defaults to [] and must NOT flag (sentinel)
+    assert row["blockers"] == []
+    assert "blockers" not in row["missing_fields"]

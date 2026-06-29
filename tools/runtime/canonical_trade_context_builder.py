@@ -192,6 +192,13 @@ _TEST_EXIT_REASONS = frozenset({"test", "test_close", "debug", "synthetic"})
 _SETTLEMENT_EXIT_REASONS = frozenset({"settlement", "binary_settlement", "resolved", "resolution"})
 _FORCED_EXIT_REASONS = frozenset({"emergency_flatten", "forced_exit", "residual_sweep", "session_end"})
 
+# Schema-confirmed list fields (CANONICAL_TRADE_CONTEXT_V1_001 §3.B) where an empty
+# collection is a valid "not populated" sentinel, not a missing value.
+_EMPTY_COLLECTION_SENTINEL_FIELDS: frozenset[str] = frozenset({
+    "blockers",
+    "reason_codes",
+})
+
 
 def _classify_event(
     row: dict[str, Any],
@@ -708,7 +715,11 @@ class CanonicalContextBuilder:
         }
         
         # Determine missing fields and data quality grade
-        missing = [k for k, v in row.items() if v is None or (isinstance(v, list) and not v) or (isinstance(v, dict) and not v)]
+        missing = [
+            k for k, v in row.items()
+            if v is None
+            or (isinstance(v, (list, dict)) and not v and k not in _EMPTY_COLLECTION_SENTINEL_FIELDS)
+        ]
         row["missing_fields"] = missing
         
         # Calculate grade

@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001 complete; next is CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+    "current_phase": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001 complete; sentinel fix applied, 25 tests pass",
+    "last_completed_task": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
     "last_commit": "HEAD",
-    "last_commit_message": "docs: review decision engine severity batch passes",
-    "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+    "last_commit_message": "test: repair canonical blockers empty-list sentinel",
+    "next_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -97,9 +97,10 @@
             "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
-            "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+            "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+            "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001"
         ],
-        "next_batch": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+        "next_batch": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -224,7 +225,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001 complete. All 41 PASS_CONTEXT rows verified as legitimate: grade A, HIGH join confidence, signal_driven_trade, only LOW (blockers sentinel) and INFO (future telemetry) missing fields. Zero false positives. Verdict: KEEP_SEVERITY_POLICY. No code modified. Next: CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.",
+    "notes": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001 complete. Fixed empty-list sentinel detection in canonical builder: blockers=[] and reason_codes=[] no longer flagged as missing. Sentinel set is narrow (schema-confirmed fields only). 3 new tests prove fix and prove non-sentinel fields still flag. 25 canonical builder tests pass, 31 decision engine tests pass. Next: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (optional, INFO-only impact).",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -503,6 +504,22 @@
         },
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+    },
+    "canonical_context_blockers_sentinel_repair": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md",
+        "file_repaired": "tools/runtime/canonical_trade_context_builder.py",
+        "fix": "_EMPTY_COLLECTION_SENTINEL_FIELDS frozenset added; missing-field detection updated to exclude schema-confirmed list sentinels",
+        "sentinel_fields": ["blockers", "reason_codes"],
+        "excluded_fields_pending": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs", "shadow_policy_reasons"],
+        "new_tests": 3,
+        "tests": {
+            "canonical_builder": "25 passed",
+            "decision_engine": "31 passed"
+        },
+        "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
+        "safety_verdict": "SAFE_OFFLINE_TOOLING",
+        "next_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
     },
     "decision_engine_prototype_severity_batch_review": {
         "status": "COMPLETE",
