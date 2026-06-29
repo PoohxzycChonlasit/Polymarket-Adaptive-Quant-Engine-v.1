@@ -2471,6 +2471,23 @@
         "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md"
       ],
       "notes": "DONE. Extracted _path_truth_elapsed_seconds, _path_truth_session_hour_utc, _path_truth_lifecycle_phase into polymarket/observability/trader_path_truth.py. Wrappers retained in trader.py. Golden equivalence tests verify parity. 727 tests passed (26 new). Deferred: _path_truth_metadata (mutator), _path_truth_emitted_checkpoints (reads self), _remember_path_truth_checkpoint (writes self), _path_truth_market_state (reads self.client), _emit_path_truth_checkpoint, _maybe_emit_path_truth_checkpoints."
+    },
+    {
+      "priority": 129,
+      "task_id": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design/audit only: inventory current trader.py state post-Phase-3C, classify remaining methods by domain, identify top safe extraction candidates, recommend next executable phase.",
+      "blocked_by": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md"
+      ],
+      "notes": "DONE. Audit complete: trader.py 12,751 LOC, 17 wrappers, 727 tests. Phase2 lifecycle observability builders identified as richest safe extraction target (~520 lines in 8 methods). Recommended next task: TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001 targeting _phase2_pre_model_gate_detail, _phase2_ev_null_reason, _phase2_ev_null_reason_detail, _phase2_model_activation_detail, _phase2_candidate_block_detail, _phase2_book_state_level, _phase2_orderbook_state_classification, _phase2_market_readiness_state."
     }
   ]
 }

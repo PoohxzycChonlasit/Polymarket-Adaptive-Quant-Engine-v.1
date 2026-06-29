@@ -1,10 +1,10 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001 complete; next is Phase 3D or next READY task",
-    "last_completed_task": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
-    "last_commit": "1861f67d",
-    "last_commit_message": "refactor: extract trader path truth helpers",
+    "current_phase": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001 complete; next is TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+    "last_completed_task": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001",
+    "last_commit": "pending",
+    "last_commit_message": "docs: audit trader architecture after phase 3c",
     "next_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
@@ -130,5 +130,5 @@
         "compiler_script": "tools/canonical_trade_context_builder.py",
         "test_suite": "tests/test_canonical_trade_context_builder.py"
     },
-    "notes": "Phase 3C path truth observability extraction complete. Extracted _path_truth_elapsed_seconds, _path_truth_session_hour_utc, _path_truth_lifecycle_phase from trader.py into polymarket/observability/trader_path_truth.py. Verified equivalence with wrappers. 727 tests passed (26 new)."
+    "notes": "Architecture audit after Phase 3C complete. trader.py is 12,751 LOC with 17 wrappers, 727 tests. Phase2 lifecycle observability builders are the richest safe extraction target (~520 lines in 8 methods). Next: TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001 targeting _phase2_pre_model_gate_detail, _phase2_ev_null_reason, _phase2_ev_null_reason_detail, _phase2_model_activation_detail, _phase2_candidate_block_detail, _phase2_book_state_level, _phase2_orderbook_state_classification, _phase2_market_readiness_state."
 }
