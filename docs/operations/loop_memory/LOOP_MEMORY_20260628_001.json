@@ -2244,5 +2244,72 @@
     },
     "verdict": "PASS",
     "next_recommendation": "TRADER_PHASE3C_OBSERVABILITY_PRESENTATION_EXTRACTION_001"
+  },
+  {
+    "entry_id": "LOOP_20260629_TRADER_PHASE3C",
+    "utc": "2026-06-29T00:00:00Z",
+    "task_id": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
+    "task_class": 6,
+    "scope": [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_path_truth.py",
+      "tests/observability/test_trader_path_truth.py",
+      "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "A",
+    "commits": [],
+    "commit_messages": [
+      "refactor: extract trader path truth helpers"
+    ],
+    "files_changed": 3,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "methods_extracted": [
+        "_path_truth_elapsed_seconds",
+        "_path_truth_session_hour_utc",
+        "_path_truth_lifecycle_phase"
+      ],
+      "methods_deferred": [
+        "_path_truth_metadata",
+        "_path_truth_emitted_checkpoints",
+        "_remember_path_truth_checkpoint",
+        "_path_truth_market_state",
+        "_emit_path_truth_checkpoint",
+        "_maybe_emit_path_truth_checkpoints"
+      ],
+      "already_extracted_skipped": "_path_truth_parse_ts (already wrapped in Phase 1)",
+      "candidates_not_found": [
+        "_path_truth_selected_side",
+        "_path_truth_source_detail",
+        "_path_truth_latency_detail",
+        "_path_truth_decision_context"
+      ],
+      "delegation_retained": true,
+      "test_suite_passed": true,
+      "tests_added": 26,
+      "tests_total": 727,
+      "repair_note": "test_golden_lifecycle_phase_computed: epoch_start offset fixed from -50 to -20 (50s since open > 35s threshold → ACTIVE not OPENING_SCAN)"
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "active_loop_memory_pointer_used": true,
+      "methods_extracted_cleanly": true,
+      "unit_tests_passed": true,
+      "equivalence_verified": true,
+      "report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true,
+      "active_loop_memory_updated": true
+    },
+    "verdict": "PASS",
+    "next_recommendation": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001"
   }
 ]

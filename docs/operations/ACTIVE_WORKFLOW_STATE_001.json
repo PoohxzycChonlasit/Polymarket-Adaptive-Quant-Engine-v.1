@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001 complete; next is Phase 3C or next READY task",
-    "last_completed_task": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
-    "last_commit": "b50dd07f",
-    "last_commit_message": "refactor: extract trader orderbook detail helpers",
-    "next_task": "TRADER_PHASE3C_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+    "current_phase": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001 complete; next is Phase 3D or next READY task",
+    "last_completed_task": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
+    "last_commit": "pending",
+    "last_commit_message": "refactor: extract trader path truth helpers",
+    "next_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -42,7 +42,8 @@
             "polymarket/observability/trader_lifecycle_observability.py",
             "polymarket/observability/trader_decision_diagnostics.py",
             "polymarket/observability/trader_orderbook_lineage.py",
-            "polymarket/observability/trader_orderbook_details.py"
+            "polymarket/observability/trader_orderbook_details.py",
+            "polymarket/observability/trader_path_truth.py"
         ],
         "target_trader_py_lines_after_phase8": 5000
     },
@@ -83,7 +84,7 @@
             "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
             "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3C_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+        "next_batch": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
     },
@@ -129,5 +130,5 @@
         "compiler_script": "tools/canonical_trade_context_builder.py",
         "test_suite": "tests/test_canonical_trade_context_builder.py"
     },
-    "notes": "Phase 3B orderbook details observability extraction complete. Extracted _empty_book_recovery_detail and _infer_clob_orderbook_error_category from trader.py into polymarket/observability/trader_orderbook_details.py. Verified equivalence with wrappers. 701 tests passed (21 new)."
+    "notes": "Phase 3C path truth observability extraction complete. Extracted _path_truth_elapsed_seconds, _path_truth_session_hour_utc, _path_truth_lifecycle_phase from trader.py into polymarket/observability/trader_path_truth.py. Verified equivalence with wrappers. 727 tests passed (26 new)."
 }

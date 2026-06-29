@@ -2450,6 +2450,27 @@
         "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md"
       ],
       "notes": "DONE. Extracted _empty_book_recovery_detail and _infer_clob_orderbook_error_category into polymarket/observability/trader_orderbook_details.py. Wrappers retained in trader.py. Golden equivalence tests verify parity. 701 tests passed (21 new). Deferred: _classify_orderbook_readiness_reason (writes self), _clob_orderbook_error_detail (reads self.client)."
+    },
+    {
+      "priority": 128,
+      "task_id": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract path-truth observability helpers (_path_truth_elapsed_seconds, _path_truth_session_hour_utc, _path_truth_lifecycle_phase) into polymarket/observability/trader_path_truth.py.",
+      "blocked_by": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/",
+        "tests/observability/",
+        "tests/polymarket/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md"
+      ],
+      "notes": "DONE. Extracted _path_truth_elapsed_seconds, _path_truth_session_hour_utc, _path_truth_lifecycle_phase into polymarket/observability/trader_path_truth.py. Wrappers retained in trader.py. Golden equivalence tests verify parity. 727 tests passed (26 new). Deferred: _path_truth_metadata (mutator), _path_truth_emitted_checkpoints (reads self), _remember_path_truth_checkpoint (writes self), _path_truth_market_state (reads self.client), _emit_path_truth_checkpoint, _maybe_emit_path_truth_checkpoints."
     }
   ]
 }

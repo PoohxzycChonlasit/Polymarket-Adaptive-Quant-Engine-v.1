@@ -68,6 +68,11 @@ from polymarket.observability.trader_orderbook_lineage import (
     orderbook_age_ms as _obs_orderbook_age_ms,
     is_empty_orderbook_error as _obs_is_empty_orderbook_error,
 )
+from polymarket.observability.trader_path_truth import (
+    path_truth_elapsed_seconds as _obs_path_truth_elapsed_seconds,
+    path_truth_lifecycle_phase as _obs_path_truth_lifecycle_phase,
+    path_truth_session_hour_utc as _obs_path_truth_session_hour_utc,
+)
 from polymarket.risk_modes import (
     RiskMode,
     RiskModeDecision,
@@ -6208,37 +6213,13 @@ class PolymarketTrader:
         return _obs_path_truth_parse_ts(raw)
 
     def _path_truth_elapsed_seconds(self, pos, now: datetime | None = None) -> int | None:
-        entry_dt = self._path_truth_parse_ts(getattr(pos, "entry_time", ""))
-        if entry_dt is None:
-            return None
-        current = now or datetime.now(UTC)
-        if current.tzinfo is None:
-            current = current.replace(tzinfo=UTC)
-        current = current.astimezone(UTC)
-        return max(0, int((current - entry_dt).total_seconds()))
+        return _obs_path_truth_elapsed_seconds(pos, now)
 
     def _path_truth_session_hour_utc(self, pos, now: datetime | None = None) -> int | None:
-        entry_dt = self._path_truth_parse_ts(getattr(pos, "entry_time", ""))
-        if entry_dt is not None:
-            return int(entry_dt.hour)
-        current = now or datetime.now(UTC)
-        if current.tzinfo is None:
-            current = current.replace(tzinfo=UTC)
-        return int(current.astimezone(UTC).hour)
+        return _obs_path_truth_session_hour_utc(pos, now)
 
     def _path_truth_lifecycle_phase(self, pos, now: datetime | None = None) -> str | None:
-        metadata = self._path_truth_metadata(pos)
-        explicit = str(metadata.get("lifecycle_phase") or "").strip()
-        if explicit:
-            return explicit
-        epoch_start = self._diagnostic_int(metadata.get("epoch_start_ts"))
-        if epoch_start is None or epoch_start <= 0:
-            return None
-        current = now or datetime.now(UTC)
-        if current.tzinfo is None:
-            current = current.replace(tzinfo=UTC)
-        seconds_remaining = int(epoch_start + 300 - current.astimezone(UTC).timestamp())
-        return self._phase2_lifecycle_phase(seconds_remaining)
+        return _obs_path_truth_lifecycle_phase(self, pos, now)
 
     def _path_truth_market_state(self, pos) -> dict[str, object]:
         token_id = self._position_token_id(pos)
