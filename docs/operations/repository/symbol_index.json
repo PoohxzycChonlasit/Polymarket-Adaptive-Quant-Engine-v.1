@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:56:22.537432Z",
+  "generated_at_utc": "2026-06-29T15:30:01.438233Z",
   "file_count": 459,
   "files": [
     {
@@ -44928,9 +44928,9 @@
     },
     {
       "path": "tests/tools/test_decision_engine_batch_validate.py",
-      "total_lines": 124,
+      "total_lines": 146,
       "class_count": 0,
-      "top_function_count": 7,
+      "top_function_count": 8,
       "method_count": 0,
       "classes": [],
       "top_functions": [
@@ -44959,20 +44959,26 @@
           "runtime_sensitive": false
         },
         {
-          "name": "test_validate_jsonl_files_returns_serializable_summary",
+          "name": "test_summarize_decision_diagnostics_counts_missing_severity_buckets",
           "line": 80,
+          "size": 20,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_validate_jsonl_files_returns_serializable_summary",
+          "line": 102,
           "size": 10,
           "runtime_sensitive": false
         },
         {
           "name": "test_build_markdown_report_includes_required_sections",
-          "line": 92,
+          "line": 114,
           "size": 13,
           "runtime_sensitive": false
         },
         {
           "name": "test_batch_validator_has_no_runtime_imports",
-          "line": 107,
+          "line": 129,
           "size": 17,
           "runtime_sensitive": false
         }
@@ -44982,6 +44988,11 @@
           "name": "test_summarize_decision_diagnostics_counts_states_and_quality",
           "class": null,
           "size": 26
+        },
+        {
+          "name": "test_summarize_decision_diagnostics_counts_missing_severity_buckets",
+          "class": null,
+          "size": 20
         },
         {
           "name": "test_batch_validator_has_no_runtime_imports",
@@ -45018,9 +45029,9 @@
     },
     {
       "path": "tests/tools/test_decision_engine_prototype.py",
-      "total_lines": 170,
+      "total_lines": 251,
       "class_count": 0,
-      "top_function_count": 12,
+      "top_function_count": 21,
       "method_count": 0,
       "classes": [],
       "top_functions": [
@@ -45067,32 +45078,86 @@
           "runtime_sensitive": false
         },
         {
-          "name": "test_weak_evidence_grade_rejects_low_evidence",
+          "name": "test_missing_severity_buckets_are_empty_for_complete_context",
           "line": 111,
           "size": 8,
           "runtime_sensitive": false
         },
         {
-          "name": "test_missing_liquidity_context_requires_review_without_rejecting_core_context",
+          "name": "test_missing_critical_fields_still_reject",
           "line": 121,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_high_fields_require_review",
+          "line": 130,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_medium_fields_require_review_in_strict_v1",
+          "line": 139,
+          "size": 6,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_low_fields_pass_with_ignored_note",
+          "line": 147,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_info_fields_pass_with_ignored_note",
+          "line": 157,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_mixed_high_and_ignored_fields_review",
+          "line": 166,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_unknown_missing_field_defaults_to_review",
+          "line": 175,
+          "size": 6,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_severity_buckets_preserve_raw_missing_fields",
+          "line": 183,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_weak_evidence_grade_rejects_low_evidence",
+          "line": 192,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_liquidity_context_requires_review_without_rejecting_core_context",
+          "line": 202,
           "size": 9,
           "runtime_sensitive": false
         },
         {
           "name": "test_fixture_matrix_covers_all_decision_states",
-          "line": 143,
+          "line": 224,
           "size": 4,
           "runtime_sensitive": false
         },
         {
           "name": "test_diagnostic_is_json_serializable",
-          "line": 149,
+          "line": 230,
           "size": 6,
           "runtime_sensitive": false
         },
         {
           "name": "test_decision_engine_prototype_has_no_runtime_imports",
-          "line": 157,
+          "line": 238,
           "size": 13,
           "runtime_sensitive": false
         }
@@ -45144,7 +45209,7 @@
           "size": 8
         },
         {
-          "name": "test_weak_evidence_grade_rejects_low_evidence",
+          "name": "test_missing_severity_buckets_are_empty_for_complete_context",
           "class": null,
           "size": 8
         }
@@ -55077,7 +55142,7 @@
     },
     {
       "path": "tools/decision/decision_engine_batch_validate.py",
-      "total_lines": 351,
+      "total_lines": 393,
       "class_count": 0,
       "top_function_count": 9,
       "method_count": 0,
@@ -55098,42 +55163,42 @@
         {
           "name": "summarize_decision_diagnostics",
           "line": 96,
-          "size": 72,
+          "size": 87,
           "runtime_sensitive": false
         },
         {
           "name": "build_markdown_report",
-          "line": 170,
-          "size": 109,
+          "line": 185,
+          "size": 131,
           "runtime_sensitive": false
         },
         {
           "name": "main",
-          "line": 281,
+          "line": 318,
           "size": 22,
           "runtime_sensitive": false
         },
         {
           "name": "_expand_paths",
-          "line": 305,
+          "line": 342,
           "size": 9,
           "runtime_sensitive": false
         },
         {
           "name": "_compact_example",
-          "line": 316,
-          "size": 15,
+          "line": 353,
+          "size": 20,
           "runtime_sensitive": false
         },
         {
           "name": "_counter_dict",
-          "line": 333,
+          "line": 375,
           "size": 2,
           "runtime_sensitive": false
         },
         {
           "name": "_markdown_table",
-          "line": 337,
+          "line": 379,
           "size": 10,
           "runtime_sensitive": false
         }
@@ -55142,12 +55207,12 @@
         {
           "name": "build_markdown_report",
           "class": null,
-          "size": 109
+          "size": 131
         },
         {
           "name": "summarize_decision_diagnostics",
           "class": null,
-          "size": 72
+          "size": 87
         },
         {
           "name": "load_jsonl_rows",
@@ -55162,7 +55227,7 @@
         {
           "name": "_compact_example",
           "class": null,
-          "size": 15
+          "size": 20
         },
         {
           "name": "validate_jsonl_files",
@@ -55189,93 +55254,99 @@
     },
     {
       "path": "tools/decision/decision_engine_prototype.py",
-      "total_lines": 239,
+      "total_lines": 379,
       "class_count": 0,
-      "top_function_count": 14,
+      "top_function_count": 15,
       "method_count": 0,
       "classes": [],
       "top_functions": [
         {
           "name": "validate_trade_context",
-          "line": 26,
-          "size": 66,
+          "line": 130,
+          "size": 75,
           "runtime_sensitive": false
         },
         {
           "name": "evaluate_trade_context",
-          "line": 94,
+          "line": 207,
           "size": 4,
           "runtime_sensitive": false
         },
         {
           "name": "_read_probability",
-          "line": 100,
+          "line": 213,
           "size": 6,
           "runtime_sensitive": false
         },
         {
           "name": "_probability_quality",
-          "line": 108,
+          "line": 221,
           "size": 9,
           "runtime_sensitive": false
         },
         {
           "name": "_ev_quality",
-          "line": 119,
+          "line": 232,
           "size": 9,
           "runtime_sensitive": false
         },
         {
           "name": "_evidence_quality",
-          "line": 130,
+          "line": 243,
           "size": 19,
           "runtime_sensitive": false
         },
         {
           "name": "_liquidity_quality",
-          "line": 151,
+          "line": 264,
           "size": 20,
           "runtime_sensitive": false
         },
         {
           "name": "_availability_quality",
-          "line": 173,
-          "size": 14,
+          "line": 286,
+          "size": 16,
           "runtime_sensitive": false
         },
         {
           "name": "_requires_review",
-          "line": 189,
+          "line": 304,
           "size": 2,
           "runtime_sensitive": false
         },
         {
           "name": "_confidence_for",
-          "line": 193,
+          "line": 308,
           "size": 6,
           "runtime_sensitive": false
         },
         {
           "name": "_present",
-          "line": 201,
+          "line": 316,
           "size": 2,
           "runtime_sensitive": false
         },
         {
           "name": "_as_float",
-          "line": 205,
+          "line": 320,
           "size": 5,
           "runtime_sensitive": false
         },
         {
           "name": "_string_list",
-          "line": 212,
+          "line": 327,
           "size": 8,
           "runtime_sensitive": false
         },
         {
+          "name": "_classify_missing_fields",
+          "line": 337,
+          "size": 22,
+          "runtime_sensitive": false
+        },
+        {
           "name": "_json_value",
-          "line": 222,
+          "line": 361,
           "size": 4,
           "runtime_sensitive": false
         }
@@ -55284,7 +55355,12 @@
         {
           "name": "validate_trade_context",
           "class": null,
-          "size": 66
+          "size": 75
+        },
+        {
+          "name": "_classify_missing_fields",
+          "class": null,
+          "size": 22
         },
         {
           "name": "_liquidity_quality",
@@ -55299,7 +55375,7 @@
         {
           "name": "_availability_quality",
           "class": null,
-          "size": 14
+          "size": 16
         },
         {
           "name": "_probability_quality",
@@ -55325,11 +55401,6 @@
           "name": "_confidence_for",
           "class": null,
           "size": 6
-        },
-        {
-          "name": "_as_float",
-          "class": null,
-          "size": 5
         }
       ],
       "runtime_sensitive_symbols": []

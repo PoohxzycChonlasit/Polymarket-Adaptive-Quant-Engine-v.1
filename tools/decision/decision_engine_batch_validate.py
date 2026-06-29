@@ -107,6 +107,11 @@ def summarize_decision_diagnostics(
     decision_state_counts: Counter[str] = Counter()
     confidence_counts: Counter[str] = Counter()
     missing_field_counts: Counter[str] = Counter()
+    missing_critical_field_counts: Counter[str] = Counter()
+    missing_high_field_counts: Counter[str] = Counter()
+    missing_medium_field_counts: Counter[str] = Counter()
+    missing_low_field_counts: Counter[str] = Counter()
+    missing_info_field_counts: Counter[str] = Counter()
     reject_reason_counts: Counter[str] = Counter()
     note_counts: Counter[str] = Counter()
     evidence_status_counts: Counter[str] = Counter()
@@ -126,6 +131,11 @@ def summarize_decision_diagnostics(
         decision_state_counts[decision_state] += 1
         confidence_counts[str(diagnostic["confidence"])] += 1
         missing_field_counts.update(str(field) for field in diagnostic["missing_fields"])
+        missing_critical_field_counts.update(str(field) for field in diagnostic.get("missing_critical_fields", []))
+        missing_high_field_counts.update(str(field) for field in diagnostic.get("missing_high_fields", []))
+        missing_medium_field_counts.update(str(field) for field in diagnostic.get("missing_medium_fields", []))
+        missing_low_field_counts.update(str(field) for field in diagnostic.get("missing_low_fields", []))
+        missing_info_field_counts.update(str(field) for field in diagnostic.get("missing_info_fields", []))
         reject_reason_counts.update(str(reason) for reason in diagnostic["reject_reasons"])
         note_counts.update(str(note) for note in diagnostic["notes"])
 
@@ -152,6 +162,11 @@ def summarize_decision_diagnostics(
         "decision_state_counts": _counter_dict(decision_state_counts),
         "confidence_counts": _counter_dict(confidence_counts),
         "missing_field_counts": _counter_dict(missing_field_counts),
+        "missing_critical_field_counts": _counter_dict(missing_critical_field_counts),
+        "missing_high_field_counts": _counter_dict(missing_high_field_counts),
+        "missing_medium_field_counts": _counter_dict(missing_medium_field_counts),
+        "missing_low_field_counts": _counter_dict(missing_low_field_counts),
+        "missing_info_field_counts": _counter_dict(missing_info_field_counts),
         "reject_reason_counts": _counter_dict(reject_reason_counts),
         "note_counts": _counter_dict(note_counts),
         "evidence_quality_summary": {
@@ -205,6 +220,28 @@ def build_markdown_report(summary: Mapping[str, Any]) -> str:
             "## Missing Field Counts",
             "",
             _markdown_table(summary.get("missing_field_counts", {}), "missing_field", "count", limit=25),
+            "",
+            "## Missing Field Severity Counts",
+            "",
+            "### Critical",
+            "",
+            _markdown_table(summary.get("missing_critical_field_counts", {}), "missing_field", "count", limit=25),
+            "",
+            "### High",
+            "",
+            _markdown_table(summary.get("missing_high_field_counts", {}), "missing_field", "count", limit=25),
+            "",
+            "### Medium",
+            "",
+            _markdown_table(summary.get("missing_medium_field_counts", {}), "missing_field", "count", limit=25),
+            "",
+            "### Low",
+            "",
+            _markdown_table(summary.get("missing_low_field_counts", {}), "missing_field", "count", limit=25),
+            "",
+            "### Info",
+            "",
+            _markdown_table(summary.get("missing_info_field_counts", {}), "missing_field", "count", limit=25),
             "",
             "## Reject Reason Counts",
             "",
@@ -324,6 +361,11 @@ def _compact_example(row: Mapping[str, Any], diagnostic: Mapping[str, Any]) -> d
         "decision_state": diagnostic["decision_state"],
         "confidence": diagnostic["confidence"],
         "missing_fields": list(diagnostic["missing_fields"])[:10],
+        "missing_critical_fields": list(diagnostic.get("missing_critical_fields", []))[:10],
+        "missing_high_fields": list(diagnostic.get("missing_high_fields", []))[:10],
+        "missing_medium_fields": list(diagnostic.get("missing_medium_fields", []))[:10],
+        "missing_low_fields": list(diagnostic.get("missing_low_fields", []))[:10],
+        "missing_info_fields": list(diagnostic.get("missing_info_fields", []))[:10],
         "reject_reasons": list(diagnostic["reject_reasons"]),
         "data_quality_grade": evidence_quality["data_quality_grade"],
         "join_confidence": evidence_quality["join_confidence"],

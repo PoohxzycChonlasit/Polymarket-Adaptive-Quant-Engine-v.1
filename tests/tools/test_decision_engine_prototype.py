@@ -108,6 +108,87 @@ def test_missing_ev_after_spread_rejects_missing_context():
     assert diagnostic["ev_quality"]["status"] == "MISSING"
 
 
+def test_missing_severity_buckets_are_empty_for_complete_context():
+    diagnostic = validate_trade_context(_good_context_row())
+
+    assert diagnostic["missing_critical_fields"] == []
+    assert diagnostic["missing_high_fields"] == []
+    assert diagnostic["missing_medium_fields"] == []
+    assert diagnostic["missing_low_fields"] == []
+    assert diagnostic["missing_info_fields"] == []
+
+
+def test_missing_critical_fields_still_reject():
+    diagnostic = validate_trade_context(_good_context_row(ev_after_spread=None, missing_fields=["bankroll_rank"]))
+
+    assert diagnostic["decision_state"] == REJECT_MISSING_CONTEXT
+    assert diagnostic["missing_critical_fields"] == ["ev_after_spread"]
+    assert diagnostic["missing_info_fields"] == ["bankroll_rank"]
+    assert "missing_required_context" in diagnostic["reject_reasons"]
+
+
+def test_missing_high_fields_require_review():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["quote_age_ms", "risk_mode"]))
+
+    assert diagnostic["decision_state"] == REVIEW_REQUIRED
+    assert diagnostic["missing_high_fields"] == ["quote_age_ms", "risk_mode"]
+    assert diagnostic["availability_quality"]["status"] == "REVIEW"
+    assert "noncritical_context_missing" in diagnostic["notes"]
+
+
+def test_missing_medium_fields_require_review_in_strict_v1():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["signal_name"]))
+
+    assert diagnostic["decision_state"] == REVIEW_REQUIRED
+    assert diagnostic["missing_medium_fields"] == ["signal_name"]
+    assert diagnostic["availability_quality"]["status"] == "REVIEW"
+
+
+def test_missing_low_fields_pass_with_ignored_note():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["blockers", "exit_reason"]))
+
+    assert diagnostic["decision_state"] == PASS_CONTEXT
+    assert diagnostic["missing_low_fields"] == ["blockers", "exit_reason"]
+    assert diagnostic["availability_quality"]["status"] == "PASS"
+    assert "ignored_missing_fields_present" in diagnostic["notes"]
+    assert "noncritical_context_missing" not in diagnostic["notes"]
+
+
+def test_missing_info_fields_pass_with_ignored_note():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["bankroll_rank", "capital_score", "size_sharp_at_entry"]))
+
+    assert diagnostic["decision_state"] == PASS_CONTEXT
+    assert diagnostic["missing_info_fields"] == ["bankroll_rank", "capital_score", "size_sharp_at_entry"]
+    assert diagnostic["availability_quality"]["status"] == "PASS"
+    assert "ignored_missing_fields_present" in diagnostic["notes"]
+
+
+def test_mixed_high_and_ignored_fields_review():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["risk_mode", "bankroll_rank", "blockers"]))
+
+    assert diagnostic["decision_state"] == REVIEW_REQUIRED
+    assert diagnostic["missing_high_fields"] == ["risk_mode"]
+    assert diagnostic["missing_low_fields"] == ["blockers"]
+    assert diagnostic["missing_info_fields"] == ["bankroll_rank"]
+
+
+def test_unknown_missing_field_defaults_to_review():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["new_schema_field_x"]))
+
+    assert diagnostic["decision_state"] == REVIEW_REQUIRED
+    assert diagnostic["missing_medium_fields"] == ["new_schema_field_x"]
+    assert diagnostic["availability_quality"]["status"] == "REVIEW"
+
+
+def test_missing_severity_buckets_preserve_raw_missing_fields():
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=["risk_mode", "blockers", "size_sharp_at_entry"]))
+
+    assert diagnostic["missing_fields"] == ["risk_mode", "blockers", "size_sharp_at_entry"]
+    assert diagnostic["missing_high_fields"] == ["risk_mode"]
+    assert diagnostic["missing_low_fields"] == ["blockers"]
+    assert diagnostic["missing_info_fields"] == ["size_sharp_at_entry"]
+
+
 def test_weak_evidence_grade_rejects_low_evidence():
     row = _good_context_row(data_quality_grade="D", join_confidence="LOW")
 

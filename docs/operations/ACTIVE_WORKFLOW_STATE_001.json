@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001 complete; next is DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
+    "current_phase": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001 complete; next is DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
     "last_commit": "HEAD",
-    "last_commit_message": "docs: add decision engine severity test plan",
-    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+    "last_commit_message": "feat: implement decision engine missing field severity",
+    "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -98,7 +98,7 @@
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
         ],
-        "next_batch": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+        "next_batch": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -223,7 +223,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001 complete. Defined fixture matrix, old-vs-new expectations, batch acceptance criteria, risk assessment, and implementation recommendation for severity-aware missing-field handling. No validator/runtime logic changed. Next: DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.",
+    "notes": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001 complete. Implemented offline severity-aware missing-field diagnostics and batch aggregation. Real 1,794-row batch: PASS_CONTEXT 41, REVIEW_REQUIRED 845, REJECT_MISSING_CONTEXT 907, REJECT_LOW_EVIDENCE 1. No runtime/trader/risk/sizing/execution behavior changed. Next: DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -466,5 +466,41 @@
         "logic_changed": false,
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001"
+    },
+    "decision_engine_prototype_missing_field_severity_implementation": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md",
+        "module": "tools/decision/decision_engine_prototype.py",
+        "batch_module": "tools/decision/decision_engine_batch_validate.py",
+        "severity_outputs": [
+            "missing_critical_fields",
+            "missing_high_fields",
+            "missing_medium_fields",
+            "missing_low_fields",
+            "missing_info_fields"
+        ],
+        "decision_behavior": {
+            "critical": "REJECT_MISSING_CONTEXT",
+            "high": "REVIEW_REQUIRED",
+            "medium": "REVIEW_REQUIRED",
+            "low": "PASS_CONTEXT_ALLOWED_WITH_NOTE",
+            "info": "PASS_CONTEXT_ALLOWED_WITH_NOTE",
+            "unknown": "REVIEW_REQUIRED"
+        },
+        "batch_distribution": {
+            "rows": 1794,
+            "parse_errors": 0,
+            "PASS_CONTEXT": 41,
+            "REVIEW_REQUIRED": 845,
+            "REJECT_MISSING_CONTEXT": 907,
+            "REJECT_LOW_EVIDENCE": 1
+        },
+        "tests": {
+            "focused": "31 passed",
+            "py_compile": "passed",
+            "batch_validator_rows": 1794
+        },
+        "runtime_changed": false,
+        "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
     }
 }

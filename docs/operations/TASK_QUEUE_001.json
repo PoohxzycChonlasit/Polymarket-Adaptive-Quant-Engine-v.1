@@ -1376,7 +1376,7 @@
     {
       "priority": 1.846,
       "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
       "description": "Implement severity-aware missing-field diagnostics in the offline Decision Engine Prototype using fixture-first tests and old-versus-new batch validation.",
@@ -1390,7 +1390,25 @@
       "outputs": [
         "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md"
       ],
-      "notes": "Offline tooling only. Preserve hard-reject semantics, keep HIGH and strict MEDIUM missing fields as REVIEW_REQUIRED, treat LOW/INFO missing fields as notes-only, default unknown fields to review, and do not touch runtime, trader.py, risk, sizing, execution, wallet, config, .env, or live/paper behavior."
+      "notes": "DONE. Implemented offline severity-aware missing-field diagnostics and batch aggregation. Hard rejects preserved. Real 1,794-row batch now has PASS_CONTEXT=41, REVIEW_REQUIRED=845, REJECT_MISSING_CONTEXT=907, REJECT_LOW_EVIDENCE=1. Focused tests pass 31/31. No runtime/trader/risk/sizing/execution/wallet/config/.env behavior changed."
+    },
+    {
+      "priority": 1.847,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 1,
+      "description": "Review the 41 newly PASS_CONTEXT canonical rows after severity-aware missing-field implementation and confirm they are genuinely LOW/INFO-only missing-field cases.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "runtime/reports/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md"
+      ],
+      "notes": "Offline research only. Inspect severity-aware batch examples/distribution; do not change validator logic or runtime behavior. Confirm whether newly passing rows are safe diagnostic PASS_CONTEXT examples or whether severity map adjustments are needed."
     },
     {
       "priority": 1.85,

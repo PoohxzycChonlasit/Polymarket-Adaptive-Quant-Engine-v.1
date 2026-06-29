@@ -11,6 +11,7 @@ from typing import Any
 
 
 SCHEMA_VERSION = "decision_engine_prototype.v1"
+MISSING_FIELD_SEVERITY_VERSION = "missing_field_severity.v1"
 
 PASS_CONTEXT = "PASS_CONTEXT"
 REJECT_MISSING_CONTEXT = "REJECT_MISSING_CONTEXT"
@@ -21,6 +22,109 @@ REVIEW_REQUIRED = "REVIEW_REQUIRED"
 
 _WEAK_EVIDENCE_GRADES = {"D", "E", "F"}
 _REVIEW_EVIDENCE_GRADES = {"B", "C"}
+
+_CRITICAL_MISSING_FIELDS = {
+    "intended_price",
+    "true_probability",
+    "probability",
+    "ev_after_spread",
+    "data_quality_grade",
+    "join_confidence",
+    "source_streams",
+}
+
+_HIGH_MISSING_FIELDS = {
+    "asset_id",
+    "bankroll",
+    "bankroll_tier_id",
+    "current_exposure",
+    "equity",
+    "ev",
+    "fair_value",
+    "intended_notional",
+    "intended_size",
+    "inventory_state",
+    "lifecycle_phase",
+    "market_id",
+    "market_state",
+    "outcome",
+    "quote_age_ms",
+    "replay_key",
+    "risk_budget",
+    "risk_mode",
+    "seconds_remaining",
+    "side",
+    "slippage",
+    "target_exposure",
+    "ticker",
+    "trade_id",
+}
+
+_MEDIUM_MISSING_FIELDS = {
+    "decision_score",
+    "fill_price",
+    "fill_status",
+    "filled_size",
+    "order_id",
+    "order_type",
+    "position_id",
+    "signal_name",
+    "submitted_at",
+    "timeout_status",
+}
+
+_LOW_MISSING_FIELDS = {
+    "blockers",
+    "capital_state",
+    "counterfactual_available",
+    "event_classification",
+    "exit_price",
+    "exit_reason",
+    "exit_timestamp",
+    "expected_risk_profile",
+    "grade_d_diagnosis",
+    "hold_seconds",
+    "mae_price",
+    "mae_usdc",
+    "market_slug",
+    "mfe_price",
+    "mfe_usdc",
+    "pnl_pct",
+    "realized_pnl",
+    "reason_codes",
+    "replay_version",
+    "resolved_outcome",
+    "source_event_ids",
+    "trade_result",
+}
+
+_INFO_MISSING_FIELDS = {
+    "bankroll_rank",
+    "capital_score",
+    "demotion_candidate",
+    "expected_pnl_at_entry",
+    "market_exposure_after",
+    "market_exposure_before",
+    "max_daily_loss_usd",
+    "max_open_exposure_usd",
+    "max_order_usd",
+    "open_position_count",
+    "position_lifecycle_state",
+    "promotion_candidate",
+    "realized_pnl_before",
+    "size_sharp_at_entry",
+    "size_sharp_boosts",
+    "size_sharp_bucket",
+    "size_sharp_component_scores",
+    "size_sharp_confidence_grade",
+    "size_sharp_deployment_state",
+    "size_sharp_hard_caps",
+    "size_sharp_limiting_factor",
+    "size_sharp_missing_inputs",
+    "size_sharp_penalties",
+    "size_sharp_schema_version",
+    "unrealized_pnl_before",
+}
 
 
 def validate_trade_context(row: Mapping[str, Any]) -> dict[str, Any]:
@@ -45,14 +149,15 @@ def validate_trade_context(row: Mapping[str, Any]) -> dict[str, Any]:
     for field in canonical_missing:
         if field not in missing_fields:
             missing_fields.append(field)
+    missing_field_severity = _classify_missing_fields(missing_fields)
 
     probability_quality = _probability_quality(probability_value, probability_field)
     ev_quality = _ev_quality(ev_after_spread)
     evidence_quality = _evidence_quality(row)
     liquidity_quality = _liquidity_quality(row, intended_price)
-    availability_quality = _availability_quality(missing_fields)
+    availability_quality = _availability_quality(missing_fields, missing_field_severity)
 
-    if any(field in missing_fields for field in ("intended_price", "true_probability", "ev_after_spread")):
+    if missing_field_severity["missing_critical_fields"]:
         reject_reasons.append("missing_required_context")
         decision_state = REJECT_MISSING_CONTEXT
     elif probability_quality["status"] == "FAIL":
@@ -75,12 +180,20 @@ def validate_trade_context(row: Mapping[str, Any]) -> dict[str, Any]:
         notes.append("liquidity_context_missing")
     if availability_quality["status"] == "REVIEW":
         notes.append("noncritical_context_missing")
+    if missing_field_severity["missing_low_fields"] or missing_field_severity["missing_info_fields"]:
+        notes.append("ignored_missing_fields_present")
 
     return {
         "schema_version": SCHEMA_VERSION,
         "decision_state": decision_state,
         "confidence": _confidence_for(decision_state),
         "missing_fields": missing_fields,
+        "missing_field_severity_version": MISSING_FIELD_SEVERITY_VERSION,
+        "missing_critical_fields": missing_field_severity["missing_critical_fields"],
+        "missing_high_fields": missing_field_severity["missing_high_fields"],
+        "missing_medium_fields": missing_field_severity["missing_medium_fields"],
+        "missing_low_fields": missing_field_severity["missing_low_fields"],
+        "missing_info_fields": missing_field_severity["missing_info_fields"],
         "evidence_quality": evidence_quality,
         "probability_quality": probability_quality,
         "ev_quality": ev_quality,
@@ -170,11 +283,11 @@ def _liquidity_quality(row: Mapping[str, Any], intended_price: Any) -> dict[str,
     }
 
 
-def _availability_quality(missing_fields: Sequence[str]) -> dict[str, Any]:
-    required_missing = [field for field in missing_fields if field in {"intended_price", "true_probability", "ev_after_spread"}]
+def _availability_quality(missing_fields: Sequence[str], missing_field_severity: Mapping[str, Sequence[str]]) -> dict[str, Any]:
+    required_missing = list(missing_field_severity["missing_critical_fields"])
     if required_missing:
         status = "FAIL"
-    elif missing_fields:
+    elif missing_field_severity["missing_high_fields"] or missing_field_severity["missing_medium_fields"]:
         status = "REVIEW"
     else:
         status = "PASS"
@@ -183,6 +296,8 @@ def _availability_quality(missing_fields: Sequence[str]) -> dict[str, Any]:
         "status": status,
         "required_missing_fields": required_missing,
         "missing_field_count": len(missing_fields),
+        "review_missing_field_count": len(missing_field_severity["missing_high_fields"]) + len(missing_field_severity["missing_medium_fields"]),
+        "ignored_missing_field_count": len(missing_field_severity["missing_low_fields"]) + len(missing_field_severity["missing_info_fields"]),
     }
 
 
@@ -219,6 +334,30 @@ def _string_list(value: Any) -> list[str]:
     return [str(value)]
 
 
+def _classify_missing_fields(missing_fields: Sequence[str]) -> dict[str, list[str]]:
+    classified = {
+        "missing_critical_fields": [],
+        "missing_high_fields": [],
+        "missing_medium_fields": [],
+        "missing_low_fields": [],
+        "missing_info_fields": [],
+    }
+    for field in missing_fields:
+        if field in _CRITICAL_MISSING_FIELDS:
+            classified["missing_critical_fields"].append(field)
+        elif field in _HIGH_MISSING_FIELDS:
+            classified["missing_high_fields"].append(field)
+        elif field in _MEDIUM_MISSING_FIELDS:
+            classified["missing_medium_fields"].append(field)
+        elif field in _LOW_MISSING_FIELDS:
+            classified["missing_low_fields"].append(field)
+        elif field in _INFO_MISSING_FIELDS:
+            classified["missing_info_fields"].append(field)
+        else:
+            classified["missing_medium_fields"].append(field)
+    return classified
+
+
 def _json_value(value: Any) -> Any:
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
@@ -226,6 +365,7 @@ def _json_value(value: Any) -> Any:
 
 
 __all__ = [
+    "MISSING_FIELD_SEVERITY_VERSION",
     "PASS_CONTEXT",
     "REJECT_BAD_EV",
     "REJECT_BAD_PROBABILITY",

@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:56:18.604782Z",
+  "generated_at_utc": "2026-06-29T15:29:56.717740Z",
   "module_count": 459,
   "modules": [
     {
@@ -5709,7 +5709,7 @@
       "module_name": "tests.tools.test_decision_engine_batch_validate",
       "domain": "tests",
       "package": "tests/tools",
-      "line_count": 123,
+      "line_count": 145,
       "blast_radius_score": 1,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
@@ -5729,7 +5729,7 @@
       "module_name": "tests.tools.test_decision_engine_prototype",
       "domain": "tests",
       "package": "tests/tools",
-      "line_count": 169,
+      "line_count": 250,
       "blast_radius_score": 1,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
@@ -7082,7 +7082,7 @@
       "module_name": "tools.decision.decision_engine_batch_validate",
       "domain": "tools",
       "package": "tools/decision",
-      "line_count": 350,
+      "line_count": 392,
       "blast_radius_score": 2,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
@@ -7102,7 +7102,7 @@
       "module_name": "tools.decision.decision_engine_prototype",
       "domain": "tools",
       "package": "tools/decision",
-      "line_count": 238,
+      "line_count": 378,
       "blast_radius_score": 2,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,

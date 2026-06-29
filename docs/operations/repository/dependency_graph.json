@@ -5474,7 +5474,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T14:56:17.972780Z",
+  "generated_at_utc": "2026-06-29T15:28:51.837288Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,

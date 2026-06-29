@@ -77,6 +77,28 @@ def test_summarize_decision_diagnostics_counts_states_and_quality():
     assert summary["examples"]["REJECT_LOW_EVIDENCE"][0]["trade_id"] == "weak-evidence"
 
 
+def test_summarize_decision_diagnostics_counts_missing_severity_buckets():
+    rows = [
+        _row(trade_id="low-info-pass", missing_fields=["blockers", "bankroll_rank"]),
+        _row(trade_id="high-review", missing_fields=["risk_mode"]),
+        _row(trade_id="medium-review", missing_fields=["signal_name"]),
+    ]
+
+    summary = summarize_decision_diagnostics(rows, source_files=["fixture.jsonl"], parse_errors=0, total_lines=3)
+
+    assert summary["decision_state_counts"] == {
+        "PASS_CONTEXT": 1,
+        "REVIEW_REQUIRED": 2,
+    }
+    assert summary["missing_low_field_counts"] == {"blockers": 1}
+    assert summary["missing_info_field_counts"] == {"bankroll_rank": 1}
+    assert summary["missing_high_field_counts"] == {"risk_mode": 1}
+    assert summary["missing_medium_field_counts"] == {"signal_name": 1}
+    assert summary["note_counts"]["ignored_missing_fields_present"] == 1
+    assert summary["examples"]["PASS_CONTEXT"][0]["missing_low_fields"] == ["blockers"]
+    assert summary["examples"]["PASS_CONTEXT"][0]["missing_info_fields"] == ["bankroll_rank"]
+
+
 def test_validate_jsonl_files_returns_serializable_summary(tmp_path: Path):
     path = tmp_path / "canonical.jsonl"
     _write_jsonl(path, [_row(trade_id="pass"), _row(trade_id="missing-ev", ev_after_spread=None)])
