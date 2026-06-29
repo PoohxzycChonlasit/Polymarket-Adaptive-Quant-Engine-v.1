@@ -1359,7 +1359,7 @@
     {
       "priority": 1.845,
       "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 2,
       "description": "Define fixture and batch-comparison acceptance criteria for severity-aware missing-field classification before implementation.",
@@ -1371,7 +1371,26 @@
       "outputs": [
         "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md"
       ],
-      "notes": "Design/test-plan only. Define expected behavior for critical_missing_fields, review_missing_fields, ignored_missing_fields, strict versus relaxed MEDIUM handling, and old-versus-new batch distribution comparison. Do not change validator logic."
+      "notes": "DONE. Defined fixture matrix, old-vs-new expected behavior, batch acceptance criteria, implementation test plan, risk assessment, and recommendation to proceed with offline-only severity implementation. No validator logic changed."
+    },
+    {
+      "priority": 1.846,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 4,
+      "description": "Implement severity-aware missing-field diagnostics in the offline Decision Engine Prototype using fixture-first tests and old-versus-new batch validation.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
+      "allowed_scope": [
+        "tools/decision/",
+        "tests/tools/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md"
+      ],
+      "notes": "Offline tooling only. Preserve hard-reject semantics, keep HIGH and strict MEDIUM missing fields as REVIEW_REQUIRED, treat LOW/INFO missing fields as notes-only, default unknown fields to review, and do not touch runtime, trader.py, risk, sizing, execution, wallet, config, .env, or live/paper behavior."
     },
     {
       "priority": 1.85,

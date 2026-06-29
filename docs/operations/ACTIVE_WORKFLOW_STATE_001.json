@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001 complete; next is DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+    "current_phase": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001 complete; next is DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
     "last_commit": "HEAD",
-    "last_commit_message": "docs: design missing field severity model",
-    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
+    "last_commit_message": "docs: add decision engine severity test plan",
+    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -98,7 +98,7 @@
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
         ],
-        "next_batch": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
+        "next_batch": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -223,7 +223,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001 complete. Designed severity-aware missing-field model with CRITICAL/HIGH/MEDIUM/LOW/INFO mappings and hard-reject/review/ignore policies. No validator/runtime logic changed. Next: DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.",
+    "notes": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001 complete. Defined fixture matrix, old-vs-new expectations, batch acceptance criteria, risk assessment, and implementation recommendation for severity-aware missing-field handling. No validator/runtime logic changed. Next: DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -445,5 +445,26 @@
         "logic_changed": false,
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001"
+    },
+    "decision_engine_prototype_missing_field_severity_test_plan": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md",
+        "fixture_matrix_cases": [
+            "no_missing_fields_passes",
+            "missing_critical_intended_price",
+            "missing_critical_probability_aliases",
+            "missing_critical_ev_after_spread",
+            "missing_high_field_only",
+            "missing_medium_field_only_strict_v1",
+            "missing_low_field_only",
+            "missing_info_field_only",
+            "mixed_severity_missing_fields",
+            "unknown_missing_field"
+        ],
+        "batch_acceptance": "hard reject semantics must remain stable; REVIEW_REQUIRED should become more meaningful; PASS_CONTEXT may appear only for LOW/INFO-only omissions",
+        "recommendation": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+        "logic_changed": false,
+        "runtime_changed": false,
+        "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001"
     }
 }
