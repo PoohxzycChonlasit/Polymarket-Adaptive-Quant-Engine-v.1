@@ -2675,7 +2675,7 @@
     {
       "priority": 175,
       "task_id": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Audit completed trade open/closed payload helper boundaries and identify whether remaining trade-event lifecycle logic should stay in trader.py.",
@@ -2689,7 +2689,29 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md"
       ],
-      "notes": "Design-only follow-up. Audit helper purity, event emission boundaries, runtime mutation boundaries, and remaining lifecycle logic. Do not modify runtime code."
+      "notes": "DONE. trader_reconciliation_payload.py audited: 10 symbols, 6 responsibility domains, LOW-MEDIUM cohesion (3/5), 670L. Recommendation: SPLIT into trader_reconciliation_carry.py (retain 6 Phase-3F helpers) + trader_trade_event_payload.py (new, 4 event builders). ADD TypedDict schema contracts and golden snapshot tests. No runtime code modified."
+    },
+    {
+      "priority": 176,
+      "task_id": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Split trader_reconciliation_payload.py into trader_reconciliation_carry.py (6 Phase-3F carry helpers) and trader_trade_event_payload.py (4 Phase-3H/3J/3K event builders). Update all imports in trader.py. Update test files. No logic changes.",
+      "blocked_by": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001",
+      "allowed_scope": [
+        "polymarket/observability/",
+        "polymarket/trader.py",
+        "tests/observability/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_reconciliation_carry.py",
+        "polymarket/observability/trader_trade_event_payload.py",
+        "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md"
+      ],
+      "notes": "Split approved by Phase 3L audit. Move 4 event builders out of trader_reconciliation_payload.py into new trader_trade_event_payload.py. Retain 6 carry helpers in trader_reconciliation_carry.py (rename existing file). Update 9 aliases in trader.py import block. Update test_trader_reconciliation_payload.py imports (4 closed-payload tests move). No logic changes. TypedDict schemas and golden snapshots are optional follow-on after split."
     }
   ]
 }
