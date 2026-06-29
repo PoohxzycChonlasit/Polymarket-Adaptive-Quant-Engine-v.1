@@ -1301,7 +1301,7 @@
     {
       "priority": 1.82,
       "task_id": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 1,
       "description": "Use controlled canonical fixture rows to exercise decision states not observed in real batch data and document whether validator semantics need adjustment.",
@@ -1313,9 +1313,29 @@
         "docs/operations/"
       ],
       "outputs": [
+        "tests/tools/test_decision_engine_prototype.py",
         "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md"
       ],
-      "notes": "Offline fixture audit only. Focus on PASS_CONTEXT, REJECT_BAD_PROBABILITY, and REJECT_BAD_EV coverage gaps. Do not wire decisions into runtime, risk, sizing, execution, wallet, config, or strategy thresholds."
+      "notes": "DONE. Added controlled fixture matrix covering PASS_CONTEXT, REJECT_MISSING_CONTEXT, REJECT_BAD_PROBABILITY, REJECT_BAD_EV, REJECT_LOW_EVIDENCE, and REVIEW_REQUIRED. No validator logic repair was required. No canonical data repair required from fixture evidence."
+    },
+    {
+      "priority": 1.83,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Audit whether noncritical canonical missing_fields should continue to force REVIEW_REQUIRED or be separated from core-context completeness in the offline decision validator.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
+      "allowed_scope": [
+        "tools/decision/",
+        "tests/tools/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md"
+      ],
+      "notes": "Design/audit only unless separately scoped. Must not change runtime, risk, sizing, execution, wallet, config, strategy thresholds, or live/paper behavior."
     },
     {
       "priority": 1.85,

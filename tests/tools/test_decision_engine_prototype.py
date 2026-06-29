@@ -6,6 +6,7 @@ import pytest
 
 from tools.decision.decision_engine_prototype import (
     PASS_CONTEXT,
+    REJECT_BAD_EV,
     REJECT_BAD_PROBABILITY,
     REJECT_LOW_EVIDENCE,
     REJECT_MISSING_CONTEXT,
@@ -87,6 +88,16 @@ def test_invalid_probability_rejects_bad_probability():
     assert "invalid_probability" in diagnostic["reject_reasons"]
 
 
+def test_nonpositive_ev_after_spread_rejects_bad_ev():
+    row = _good_context_row(ev_after_spread=0.0)
+
+    diagnostic = validate_trade_context(row)
+
+    assert diagnostic["decision_state"] == REJECT_BAD_EV
+    assert diagnostic["ev_quality"]["status"] == "FAIL"
+    assert "invalid_ev_after_spread" in diagnostic["reject_reasons"]
+
+
 def test_missing_ev_after_spread_rejects_missing_context():
     row = _good_context_row(ev_after_spread=None)
 
@@ -116,6 +127,23 @@ def test_missing_liquidity_context_requires_review_without_rejecting_core_contex
     assert diagnostic["liquidity_quality"]["status"] == "REVIEW"
     assert diagnostic["reject_reasons"] == []
     assert "liquidity_context_missing" in diagnostic["notes"]
+
+
+@pytest.mark.parametrize(
+    ("case_name", "overrides", "expected_state"),
+    [
+        ("complete_context", {}, PASS_CONTEXT),
+        ("missing_core_context", {"intended_price": None}, REJECT_MISSING_CONTEXT),
+        ("bad_probability", {"true_probability": -0.1, "probability": -0.1}, REJECT_BAD_PROBABILITY),
+        ("bad_ev", {"ev_after_spread": -0.01}, REJECT_BAD_EV),
+        ("low_evidence", {"data_quality_grade": "D", "join_confidence": "LOW"}, REJECT_LOW_EVIDENCE),
+        ("liquidity_review", {"quote_age_ms": None, "slippage": None, "source_streams": ["trade_journal", "decision_log"]}, REVIEW_REQUIRED),
+    ],
+)
+def test_fixture_matrix_covers_all_decision_states(case_name, overrides, expected_state):
+    diagnostic = validate_trade_context(_good_context_row(trade_id=f"fixture-{case_name}", **overrides))
+
+    assert diagnostic["decision_state"] == expected_state
 
 
 def test_diagnostic_is_json_serializable():

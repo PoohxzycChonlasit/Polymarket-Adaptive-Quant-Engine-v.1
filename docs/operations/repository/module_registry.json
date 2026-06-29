@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:38:46.807734Z",
+  "generated_at_utc": "2026-06-29T14:56:18.604782Z",
   "module_count": 459,
   "modules": [
     {
@@ -5729,7 +5729,7 @@
       "module_name": "tests.tools.test_decision_engine_prototype",
       "domain": "tests",
       "package": "tests/tools",
-      "line_count": 141,
+      "line_count": 169,
       "blast_radius_score": 1,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,

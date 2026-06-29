@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:38:51.786488Z",
+  "generated_at_utc": "2026-06-29T14:56:22.537432Z",
   "file_count": 459,
   "files": [
     {
@@ -45018,69 +45018,81 @@
     },
     {
       "path": "tests/tools/test_decision_engine_prototype.py",
-      "total_lines": 142,
+      "total_lines": 170,
       "class_count": 0,
-      "top_function_count": 10,
+      "top_function_count": 12,
       "method_count": 0,
       "classes": [],
       "top_functions": [
         {
           "name": "_good_context_row",
-          "line": 17,
+          "line": 18,
           "size": 25,
           "runtime_sensitive": false
         },
         {
           "name": "test_good_canonical_row_passes_context_validation",
-          "line": 44,
+          "line": 45,
           "size": 12,
           "runtime_sensitive": false
         },
         {
           "name": "test_missing_intended_price_rejects_missing_context",
-          "line": 58,
+          "line": 59,
           "size": 9,
           "runtime_sensitive": false
         },
         {
           "name": "test_missing_true_probability_rejects_missing_context",
-          "line": 69,
+          "line": 70,
           "size": 9,
           "runtime_sensitive": false
         },
         {
           "name": "test_invalid_probability_rejects_bad_probability",
-          "line": 80,
+          "line": 81,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_nonpositive_ev_after_spread_rejects_bad_ev",
+          "line": 91,
           "size": 8,
           "runtime_sensitive": false
         },
         {
           "name": "test_missing_ev_after_spread_rejects_missing_context",
-          "line": 90,
+          "line": 101,
           "size": 8,
           "runtime_sensitive": false
         },
         {
           "name": "test_weak_evidence_grade_rejects_low_evidence",
-          "line": 100,
+          "line": 111,
           "size": 8,
           "runtime_sensitive": false
         },
         {
           "name": "test_missing_liquidity_context_requires_review_without_rejecting_core_context",
-          "line": 110,
+          "line": 121,
           "size": 9,
           "runtime_sensitive": false
         },
         {
+          "name": "test_fixture_matrix_covers_all_decision_states",
+          "line": 143,
+          "size": 4,
+          "runtime_sensitive": false
+        },
+        {
           "name": "test_diagnostic_is_json_serializable",
-          "line": 121,
+          "line": 149,
           "size": 6,
           "runtime_sensitive": false
         },
         {
           "name": "test_decision_engine_prototype_has_no_runtime_imports",
-          "line": 129,
+          "line": 157,
           "size": 13,
           "runtime_sensitive": false
         }
@@ -45122,6 +45134,11 @@
           "size": 8
         },
         {
+          "name": "test_nonpositive_ev_after_spread_rejects_bad_ev",
+          "class": null,
+          "size": 8
+        },
+        {
           "name": "test_missing_ev_after_spread_rejects_missing_context",
           "class": null,
           "size": 8
@@ -45130,11 +45147,6 @@
           "name": "test_weak_evidence_grade_rejects_low_evidence",
           "class": null,
           "size": 8
-        },
-        {
-          "name": "test_diagnostic_is_json_serializable",
-          "class": null,
-          "size": 6
         }
       ],
       "runtime_sensitive_symbols": []

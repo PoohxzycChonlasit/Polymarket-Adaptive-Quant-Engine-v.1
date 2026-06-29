@@ -751,6 +751,7 @@
     "docs/reports/DECISION_ENGINE_DESIGN_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": [],
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md": [],
@@ -5473,7 +5474,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T14:38:45.568340Z",
+  "generated_at_utc": "2026-06-29T14:56:17.972780Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -9976,6 +9977,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -19258,7 +19265,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2297,
+  "node_count": 2298,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -20011,6 +20018,7 @@
     "docs/reports/DECISION_ENGINE_DESIGN_001.md",
     "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md",
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md",
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md",
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md",
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md",
@@ -22331,6 +22339,7 @@
     "docs/reports/DECISION_ENGINE_DESIGN_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": [],
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md": [],
@@ -28286,6 +28295,10 @@
       "unresolved_internal": []
     },
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
