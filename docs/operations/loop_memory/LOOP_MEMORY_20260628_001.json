@@ -2263,7 +2263,9 @@
     "result": "PASS",
     "repairs": 1,
     "evidence_grade": "A",
-    "commits": [],
+    "commits": [
+      "1861f67d"
+    ],
     "commit_messages": [
       "refactor: extract trader path truth helpers"
     ],

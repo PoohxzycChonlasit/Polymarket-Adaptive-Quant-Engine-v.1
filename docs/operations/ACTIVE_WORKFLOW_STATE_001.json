@@ -3,7 +3,7 @@
     "last_updated": "2026-06-29",
     "current_phase": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001 complete; next is Phase 3D or next READY task",
     "last_completed_task": "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
-    "last_commit": "pending",
+    "last_commit": "1861f67d",
     "last_commit_message": "refactor: extract trader path truth helpers",
     "next_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
     "navigator_state": {
