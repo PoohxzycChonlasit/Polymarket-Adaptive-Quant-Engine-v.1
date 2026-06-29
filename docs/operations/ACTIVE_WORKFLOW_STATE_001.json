@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001 complete; next is DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
+    "current_phase": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001 complete; next is DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
+    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
     "last_commit": "HEAD",
-    "last_commit_message": "docs: audit decision engine review semantics",
-    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+    "last_commit_message": "docs: design missing field severity model",
+    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -98,7 +98,7 @@
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
         ],
-        "next_batch": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+        "next_batch": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -223,7 +223,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001 complete. Classified 88 current canonical fields by severity and documented PASS_CONTEXT/REVIEW_REQUIRED semantics. No validator/runtime logic changed. Next: DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.",
+    "notes": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001 complete. Designed severity-aware missing-field model with CRITICAL/HIGH/MEDIUM/LOW/INFO mappings and hard-reject/review/ignore policies. No validator/runtime logic changed. Next: DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -421,5 +421,29 @@
         "logic_changed": false,
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001"
+    },
+    "decision_engine_prototype_missing_field_severity_design": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md",
+        "severity_levels": [
+            "CRITICAL",
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "INFO"
+        ],
+        "hard_reject_policy": [
+            "missing_or_invalid_intended_price",
+            "missing_or_invalid_probability_alias",
+            "missing_or_invalid_ev_after_spread",
+            "weak_data_quality_grade",
+            "weak_join_confidence",
+            "unusable_source_stream_support"
+        ],
+        "review_policy": "HIGH fields missing should review; MEDIUM fields review in strict mode until batch-comparison evidence supports relaxation",
+        "ignore_policy": "LOW and INFO fields should produce notes only and should not block PASS_CONTEXT when critical and high-severity checks pass",
+        "logic_changed": false,
+        "runtime_changed": false,
+        "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001"
     }
 }

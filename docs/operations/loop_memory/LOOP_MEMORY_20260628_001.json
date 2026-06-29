@@ -3397,5 +3397,70 @@
     },
     "verdict": "PASS_DESIGN_AUDIT",
     "next_recommendation": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "LOOP_20260629_DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+    "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md",
+      "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md",
+      "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
+      "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS_DESIGN_ONLY",
+    "repairs": 0,
+    "evidence_grade": "B+D",
+    "commit_messages": [
+      "docs: design missing field severity model"
+    ],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "validator_logic_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "severity_levels": [
+        "CRITICAL",
+        "HIGH",
+        "MEDIUM",
+        "LOW",
+        "INFO"
+      ],
+      "hard_reject_fields": [
+        "intended_price",
+        "probability_or_true_probability",
+        "ev_after_spread",
+        "data_quality_grade",
+        "join_confidence",
+        "source_streams"
+      ],
+      "review_policy": "HIGH missing fields review by default; MEDIUM missing fields review in strict mode until batch evidence supports relaxation",
+      "ignore_policy": "LOW and INFO missing fields produce notes only and should not block PASS_CONTEXT when critical/high checks pass",
+      "migration_recommendation": "write severity fixture/test plan before implementation",
+      "paper_runtime_run": false,
+      "live_runtime_run": false
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "review_semantics_audit_read": true,
+      "batch_validation_report_read": true,
+      "canonical_schema_reviewed": true,
+      "severity_matrix_created": true,
+      "decision_mapping_created": true,
+      "recovery_strategy_created": true,
+      "migration_recommendation_created": true,
+      "runtime_code_modified": false,
+      "validator_logic_modified": false
+    },
+    "verdict": "PASS_DESIGN_ONLY",
+    "next_recommendation": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001"
   }
 ]

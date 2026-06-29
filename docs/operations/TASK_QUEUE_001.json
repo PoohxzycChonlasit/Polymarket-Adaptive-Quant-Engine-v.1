@@ -1340,7 +1340,7 @@
     {
       "priority": 1.84,
       "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 2,
       "description": "Design a missing-field severity map for the offline Decision Engine Prototype before any implementation changes.",
@@ -1354,7 +1354,24 @@
       "outputs": [
         "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md"
       ],
-      "notes": "Design/audit only. Do not change validator logic unless a later implementation task explicitly scopes it. Do not touch runtime, risk, sizing, execution, wallet, config, strategy thresholds, or live/paper behavior."
+      "notes": "DONE. Designed CRITICAL/HIGH/MEDIUM/LOW/INFO missing-field severity model, hard-reject/review/ignore policies, recovery strategy, examples, migration path, and future validator notes. No validator, runtime, risk, sizing, execution, wallet, config, strategy threshold, or live/paper behavior changed."
+    },
+    {
+      "priority": 1.845,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Define fixture and batch-comparison acceptance criteria for severity-aware missing-field classification before implementation.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md"
+      ],
+      "notes": "Design/test-plan only. Define expected behavior for critical_missing_fields, review_missing_fields, ignored_missing_fields, strict versus relaxed MEDIUM handling, and old-versus-new batch distribution comparison. Do not change validator logic."
     },
     {
       "priority": 1.85,
