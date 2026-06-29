@@ -1,0 +1,76 @@
+{
+  "schema_version": "architecture_heatmap_v1",
+  "generated_at_utc": "2026-06-29T13:32:00Z",
+  "modules": [
+    {
+      "name": "polymarket/trader.py",
+      "loc": 11863,
+      "method_count": 298,
+      "domain": "Orchestration & Cycle Execution",
+      "runtime_sensitive": true,
+      "extraction_priority": "NONE",
+      "coupling_notes": "Central coordinator that acts as entrypoint. Decomposed via wrappers/proxy delegation.",
+      "recommended_next_action": "Retain as coordinator while continuing decomposition of side components."
+    },
+    {
+      "name": "polymarket/observability/trader_lifecycle_payload.py",
+      "loc": 503,
+      "method_count": 5,
+      "domain": "Observability - Lifecycle Payload",
+      "runtime_sensitive": false,
+      "extraction_priority": "COMPLETED",
+      "coupling_notes": "Read-only latency, exposure, and lifecycle observability payload assembly. De-coupled from self state.",
+      "recommended_next_action": "No action needed."
+    },
+    {
+      "name": "polymarket/observability/trader_phase2_observability.py",
+      "loc": 630,
+      "method_count": 9,
+      "domain": "Observability - Phase 2",
+      "runtime_sensitive": false,
+      "extraction_priority": "COMPLETED",
+      "coupling_notes": "Orderbook classification, pre-model gates, ev null reason helpers.",
+      "recommended_next_action": "No action needed."
+    },
+    {
+      "name": "_analyze_market_quant (method block)",
+      "loc": 1500,
+      "method_count": 1,
+      "domain": "Market Analysis & Signals",
+      "runtime_sensitive": true,
+      "extraction_priority": "LOW",
+      "coupling_notes": "Highly coupled with signal threshold config, virtual PTB, and orderbook snapshot reads.",
+      "recommended_next_action": "Keep in trader.py to avoid runtime fragmentation."
+    },
+    {
+      "name": "verify_account_readiness (method)",
+      "loc": 483,
+      "method_count": 1,
+      "domain": "Account Readiness & Preflight",
+      "runtime_sensitive": true,
+      "extraction_priority": "LOW",
+      "coupling_notes": "Interacts with web3 wallets and CLOB client to verify balance and allowance.",
+      "recommended_next_action": "Keep in trader.py as startup safety check."
+    },
+    {
+      "name": "check_stop_loss / check_take_profit (methods)",
+      "loc": 597,
+      "method_count": 2,
+      "domain": "Risk & Safety Gates",
+      "runtime_sensitive": true,
+      "extraction_priority": "MEDIUM",
+      "coupling_notes": "Directly evaluates stop/take parameters and submits forced exits.",
+      "recommended_next_action": "Consider future exit agent delegation after paper evaluation completes."
+    },
+    {
+      "name": "_reconcile_positions_observability (methods)",
+      "loc": 180,
+      "method_count": 3,
+      "domain": "Observability - Reconciliation",
+      "runtime_sensitive": false,
+      "extraction_priority": "HIGH",
+      "coupling_notes": "Constructs payloads for shadow position mismatch, trade open/close events.",
+      "recommended_next_action": "Extract in TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001."
+    }
+  ]
+}

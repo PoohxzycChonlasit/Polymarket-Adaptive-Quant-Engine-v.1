@@ -2510,6 +2510,67 @@
         "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md"
       ],
       "notes": "DONE. Extracted 9 methods: _phase2_ev_null_reason, _phase2_pre_model_gate_detail, _phase2_ev_null_reason_detail, _phase2_orderbook_state_classification, _phase2_book_state_level, _phase2_authoritative_orderbook_availability, _phase2_market_readiness_state, _phase2_model_activation_detail, _phase2_candidate_block_detail. Wrappers retained in trader.py. 92 new golden equivalence tests. ~529L removed from trader.py. 819 targeted tests passed. Deferred: _phase2_mark_readiness (writes self), _phase2_complete_lifecycle_observability (reads self preload), _phase2_observability_payload (reads self tokens), _emit_lifecycle_milestone_event (emits events via self)."
+    },
+    {
+      "priority": 140,
+      "task_id": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract lifecycle payload/read-only observability helpers from polymarket/trader.py into polymarket/observability/trader_lifecycle_payload.py while preserving exact behavior through backward-compatible wrapper delegation.",
+      "blocked_by": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/trader_lifecycle_payload.py",
+        "tests/observability/test_trader_lifecycle_payload.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_lifecycle_payload.py",
+        "tests/observability/test_trader_lifecycle_payload.py"
+      ],
+      "notes": "DONE. Extracted 5 methods: _phase2_lifecycle_phase, _phase2_readiness_timestamps, _compute_lifecycle_latency_ms, _phase2_exposure_timeline, _phase2_complete_lifecycle_observability, _phase2_observability_payload. Wrappers retained in trader.py. 14 new golden equivalence tests. ~419L removed from trader.py. 833 targeted tests passed."
+    },
+    {
+      "priority": 150,
+      "task_id": "TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 3,
+      "description": "Perform docs-only architecture hygiene pass: refresh trader.py remaining architecture inventory, create architecture heatmap draft, and clean root handoff placement.",
+      "blocked_by": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
+      "allowed_scope": [
+        "docs/operations/",
+        "docs/reports/",
+        "docs/handoffs/",
+        "FILE_INDEX.md"
+      ],
+      "outputs": [
+        "docs/operations/repository/architecture_heatmap.json",
+        "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md"
+      ],
+      "notes": "DONE. Moved root handoff files to docs/handoffs/, created architecture_heatmap.json, created post-Phase3E metrics and domain risk report."
+    },
+    {
+      "priority": 160,
+      "task_id": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract reconciliation and fill-related observability logic from polymarket/trader.py into polymarket/observability/trader_reconciliation_payload.py.",
+      "blocked_by": "TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/trader_reconciliation_payload.py",
+        "tests/observability/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_reconciliation_payload.py"
+      ],
+      "notes": "Planned next task."
     }
   ]
 }
