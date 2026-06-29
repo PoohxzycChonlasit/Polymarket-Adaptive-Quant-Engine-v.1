@@ -128,6 +128,7 @@ python main.py --mode live --interval 60
 | `TraderPresentationHelper` | [`polymarket/trader_presentation.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/trader_presentation.py) | TUI display formatting, display field presence/visibility checks, label generators |
 | `TraderLifecycleHelper` | [`polymarket/orchestration/trader_lifecycle.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/orchestration/trader_lifecycle.py) | Session startup, feed initialization, shutdown/cleanup hooks |
 | `TraderObservabilityHelper` | [`polymarket/orchestration/trader_observability.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/orchestration/trader_observability.py) | Display state, recent trades, health monitoring, orderbook refresh timing (8 fields), cadence/scheduler timing (5 fields), event producer, scheduler cadence detail, hybrid snapshot |
+| `trader_lifecycle_payload` | [`polymarket/observability/trader_lifecycle_payload.py`](file:///c:/quant/Polymarket-Adaptive-Quant-Engine-v.1/polymarket/observability/trader_lifecycle_payload.py) | Extracted read-only lifecycle payload builders and pure latency/exposure timeline helpers |
 
 `trader.py` delegates to these helpers via `@property` shims and method proxies. Core trading logic (signals, EV, risk, sizing, execution, reconciliation) remains in `trader.py`.
 

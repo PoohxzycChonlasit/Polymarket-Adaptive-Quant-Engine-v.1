@@ -114,6 +114,7 @@
     "dashboard/tsconfig.json": [],
     "dashboard/tsconfig.node.json": [],
     "dashboard/vite.config.ts": [],
+    "dependency_graph.json": [],
     "docs.zip": [],
     "docs/AGENT_WORKFLOW.md": [],
     "docs/BANKROLL_TIER_SYSTEM.md": [],
@@ -590,6 +591,7 @@
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": [],
@@ -610,6 +612,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": [],
+    "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": [],
     "docs/operations/handoffs/AI_HANDOFF_20260627_2046.md": [],
     "docs/operations/handoffs/AI_HANDOFF_20260627_2054.md": [],
     "docs/operations/handoffs/AI_HANDOFF_20260628_0310.md": [],
@@ -990,11 +993,16 @@
     "docs/reports/STALE_OWNER_CLEANUP_REPORT.md": [],
     "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md": [],
     "docs/reports/TOOL_PIPELINE_ENABLEMENT_001.md": [],
+    "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md": [],
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md": [],
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md": [],
     "docs/reports/TRADER_MODULARIZATION_PROGRAM_001.md": [],
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md": [],
@@ -1655,7 +1663,22 @@
       "utils/no_entry_root_cause_classifier.py"
     ],
     "polymarket/observability/trader_lifecycle_observability.py": [],
+    "polymarket/observability/trader_lifecycle_payload.py": [
+      "polymarket/bankroll_tiers.py",
+      "polymarket/observability/trader_lifecycle_observability.py",
+      "polymarket/observability/trader_phase2_observability.py",
+      "polymarket/orchestration/trader_observability.py"
+    ],
+    "polymarket/observability/trader_orderbook_details.py": [
+      "polymarket/client.py"
+    ],
     "polymarket/observability/trader_orderbook_lineage.py": [
+      "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    "polymarket/observability/trader_path_truth.py": [
+      "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    "polymarket/observability/trader_phase2_observability.py": [
       "polymarket/observability/trader_lifecycle_observability.py"
     ],
     "polymarket/observability/trader_presentation.py": [],
@@ -1722,7 +1745,11 @@
       "polymarket/observability/shadow_telemetry.py",
       "polymarket/observability/trader_decision_diagnostics.py",
       "polymarket/observability/trader_lifecycle_observability.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/observability/trader_orderbook_details.py",
       "polymarket/observability/trader_orderbook_lineage.py",
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/observability/trader_phase2_observability.py",
       "polymarket/observability/trader_presentation.py",
       "polymarket/opportunity_scanner.py",
       "polymarket/orchestration/trader_lifecycle.py",
@@ -1755,6 +1782,8 @@
     ],
     "pytest.ini": [],
     "register_api_keys.py": [],
+    "repo_health.json": [],
+    "repository_index.json": [],
     "requirements.txt": [],
     "research/OVERVIEW.md": [],
     "research/REPLAY_POLICY_NAMING_DRIFT.md": [],
@@ -2045,6 +2074,7 @@
     "scripts/ai_analyst.py": [],
     "scripts/hft_paper_summary.py": [],
     "scripts/vultr_deploy_paper.py": [],
+    "test_registry.json": [],
     "tests/airos/test_airos_atomic_batch_executor.py": [
       "tools/airos/atomic_batch_executor.py"
     ],
@@ -2270,9 +2300,26 @@
       "polymarket/trader.py",
       "utils/risk_manager.py"
     ],
+    "tests/observability/test_trader_lifecycle_payload.py": [
+      "polymarket/observability/trader_lifecycle_observability.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_orderbook_details.py": [
+      "polymarket/client.py",
+      "polymarket/observability/trader_orderbook_details.py",
+      "polymarket/trader.py"
+    ],
     "tests/observability/test_trader_orderbook_lineage.py": [
       "polymarket/observability/trader_orderbook_lineage.py",
       "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_path_truth.py": [
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_phase2_observability.py": [
+      "polymarket/observability/trader_phase2_observability.py"
     ],
     "tests/observability/test_zero_size_risk_floor_probe.py": [
       "polymarket/trader.py",
@@ -2520,6 +2567,7 @@
     "tests/replay/test_stabilization_survival_replay.py": [
       "tools/replay/stabilization_survival_replay.py"
     ],
+    "tests/scratch/test_shadow_eval_tmp/input.jsonl": [],
     "tests/tools/test_candidate_continuity.py": [
       "tools/unknown/candidate_continuity.py"
     ],
@@ -2657,6 +2705,7 @@
     "tests/tools/test_session_runtime_evaluator.py": [
       "polymarket/trader.py"
     ],
+    "tool_registry.json": [],
     "tools/airos/__init__.py": [],
     "tools/airos/atomic_batch_executor.py": [],
     "tools/airos/batch_generator.py": [],
@@ -2871,7 +2920,7 @@
     "web-dashboard/src/app/page.tsx": [],
     "web-dashboard/tsconfig.json": []
   },
-  "edge_count": 440,
+  "edge_count": 460,
   "edges": [
     [
       "polymarket/arbitrage.py",
@@ -2950,7 +2999,35 @@
       "utils/no_entry_root_cause_classifier.py"
     ],
     [
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/bankroll_tiers.py"
+    ],
+    [
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    [
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/observability/trader_phase2_observability.py"
+    ],
+    [
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/orchestration/trader_observability.py"
+    ],
+    [
+      "polymarket/observability/trader_orderbook_details.py",
+      "polymarket/client.py"
+    ],
+    [
       "polymarket/observability/trader_orderbook_lineage.py",
+      "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    [
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    [
+      "polymarket/observability/trader_phase2_observability.py",
       "polymarket/observability/trader_lifecycle_observability.py"
     ],
     [
@@ -3103,7 +3180,23 @@
     ],
     [
       "polymarket/trader.py",
+      "polymarket/observability/trader_lifecycle_payload.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_orderbook_details.py"
+    ],
+    [
+      "polymarket/trader.py",
       "polymarket/observability/trader_orderbook_lineage.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_path_truth.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_phase2_observability.py"
     ],
     [
       "polymarket/trader.py",
@@ -3722,12 +3815,48 @@
       "utils/risk_manager.py"
     ],
     [
+      "tests/observability/test_trader_lifecycle_payload.py",
+      "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    [
+      "tests/observability/test_trader_lifecycle_payload.py",
+      "polymarket/observability/trader_lifecycle_payload.py"
+    ],
+    [
+      "tests/observability/test_trader_lifecycle_payload.py",
+      "polymarket/trader.py"
+    ],
+    [
+      "tests/observability/test_trader_orderbook_details.py",
+      "polymarket/client.py"
+    ],
+    [
+      "tests/observability/test_trader_orderbook_details.py",
+      "polymarket/observability/trader_orderbook_details.py"
+    ],
+    [
+      "tests/observability/test_trader_orderbook_details.py",
+      "polymarket/trader.py"
+    ],
+    [
       "tests/observability/test_trader_orderbook_lineage.py",
       "polymarket/observability/trader_orderbook_lineage.py"
     ],
     [
       "tests/observability/test_trader_orderbook_lineage.py",
       "polymarket/trader.py"
+    ],
+    [
+      "tests/observability/test_trader_path_truth.py",
+      "polymarket/observability/trader_path_truth.py"
+    ],
+    [
+      "tests/observability/test_trader_path_truth.py",
+      "polymarket/trader.py"
+    ],
+    [
+      "tests/observability/test_trader_phase2_observability.py",
+      "polymarket/observability/trader_phase2_observability.py"
     ],
     [
       "tests/observability/test_zero_size_risk_floor_probe.py",
@@ -4809,9 +4938,26 @@
       "polymarket/client.py",
       "polymarket/trader.py"
     ],
+    "tests/observability/test_trader_lifecycle_payload.py": [
+      "polymarket/observability/trader_lifecycle_observability.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_orderbook_details.py": [
+      "polymarket/client.py",
+      "polymarket/observability/trader_orderbook_details.py",
+      "polymarket/trader.py"
+    ],
     "tests/observability/test_trader_orderbook_lineage.py": [
       "polymarket/observability/trader_orderbook_lineage.py",
       "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_path_truth.py": [
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_phase2_observability.py": [
+      "polymarket/observability/trader_phase2_observability.py"
     ],
     "tests/observability/test_zero_size_risk_floor_probe.py": [
       "polymarket/trader.py",
@@ -5162,7 +5308,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-28T18:46:08.616726Z",
+  "generated_at_utc": "2026-06-29T06:20:31.693138Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -5843,6 +5989,12 @@
       "outbound_dependencies_count": 0
     },
     "dashboard/vite.config.ts": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "dependency_graph.json": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -8704,6 +8856,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -8822,6 +8980,12 @@
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
     "docs/operations/handoffs/AI_HANDOFF_20260627_2046.md": {
@@ -11104,6 +11268,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -11129,6 +11299,30 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
@@ -14825,14 +15019,14 @@
       "outbound_dependencies_count": 1
     },
     "polymarket/bankroll_tiers.py": {
-      "blast_radius_score": 36,
-      "inbound_dependencies_count": 12,
+      "blast_radius_score": 39,
+      "inbound_dependencies_count": 13,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
     "polymarket/client.py": {
-      "blast_radius_score": 90,
-      "inbound_dependencies_count": 29,
+      "blast_radius_score": 96,
+      "inbound_dependencies_count": 31,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 1
     },
@@ -14921,14 +15115,38 @@
       "outbound_dependencies_count": 6
     },
     "polymarket/observability/trader_lifecycle_observability.py": {
-      "blast_radius_score": 6,
-      "inbound_dependencies_count": 2,
+      "blast_radius_score": 18,
+      "inbound_dependencies_count": 6,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
+    },
+    "polymarket/observability/trader_lifecycle_payload.py": {
+      "blast_radius_score": 18,
+      "inbound_dependencies_count": 2,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 4
+    },
+    "polymarket/observability/trader_orderbook_details.py": {
+      "blast_radius_score": 9,
+      "inbound_dependencies_count": 2,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 1
     },
     "polymarket/observability/trader_orderbook_lineage.py": {
       "blast_radius_score": 9,
       "inbound_dependencies_count": 2,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 1
+    },
+    "polymarket/observability/trader_path_truth.py": {
+      "blast_radius_score": 9,
+      "inbound_dependencies_count": 2,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 1
+    },
+    "polymarket/observability/trader_phase2_observability.py": {
+      "blast_radius_score": 12,
+      "inbound_dependencies_count": 3,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 1
     },
@@ -14957,8 +15175,8 @@
       "outbound_dependencies_count": 3
     },
     "polymarket/orchestration/trader_observability.py": {
-      "blast_radius_score": 12,
-      "inbound_dependencies_count": 2,
+      "blast_radius_score": 15,
+      "inbound_dependencies_count": 3,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 2
     },
@@ -15035,10 +15253,10 @@
       "outbound_dependencies_count": 1
     },
     "polymarket/trader.py": {
-      "blast_radius_score": 276,
-      "inbound_dependencies_count": 54,
+      "blast_radius_score": 297,
+      "inbound_dependencies_count": 57,
       "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 38
+      "outbound_dependencies_count": 42
     },
     "polymarket/trend_runner.py": {
       "blast_radius_score": 12,
@@ -15059,6 +15277,18 @@
       "outbound_dependencies_count": 0
     },
     "register_api_keys.py": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "repo_health.json": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "repository_index.json": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -16804,6 +17034,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "test_registry.json": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "tests/airos/test_airos_atomic_batch_executor.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 0,
@@ -17098,11 +17334,35 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 3
     },
+    "tests/observability/test_trader_lifecycle_payload.py": {
+      "blast_radius_score": 9,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 3
+    },
+    "tests/observability/test_trader_orderbook_details.py": {
+      "blast_radius_score": 9,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 3
+    },
     "tests/observability/test_trader_orderbook_lineage.py": {
       "blast_radius_score": 6,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 2
+    },
+    "tests/observability/test_trader_path_truth.py": {
+      "blast_radius_score": 6,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 2
+    },
+    "tests/observability/test_trader_phase2_observability.py": {
+      "blast_radius_score": 3,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 1
     },
     "tests/observability/test_zero_size_risk_floor_probe.py": {
       "blast_radius_score": 2,
@@ -17482,6 +17742,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 1
     },
+    "tests/scratch/test_shadow_eval_tmp/input.jsonl": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "tests/tools/test_candidate_continuity.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 0,
@@ -17769,6 +18035,12 @@
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 1
+    },
+    "tool_registry.json": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
     },
     "tools/airos/__init__.py": {
       "blast_radius_score": 0,
@@ -18605,7 +18877,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2240,
+  "node_count": 2261,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -18721,6 +18993,7 @@
     "dashboard/tsconfig.json",
     "dashboard/tsconfig.node.json",
     "dashboard/vite.config.ts",
+    "dependency_graph.json",
     "docs.zip",
     "docs/AGENT_WORKFLOW.md",
     "docs/BANKROLL_TIER_SYSTEM.md",
@@ -19197,6 +19470,7 @@
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md",
@@ -19217,6 +19491,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json",
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json",
+    "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md",
     "docs/operations/handoffs/AI_HANDOFF_20260627_2046.md",
     "docs/operations/handoffs/AI_HANDOFF_20260627_2054.md",
     "docs/operations/handoffs/AI_HANDOFF_20260628_0310.md",
@@ -19597,11 +19872,16 @@
     "docs/reports/STALE_OWNER_CLEANUP_REPORT.md",
     "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md",
     "docs/reports/TOOL_PIPELINE_ENABLEMENT_001.md",
+    "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md",
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md",
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md",
     "docs/reports/TRADER_MODULARIZATION_PROGRAM_001.md",
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md",
     "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md",
@@ -20234,7 +20514,11 @@
     "polymarket/observability/shadow_telemetry.py",
     "polymarket/observability/trader_decision_diagnostics.py",
     "polymarket/observability/trader_lifecycle_observability.py",
+    "polymarket/observability/trader_lifecycle_payload.py",
+    "polymarket/observability/trader_orderbook_details.py",
     "polymarket/observability/trader_orderbook_lineage.py",
+    "polymarket/observability/trader_path_truth.py",
+    "polymarket/observability/trader_phase2_observability.py",
     "polymarket/observability/trader_presentation.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
@@ -20257,6 +20541,8 @@
     "polymarket/virtual_ptb.py",
     "pytest.ini",
     "register_api_keys.py",
+    "repo_health.json",
+    "repository_index.json",
     "requirements.txt",
     "research/OVERVIEW.md",
     "research/REPLAY_POLICY_NAMING_DRIFT.md",
@@ -20547,6 +20833,7 @@
     "scripts/ai_analyst.py",
     "scripts/hft_paper_summary.py",
     "scripts/vultr_deploy_paper.py",
+    "test_registry.json",
     "tests/airos/test_airos_atomic_batch_executor.py",
     "tests/airos/test_airos_batch_generator.py",
     "tests/airos/test_airos_dependency_graph_builder.py",
@@ -20596,7 +20883,11 @@
     "tests/observability/test_telemetry_backfill.py",
     "tests/observability/test_terminal_dashboard_display.py",
     "tests/observability/test_trade_open_model_visibility_serialization.py",
+    "tests/observability/test_trader_lifecycle_payload.py",
+    "tests/observability/test_trader_orderbook_details.py",
     "tests/observability/test_trader_orderbook_lineage.py",
+    "tests/observability/test_trader_path_truth.py",
+    "tests/observability/test_trader_phase2_observability.py",
     "tests/observability/test_zero_size_risk_floor_probe.py",
     "tests/other/test_candidate_identity.py",
     "tests/other/test_dashboard_api.py",
@@ -20660,6 +20951,7 @@
     "tests/replay/test_semantic_c_shadow_pnl_truth.py",
     "tests/replay/test_shadow_filter_evaluator.py",
     "tests/replay/test_stabilization_survival_replay.py",
+    "tests/scratch/test_shadow_eval_tmp/input.jsonl",
     "tests/tools/test_candidate_continuity.py",
     "tests/tools/test_candidate_path_observability.py",
     "tests/tools/test_compact_run_summary.py",
@@ -20708,6 +21000,7 @@
     "tests/tools/test_research_state_writer.py",
     "tests/tools/test_runtime_storage_compressor.py",
     "tests/tools/test_session_runtime_evaluator.py",
+    "tool_registry.json",
     "tools/airos/__init__.py",
     "tools/airos/atomic_batch_executor.py",
     "tools/airos/batch_generator.py",
@@ -20984,6 +21277,7 @@
     "dashboard/tsconfig.json": [],
     "dashboard/tsconfig.node.json": [],
     "dashboard/vite.config.ts": [],
+    "dependency_graph.json": [],
     "docs.zip": [],
     "docs/AGENT_WORKFLOW.md": [],
     "docs/BANKROLL_TIER_SYSTEM.md": [],
@@ -21460,6 +21754,7 @@
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": [],
@@ -21480,6 +21775,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": [],
+    "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": [],
     "docs/operations/handoffs/AI_HANDOFF_20260627_2046.md": [],
     "docs/operations/handoffs/AI_HANDOFF_20260627_2054.md": [],
     "docs/operations/handoffs/AI_HANDOFF_20260628_0310.md": [],
@@ -21860,11 +22156,16 @@
     "docs/reports/STALE_OWNER_CLEANUP_REPORT.md": [],
     "docs/reports/SUPERVISOR_ENGINE_DESIGN_001.md": [],
     "docs/reports/TOOL_PIPELINE_ENABLEMENT_001.md": [],
+    "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md": [],
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md": [],
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md": [],
     "docs/reports/TRADER_MODULARIZATION_PROGRAM_001.md": [],
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md": [],
@@ -22494,6 +22795,7 @@
     "polymarket/bankroll_tiers.py": [
       "polymarket/bankroll_rank_engine.py",
       "polymarket/lucky_shot.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
       "polymarket/opportunity_scanner.py",
       "polymarket/order_manager.py",
       "polymarket/position_sizing.py",
@@ -22508,6 +22810,7 @@
     "polymarket/client.py": [
       "polymarket/arbitrage.py",
       "polymarket/arbitrage_executor.py",
+      "polymarket/observability/trader_orderbook_details.py",
       "polymarket/order_intent.py",
       "polymarket/trader.py",
       "tests/integration/test_entry_attribution_snapshot.py",
@@ -22525,6 +22828,7 @@
       "tests/integration/test_shadow_filters.py",
       "tests/integration/test_stop_loss_shadow.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_orderbook_details.py",
       "tests/polymarket/test_arbitrage_executor.py",
       "tests/polymarket/test_exit_agent.py",
       "tests/polymarket/test_live_allowance_preflight.py",
@@ -22600,12 +22904,33 @@
       "tests/polymarket/test_trader_decision_diagnostics.py"
     ],
     "polymarket/observability/trader_lifecycle_observability.py": [
+      "polymarket/observability/trader_lifecycle_payload.py",
       "polymarket/observability/trader_orderbook_lineage.py",
-      "polymarket/trader.py"
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/observability/trader_phase2_observability.py",
+      "polymarket/trader.py",
+      "tests/observability/test_trader_lifecycle_payload.py"
+    ],
+    "polymarket/observability/trader_lifecycle_payload.py": [
+      "polymarket/trader.py",
+      "tests/observability/test_trader_lifecycle_payload.py"
+    ],
+    "polymarket/observability/trader_orderbook_details.py": [
+      "polymarket/trader.py",
+      "tests/observability/test_trader_orderbook_details.py"
     ],
     "polymarket/observability/trader_orderbook_lineage.py": [
       "polymarket/trader.py",
       "tests/observability/test_trader_orderbook_lineage.py"
+    ],
+    "polymarket/observability/trader_path_truth.py": [
+      "polymarket/trader.py",
+      "tests/observability/test_trader_path_truth.py"
+    ],
+    "polymarket/observability/trader_phase2_observability.py": [
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/trader.py",
+      "tests/observability/test_trader_phase2_observability.py"
     ],
     "polymarket/observability/trader_presentation.py": [
       "polymarket/orchestration/trader_observability.py",
@@ -22625,6 +22950,7 @@
     ],
     "polymarket/orchestration/trader_observability.py": [
       "polymarket/observability/trader_decision_diagnostics.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
       "polymarket/trader.py"
     ],
     "polymarket/order_intent.py": [
@@ -22735,7 +23061,10 @@
       "tests/observability/test_candidate_instance_shadow_propagation.py",
       "tests/observability/test_telemetry_backfill.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_lifecycle_payload.py",
+      "tests/observability/test_trader_orderbook_details.py",
       "tests/observability/test_trader_orderbook_lineage.py",
+      "tests/observability/test_trader_path_truth.py",
       "tests/observability/test_zero_size_risk_floor_probe.py",
       "tests/polymarket/test_bankroll_rank_engine.py",
       "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -22770,6 +23099,8 @@
     ],
     "pytest.ini": [],
     "register_api_keys.py": [],
+    "repo_health.json": [],
+    "repository_index.json": [],
     "requirements.txt": [],
     "research/OVERVIEW.md": [],
     "research/REPLAY_POLICY_NAMING_DRIFT.md": [],
@@ -23060,6 +23391,7 @@
     "scripts/ai_analyst.py": [],
     "scripts/hft_paper_summary.py": [],
     "scripts/vultr_deploy_paper.py": [],
+    "test_registry.json": [],
     "tests/airos/test_airos_atomic_batch_executor.py": [],
     "tests/airos/test_airos_batch_generator.py": [],
     "tests/airos/test_airos_dependency_graph_builder.py": [],
@@ -23109,7 +23441,11 @@
     "tests/observability/test_telemetry_backfill.py": [],
     "tests/observability/test_terminal_dashboard_display.py": [],
     "tests/observability/test_trade_open_model_visibility_serialization.py": [],
+    "tests/observability/test_trader_lifecycle_payload.py": [],
+    "tests/observability/test_trader_orderbook_details.py": [],
     "tests/observability/test_trader_orderbook_lineage.py": [],
+    "tests/observability/test_trader_path_truth.py": [],
+    "tests/observability/test_trader_phase2_observability.py": [],
     "tests/observability/test_zero_size_risk_floor_probe.py": [],
     "tests/other/test_candidate_identity.py": [],
     "tests/other/test_dashboard_api.py": [],
@@ -23173,6 +23509,7 @@
     "tests/replay/test_semantic_c_shadow_pnl_truth.py": [],
     "tests/replay/test_shadow_filter_evaluator.py": [],
     "tests/replay/test_stabilization_survival_replay.py": [],
+    "tests/scratch/test_shadow_eval_tmp/input.jsonl": [],
     "tests/tools/test_candidate_continuity.py": [],
     "tests/tools/test_candidate_path_observability.py": [],
     "tests/tools/test_compact_run_summary.py": [],
@@ -23221,6 +23558,7 @@
     "tests/tools/test_research_state_writer.py": [],
     "tests/tools/test_runtime_storage_compressor.py": [],
     "tests/tools/test_session_runtime_evaluator.py": [],
+    "tool_registry.json": [],
     "tools/airos/__init__.py": [],
     "tools/airos/atomic_batch_executor.py": [
       "tests/airos/test_airos_atomic_batch_executor.py"
@@ -23708,11 +24046,13 @@
     "docs/operations/execution_contracts/SIZE_SHARP_ENGINE_IMPLEMENTATION_OBSERVABILITY_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md",
     "docs/quant_agent_setup_md/roles/03_RISK_MANAGER_AGENT.md",
     "docs/quant_agent_setup_md/roles/04_EXIT_EXECUTION_AGENT.md",
     "docs/quant_agent_setup_md/roles/21_EXECUTION_MICROSTRUCTURE_AGENT.md",
@@ -23729,11 +24069,16 @@
     "docs/reports/LIVE_EXECUTION_GAP_ANALYSIS_001.md",
     "docs/reports/POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001.md",
     "docs/reports/RUNTIME_LOG_GOVERNANCE_POST_EXECUTION_VALIDATION_001.md",
+    "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md",
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md",
     "docs/reports/TRADER_BATCH_002A_REVIEW_001.md",
     "docs/reports/TRADER_MODULARIZATION_PROGRAM_001.md",
     "docs/reports/TRADER_MODULE_DECOMPOSITION_AUDIT_001.md",
     "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002_PLAN.md",
@@ -23794,7 +24139,11 @@
     "polymarket/observability/shadow_telemetry.py",
     "polymarket/observability/trader_decision_diagnostics.py",
     "polymarket/observability/trader_lifecycle_observability.py",
+    "polymarket/observability/trader_lifecycle_payload.py",
+    "polymarket/observability/trader_orderbook_details.py",
     "polymarket/observability/trader_orderbook_lineage.py",
+    "polymarket/observability/trader_path_truth.py",
+    "polymarket/observability/trader_phase2_observability.py",
     "polymarket/observability/trader_presentation.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
@@ -23898,7 +24247,11 @@
     "tests/integration/test_execution_timestamp_phase2.py",
     "tests/integration/test_execution_timestamp_phase3.py",
     "tests/integration/test_execution_timestamp_phase6.py",
+    "tests/observability/test_trader_lifecycle_payload.py",
+    "tests/observability/test_trader_orderbook_details.py",
     "tests/observability/test_trader_orderbook_lineage.py",
+    "tests/observability/test_trader_path_truth.py",
+    "tests/observability/test_trader_phase2_observability.py",
     "tests/polymarket/test_polymarket_trader.py",
     "tests/polymarket/test_trader_decision_diagnostics.py",
     "tools/execution_paper_runtime.py",
@@ -23947,6 +24300,7 @@
       "tests/integration/test_shadow_filters.py",
       "tests/integration/test_stop_loss_shadow.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_orderbook_details.py",
       "tests/polymarket/test_arbitrage_executor.py",
       "tests/polymarket/test_exit_agent.py",
       "tests/polymarket/test_live_allowance_preflight.py",
@@ -23999,8 +24353,23 @@
     "polymarket/observability/trader_decision_diagnostics.py": [
       "tests/polymarket/test_trader_decision_diagnostics.py"
     ],
+    "polymarket/observability/trader_lifecycle_observability.py": [
+      "tests/observability/test_trader_lifecycle_payload.py"
+    ],
+    "polymarket/observability/trader_lifecycle_payload.py": [
+      "tests/observability/test_trader_lifecycle_payload.py"
+    ],
+    "polymarket/observability/trader_orderbook_details.py": [
+      "tests/observability/test_trader_orderbook_details.py"
+    ],
     "polymarket/observability/trader_orderbook_lineage.py": [
       "tests/observability/test_trader_orderbook_lineage.py"
+    ],
+    "polymarket/observability/trader_path_truth.py": [
+      "tests/observability/test_trader_path_truth.py"
+    ],
+    "polymarket/observability/trader_phase2_observability.py": [
+      "tests/observability/test_trader_phase2_observability.py"
     ],
     "polymarket/opportunity_scanner.py": [
       "tests/integration/test_shadow_filters.py",
@@ -24095,7 +24464,10 @@
       "tests/observability/test_candidate_instance_shadow_propagation.py",
       "tests/observability/test_telemetry_backfill.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_lifecycle_payload.py",
+      "tests/observability/test_trader_orderbook_details.py",
       "tests/observability/test_trader_orderbook_lineage.py",
+      "tests/observability/test_trader_path_truth.py",
       "tests/observability/test_zero_size_risk_floor_probe.py",
       "tests/polymarket/test_bankroll_rank_engine.py",
       "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -24836,6 +25208,10 @@
       "unresolved_internal": []
     },
     "dashboard/vite.config.ts": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "dependency_graph.json": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -26743,6 +27119,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -26820,6 +27200,10 @@
       "unresolved_internal": []
     },
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -28343,6 +28727,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/TRADER_BATCH_002A_COMMIT_REPORT_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -28360,6 +28748,22 @@
       "unresolved_internal": []
     },
     "docs/reports/TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -31019,10 +31423,39 @@
       ],
       "unresolved_internal": []
     },
+    "polymarket/observability/trader_lifecycle_payload.py": {
+      "unresolved_external": [
+        "__future__",
+        "datetime",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/trader_orderbook_details.py": {
+      "unresolved_external": [
+        "__future__"
+      ],
+      "unresolved_internal": []
+    },
     "polymarket/observability/trader_orderbook_lineage.py": {
       "unresolved_external": [
         "__future__",
         "hashlib",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/trader_path_truth.py": {
+      "unresolved_external": [
+        "__future__",
+        "datetime",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/trader_phase2_observability.py": {
+      "unresolved_external": [
+        "__future__",
         "typing"
       ],
       "unresolved_internal": []
@@ -31233,6 +31666,14 @@
       "unresolved_internal": []
     },
     "register_api_keys.py": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "repo_health.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "repository_index.json": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -32396,6 +32837,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "test_registry.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "tests/airos/test_airos_atomic_batch_executor.py": {
       "unresolved_external": [
         "json",
@@ -32865,11 +33310,45 @@
       ],
       "unresolved_internal": []
     },
+    "tests/observability/test_trader_lifecycle_payload.py": {
+      "unresolved_external": [
+        "__future__",
+        "pytest",
+        "typing",
+        "unittest.mock"
+      ],
+      "unresolved_internal": []
+    },
+    "tests/observability/test_trader_orderbook_details.py": {
+      "unresolved_external": [
+        "__future__",
+        "pytest"
+      ],
+      "unresolved_internal": []
+    },
     "tests/observability/test_trader_orderbook_lineage.py": {
       "unresolved_external": [
         "__future__",
         "pytest",
         "types"
+      ],
+      "unresolved_internal": []
+    },
+    "tests/observability/test_trader_path_truth.py": {
+      "unresolved_external": [
+        "__future__",
+        "datetime",
+        "pytest",
+        "types",
+        "unittest.mock"
+      ],
+      "unresolved_internal": []
+    },
+    "tests/observability/test_trader_phase2_observability.py": {
+      "unresolved_external": [
+        "__future__",
+        "pytest",
+        "unittest.mock"
       ],
       "unresolved_internal": []
     },
@@ -33481,6 +33960,10 @@
       ],
       "unresolved_internal": []
     },
+    "tests/scratch/test_shadow_eval_tmp/input.jsonl": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "tests/tools/test_candidate_continuity.py": {
       "unresolved_external": [
         "json",
@@ -33974,6 +34457,10 @@
         "tools.runtime.paper_evaluation_report",
         "tools.runtime.session_runtime_evaluator"
       ]
+    },
+    "tool_registry.json": {
+      "unresolved_external": [],
+      "unresolved_internal": []
     },
     "tools/airos/__init__.py": {
       "unresolved_external": [],

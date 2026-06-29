@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001 complete; next is TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
-    "last_completed_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+    "current_phase": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001 complete; next is TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
+    "last_completed_task": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
     "last_commit": "64c59708",
     "last_commit_message": "refactor: extract trader phase2 observability helpers",
-    "next_task": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
+    "next_task": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -30,9 +30,9 @@
         ]
     },
     "decomposition_state": {
-        "trader_py_lines": 12282,
-        "trader_py_methods": 298,
-        "phases_completed": 4,
+        "trader_py_lines": 11863,
+        "trader_py_methods": 293,
+        "phases_completed": 5,
         "phases_planned": 9,
         "already_extracted": [
             "shadow_policy.py",
@@ -44,7 +44,8 @@
             "polymarket/observability/trader_orderbook_lineage.py",
             "polymarket/observability/trader_orderbook_details.py",
             "polymarket/observability/trader_path_truth.py",
-            "polymarket/observability/trader_phase2_observability.py"
+            "polymarket/observability/trader_phase2_observability.py",
+            "polymarket/observability/trader_lifecycle_payload.py"
         ],
         "target_trader_py_lines_after_phase8": 5000
     },
@@ -71,7 +72,7 @@
     "blocked": false,
     "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
     "refactor_state": {
-        "trader_py_lines": 12282,
+        "trader_py_lines": 11863,
         "completed_batches": [
             "Batch-1",
             "Batch-2A",
@@ -85,9 +86,10 @@
             "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
             "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
             "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
-            "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001"
+            "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+            "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
+        "next_batch": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "64c59708"
     },
@@ -133,5 +135,5 @@
         "compiler_script": "tools/canonical_trade_context_builder.py",
         "test_suite": "tests/test_canonical_trade_context_builder.py"
     },
-    "notes": "Phase 3D complete. Extracted 9 phase2 observability helpers into trader_phase2_observability.py. trader.py reduced ~529L to ~12,282 LOC. 92 new tests, 819 targeted tests passing. Deferred: _phase2_mark_readiness, _phase2_complete_lifecycle_observability, _phase2_observability_payload (all read/write self). Next: TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001 targeting _phase2_complete_lifecycle_observability, _phase2_observability_payload, _emit_lifecycle_milestone_event."
+    "notes": "Phase 3E complete. Extracted 5 lifecycle payload helpers into trader_lifecycle_payload.py. trader.py reduced ~419L to 11,863 LOC. 14 new tests, 833 targeted tests passing. Next: TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001."
 }

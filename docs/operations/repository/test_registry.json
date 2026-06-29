@@ -41,6 +41,7 @@
       "tests/integration/test_shadow_filters.py",
       "tests/integration/test_stop_loss_shadow.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_orderbook_details.py",
       "tests/polymarket/test_arbitrage_executor.py",
       "tests/polymarket/test_exit_agent.py",
       "tests/polymarket/test_live_allowance_preflight.py",
@@ -93,8 +94,23 @@
     "polymarket/observability/trader_decision_diagnostics.py": [
       "tests/polymarket/test_trader_decision_diagnostics.py"
     ],
+    "polymarket/observability/trader_lifecycle_observability.py": [
+      "tests/observability/test_trader_lifecycle_payload.py"
+    ],
+    "polymarket/observability/trader_lifecycle_payload.py": [
+      "tests/observability/test_trader_lifecycle_payload.py"
+    ],
+    "polymarket/observability/trader_orderbook_details.py": [
+      "tests/observability/test_trader_orderbook_details.py"
+    ],
     "polymarket/observability/trader_orderbook_lineage.py": [
       "tests/observability/test_trader_orderbook_lineage.py"
+    ],
+    "polymarket/observability/trader_path_truth.py": [
+      "tests/observability/test_trader_path_truth.py"
+    ],
+    "polymarket/observability/trader_phase2_observability.py": [
+      "tests/observability/test_trader_phase2_observability.py"
     ],
     "polymarket/opportunity_scanner.py": [
       "tests/integration/test_shadow_filters.py",
@@ -189,7 +205,10 @@
       "tests/observability/test_candidate_instance_shadow_propagation.py",
       "tests/observability/test_telemetry_backfill.py",
       "tests/observability/test_trade_open_model_visibility_serialization.py",
+      "tests/observability/test_trader_lifecycle_payload.py",
+      "tests/observability/test_trader_orderbook_details.py",
       "tests/observability/test_trader_orderbook_lineage.py",
+      "tests/observability/test_trader_path_truth.py",
       "tests/observability/test_zero_size_risk_floor_probe.py",
       "tests/polymarket/test_bankroll_rank_engine.py",
       "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -644,9 +663,26 @@
       "polymarket/client.py",
       "polymarket/trader.py"
     ],
+    "tests/observability/test_trader_lifecycle_payload.py": [
+      "polymarket/observability/trader_lifecycle_observability.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_orderbook_details.py": [
+      "polymarket/client.py",
+      "polymarket/observability/trader_orderbook_details.py",
+      "polymarket/trader.py"
+    ],
     "tests/observability/test_trader_orderbook_lineage.py": [
       "polymarket/observability/trader_orderbook_lineage.py",
       "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_path_truth.py": [
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_phase2_observability.py": [
+      "polymarket/observability/trader_phase2_observability.py"
     ],
     "tests/observability/test_zero_size_risk_floor_probe.py": [
       "polymarket/trader.py",
