@@ -43,6 +43,11 @@ polytrade_bot.log*
 .idea/
 .DS_Store
 
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
 # Local virtual environments / dependency caches
 .venv/
 .venv_broken_*/
