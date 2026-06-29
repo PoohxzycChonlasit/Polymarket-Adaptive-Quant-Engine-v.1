@@ -2883,6 +2883,23 @@
         "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md"
       ],
       "notes": "DONE. Added _EMPTY_COLLECTION_SENTINEL_FIELDS frozenset (blockers, reason_codes — schema-confirmed §3.B). Updated missing-field detection to exclude sentinel fields when empty. 3 new regression tests (blockers explicit, blockers absent, non-sentinel still flags). 25 canonical builder tests pass, 31 decision engine tests pass. Batch impact: future builds only (existing JSONL stores pre-fix missing_fields). size_sharp and shadow_policy sentinel fix deferred to CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001."
+    },
+    {
+      "priority": 1.849,
+      "task_id": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Audit whether SizeSharp and shadow_policy empty-collection fields in the canonical builder should be treated as valid sentinels or missing data. Design/audit only — no builder changes.",
+      "blocked_by": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md"
+      ],
+      "notes": "DONE. 5 fields approved as sentinels (schema-confirmed via SizeSharpMetadata TypedDict): size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs. shadow_policy_reasons DEFERRED (generic object type; severity-map gap found). CRITICAL FINDING: shadow_policy_* fields absent from all decision engine severity sets — unknown fields → MEDIUM → REVIEW_REQUIRED. Gap latent in existing JSONL but active on next builder run. Next: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (5-field patch) + SHADOW_POLICY_SEVERITY_MAP_FIX_001 (decision engine fix)."
     }
   ]
 }
