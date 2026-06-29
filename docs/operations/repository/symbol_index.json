@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T11:59:31.903962Z",
+  "generated_at_utc": "2026-06-29T14:01:17.939351Z",
   "file_count": 455,
   "files": [
     {
@@ -35223,9 +35223,9 @@
     },
     {
       "path": "tests/replay/test_canonical_trade_context_builder.py",
-      "total_lines": 524,
+      "total_lines": 667,
       "class_count": 0,
-      "top_function_count": 22,
+      "top_function_count": 24,
       "method_count": 0,
       "classes": [],
       "top_functions": [
@@ -35360,9 +35360,26 @@
           "line": 463,
           "size": 61,
           "runtime_sensitive": false
+        },
+        {
+          "name": "test_canonical_context_data_quality_repair",
+          "line": 526,
+          "size": 73,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_canonical_context_grade_downgrade_when_intended_price_missing",
+          "line": 601,
+          "size": 65,
+          "runtime_sensitive": false
         }
       ],
       "largest_symbols": [
+        {
+          "name": "test_canonical_context_data_quality_repair",
+          "class": null,
+          "size": 73
+        },
         {
           "name": "test_matched_open_close",
           "class": null,
@@ -35372,6 +35389,11 @@
           "name": "test_size_sharp_fields_compile_with_legacy_defaults",
           "class": null,
           "size": 67
+        },
+        {
+          "name": "test_canonical_context_grade_downgrade_when_intended_price_missing",
+          "class": null,
+          "size": 65
         },
         {
           "name": "test_builder_signal_driven_pnl_in_summary",
@@ -35402,16 +35424,6 @@
           "name": "test_does_not_mutate_input_files",
           "class": null,
           "size": 21
-        },
-        {
-          "name": "test_builder_skip_risk_log_default",
-          "class": null,
-          "size": 19
-        },
-        {
-          "name": "_make_row",
-          "class": null,
-          "size": 10
         }
       ],
       "runtime_sensitive_symbols": [

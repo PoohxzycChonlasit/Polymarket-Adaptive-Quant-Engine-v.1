@@ -521,3 +521,145 @@ def test_builder_signal_driven_pnl_in_summary(temp_quant_data):
     assert signal_pnl["total_realized_pnl"] == pytest.approx(0.10, abs=1e-5)
     # test_event row excluded
     assert summary["field_availability"]["test_events_excluded"] == 1
+
+
+def test_canonical_context_data_quality_repair(temp_quant_data):
+    date_str = "2026-06-28"
+    run_id = "test_run_data_quality"
+    replay_key = "cond_dq|1234567890|BTC|YES|token_dq"
+
+    open_event = {
+        "timestamp_utc": "2026-06-28T10:00:00.000000Z",
+        "event_type": "trade_open",
+        "run_id": run_id,
+        "mode": "paper",
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_dq",
+            "ticker": "BTC",
+            "outcome": "YES",
+            "side": "BUY",
+            "entry_price": 0.50,
+            "size": 10.0,
+            "notional_size": 5.0,
+            "signal_name": "PROBABILITY_EV_EDGE",
+            "entry_model_truth_envelope_v1": {
+                "true_probability": 0.60,
+                "fair_value": 0.61,
+                "ev_after_spread": 0.12,
+                "expected_value": 0.12,
+            },
+            "risk_plan_zero_diagnostics": {
+                "bankroll_tier_id": "T0_MICRO_SEED",
+                "risk_mode": "NORMAL",
+            }
+        }
+    }
+
+    close_event = {
+        "timestamp_utc": "2026-06-28T10:01:00.000000Z",
+        "event_type": "trade_close",
+        "run_id": run_id,
+        "mode": "paper",
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_dq",
+            "ticker": "BTC",
+            "outcome": "YES",
+            "exit_price": 0.60,
+            "pnl": 1.0,
+            "pnl_usdc": 1.0,
+            "reason": "take_profit",
+            "trade_result": "WIN",
+        }
+    }
+
+    with open(temp_quant_data / "trade_journal" / f"{date_str}.jsonl", "w") as f:
+        f.write(json.dumps(open_event) + "\n")
+        f.write(json.dumps(close_event) + "\n")
+
+    builder = CanonicalContextBuilder(temp_quant_data, [date_str])
+    builder.load_all()
+    rows, summary = builder.compile()
+
+    assert len(rows) == 1
+    row = rows[0]
+
+    # 1. Extraction checks
+    assert row["probability"] == 0.60
+    assert row["fair_value"] == 0.61
+    assert row["ev"] == 0.12
+    assert row["ev_after_spread"] == 0.12
+    assert row["bankroll_tier_id"] == "T0_MICRO_SEED"
+
+    # 2. Grade check: should NOT be downgraded due to missing entry_price
+    assert "entry_price" not in row
+    assert row["intended_price"] == 0.50
+    assert row["data_quality_grade"] == "A"
+
+
+def test_canonical_context_grade_downgrade_when_intended_price_missing(temp_quant_data):
+    date_str = "2026-06-28"
+    run_id = "test_run_data_quality_missing"
+    replay_key = "cond_dq|1234567890|BTC|YES|token_dq"
+
+    open_event = {
+        "timestamp_utc": "2026-06-28T10:00:00.000000Z",
+        "event_type": "trade_open",
+        "run_id": run_id,
+        "mode": "paper",
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_dq",
+            "ticker": "BTC",
+            "outcome": "YES",
+            "side": "BUY",
+            # entry_price / intended_price is missing!
+            "size": 10.0,
+            "notional_size": 5.0,
+            "signal_name": "PROBABILITY_EV_EDGE",
+            "entry_model_truth_envelope_v1": {
+                "true_probability": 0.60,
+                "fair_value": 0.61,
+                "ev_after_spread": 0.12,
+                "expected_value": 0.12,
+            },
+            "risk_plan_zero_diagnostics": {
+                "bankroll_tier_id": "T0_MICRO_SEED",
+                "risk_mode": "NORMAL",
+            }
+        }
+    }
+
+    close_event = {
+        "timestamp_utc": "2026-06-28T10:01:00.000000Z",
+        "event_type": "trade_close",
+        "run_id": run_id,
+        "mode": "paper",
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_dq",
+            "ticker": "BTC",
+            "outcome": "YES",
+            "exit_price": 0.60,
+            "pnl": 1.0,
+            "pnl_usdc": 1.0,
+            "reason": "take_profit",
+            "trade_result": "WIN",
+        }
+    }
+
+    with open(temp_quant_data / "trade_journal" / f"{date_str}.jsonl", "w") as f:
+        f.write(json.dumps(open_event) + "\n")
+        f.write(json.dumps(close_event) + "\n")
+
+    builder = CanonicalContextBuilder(temp_quant_data, [date_str])
+    builder.load_all()
+    rows, summary = builder.compile()
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["intended_price"] is None
+    assert "intended_price" in row["missing_fields"]
+    # Should be downgraded to grade C because intended_price is a critical field!
+    assert row["data_quality_grade"] == "C"

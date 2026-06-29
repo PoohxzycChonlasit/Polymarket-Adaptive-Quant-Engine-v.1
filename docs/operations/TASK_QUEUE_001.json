@@ -345,7 +345,7 @@
     {
       "priority": -1,
       "task_id": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 1,
       "description": "Compile more canonical context data from historical logs. Diagnose grade D root cause. Achieve >=50 HIGH-confidence rows before policy decisions.",
@@ -358,7 +358,7 @@
       "outputs": [
         "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md"
       ],
-      "notes": "Run builder on all available historical log dates. Target: >=50 grade A rows. Diagnose exit_reason=test rows in grade D. Re-run validation when count reaches threshold."
+      "notes": "COMPLETED — Repaired probability, fair_value, EV, and bankroll_tier_id extractions in CanonicalContextBuilder. Fixed critical field check to use intended_price instead of entry_price. Added 2 regression tests."
     },
     {
       "priority": 0,

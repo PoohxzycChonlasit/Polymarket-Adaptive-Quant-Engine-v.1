@@ -720,7 +720,7 @@ class CanonicalContextBuilder:
         if not open_event or not close_event:
             grade = "D"
         else:
-            critical_missing = [f for f in ("entry_price", "exit_price", "realized_pnl", "intended_size", "ticker") if f in missing]
+            critical_missing = [f for f in ("intended_price", "exit_price", "realized_pnl", "intended_size", "ticker") if f in missing]
             if critical_missing:
                 grade = "C"
             elif any(f in missing for f in ("true_probability", "fair_value", "ev", "bankroll_tier_id", "risk_mode")):

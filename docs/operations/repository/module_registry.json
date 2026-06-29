@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T11:59:28.958817Z",
+  "generated_at_utc": "2026-06-29T14:01:12.991535Z",
   "module_count": 455,
   "modules": [
     {
@@ -5175,7 +5175,7 @@
       "module_name": "tests.replay.test_canonical_trade_context_builder",
       "domain": "tests",
       "package": "tests/replay",
-      "line_count": 523,
+      "line_count": 666,
       "blast_radius_score": 0,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,

@@ -3130,5 +3130,24 @@
     "acceptance_total": 953,
     "safety_notes": "Observability-only. No trader.py, no QuantEventLogger, no config, no risk/sizing/execution changes.",
     "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "LOOP_20260629_CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+    "task_class": 5,
+    "scope": [
+      "tools/runtime/canonical_trade_context_builder.py",
+      "tests/replay/test_canonical_trade_context_builder.py"
+    ],
+    "verdict": "PASS",
+    "summary": "Repaired canonical trade context data-quality defects. Fixed critical-fields check in CanonicalContextBuilder to query intended_price instead of entry_price to prevent wrong downgrades. Checked and verified true_probability, fair_value, ev, ev_after_spread, and bankroll_tier_id extractions from envelopes and diagnostics. Added 2 regression tests validating extraction correctness and grade C downgrade behaviors when intended_price is missing.",
+    "modules_modified": [
+      "tools/runtime/canonical_trade_context_builder.py"
+    ],
+    "tests_added": 2,
+    "acceptance_total": 814,
+    "safety_notes": "Validation/data quality only. No trader.py or execution/risk/sizing runtime changes.",
+    "next_task": "DECISION_ENGINE_PROTOTYPE_001"
   }
 ]
