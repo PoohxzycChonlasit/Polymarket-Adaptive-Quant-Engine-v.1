@@ -98,6 +98,7 @@ from polymarket.observability.trader_reconciliation_payload import (
     size_sharp_close_carry as _opt_size_sharp_carry,
     build_entry_model_truth_envelope as _opt_build_envelope,
     collect_trade_open_context as _opt_collect_trade_open_context,
+    build_trade_opened_payload as _opt_build_trade_opened_payload,
     build_trade_closed_payload as _opt_build_trade_closed_payload,
     build_trade_position_metadata as _opt_build_position_metadata,
 )
@@ -3045,68 +3046,21 @@ class PolymarketTrader:
             confidence=confidence,
             entry_attribution=entry_attribution,
         )
-        model_context = trade_open_context["model_context"]
-        entry_attribution = trade_open_context["entry_attribution"]
-        phase2_detail = trade_open_context["phase2_detail"]
-        selected_probability = trade_open_context["selected_probability"]
-        selected_fair_value = trade_open_context["selected_fair_value"]
-        selected_ev = trade_open_context["selected_ev"]
-        selected_confidence = trade_open_context["selected_confidence"]
-        epoch_start_ts = trade_open_context["epoch_start_ts"]
-        paper_trade_replay_key = trade_open_context["paper_trade_replay_key"]
-        open_payload = {
-                "market_id": market_id,
-                "ticker": ticker,
-                "token_id": token_id,
-                "outcome": outcome,
-                "side": BUY,
-                "entry_price": float(entry_price),
-                "size": float(risk_plan.position_size),
-                "notional_size": float(risk_plan.notional_size),
-                "receipt": asdict(receipt),
-                "strategy": strategy,
-                "mode": trade_open_context["runtime_mode"],
-                "condition_id": condition_id or "",
-                "epoch_start_ts": epoch_start_ts,
-                "asset": ticker,
-                "paper_trade_replay_key": paper_trade_replay_key,
-                "candidate_peak_favorable": None,
-                "candidate_peak_adverse": None,
-                "signal_name": model_context.get("signal_name"),
-                "signal_reason": model_context.get("signal_reason"),
-                "strategy_signal_name": model_context.get("strategy_signal_name"),
-                "strategy_signal_reason": model_context.get("strategy_signal_reason"),
-                "position_id": position_id,
-                "entry_attribution": entry_attribution,
-                "entry_attribution_status": "success" if isinstance(entry_attribution, dict) else "missing",
-                **phase2_detail,
-                "true_probability": selected_probability,
-                "fair_value": selected_fair_value,
-                "ev_after_spread": selected_ev,
-                "expected_value": selected_ev,
-                "ev": selected_ev,
-                "confidence": selected_confidence,
-                **trade_open_context["size_sharp_payload"],
-                # P0.5: bankroll rank and capital quality — observability-only carry-forward
-                # bankroll_rank = tier-string; capital_score = float numeric score
-                "bankroll_rank": trade_open_context["bankroll_rank"],
-                "bankroll_family": trade_open_context["bankroll_family"],
-                "capital_score": trade_open_context["capital_score"],
-                # Shadow policy — observability-only, does NOT gate entry
-                "shadow_policy_decision": model_context.get("shadow_policy_decision"),
-                "shadow_policy_reasons": model_context.get("shadow_policy_reasons"),
-                "shadow_policy_observed_ev": model_context.get("shadow_policy_observed_ev"),
-                "shadow_policy_observed_probability": model_context.get("shadow_policy_observed_probability"),
-                "shadow_policy_observed_risk_mode": model_context.get("shadow_policy_observed_risk_mode"),
-                "shadow_policy_id": model_context.get("shadow_policy_id"),
-                "shadow_policy_confidence": model_context.get("shadow_policy_confidence"),
-                # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
-                **trade_open_context["entry_model_truth_envelope"],
-        }
-        if isinstance(entry_attribution, dict):
-            for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
-                if field in entry_attribution:
-                    open_payload[field] = entry_attribution[field]
+        open_payload = _opt_build_trade_opened_payload(
+            market_id=market_id,
+            ticker=ticker,
+            token_id=token_id,
+            outcome=outcome,
+            side=BUY,
+            entry_price=entry_price,
+            position_size=risk_plan.position_size,
+            notional_size=risk_plan.notional_size,
+            receipt_payload=asdict(receipt),
+            strategy=strategy,
+            condition_id=condition_id,
+            position_id=position_id,
+            trade_open_context=trade_open_context,
+        )
         self._emit_quant_event("log_trade_open", open_payload)
 
     def _emit_trade_closed_event(

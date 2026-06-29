@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001 complete; next is TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
-    "last_completed_task": "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
+    "current_phase": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001 complete; next is TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001",
+    "last_completed_task": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
     "last_commit": "HEAD",
-    "last_commit_message": "refactor: extract trader open trade context collector",
-    "next_task": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
+    "last_commit_message": "refactor: extract trader open trade payload builder",
+    "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -72,7 +72,7 @@
     "blocked": false,
     "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
     "refactor_state": {
-        "trader_py_lines": 10790,
+        "trader_py_lines": 10744,
         "completed_batches": [
             "Batch-1",
             "Batch-2A",
@@ -91,9 +91,10 @@
             "TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001",
             "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
             "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
-            "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001"
+            "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
+            "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
+        "next_batch": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -197,5 +198,26 @@
         },
         "next_task": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001"
     },
-    "notes": "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001 complete. Extracted collect_trade_open_context only; open_payload assembly and _emit_quant_event remain in trader.py. Next: TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001."
+    "trade_open_payload_builder_extraction": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+        "helper": "polymarket.observability.trader_reconciliation_payload.build_trade_opened_payload",
+        "methods_extracted": [
+            "build_trade_opened_payload"
+        ],
+        "methods_unchanged": [
+            "_emit_quant_event",
+            "_emit_trade_closed_event",
+            "_phase2_observability_payload",
+            "collect_trade_open_context"
+        ],
+        "payload_assembly_extracted": true,
+        "event_emission_boundary_retained": true,
+        "tests": {
+            "focused": "6 passed",
+            "acceptance": "851 passed"
+        },
+        "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
+    },
+    "notes": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001 complete. Extracted build_trade_opened_payload only; collect_trade_open_context and _emit_quant_event remain in trader.py. Next: TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001."
 }

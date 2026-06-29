@@ -2654,7 +2654,7 @@
     {
       "priority": 174,
       "task_id": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Extract pure trade-open payload dictionary construction after the Phase 3J context collector while keeping _emit_quant_event in PolymarketTrader.",
@@ -2670,7 +2670,26 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md"
       ],
-      "notes": "Next executable refactor. Extract only final trade-open payload dict construction using the already-derived context from collect_trade_open_context. Keep _emit_quant_event, _phase2_observability_payload, order submission, live execution, risk approval, sizing, wallet/balance, reconciliation mutators, live client calls, config/settings.py, .env, client.py, signal.py, and order_manager.py out of scope."
+      "notes": "DONE. Extracted build_trade_opened_payload into trader_reconciliation_payload.py. _emit_trade_opened_event still calls collect_trade_open_context and emits log_trade_open in trader.py. _emit_trade_closed_event, _emit_quant_event, and _phase2_observability_payload unchanged. py_compile passed; tests/observability tests/polymarket passed 851/851."
+    },
+    {
+      "priority": 175,
+      "task_id": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Audit completed trade open/closed payload helper boundaries and identify whether remaining trade-event lifecycle logic should stay in trader.py.",
+      "blocked_by": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "polymarket/trader.py",
+        "polymarket/observability/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md"
+      ],
+      "notes": "Design-only follow-up. Audit helper purity, event emission boundaries, runtime mutation boundaries, and remaining lifecycle logic. Do not modify runtime code."
     }
   ]
 }

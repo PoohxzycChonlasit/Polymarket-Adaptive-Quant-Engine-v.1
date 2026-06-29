@@ -6,6 +6,7 @@ from dataclasses import asdict, dataclass
 from types import SimpleNamespace
 
 from polymarket.observability.trader_reconciliation_payload import collect_trade_open_context
+from polymarket.observability.trader_reconciliation_payload import build_trade_opened_payload
 from polymarket.trader import BUY, PolymarketTrader
 
 
@@ -443,3 +444,80 @@ def test_emit_trade_opened_event_payload_matches_legacy_controlled_case() -> Non
     )
 
     assert emitted == [("log_trade_open", expected)]
+
+
+def test_build_trade_opened_payload_matches_legacy_payload_and_has_no_side_effects() -> None:
+    trader = DummyOpenContextTrader()
+    receipt = DummyReceipt(order_id="order-1", filled_size=20.0, average_price=0.5)
+    args = _open_args()
+    context = collect_trade_open_context(trader=trader, **args)
+    before_context = deepcopy(context)
+    expected = _legacy_trade_open_payload(
+        trader,
+        receipt=receipt,
+        strategy="phase3_entry",
+        position_id="pos-1",
+        **args,
+    )
+
+    payload = build_trade_opened_payload(
+        market_id=args["market_id"],
+        ticker=args["ticker"],
+        token_id=args["token_id"],
+        outcome=args["outcome"],
+        side=BUY,
+        entry_price=args["entry_price"],
+        position_size=args["risk_plan"].position_size,
+        notional_size=args["risk_plan"].notional_size,
+        receipt_payload=asdict(receipt),
+        strategy="phase3_entry",
+        condition_id=args["condition_id"],
+        position_id="pos-1",
+        trade_open_context=context,
+    )
+
+    assert payload == expected
+    assert context == before_context
+
+
+def test_build_trade_opened_payload_preserves_missing_context_behavior() -> None:
+    trader = DummyOpenContextTrader()
+    trader.last_quant_details = {}
+    receipt = DummyReceipt(order_id="order-2", filled_size=12.0, average_price=0.44)
+    args = _open_args()
+    args.update({
+        "ticker": "ETH",
+        "token_id": "tok-no",
+        "outcome": "NO",
+        "true_probability": 0.44,
+        "ev_after_spread": None,
+        "confidence": None,
+    })
+    context = collect_trade_open_context(trader=trader, **args)
+    expected = _legacy_trade_open_payload(
+        trader,
+        receipt=receipt,
+        strategy="phase3_entry",
+        position_id=None,
+        **args,
+    )
+
+    payload = build_trade_opened_payload(
+        market_id=args["market_id"],
+        ticker=args["ticker"],
+        token_id=args["token_id"],
+        outcome=args["outcome"],
+        side=BUY,
+        entry_price=args["entry_price"],
+        position_size=args["risk_plan"].position_size,
+        notional_size=args["risk_plan"].notional_size,
+        receipt_payload=asdict(receipt),
+        strategy="phase3_entry",
+        condition_id=args["condition_id"],
+        position_id=None,
+        trade_open_context=context,
+    )
+
+    assert payload == expected
+    assert payload["entry_attribution_status"] == "missing"
+    assert payload["signal_name"] is None

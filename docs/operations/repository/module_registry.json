@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T09:28:51.129276Z",
+  "generated_at_utc": "2026-06-29T09:55:06.627733Z",
   "module_count": 449,
   "modules": [
     {
@@ -1146,7 +1146,7 @@
       "module_name": "polymarket.observability.trader_reconciliation_payload",
       "domain": "polymarket",
       "package": "polymarket/observability",
-      "line_count": 586,
+      "line_count": 669,
       "blast_radius_score": 9,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": false,
@@ -1532,7 +1532,7 @@
       "module_name": "polymarket.trader",
       "domain": "polymarket",
       "package": "polymarket",
-      "line_count": 11576,
+      "line_count": 11530,
       "blast_radius_score": 306,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
@@ -3959,7 +3959,7 @@
       "module_name": "tests.observability.test_trader_trade_open_context",
       "domain": "tests",
       "package": "tests/observability",
-      "line_count": 445,
+      "line_count": 523,
       "blast_radius_score": 6,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": false,

@@ -595,6 +595,7 @@
     "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": [],
@@ -615,6 +616,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
+    "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": [],
@@ -1013,6 +1015,7 @@
     "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md": [],
+    "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
@@ -5357,7 +5360,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T09:28:50.357882Z",
+  "generated_at_utc": "2026-06-29T09:55:05.923176Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -8929,6 +8932,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -9044,6 +9053,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
@@ -11432,6 +11447,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
@@ -19010,7 +19031,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2275,
+  "node_count": 2278,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -19607,6 +19628,7 @@
     "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md",
@@ -19627,6 +19649,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
+    "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json",
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json",
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md",
@@ -20025,6 +20048,7 @@
     "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md",
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md",
+    "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
@@ -21905,6 +21929,7 @@
     "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md": [],
@@ -21925,6 +21950,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
+    "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": [],
@@ -22323,6 +22349,7 @@
     "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md": [],
+    "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
@@ -24216,6 +24243,7 @@
     "docs/operations/execution_contracts/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_REMAINING_BASELINE_REVIEW_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/TRADER_REFACTOR_TEST_PATH_FIX_001_CONTRACT_001.md",
@@ -24223,6 +24251,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
+    "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md",
     "docs/quant_agent_setup_md/roles/03_RISK_MANAGER_AGENT.md",
     "docs/quant_agent_setup_md/roles/04_EXIT_EXECUTION_AGENT.md",
@@ -24254,6 +24283,7 @@
     "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md",
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md",
+    "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
@@ -27320,6 +27350,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/operations/execution_contracts/TRADER_REFACTOR_FIXTURE_BASELINE_REPAIR_001_CONTRACT_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -27397,6 +27431,10 @@
       "unresolved_internal": []
     },
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -28989,6 +29027,10 @@
       "unresolved_internal": []
     },
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },

@@ -347,6 +347,89 @@ def collect_trade_open_context(
     }
 
 
+def build_trade_opened_payload(
+    *,
+    market_id: str,
+    ticker: str,
+    token_id: str,
+    outcome: str,
+    side: object,
+    entry_price: float,
+    position_size: object,
+    notional_size: object,
+    receipt_payload: dict[str, object],
+    strategy: str,
+    condition_id: str = "",
+    position_id: str | None = None,
+    trade_open_context: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Build the trade-open quant event payload without emitting or reading trader state."""
+    context = trade_open_context if isinstance(trade_open_context, dict) else {}
+    model_context = context.get("model_context") if isinstance(context.get("model_context"), dict) else {}
+    entry_attribution = context.get("entry_attribution")
+    phase2_detail = context.get("phase2_detail") if isinstance(context.get("phase2_detail"), dict) else {}
+    size_sharp_payload = (
+        context.get("size_sharp_payload")
+        if isinstance(context.get("size_sharp_payload"), dict)
+        else {}
+    )
+    entry_model_truth_envelope = (
+        context.get("entry_model_truth_envelope")
+        if isinstance(context.get("entry_model_truth_envelope"), dict)
+        else {}
+    )
+    open_payload = {
+        "market_id": market_id,
+        "ticker": ticker,
+        "token_id": token_id,
+        "outcome": outcome,
+        "side": side,
+        "entry_price": float(entry_price),
+        "size": float(position_size),
+        "notional_size": float(notional_size),
+        "receipt": receipt_payload,
+        "strategy": strategy,
+        "mode": context.get("runtime_mode"),
+        "condition_id": condition_id or "",
+        "epoch_start_ts": context.get("epoch_start_ts"),
+        "asset": ticker,
+        "paper_trade_replay_key": context.get("paper_trade_replay_key"),
+        "candidate_peak_favorable": None,
+        "candidate_peak_adverse": None,
+        "signal_name": model_context.get("signal_name"),
+        "signal_reason": model_context.get("signal_reason"),
+        "strategy_signal_name": model_context.get("strategy_signal_name"),
+        "strategy_signal_reason": model_context.get("strategy_signal_reason"),
+        "position_id": position_id,
+        "entry_attribution": entry_attribution,
+        "entry_attribution_status": "success" if isinstance(entry_attribution, dict) else "missing",
+        **phase2_detail,
+        "true_probability": context.get("selected_probability"),
+        "fair_value": context.get("selected_fair_value"),
+        "ev_after_spread": context.get("selected_ev"),
+        "expected_value": context.get("selected_ev"),
+        "ev": context.get("selected_ev"),
+        "confidence": context.get("selected_confidence"),
+        **size_sharp_payload,
+        "bankroll_rank": context.get("bankroll_rank"),
+        "bankroll_family": context.get("bankroll_family"),
+        "capital_score": context.get("capital_score"),
+        "shadow_policy_decision": model_context.get("shadow_policy_decision"),
+        "shadow_policy_reasons": model_context.get("shadow_policy_reasons"),
+        "shadow_policy_observed_ev": model_context.get("shadow_policy_observed_ev"),
+        "shadow_policy_observed_probability": model_context.get("shadow_policy_observed_probability"),
+        "shadow_policy_observed_risk_mode": model_context.get("shadow_policy_observed_risk_mode"),
+        "shadow_policy_id": model_context.get("shadow_policy_id"),
+        "shadow_policy_confidence": model_context.get("shadow_policy_confidence"),
+        **entry_model_truth_envelope,
+    }
+    if isinstance(entry_attribution, dict):
+        for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
+            if field in entry_attribution:
+                open_payload[field] = entry_attribution[field]
+    return open_payload
+
+
 def build_trade_closed_payload(
     *,
     position: Any,

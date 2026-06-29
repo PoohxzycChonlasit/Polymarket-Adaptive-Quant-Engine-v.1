@@ -2847,5 +2847,76 @@
     },
     "verdict": "PASS",
     "next_recommendation": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001"
+  },
+  {
+    "entry_id": "LOOP_20260629_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION",
+    "utc": "2026-06-29T09:55:00Z",
+    "task_id": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
+    "task_class": 6,
+    "scope": [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_reconciliation_payload.py",
+      "tests/observability/test_trader_trade_open_context.py",
+      "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+      "docs/operations/execution_contracts/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001_CONTRACT_001.md",
+      "docs/operations/repository/"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C+D",
+    "commits": [],
+    "commit_messages": [
+      "refactor: extract trader open trade payload builder"
+    ],
+    "files_changed": 15,
+    "runtime_files_modified": true,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "methods_extracted": [
+        "build_trade_opened_payload"
+      ],
+      "methods_unchanged": [
+        "_emit_quant_event",
+        "_emit_trade_closed_event",
+        "_phase2_observability_payload",
+        "collect_trade_open_context"
+      ],
+      "payload_assembly_extracted": true,
+      "event_emission_boundary_retained": true,
+      "builder_emits_events": false,
+      "builder_reads_trader_state": false,
+      "focused_tests": "6 passed",
+      "acceptance_tests": "851 passed",
+      "trader_py_lines": 10744,
+      "helper_module_lines": 642
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "active_loop_memory_pointer_used": true,
+      "phase3i_report_read": true,
+      "phase3j_report_read": true,
+      "graph_query_done": true,
+      "execution_contract_done": true,
+      "red_test_done": true,
+      "payload_builder_extracted": true,
+      "event_emission_retained": true,
+      "emit_quant_event_unchanged": true,
+      "trade_closed_event_unchanged": true,
+      "phase2_observability_payload_unchanged": true,
+      "py_compile_passed": true,
+      "acceptance_tests_passed": true,
+      "airos_refreshed": true,
+      "paper_runtime_run": false,
+      "live_runtime_run": false
+    },
+    "verdict": "PASS",
+    "next_recommendation": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
   }
 ]
