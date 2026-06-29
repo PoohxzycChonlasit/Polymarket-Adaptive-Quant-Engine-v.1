@@ -1,4 +1,9 @@
-"""Unit tests for trader_reconciliation_payload.py and their equivalence with PolymarketTrader wrappers."""
+"""Unit tests for reconciliation carry helpers and their equivalence with PolymarketTrader wrappers.
+
+Canonical module: trader_reconciliation_carry.py (carry/metadata helpers)
+                  trader_trade_event_payload.py  (event payload builders)
+Shim:             trader_reconciliation_payload.py (re-exports both)
+"""
 from __future__ import annotations
 
 import inspect
@@ -6,13 +11,15 @@ from types import SimpleNamespace
 
 import pytest
 from unittest.mock import MagicMock
-from polymarket.observability.trader_reconciliation_payload import (
+from polymarket.observability.trader_reconciliation_carry import (
     carry_entry_model_truth_from_metadata,
     build_paper_trade_replay_key,
     size_sharp_metadata,
     size_sharp_close_carry,
     build_entry_model_truth_envelope,
     build_trade_position_metadata,
+)
+from polymarket.observability.trader_trade_event_payload import (
     build_trade_closed_payload,
 )
 from polymarket.trader import PolymarketTrader
@@ -511,3 +518,34 @@ def test_emit_trade_closed_event_calls_quant_event_once(monkeypatch):
     assert payload["position_id"] == "pos-emit"
     assert payload["candidate_id"] == "cand-emit"
     assert payload["paper_trade_replay_key"] == "cond-emit|1710000000|BTC|YES|tok-emit"
+
+
+class TestCompatibilityShim:
+    """Verify the shim re-exports are identical objects to the canonical imports."""
+
+    def test_shim_carry_helpers_are_canonical(self):
+        import polymarket.observability.trader_reconciliation_payload as shim
+        import polymarket.observability.trader_reconciliation_carry as carry
+
+        assert shim.carry_entry_model_truth_from_metadata is carry.carry_entry_model_truth_from_metadata
+        assert shim.build_paper_trade_replay_key is carry.build_paper_trade_replay_key
+        assert shim.size_sharp_metadata is carry.size_sharp_metadata
+        assert shim.size_sharp_close_carry is carry.size_sharp_close_carry
+        assert shim.build_entry_model_truth_envelope is carry.build_entry_model_truth_envelope
+        assert shim.build_trade_position_metadata is carry.build_trade_position_metadata
+
+    def test_shim_event_payload_helpers_are_canonical(self):
+        import polymarket.observability.trader_reconciliation_payload as shim
+        import polymarket.observability.trader_trade_event_payload as event_payload
+
+        assert shim.collect_trade_open_context is event_payload.collect_trade_open_context
+        assert shim.build_trade_opened_payload is event_payload.build_trade_opened_payload
+        assert shim.build_trade_closed_payload is event_payload.build_trade_closed_payload
+
+    def test_shim_import_path_still_works(self):
+        from polymarket.observability.trader_reconciliation_payload import (
+            carry_entry_model_truth_from_metadata as shim_carry,
+            build_trade_closed_payload as shim_close,
+        )
+        assert shim_carry({}) == {"entry_model_truth_carry_status": "absent_in_metadata"}
+        assert callable(shim_close)

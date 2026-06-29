@@ -5,8 +5,8 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass
 from types import SimpleNamespace
 
-from polymarket.observability.trader_reconciliation_payload import collect_trade_open_context
-from polymarket.observability.trader_reconciliation_payload import build_trade_opened_payload
+from polymarket.observability.trader_trade_event_payload import collect_trade_open_context
+from polymarket.observability.trader_trade_event_payload import build_trade_opened_payload
 from polymarket.trader import BUY, PolymarketTrader
 
 

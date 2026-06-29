@@ -1,10 +1,10 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T09:55:11.041375Z",
+  "generated_at_utc": "2026-06-29T10:44:34.105757Z",
   "major_domains": {
     "polymarket": {
       "description": "Runtime trading modules \u2014 execution loop, market data, models, signals",
-      "module_count": 48,
+      "module_count": 50,
       "safe_move_candidates": 9,
       "do_not_touch_count": 20
     },
@@ -41,7 +41,7 @@
     "polymarket": 30,
     "polymarket/market": 2,
     "polymarket/models": 2,
-    "polymarket/observability": 12,
+    "polymarket/observability": 14,
     "polymarket/orchestration": 2,
     "research": 2,
     "scratch": 60,

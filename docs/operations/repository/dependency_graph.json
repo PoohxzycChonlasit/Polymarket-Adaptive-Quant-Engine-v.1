@@ -1016,6 +1016,8 @@
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md": [],
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
@@ -1696,7 +1698,12 @@
       "polymarket/observability/trader_lifecycle_observability.py"
     ],
     "polymarket/observability/trader_presentation.py": [],
-    "polymarket/observability/trader_reconciliation_payload.py": [],
+    "polymarket/observability/trader_reconciliation_carry.py": [],
+    "polymarket/observability/trader_reconciliation_payload.py": [
+      "polymarket/observability/trader_reconciliation_carry.py",
+      "polymarket/observability/trader_trade_event_payload.py"
+    ],
+    "polymarket/observability/trader_trade_event_payload.py": [],
     "polymarket/opportunity_scanner.py": [
       "polymarket/bankroll_tiers.py",
       "polymarket/delta_engine.py",
@@ -1766,7 +1773,8 @@
       "polymarket/observability/trader_path_truth.py",
       "polymarket/observability/trader_phase2_observability.py",
       "polymarket/observability/trader_presentation.py",
-      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_reconciliation_carry.py",
+      "polymarket/observability/trader_trade_event_payload.py",
       "polymarket/opportunity_scanner.py",
       "polymarket/orchestration/trader_lifecycle.py",
       "polymarket/orchestration/trader_observability.py",
@@ -2338,11 +2346,13 @@
       "polymarket/observability/trader_phase2_observability.py"
     ],
     "tests/observability/test_trader_reconciliation_payload.py": [
+      "polymarket/observability/trader_reconciliation_carry.py",
       "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_trade_event_payload.py",
       "polymarket/trader.py"
     ],
     "tests/observability/test_trader_trade_open_context.py": [
-      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_trade_event_payload.py",
       "polymarket/trader.py"
     ],
     "tests/observability/test_zero_size_risk_floor_probe.py": [
@@ -2944,7 +2954,7 @@
     "web-dashboard/src/app/page.tsx": [],
     "web-dashboard/tsconfig.json": []
   },
-  "edge_count": 465,
+  "edge_count": 470,
   "edges": [
     [
       "polymarket/arbitrage.py",
@@ -3053,6 +3063,14 @@
     [
       "polymarket/observability/trader_phase2_observability.py",
       "polymarket/observability/trader_lifecycle_observability.py"
+    ],
+    [
+      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_reconciliation_carry.py"
+    ],
+    [
+      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_trade_event_payload.py"
     ],
     [
       "polymarket/opportunity_scanner.py",
@@ -3228,7 +3246,11 @@
     ],
     [
       "polymarket/trader.py",
-      "polymarket/observability/trader_reconciliation_payload.py"
+      "polymarket/observability/trader_reconciliation_carry.py"
+    ],
+    [
+      "polymarket/trader.py",
+      "polymarket/observability/trader_trade_event_payload.py"
     ],
     [
       "polymarket/trader.py",
@@ -3888,7 +3910,15 @@
     ],
     [
       "tests/observability/test_trader_reconciliation_payload.py",
+      "polymarket/observability/trader_reconciliation_carry.py"
+    ],
+    [
+      "tests/observability/test_trader_reconciliation_payload.py",
       "polymarket/observability/trader_reconciliation_payload.py"
+    ],
+    [
+      "tests/observability/test_trader_reconciliation_payload.py",
+      "polymarket/observability/trader_trade_event_payload.py"
     ],
     [
       "tests/observability/test_trader_reconciliation_payload.py",
@@ -3896,7 +3926,7 @@
     ],
     [
       "tests/observability/test_trader_trade_open_context.py",
-      "polymarket/observability/trader_reconciliation_payload.py"
+      "polymarket/observability/trader_trade_event_payload.py"
     ],
     [
       "tests/observability/test_trader_trade_open_context.py",
@@ -5004,11 +5034,13 @@
       "polymarket/observability/trader_phase2_observability.py"
     ],
     "tests/observability/test_trader_reconciliation_payload.py": [
+      "polymarket/observability/trader_reconciliation_carry.py",
       "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_trade_event_payload.py",
       "polymarket/trader.py"
     ],
     "tests/observability/test_trader_trade_open_context.py": [
-      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_trade_event_payload.py",
       "polymarket/trader.py"
     ],
     "tests/observability/test_zero_size_risk_floor_probe.py": [
@@ -5360,7 +5392,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T09:55:05.923176Z",
+  "generated_at_utc": "2026-06-29T10:44:28.837647Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -11458,6 +11490,18 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -15292,9 +15336,21 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
-    "polymarket/observability/trader_reconciliation_payload.py": {
+    "polymarket/observability/trader_reconciliation_carry.py": {
       "blast_radius_score": 9,
       "inbound_dependencies_count": 3,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "polymarket/observability/trader_reconciliation_payload.py": {
+      "blast_radius_score": 9,
+      "inbound_dependencies_count": 1,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 2
+    },
+    "polymarket/observability/trader_trade_event_payload.py": {
+      "blast_radius_score": 12,
+      "inbound_dependencies_count": 4,
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
@@ -15395,10 +15451,10 @@
       "outbound_dependencies_count": 1
     },
     "polymarket/trader.py": {
-      "blast_radius_score": 306,
+      "blast_radius_score": 309,
       "inbound_dependencies_count": 59,
       "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 43
+      "outbound_dependencies_count": 44
     },
     "polymarket/trend_runner.py": {
       "blast_radius_score": 12,
@@ -17507,10 +17563,10 @@
       "outbound_dependencies_count": 1
     },
     "tests/observability/test_trader_reconciliation_payload.py": {
-      "blast_radius_score": 6,
+      "blast_radius_score": 12,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
-      "outbound_dependencies_count": 2
+      "outbound_dependencies_count": 4
     },
     "tests/observability/test_trader_trade_open_context.py": {
       "blast_radius_score": 6,
@@ -19031,7 +19087,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2278,
+  "node_count": 2282,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -20049,6 +20105,8 @@
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md",
     "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md",
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
@@ -20688,7 +20746,9 @@
     "polymarket/observability/trader_path_truth.py",
     "polymarket/observability/trader_phase2_observability.py",
     "polymarket/observability/trader_presentation.py",
+    "polymarket/observability/trader_reconciliation_carry.py",
     "polymarket/observability/trader_reconciliation_payload.py",
+    "polymarket/observability/trader_trade_event_payload.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
     "polymarket/orchestration/trader_lifecycle.py",
@@ -22350,6 +22410,8 @@
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md": [],
     "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
+    "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md": [],
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md": [],
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md": [],
@@ -23121,7 +23183,16 @@
       "polymarket/orchestration/trader_observability.py",
       "polymarket/trader.py"
     ],
+    "polymarket/observability/trader_reconciliation_carry.py": [
+      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/trader.py",
+      "tests/observability/test_trader_reconciliation_payload.py"
+    ],
     "polymarket/observability/trader_reconciliation_payload.py": [
+      "tests/observability/test_trader_reconciliation_payload.py"
+    ],
+    "polymarket/observability/trader_trade_event_payload.py": [
+      "polymarket/observability/trader_reconciliation_payload.py",
       "polymarket/trader.py",
       "tests/observability/test_trader_reconciliation_payload.py",
       "tests/observability/test_trader_trade_open_context.py"
@@ -24284,6 +24355,8 @@
     "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md",
     "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+    "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md",
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md",
     "docs/reports/TRADER_REFACTOR_BATCH_001_REPORT.md",
     "docs/reports/TRADER_REFACTOR_BATCH_002A_REPORT.md",
@@ -24351,7 +24424,9 @@
     "polymarket/observability/trader_path_truth.py",
     "polymarket/observability/trader_phase2_observability.py",
     "polymarket/observability/trader_presentation.py",
+    "polymarket/observability/trader_reconciliation_carry.py",
     "polymarket/observability/trader_reconciliation_payload.py",
+    "polymarket/observability/trader_trade_event_payload.py",
     "polymarket/opportunity_scanner.py",
     "polymarket/oracle_price_feed.py",
     "polymarket/orchestration/trader_lifecycle.py",
@@ -24580,7 +24655,13 @@
     "polymarket/observability/trader_phase2_observability.py": [
       "tests/observability/test_trader_phase2_observability.py"
     ],
+    "polymarket/observability/trader_reconciliation_carry.py": [
+      "tests/observability/test_trader_reconciliation_payload.py"
+    ],
     "polymarket/observability/trader_reconciliation_payload.py": [
+      "tests/observability/test_trader_reconciliation_payload.py"
+    ],
+    "polymarket/observability/trader_trade_event_payload.py": [
       "tests/observability/test_trader_reconciliation_payload.py",
       "tests/observability/test_trader_trade_open_context.py"
     ],
@@ -29034,6 +29115,14 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -31738,7 +31827,17 @@
       ],
       "unresolved_internal": []
     },
+    "polymarket/observability/trader_reconciliation_carry.py": {
+      "unresolved_external": [
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
     "polymarket/observability/trader_reconciliation_payload.py": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "polymarket/observability/trader_trade_event_payload.py": {
       "unresolved_external": [
         "typing"
       ],

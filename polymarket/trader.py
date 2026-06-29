@@ -91,16 +91,18 @@ from polymarket.observability.trader_lifecycle_payload import (
     phase2_complete_lifecycle_observability as _obs_phase2_complete_lifecycle_observability,
     phase2_observability_payload as _obs_phase2_observability_payload,
 )
-from polymarket.observability.trader_reconciliation_payload import (
+from polymarket.observability.trader_reconciliation_carry import (
     carry_entry_model_truth_from_metadata as _opt_carry_entry_model_truth,
     build_paper_trade_replay_key as _opt_build_paper_key,
     size_sharp_metadata as _opt_size_sharp_meta,
     size_sharp_close_carry as _opt_size_sharp_carry,
     build_entry_model_truth_envelope as _opt_build_envelope,
+    build_trade_position_metadata as _opt_build_position_metadata,
+)
+from polymarket.observability.trader_trade_event_payload import (
     collect_trade_open_context as _opt_collect_trade_open_context,
     build_trade_opened_payload as _opt_build_trade_opened_payload,
     build_trade_closed_payload as _opt_build_trade_closed_payload,
-    build_trade_position_metadata as _opt_build_position_metadata,
 )
 from polymarket.risk_modes import (
     RiskMode,

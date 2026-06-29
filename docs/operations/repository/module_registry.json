@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T09:55:06.627733Z",
-  "module_count": 449,
+  "generated_at_utc": "2026-06-29T10:44:29.565649Z",
+  "module_count": 451,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -1142,17 +1142,59 @@
       "recommended_target_folder": null
     },
     {
-      "path": "polymarket/observability/trader_reconciliation_payload.py",
-      "module_name": "polymarket.observability.trader_reconciliation_payload",
+      "path": "polymarket/observability/trader_reconciliation_carry.py",
+      "module_name": "polymarket.observability.trader_reconciliation_carry",
       "domain": "polymarket",
       "package": "polymarket/observability",
-      "line_count": 669,
+      "line_count": 320,
       "blast_radius_score": 9,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
+        "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/trader.py",
+        "tests/observability/test_trader_reconciliation_payload.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/trader_reconciliation_payload.py",
+      "module_name": "polymarket.observability.trader_reconciliation_payload",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 35,
+      "blast_radius_score": 9,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/trader_reconciliation_carry.py",
+        "polymarket/observability/trader_trade_event_payload.py"
+      ],
+      "reverse_importers": [
+        "tests/observability/test_trader_reconciliation_payload.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "polymarket/observability/trader_trade_event_payload.py",
+      "module_name": "polymarket.observability.trader_trade_event_payload",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 359,
+      "blast_radius_score": 12,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": true,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "polymarket/observability/trader_reconciliation_payload.py",
         "polymarket/trader.py",
         "tests/observability/test_trader_reconciliation_payload.py",
         "tests/observability/test_trader_trade_open_context.py"
@@ -1532,8 +1574,8 @@
       "module_name": "polymarket.trader",
       "domain": "polymarket",
       "package": "polymarket",
-      "line_count": 11530,
-      "blast_radius_score": 306,
+      "line_count": 11532,
+      "blast_radius_score": 309,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
       "do_not_touch": true,
@@ -1559,7 +1601,8 @@
         "polymarket/observability/trader_path_truth.py",
         "polymarket/observability/trader_phase2_observability.py",
         "polymarket/observability/trader_presentation.py",
-        "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/observability/trader_reconciliation_carry.py",
+        "polymarket/observability/trader_trade_event_payload.py",
         "polymarket/opportunity_scanner.py",
         "polymarket/orchestration/trader_lifecycle.py",
         "polymarket/orchestration/trader_observability.py",
@@ -3937,18 +3980,22 @@
       "module_name": "tests.observability.test_trader_reconciliation_payload",
       "domain": "tests",
       "package": "tests/observability",
-      "line_count": 513,
-      "blast_radius_score": 6,
+      "line_count": 551,
+      "blast_radius_score": 12,
       "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
+      "runtime_sensitive": true,
       "do_not_touch": false,
       "direct_imports": [
+        "polymarket/observability/trader_reconciliation_carry.py",
         "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/observability/trader_trade_event_payload.py",
         "polymarket/trader.py"
       ],
       "reverse_importers": [],
       "tests": [
+        "polymarket/observability/trader_reconciliation_carry.py",
         "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/observability/trader_trade_event_payload.py",
         "polymarket/trader.py"
       ],
       "safe_move_status": "DO_NOT_MOVE",
@@ -3965,12 +4012,12 @@
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [
-        "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/observability/trader_trade_event_payload.py",
         "polymarket/trader.py"
       ],
       "reverse_importers": [],
       "tests": [
-        "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/observability/trader_trade_event_payload.py",
         "polymarket/trader.py"
       ],
       "safe_move_status": "DO_NOT_MOVE",

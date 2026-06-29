@@ -2694,7 +2694,7 @@
     {
       "priority": 176,
       "task_id": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Split trader_reconciliation_payload.py into trader_reconciliation_carry.py (6 Phase-3F carry helpers) and trader_trade_event_payload.py (4 Phase-3H/3J/3K event builders). Update all imports in trader.py. Update test files. No logic changes.",
@@ -2711,7 +2711,27 @@
         "polymarket/observability/trader_trade_event_payload.py",
         "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md"
       ],
-      "notes": "Split approved by Phase 3L audit. Move 4 event builders out of trader_reconciliation_payload.py into new trader_trade_event_payload.py. Retain 6 carry helpers in trader_reconciliation_carry.py (rename existing file). Update 9 aliases in trader.py import block. Update test_trader_reconciliation_payload.py imports (4 closed-payload tests move). No logic changes. TypedDict schemas and golden snapshots are optional follow-on after split."
+      "notes": "DONE. Created trader_reconciliation_carry.py (282L, 6 carry helpers) and trader_trade_event_payload.py (271L, 4 event builders). Shim retained (34L). trader.py imports updated to canonical modules. 3 shim compatibility tests added. 854/854 tests pass."
+    },
+    {
+      "priority": 177,
+      "task_id": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Add TypedDict schema contracts for TradeOpenedPayload, TradeClosedPayload, and TradePositionMetadata as return type annotations on the canonical event payload and carry modules.",
+      "blocked_by": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001",
+      "allowed_scope": [
+        "polymarket/observability/",
+        "tests/observability/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_trade_payload_schema.py",
+        "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md"
+      ],
+      "notes": "Design/audit + implementation. Create TypedDict definitions. Wire as return type annotations. No runtime behavior change. Enables silent key regression detection by type checkers."
     }
   ]
 }
