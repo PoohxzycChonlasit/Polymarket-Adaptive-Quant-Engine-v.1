@@ -2900,6 +2900,24 @@
         "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md"
       ],
       "notes": "DONE. 5 fields approved as sentinels (schema-confirmed via SizeSharpMetadata TypedDict): size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs. shadow_policy_reasons DEFERRED (generic object type; severity-map gap found). CRITICAL FINDING: shadow_policy_* fields absent from all decision engine severity sets — unknown fields → MEDIUM → REVIEW_REQUIRED. Gap latent in existing JSONL but active on next builder run. Next: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (5-field patch) + SHADOW_POLICY_SEVERITY_MAP_FIX_001 (decision engine fix)."
+    },
+    {
+      "priority": 1.850,
+      "task_id": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "Extend canonical builder _EMPTY_COLLECTION_SENTINEL_FIELDS with five schema-confirmed SizeSharp collection fields. Add regression tests.",
+      "blocked_by": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
+      "allowed_scope": [
+        "tools/runtime/canonical_trade_context_builder.py",
+        "tests/replay/test_canonical_trade_context_builder.py",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md"
+      ],
+      "notes": "DONE. Extended _EMPTY_COLLECTION_SENTINEL_FIELDS with 5 SizeSharp fields (size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs). Excluded shadow_policy_reasons per audit (severity-map gap must be resolved first). Updated test_non_sentinel_empty_collection_still_flagged_as_missing to use shadow_policy_reasons. Added test_size_sharp_empty_collections_not_flagged_as_missing. 26 canonical builder tests pass, 31 decision engine tests pass. Batch impact: future builds only."
     }
   ]
 }

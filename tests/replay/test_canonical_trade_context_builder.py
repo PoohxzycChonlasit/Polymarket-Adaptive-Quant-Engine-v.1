@@ -762,13 +762,15 @@ def test_blockers_absent_from_payload_not_flagged_as_missing(temp_quant_data):
 
 
 def test_non_sentinel_empty_collection_still_flagged_as_missing(temp_quant_data):
-    """Non-sentinel empty collections (size_sharp_component_scores={}) still appear in missing_fields.
+    """Non-sentinel empty collections (shadow_policy_reasons=[]) still appear in missing_fields.
 
+    shadow_policy_reasons is intentionally excluded from the sentinel set (its contract type
+    is generic `object`, not list[str]; a severity-map fix is required first).
     Proves the sentinel allowlist is narrow, not global.
     """
     date_str = "2026-06-28"
-    run_id = "run_no_size_sharp"
-    replay_key = "cond_nss|1234567890|BTC|YES|token_nss"
+    run_id = "run_shadow_non_sentinel"
+    replay_key = "cond_sns|1234567890|BTC|YES|token_sns"
 
     open_event = {
         "timestamp_utc": "2026-06-28T10:00:00.000000Z",
@@ -776,12 +778,12 @@ def test_non_sentinel_empty_collection_still_flagged_as_missing(temp_quant_data)
         "run_id": run_id,
         "payload": {
             "paper_trade_replay_key": replay_key,
-            "position_id": "pos_no_size_sharp",
+            "position_id": "pos_shadow_non_sentinel",
             "ticker": "BTC",
             "outcome": "YES",
             "entry_price": 0.50,
             "size": 5.0,
-            # no size_sharp_component_scores — builder defaults to {}
+            # no shadow_policy_reasons — builder defaults to []
         },
     }
     close_event = {
@@ -790,7 +792,7 @@ def test_non_sentinel_empty_collection_still_flagged_as_missing(temp_quant_data)
         "run_id": run_id,
         "payload": {
             "paper_trade_replay_key": replay_key,
-            "position_id": "pos_no_size_sharp",
+            "position_id": "pos_shadow_non_sentinel",
             "exit_price": 0.55,
             "pnl": 0.25,
         },
@@ -806,9 +808,85 @@ def test_non_sentinel_empty_collection_still_flagged_as_missing(temp_quant_data)
 
     assert len(rows) == 1
     row = rows[0]
-    # size_sharp_component_scores is not a sentinel field — empty dict must still flag
-    assert row["size_sharp_component_scores"] == {}
-    assert "size_sharp_component_scores" in row["missing_fields"]
+    # shadow_policy_reasons is NOT a sentinel field — empty list must still flag
+    assert row["shadow_policy_reasons"] == []
+    assert "shadow_policy_reasons" in row["missing_fields"]
     # blockers defaults to [] and must NOT flag (sentinel)
     assert row["blockers"] == []
     assert "blockers" not in row["missing_fields"]
+    # size_sharp_component_scores IS now a sentinel — must NOT flag
+    assert row["size_sharp_component_scores"] == {}
+    assert "size_sharp_component_scores" not in row["missing_fields"]
+
+
+def test_size_sharp_empty_collections_not_flagged_as_missing(temp_quant_data):
+    """All five SizeSharp collection fields default to empty sentinels and must not appear in missing_fields.
+
+    Schema-confirmed via SizeSharpMetadata TypedDict in polymarket/observability/contracts.py.
+    Audit: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.
+    """
+    date_str = "2026-06-28"
+    run_id = "run_size_sharp_sentinels"
+    replay_key = "cond_sss|1234567890|BTC|NO|token_sss"
+
+    open_event = {
+        "timestamp_utc": "2026-06-28T10:00:00.000000Z",
+        "event_type": "trade_open",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_size_sharp_sentinels",
+            "ticker": "BTC",
+            "outcome": "NO",
+            "entry_price": 0.45,
+            "size": 5.0,
+            # No SizeSharp fields — builder defaults all to {} or []
+        },
+    }
+    close_event = {
+        "timestamp_utc": "2026-06-28T10:01:00.000000Z",
+        "event_type": "trade_close",
+        "run_id": run_id,
+        "payload": {
+            "paper_trade_replay_key": replay_key,
+            "position_id": "pos_size_sharp_sentinels",
+            "exit_price": 0.40,
+            "pnl": 0.25,
+        },
+    }
+
+    with open(temp_quant_data / "trade_journal" / f"{date_str}.jsonl", "w") as f:
+        f.write(json.dumps(open_event) + "\n")
+        f.write(json.dumps(close_event) + "\n")
+
+    builder = CanonicalContextBuilder(temp_quant_data, [date_str])
+    builder.load_all()
+    rows, _ = builder.compile()
+
+    assert len(rows) == 1
+    row = rows[0]
+    mf = row["missing_fields"]
+
+    # Dict sentinels — schema: dict[str, object] in SizeSharpMetadata
+    assert row["size_sharp_component_scores"] == {}
+    assert "size_sharp_component_scores" not in mf
+    assert row["size_sharp_penalties"] == {}
+    assert "size_sharp_penalties" not in mf
+    assert row["size_sharp_boosts"] == {}
+    assert "size_sharp_boosts" not in mf
+
+    # List sentinels — schema: list[object] in SizeSharpMetadata
+    assert row["size_sharp_hard_caps"] == []
+    assert "size_sharp_hard_caps" not in mf
+    assert row["size_sharp_missing_inputs"] == []
+    assert "size_sharp_missing_inputs" not in mf
+
+    # Existing sentinels still pass (regression)
+    assert row["blockers"] == []
+    assert "blockers" not in mf
+    assert row["reason_codes"] == []
+    assert "reason_codes" not in mf
+
+    # shadow_policy_reasons is still NOT a sentinel
+    assert row["shadow_policy_reasons"] == []
+    assert "shadow_policy_reasons" in mf

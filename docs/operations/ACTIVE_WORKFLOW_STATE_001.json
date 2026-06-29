@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
-    "last_updated": "2026-06-29",
-    "current_phase": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001 complete; 5 SizeSharp fields approved as sentinels, shadow_policy_reasons deferred, shadow_policy severity-map gap documented",
-    "last_completed_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
+    "last_updated": "2026-06-30",
+    "current_phase": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 complete; 5 SizeSharp sentinel fields added, 26 builder tests pass",
+    "last_completed_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
     "last_commit": "HEAD",
-    "last_commit_message": "test: repair canonical blockers empty-list sentinel",
-    "next_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+    "last_commit_message": "test: repair canonical size sharp sentinels",
+    "next_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -99,9 +99,10 @@
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
             "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
             "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
-            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001"
+            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
+            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
         ],
-        "next_batch": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+        "next_batch": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -226,7 +227,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001 complete. Audit confirmed: 5 SizeSharp collection fields approved as sentinels (schema-confirmed via SizeSharpMetadata TypedDict). shadow_policy_reasons deferred (generic object type; severity-map gap found). CRITICAL FINDING: shadow_policy_* fields absent from all decision engine severity sets — any shadow_policy field in missing_fields → unknown → MEDIUM → REVIEW_REQUIRED. Gap is latent in existing JSONL but will activate on next builder run. Two fix tasks queued: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (5 fields, immediate) + SHADOW_POLICY_SEVERITY_MAP_FIX_001 (decision engine, before shadow sentinel fix).",
+    "notes": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 complete. Extended _EMPTY_COLLECTION_SENTINEL_FIELDS with 5 SizeSharp fields (size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs). shadow_policy_reasons intentionally excluded (severity-map gap must be resolved first). 26 canonical builder tests pass, 31 decision engine tests pass. Next: SHADOW_POLICY_SEVERITY_MAP_FIX_001 (add shadow_policy_* fields to decision engine severity sets).",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -505,6 +506,24 @@
         },
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+    },
+    "canonical_context_size_sharp_sentinel_repair": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md",
+        "file_repaired": "tools/runtime/canonical_trade_context_builder.py",
+        "fix": "_EMPTY_COLLECTION_SENTINEL_FIELDS extended with 5 SizeSharp collection fields",
+        "sentinel_fields_added": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs"],
+        "excluded_fields": ["shadow_policy_reasons"],
+        "exclusion_reason": "severity-map gap in decision engine must be resolved first",
+        "new_tests": 1,
+        "updated_tests": 1,
+        "tests": {
+            "canonical_builder": "26 passed",
+            "decision_engine": "31 passed"
+        },
+        "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
+        "safety_verdict": "SAFE_OFFLINE_TOOLING",
+        "next_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
     },
     "canonical_context_size_sharp_sentinel_audit": {
         "status": "COMPLETE",

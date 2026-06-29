@@ -192,11 +192,20 @@ _TEST_EXIT_REASONS = frozenset({"test", "test_close", "debug", "synthetic"})
 _SETTLEMENT_EXIT_REASONS = frozenset({"settlement", "binary_settlement", "resolved", "resolution"})
 _FORCED_EXIT_REASONS = frozenset({"emergency_flatten", "forced_exit", "residual_sweep", "session_end"})
 
-# Schema-confirmed list fields (CANONICAL_TRADE_CONTEXT_V1_001 §3.B) where an empty
-# collection is a valid "not populated" sentinel, not a missing value.
+# Fields where an empty collection is a valid "not populated" sentinel, not a missing value.
+# §3.B schema-confirmed list fields:
 _EMPTY_COLLECTION_SENTINEL_FIELDS: frozenset[str] = frozenset({
-    "blockers",
-    "reason_codes",
+    "blockers",       # CANONICAL_TRADE_CONTEXT_V1_001 §3.B list[str]
+    "reason_codes",   # CANONICAL_TRADE_CONTEXT_V1_001 §3.B list[str]
+    # SizeSharp collection fields — schema-confirmed via SizeSharpMetadata TypedDict
+    # (polymarket/observability/contracts.py). Empty = legacy default when SizeSharp
+    # was not invoked; size_sharp_schema_version is the authoritative legacy signal.
+    # Audit: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.
+    "size_sharp_component_scores",  # dict[str, object] — "not scored"
+    "size_sharp_penalties",         # dict[str, object] — "no penalties applied"
+    "size_sharp_boosts",            # dict[str, object] — "no boosts applied"
+    "size_sharp_hard_caps",         # list[object]      — "no caps triggered"
+    "size_sharp_missing_inputs",    # list[object]      — "all inputs present"
 })
 
 

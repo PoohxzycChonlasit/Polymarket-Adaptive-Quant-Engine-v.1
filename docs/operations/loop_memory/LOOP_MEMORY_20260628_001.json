@@ -3753,5 +3753,47 @@
     },
     "safety_verdict": "SAFE_OFFLINE_AUDIT",
     "next_recommendation": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+    "task_class": 5,
+    "scope": [
+      "tools/runtime/canonical_trade_context_builder.py",
+      "tests/replay/test_canonical_trade_context_builder.py",
+      "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "evidence_grade": "A",
+    "commits": [],
+    "files_changed": 2,
+    "net_lines": 45,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "sentinel_fields_added": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs"],
+      "excluded_intentionally": ["shadow_policy_reasons"],
+      "exclusion_reason": "generic object type in contracts.py; severity-map gap in decision engine must be resolved first",
+      "test_updated": "test_non_sentinel_empty_collection_still_flagged_as_missing now uses shadow_policy_reasons instead of size_sharp_component_scores (which is now a sentinel)",
+      "test_added": "test_size_sharp_empty_collections_not_flagged_as_missing covers all 5 fields + regression for blockers/reason_codes + proves shadow_policy_reasons still flags",
+      "airos_refreshed": true
+    },
+    "acceptance_criteria": {
+      "py_compile_passed": true,
+      "canonical_builder_tests_pass": "26 passed",
+      "decision_engine_tests_pass": "31 passed",
+      "shadow_policy_not_added": true,
+      "schema_reference_in_comment": true,
+      "report_written": true,
+      "ops_files_updated": true,
+      "runtime_code_modified": false,
+      "trader_py_modified": false
+    },
+    "safety_verdict": "SAFE_OFFLINE_TOOLING",
+    "next_recommendation": "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
   }
 ]
