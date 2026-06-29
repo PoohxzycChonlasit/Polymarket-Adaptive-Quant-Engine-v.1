@@ -113,7 +113,8 @@
       "tests/observability/test_trader_phase2_observability.py"
     ],
     "polymarket/observability/trader_reconciliation_payload.py": [
-      "tests/observability/test_trader_reconciliation_payload.py"
+      "tests/observability/test_trader_reconciliation_payload.py",
+      "tests/observability/test_trader_trade_open_context.py"
     ],
     "polymarket/opportunity_scanner.py": [
       "tests/integration/test_shadow_filters.py",
@@ -213,6 +214,7 @@
       "tests/observability/test_trader_orderbook_lineage.py",
       "tests/observability/test_trader_path_truth.py",
       "tests/observability/test_trader_reconciliation_payload.py",
+      "tests/observability/test_trader_trade_open_context.py",
       "tests/observability/test_zero_size_risk_floor_probe.py",
       "tests/polymarket/test_bankroll_rank_engine.py",
       "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -689,6 +691,10 @@
       "polymarket/observability/trader_phase2_observability.py"
     ],
     "tests/observability/test_trader_reconciliation_payload.py": [
+      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/trader.py"
+    ],
+    "tests/observability/test_trader_trade_open_context.py": [
       "polymarket/observability/trader_reconciliation_payload.py",
       "polymarket/trader.py"
     ],

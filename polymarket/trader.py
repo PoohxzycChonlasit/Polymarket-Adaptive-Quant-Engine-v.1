@@ -97,6 +97,7 @@ from polymarket.observability.trader_reconciliation_payload import (
     size_sharp_metadata as _opt_size_sharp_meta,
     size_sharp_close_carry as _opt_size_sharp_carry,
     build_entry_model_truth_envelope as _opt_build_envelope,
+    collect_trade_open_context as _opt_collect_trade_open_context,
     build_trade_closed_payload as _opt_build_trade_closed_payload,
     build_trade_position_metadata as _opt_build_position_metadata,
 )
@@ -3027,113 +3028,32 @@ class PolymarketTrader:
         position_id: str | None = None,
         entry_attribution: dict[str, object] | None = None,
     ) -> None:
-        model_context = {}
-        last_quant_details = getattr(self, "last_quant_details", {})
-        if isinstance(last_quant_details, dict):
-            candidate_context = last_quant_details.get(str(ticker or "").upper(), {})
-            if isinstance(candidate_context, dict):
-                model_context = candidate_context
-        if entry_attribution is None and isinstance(model_context, dict):
-            entry_attribution = model_context.get("entry_attribution")
-
-        def first_available(*values: object) -> object:
-            for value in values:
-                if TraderObservabilityHelper._phase2_value_available(value):
-                    return value
-            return None
-
-        outcome_upper = str(outcome or "").upper()
-        model_p_yes = first_available(
-            model_context.get("model_probability_yes"),
-            model_context.get("p_yes"),
-            model_context.get("model_p_yes"),
-            model_context.get("fair_value_yes"),
-        )
-        model_p_no = first_available(
-            model_context.get("model_probability_no"),
-            model_context.get("p_no"),
-            model_context.get("model_p_no"),
-            model_context.get("fair_value_no"),
-        )
-        selected_probability = first_available(true_probability, model_context.get("true_probability"))
-        if selected_probability is None:
-            if outcome_upper == "YES":
-                selected_probability = model_p_yes
-            elif outcome_upper == "NO":
-                selected_probability = model_p_no
-        selected_fair_value = first_available(fair_value, model_context.get("fair_value"))
-        if selected_fair_value is None:
-            if outcome_upper == "YES":
-                selected_fair_value = first_available(model_context.get("fair_value_yes"), model_p_yes)
-            elif outcome_upper == "NO":
-                selected_fair_value = first_available(model_context.get("fair_value_no"), model_p_no)
-        if selected_fair_value is None:
-            selected_fair_value = selected_probability
-        selected_ev = first_available(
-            ev_after_spread,
-            model_context.get("ev_after_spread"),
-            model_context.get("expected_value"),
-            model_context.get("ev"),
-            model_context.get("edge"),
-        )
-        selected_confidence = first_available(confidence, model_context.get("confidence"))
-        model_output_visible = any(
-            TraderObservabilityHelper._phase2_value_available(value)
-            for value in (selected_probability, selected_fair_value, model_p_yes, model_p_no)
-        )
-        phase2_detail = self._phase2_observability_payload(
-            ticker=ticker,
+        trade_open_context = _opt_collect_trade_open_context(
+            trader=self,
             market_id=market_id,
-            side=outcome,
-            epoch_start=epoch_start,
-            seconds_remaining=seconds_remaining,
-            market_price=entry_price,
-            fair_value=selected_fair_value,
-            true_probability=selected_probability,
-            ev_after_spread=selected_ev,
-            skip_reason="",
-            risk_plan=None,
-        )
-        if model_output_visible:
-            phase2_detail.update({
-                "model_output_ready": True,
-                "model_attempted": True,
-                "probability_model_called": True,
-                "probability_model_output_visible": True,
-                "probability_model_stage": "probability_model_output",
-                "probability_model_gate_reason": "model_output_visible",
-                "model_not_run_reason": "",
-                "model_output_missing_reason": "",
-                "model_handoff_stage": "MODEL_OUTPUT_SERIALIZED",
-            })
-        if TraderObservabilityHelper._phase2_value_available(model_p_yes):
-            phase2_detail.update({
-                "p_yes": model_p_yes,
-                "model_p_yes": model_p_yes,
-                "model_probability_yes": model_p_yes,
-                "fair_value_yes": first_available(model_context.get("fair_value_yes"), model_p_yes),
-            })
-        if TraderObservabilityHelper._phase2_value_available(model_p_no):
-            phase2_detail.update({
-                "p_no": model_p_no,
-                "model_p_no": model_p_no,
-                "model_probability_no": model_p_no,
-                "fair_value_no": first_available(model_context.get("fair_value_no"), model_p_no),
-            })
-        exposure_after = float(phase2_detail.get("exposure_after", 0.0) or 0.0)
-        exposure_before = max(exposure_after - float(risk_plan.notional_size), 0.0)
-        phase2_detail.update({
-            "exposure_before": exposure_before,
-            "risk_budget_used": exposure_before,
-        })
-        epoch_start_ts = int(epoch_start or 0)
-        paper_trade_replay_key = self._build_paper_trade_replay_key(
-            condition_id=condition_id,
-            epoch_start_ts=epoch_start_ts,
             ticker=ticker,
             outcome=outcome,
             token_id=token_id,
+            risk_plan=risk_plan,
+            entry_price=entry_price,
+            seconds_remaining=seconds_remaining,
+            epoch_start=epoch_start,
+            condition_id=condition_id,
+            true_probability=true_probability,
+            fair_value=fair_value,
+            ev_after_spread=ev_after_spread,
+            confidence=confidence,
+            entry_attribution=entry_attribution,
         )
+        model_context = trade_open_context["model_context"]
+        entry_attribution = trade_open_context["entry_attribution"]
+        phase2_detail = trade_open_context["phase2_detail"]
+        selected_probability = trade_open_context["selected_probability"]
+        selected_fair_value = trade_open_context["selected_fair_value"]
+        selected_ev = trade_open_context["selected_ev"]
+        selected_confidence = trade_open_context["selected_confidence"]
+        epoch_start_ts = trade_open_context["epoch_start_ts"]
+        paper_trade_replay_key = trade_open_context["paper_trade_replay_key"]
         open_payload = {
                 "market_id": market_id,
                 "ticker": ticker,
@@ -3145,7 +3065,7 @@ class PolymarketTrader:
                 "notional_size": float(risk_plan.notional_size),
                 "receipt": asdict(receipt),
                 "strategy": strategy,
-                "mode": self._runtime_mode(),
+                "mode": trade_open_context["runtime_mode"],
                 "condition_id": condition_id or "",
                 "epoch_start_ts": epoch_start_ts,
                 "asset": ticker,
@@ -3166,12 +3086,12 @@ class PolymarketTrader:
                 "expected_value": selected_ev,
                 "ev": selected_ev,
                 "confidence": selected_confidence,
-                **self._size_sharp_metadata(model_context.get("size_sharp_result")),
+                **trade_open_context["size_sharp_payload"],
                 # P0.5: bankroll rank and capital quality — observability-only carry-forward
                 # bankroll_rank = tier-string; capital_score = float numeric score
-                "bankroll_rank": self._last_bankroll_rank,
-                "bankroll_family": self._last_bankroll_family,
-                "capital_score": self._last_capital_score,
+                "bankroll_rank": trade_open_context["bankroll_rank"],
+                "bankroll_family": trade_open_context["bankroll_family"],
+                "capital_score": trade_open_context["capital_score"],
                 # Shadow policy — observability-only, does NOT gate entry
                 "shadow_policy_decision": model_context.get("shadow_policy_decision"),
                 "shadow_policy_reasons": model_context.get("shadow_policy_reasons"),
@@ -3181,23 +3101,7 @@ class PolymarketTrader:
                 "shadow_policy_id": model_context.get("shadow_policy_id"),
                 "shadow_policy_confidence": model_context.get("shadow_policy_confidence"),
                 # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive
-                **self._build_entry_model_truth_envelope(
-                    true_probability=selected_probability,
-                    fair_value=selected_fair_value,
-                    ev_after_spread=selected_ev,
-                    confidence=selected_confidence,
-                    model_probability_yes=model_p_yes,
-                    model_probability_no=model_p_no,
-                    selected_side=outcome,
-                    model_handoff_stage=phase2_detail.get("model_handoff_stage"),
-                    probability_model_stage=phase2_detail.get("probability_model_stage"),
-                    model_output_ready=model_output_visible,
-                    model_attempted=phase2_detail.get("probability_model_called") or phase2_detail.get("model_attempted"),
-                    model_not_run_reason=phase2_detail.get("model_not_run_reason"),
-                    ev_missing_reason=phase2_detail.get("ev_after_spread_null_reason") or phase2_detail.get("ev_missing_reason"),
-                    computed_by="trade_open_context",
-                    serialization_source="last_quant_details",
-                ),
+                **trade_open_context["entry_model_truth_envelope"],
         }
         if isinstance(entry_attribution, dict):
             for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):

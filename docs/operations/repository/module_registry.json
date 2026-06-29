@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T08:44:41.383275Z",
-  "module_count": 448,
+  "generated_at_utc": "2026-06-29T09:28:51.129276Z",
+  "module_count": 449,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -1146,15 +1146,16 @@
       "module_name": "polymarket.observability.trader_reconciliation_payload",
       "domain": "polymarket",
       "package": "polymarket/observability",
-      "line_count": 418,
-      "blast_radius_score": 6,
+      "line_count": 586,
+      "blast_radius_score": 9,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
         "polymarket/trader.py",
-        "tests/observability/test_trader_reconciliation_payload.py"
+        "tests/observability/test_trader_reconciliation_payload.py",
+        "tests/observability/test_trader_trade_open_context.py"
       ],
       "tests": [],
       "safe_move_status": "DO_NOT_MOVE",
@@ -1531,8 +1532,8 @@
       "module_name": "polymarket.trader",
       "domain": "polymarket",
       "package": "polymarket",
-      "line_count": 11672,
-      "blast_radius_score": 303,
+      "line_count": 11576,
+      "blast_radius_score": 306,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
       "do_not_touch": true,
@@ -1616,6 +1617,7 @@
         "tests/observability/test_trader_orderbook_lineage.py",
         "tests/observability/test_trader_path_truth.py",
         "tests/observability/test_trader_reconciliation_payload.py",
+        "tests/observability/test_trader_trade_open_context.py",
         "tests/observability/test_zero_size_risk_floor_probe.py",
         "tests/polymarket/test_bankroll_rank_engine.py",
         "tests/polymarket/test_empty_orderbook_fail_soft.py",
@@ -3936,6 +3938,28 @@
       "domain": "tests",
       "package": "tests/observability",
       "line_count": 513,
+      "blast_radius_score": 6,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/trader.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "polymarket/observability/trader_reconciliation_payload.py",
+        "polymarket/trader.py"
+      ],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tests/observability/test_trader_trade_open_context.py",
+      "module_name": "tests.observability.test_trader_trade_open_context",
+      "domain": "tests",
+      "package": "tests/observability",
+      "line_count": 445,
       "blast_radius_score": 6,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": false,
