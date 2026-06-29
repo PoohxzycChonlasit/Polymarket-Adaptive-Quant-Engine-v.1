@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:01:12.991535Z",
-  "module_count": 455,
+  "generated_at_utc": "2026-06-29T14:26:56.262665Z",
+  "module_count": 457,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -5175,7 +5175,7 @@
       "module_name": "tests.replay.test_canonical_trade_context_builder",
       "domain": "tests",
       "package": "tests/replay",
-      "line_count": 666,
+      "line_count": 665,
       "blast_radius_score": 0,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
@@ -5701,6 +5701,26 @@
       "direct_imports": [],
       "reverse_importers": [],
       "tests": [],
+      "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tests/tools/test_decision_engine_prototype.py",
+      "module_name": "tests.tools.test_decision_engine_prototype",
+      "domain": "tests",
+      "package": "tests/tools",
+      "line_count": 141,
+      "blast_radius_score": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "tools/decision/decision_engine_prototype.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "tools/decision/decision_engine_prototype.py"
+      ],
       "safe_move_status": "SAFE_ATOMIC",
       "recommended_target_folder": null
     },
@@ -7032,6 +7052,24 @@
       "direct_imports": [],
       "reverse_importers": [
         "tests/replay/test_canonical_trade_table_v1.py"
+      ],
+      "tests": [],
+      "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tools/decision/decision_engine_prototype.py",
+      "module_name": "tools.decision.decision_engine_prototype",
+      "domain": "tools",
+      "package": "tools/decision",
+      "line_count": 238,
+      "blast_radius_score": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "tests/tools/test_decision_engine_prototype.py"
       ],
       "tests": [],
       "safe_move_status": "SAFE_ATOMIC",

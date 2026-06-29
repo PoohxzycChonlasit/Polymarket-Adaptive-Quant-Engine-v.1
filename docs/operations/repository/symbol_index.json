@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:01:17.939351Z",
-  "file_count": 455,
+  "generated_at_utc": "2026-06-29T14:27:00.732308Z",
+  "file_count": 457,
   "files": [
     {
       "path": "polymarket/trader.py",
@@ -35223,7 +35223,7 @@
     },
     {
       "path": "tests/replay/test_canonical_trade_context_builder.py",
-      "total_lines": 667,
+      "total_lines": 666,
       "class_count": 0,
       "top_function_count": 24,
       "method_count": 0,
@@ -44925,6 +44925,129 @@
       "runtime_sensitive_symbols": [
         "test_risk_log_maps_latest_risk_mode"
       ]
+    },
+    {
+      "path": "tests/tools/test_decision_engine_prototype.py",
+      "total_lines": 142,
+      "class_count": 0,
+      "top_function_count": 10,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "_good_context_row",
+          "line": 17,
+          "size": 25,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_good_canonical_row_passes_context_validation",
+          "line": 44,
+          "size": 12,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_intended_price_rejects_missing_context",
+          "line": 58,
+          "size": 9,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_true_probability_rejects_missing_context",
+          "line": 69,
+          "size": 9,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_invalid_probability_rejects_bad_probability",
+          "line": 80,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_ev_after_spread_rejects_missing_context",
+          "line": 90,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_weak_evidence_grade_rejects_low_evidence",
+          "line": 100,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_missing_liquidity_context_requires_review_without_rejecting_core_context",
+          "line": 110,
+          "size": 9,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_diagnostic_is_json_serializable",
+          "line": 121,
+          "size": 6,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_decision_engine_prototype_has_no_runtime_imports",
+          "line": 129,
+          "size": 13,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "_good_context_row",
+          "class": null,
+          "size": 25
+        },
+        {
+          "name": "test_decision_engine_prototype_has_no_runtime_imports",
+          "class": null,
+          "size": 13
+        },
+        {
+          "name": "test_good_canonical_row_passes_context_validation",
+          "class": null,
+          "size": 12
+        },
+        {
+          "name": "test_missing_intended_price_rejects_missing_context",
+          "class": null,
+          "size": 9
+        },
+        {
+          "name": "test_missing_true_probability_rejects_missing_context",
+          "class": null,
+          "size": 9
+        },
+        {
+          "name": "test_missing_liquidity_context_requires_review_without_rejecting_core_context",
+          "class": null,
+          "size": 9
+        },
+        {
+          "name": "test_invalid_probability_rejects_bad_probability",
+          "class": null,
+          "size": 8
+        },
+        {
+          "name": "test_missing_ev_after_spread_rejects_missing_context",
+          "class": null,
+          "size": 8
+        },
+        {
+          "name": "test_weak_evidence_grade_rejects_low_evidence",
+          "class": null,
+          "size": 8
+        },
+        {
+          "name": "test_diagnostic_is_json_serializable",
+          "class": null,
+          "size": 6
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "tests/tools/test_decision_log_slim_index.py",
@@ -54849,6 +54972,153 @@
         "_preferred_fill_execution",
         "_risk_split"
       ]
+    },
+    {
+      "path": "tools/decision/decision_engine_prototype.py",
+      "total_lines": 239,
+      "class_count": 0,
+      "top_function_count": 14,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "validate_trade_context",
+          "line": 26,
+          "size": 66,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "evaluate_trade_context",
+          "line": 94,
+          "size": 4,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_read_probability",
+          "line": 100,
+          "size": 6,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_probability_quality",
+          "line": 108,
+          "size": 9,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_ev_quality",
+          "line": 119,
+          "size": 9,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_evidence_quality",
+          "line": 130,
+          "size": 19,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_liquidity_quality",
+          "line": 151,
+          "size": 20,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_availability_quality",
+          "line": 173,
+          "size": 14,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_requires_review",
+          "line": 189,
+          "size": 2,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_confidence_for",
+          "line": 193,
+          "size": 6,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_present",
+          "line": 201,
+          "size": 2,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_as_float",
+          "line": 205,
+          "size": 5,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_string_list",
+          "line": 212,
+          "size": 8,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_json_value",
+          "line": 222,
+          "size": 4,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "validate_trade_context",
+          "class": null,
+          "size": 66
+        },
+        {
+          "name": "_liquidity_quality",
+          "class": null,
+          "size": 20
+        },
+        {
+          "name": "_evidence_quality",
+          "class": null,
+          "size": 19
+        },
+        {
+          "name": "_availability_quality",
+          "class": null,
+          "size": 14
+        },
+        {
+          "name": "_probability_quality",
+          "class": null,
+          "size": 9
+        },
+        {
+          "name": "_ev_quality",
+          "class": null,
+          "size": 9
+        },
+        {
+          "name": "_string_list",
+          "class": null,
+          "size": 8
+        },
+        {
+          "name": "_read_probability",
+          "class": null,
+          "size": 6
+        },
+        {
+          "name": "_confidence_for",
+          "class": null,
+          "size": 6
+        },
+        {
+          "name": "_as_float",
+          "class": null,
+          "size": 5
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "tools/execution_paper_runtime.py",

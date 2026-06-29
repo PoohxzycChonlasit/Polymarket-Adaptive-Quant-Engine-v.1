@@ -311,6 +311,9 @@
     "tools/canonical/canonical_trade_table_v1.py": [
       "tests/replay/test_canonical_trade_table_v1.py"
     ],
+    "tools/decision/decision_engine_prototype.py": [
+      "tests/tools/test_decision_engine_prototype.py"
+    ],
     "tools/flaos/session_schema.py": [
       "tests/tools/test_flaos_runtime_session.py"
     ],
@@ -957,6 +960,9 @@
     ],
     "tests/tools/test_cross_run_lifecycle_truth.py": [
       "tools/shadow/cross_run_lifecycle_truth.py"
+    ],
+    "tests/tools/test_decision_engine_prototype.py": [
+      "tools/decision/decision_engine_prototype.py"
     ],
     "tests/tools/test_decision_log_slim_index.py": [
       "tools/unknown/decision_log_slim_index.py"

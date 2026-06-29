@@ -94,6 +94,7 @@
     "tools/backtest_engine_v2/policy.py",
     "tools/backtest_engine_v2/registry.py",
     "tools/backtest_engine_v2/scenario.py",
+    "tools/decision/decision_engine_prototype.py",
     "tools/flaos/README.md",
     "tools/flaos/__init__.py",
     "tools/flaos/bootstrap.py",

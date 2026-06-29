@@ -1259,21 +1259,42 @@
     {
       "priority": 1.8,
       "task_id": "DECISION_ENGINE_PROTOTYPE_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
-      "description": "Implement Phase 1 offline Decision Engine validator verifying Safety Memory and graph blast-radius constraints.",
-      "blocked_by": "DECISION_ENGINE_DESIGN_001",
+      "description": "Build an offline Decision Engine Prototype that validates canonical trade context rows and produces structured decision diagnostics without runtime trading behavior changes.",
+      "blocked_by": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
       "allowed_scope": [
-        "tools/",
+        "tools/decision/",
+        "tests/tools/",
         "docs/reports/",
-        "tests/"
+        "docs/operations/"
       ],
       "outputs": [
-        "tools/flaos/decision_validator.py",
+        "tools/decision/decision_engine_prototype.py",
+        "tests/tools/test_decision_engine_prototype.py",
         "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md"
       ],
-      "notes": "Offline validator prototype. Class 4 tooling loop task."
+      "notes": "DONE. Added stdlib-only offline decision diagnostics for canonical context rows with states PASS_CONTEXT, REJECT_MISSING_CONTEXT, REJECT_BAD_PROBABILITY, REJECT_BAD_EV, REJECT_LOW_EVIDENCE, and REVIEW_REQUIRED. Focused tests passed 9/9; canonical builder regression passed 22/22. No runtime imports or trading behavior changes."
+    },
+    {
+      "priority": 1.81,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 1,
+      "description": "Run the offline Decision Engine Prototype across current canonical context JSONL outputs and report decision-state distribution, missing-field distribution, and quality bottlenecks.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_001",
+      "allowed_scope": [
+        "runtime/reports/",
+        "tools/decision/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md"
+      ],
+      "notes": "Offline validation only. Must not wire decisions into runtime, risk, sizing, execution, wallet, config, or strategy thresholds."
     },
     {
       "priority": 1.85,

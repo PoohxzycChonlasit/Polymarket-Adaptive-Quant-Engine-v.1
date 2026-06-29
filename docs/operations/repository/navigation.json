@@ -1,6 +1,6 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:01:18.057351Z",
+  "generated_at_utc": "2026-06-29T14:27:00.890280Z",
   "major_domains": {
     "polymarket": {
       "description": "Runtime trading modules \u2014 execution loop, market data, models, signals",
@@ -23,7 +23,7 @@
     },
     "tests": {
       "description": "Test suite (flat, 160+ files \u2014 Wave 3 will organize)",
-      "module_count": 177
+      "module_count": 178
     },
     "utils": {
       "description": "Shared utilities: logging, Telegram alerts, quant event logger",
@@ -53,12 +53,13 @@
     "tests/polymarket": 40,
     "tests/replay": 17,
     "tests/runtime": 9,
-    "tests/tools": 48,
+    "tests/tools": 49,
     "tools": 2,
     "tools/airos": 7,
     "tools/audit": 7,
     "tools/backtest_engine_v2": 9,
     "tools/canonical": 2,
+    "tools/decision": 1,
     "tools/flaos": 9,
     "tools/outcome_truth": 10,
     "tools/probes": 12,
