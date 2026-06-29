@@ -1,6 +1,6 @@
 {
   "$schema": "task_queue_v1",
-  "last_updated": "2026-06-28",
+  "last_updated": "2026-06-29",
   "queue": [
     {
       "priority": -2,
@@ -2575,9 +2575,9 @@
     {
       "priority": 170,
       "task_id": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
-      "task_class": 1,
+      "task_class": 2,
       "description": "Perform trade open/closed event payload audit and design clean lifecycle serialization boundaries before extraction.",
       "blocked_by": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
       "allowed_scope": [
@@ -2587,7 +2587,29 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md"
       ],
-      "notes": "Planned next task."
+      "notes": "DONE. Audit completed with verdict PROCEED_WITH_CLOSED_EVENT_ONLY. Open payload readiness 57/100; closed payload readiness 72/100. Event emission boundary and runtime mutations remain deferred."
+    },
+    {
+      "priority": 171,
+      "task_id": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract trade-close payload construction into an observability helper while keeping _emit_quant_event and runtime lifecycle behavior in PolymarketTrader.",
+      "blocked_by": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/",
+        "tests/observability/",
+        "tests/integration/",
+        "tests/polymarket/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md"
+      ],
+      "notes": "Next executable task from Phase 3G audit. Extract closed-event payload only. Do not extract _emit_trade_opened_event. Keep _emit_quant_event, reconciliation, order behavior, live client calls, risk, sizing, strategy, wallet/balance, and config out of scope."
     }
   ]
 }

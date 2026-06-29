@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001 complete; next is TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
-    "last_completed_task": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
+    "current_phase": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001 complete; next is TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
+    "last_completed_task": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
     "last_commit": "HEAD",
-    "last_commit_message": "refactor: extract trader reconciliation observability helpers",
-    "next_task": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
+    "last_commit_message": "docs: audit trader trade event payload extraction",
+    "next_task": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -91,7 +91,7 @@
             "TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001",
             "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001"
         ],
-        "next_batch": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
+        "next_batch": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -137,5 +137,17 @@
         "compiler_script": "tools/canonical_trade_context_builder.py",
         "test_suite": "tests/test_canonical_trade_context_builder.py"
     },
-    "notes": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001 complete. Extracted 6 read-only metadata/reconciliation helpers to trader_reconciliation_payload.py. wrappers retained. 840 targeted tests passing. Next: TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001."
+    "trade_event_payload_audit": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md",
+        "methods_audited": [
+            "_emit_trade_opened_event",
+            "_emit_trade_closed_event"
+        ],
+        "recommendation": "PROCEED_WITH_CLOSED_EVENT_ONLY",
+        "open_payload_readiness_score": 57,
+        "closed_payload_readiness_score": 72,
+        "next_task": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001"
+    },
+    "notes": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001 complete. Audited trade open/close event payload boundaries. Verdict: PROCEED_WITH_CLOSED_EVENT_ONLY. Next: TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001."
 }

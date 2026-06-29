@@ -2591,5 +2591,61 @@
     },
     "verdict": "PASS",
     "next_recommendation": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001"
+  },
+  {
+    "entry_id": "LOOP_20260629_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT",
+    "utc": "2026-06-29T00:00:00Z",
+    "task_id": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "polymarket/trader.py",
+      "polymarket/observability/trader_reconciliation_payload.py",
+      "polymarket/observability/trader_lifecycle_payload.py"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS_DESIGN_AUDIT",
+    "repairs": 0,
+    "evidence_grade": "A+B+D",
+    "commits": [],
+    "commit_messages": [
+      "docs: audit trader trade event payload extraction"
+    ],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "methods_audited": [
+        "_emit_trade_opened_event",
+        "_emit_trade_closed_event"
+      ],
+      "open_payload_readiness_score": 57,
+      "closed_payload_readiness_score": 72,
+      "recommendation": "PROCEED_WITH_CLOSED_EVENT_ONLY",
+      "emission_boundary_deferred": true,
+      "runtime_mutations_deferred": true,
+      "open_event_deferred_reason": "depends on last_quant_details, trader-aware phase2 lifecycle payload, exposure timeline, bankroll carry, size-sharp metadata, and entry-model truth envelope"
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "active_loop_memory_pointer_used": true,
+      "phase3f_report_read": true,
+      "heatmap_and_symbol_index_read": true,
+      "target_methods_inspected": true,
+      "report_created": true,
+      "workflow_state_updated": true,
+      "task_queue_updated": true,
+      "active_loop_memory_updated": true,
+      "pytest_run": false,
+      "paper_runtime_run": false,
+      "live_runtime_run": false
+    },
+    "verdict": "PROCEED_WITH_CLOSED_EVENT_ONLY",
+    "next_recommendation": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001"
   }
 ]
