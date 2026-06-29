@@ -1395,7 +1395,7 @@
     {
       "priority": 1.847,
       "task_id": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 1,
       "description": "Review the 41 newly PASS_CONTEXT canonical rows after severity-aware missing-field implementation and confirm they are genuinely LOW/INFO-only missing-field cases.",
@@ -1408,7 +1408,7 @@
       "outputs": [
         "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md"
       ],
-      "notes": "Offline research only. Inspect severity-aware batch examples/distribution; do not change validator logic or runtime behavior. Confirm whether newly passing rows are safe diagnostic PASS_CONTEXT examples or whether severity map adjustments are needed."
+      "notes": "DONE. Verified all 41 PASS_CONTEXT rows are legitimate: grade A, HIGH join confidence, signal_driven_trade, only LOW (blockers sentinel) and INFO (future telemetry) missing fields. Zero false positives. Verdict: KEEP_SEVERITY_POLICY. No code modified. Report: docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md."
     },
     {
       "priority": 1.85,

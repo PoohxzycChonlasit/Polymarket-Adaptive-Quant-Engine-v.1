@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001 complete; next is DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+    "current_phase": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001 complete; next is CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
     "last_commit": "HEAD",
-    "last_commit_message": "feat: implement decision engine missing field severity",
-    "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+    "last_commit_message": "docs: review decision engine severity batch passes",
+    "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -96,9 +96,10 @@
             "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
             "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
-            "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+            "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+            "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
         ],
-        "next_batch": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+        "next_batch": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -223,7 +224,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001 complete. Implemented offline severity-aware missing-field diagnostics and batch aggregation. Real 1,794-row batch: PASS_CONTEXT 41, REVIEW_REQUIRED 845, REJECT_MISSING_CONTEXT 907, REJECT_LOW_EVIDENCE 1. No runtime/trader/risk/sizing/execution behavior changed. Next: DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.",
+    "notes": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001 complete. All 41 PASS_CONTEXT rows verified as legitimate: grade A, HIGH join confidence, signal_driven_trade, only LOW (blockers sentinel) and INFO (future telemetry) missing fields. Zero false positives. Verdict: KEEP_SEVERITY_POLICY. No code modified. Next: CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -502,5 +503,25 @@
         },
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+    },
+    "decision_engine_prototype_severity_batch_review": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md",
+        "rows_reviewed": 41,
+        "pass_context_legitimate": 41,
+        "false_positives": 0,
+        "common_missing_low": ["blockers"],
+        "common_missing_info_count": 17,
+        "common_missing_info_category": "future_telemetry_placeholders",
+        "probability_range": [0.5719, 0.7118],
+        "ev_after_spread_range": [0.0566, 0.2652],
+        "source_file": "canonical_trade_context_20260627.jsonl",
+        "event_classification": "signal_driven_trade",
+        "evidence_quality": "grade_A_HIGH_join_3_source_streams",
+        "verdict": "KEEP_SEVERITY_POLICY",
+        "safety_verdict": "SAFE_OFFLINE_REVIEW_ONLY",
+        "code_modified": false,
+        "runtime_changed": false,
+        "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
     }
 }
