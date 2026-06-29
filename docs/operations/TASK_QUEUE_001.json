@@ -2433,7 +2433,7 @@
     {
       "priority": 127,
       "task_id": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Extract orderbook details/status helper methods (_orderbook_refresh_observability_detail, etc.) into polymarket/observability/trader_orderbook_details.py.",
@@ -2449,7 +2449,7 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001.md"
       ],
-      "notes": "READY. Extraction of the next layer of orderbook/cadence details helper methods. Preserve backward compatibility and wrapper delegation."
+      "notes": "DONE. Extracted _empty_book_recovery_detail and _infer_clob_orderbook_error_category into polymarket/observability/trader_orderbook_details.py. Wrappers retained in trader.py. Golden equivalence tests verify parity. 701 tests passed (21 new). Deferred: _classify_orderbook_readiness_reason (writes self), _clob_orderbook_error_detail (reads self.client)."
     }
   ]
 }
