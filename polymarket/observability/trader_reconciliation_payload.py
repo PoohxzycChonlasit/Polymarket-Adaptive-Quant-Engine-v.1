@@ -179,6 +179,106 @@ def build_entry_model_truth_envelope(
         return {}
 
 
+def build_trade_closed_payload(
+    *,
+    position: Any,
+    metadata: dict | None,
+    reason: str,
+    exit_price: float,
+    exit_timestamp: str,
+    hold_seconds: int | None,
+    size: float,
+    pnl: float,
+    trade_result: str | None,
+    entry_price: float | None,
+    partial: bool,
+    receipt_payload: dict[str, object] | None,
+    mode: str,
+    ticker: str,
+    token_id: str,
+    outcome: str,
+    condition_id: str,
+    epoch_start_ts: int,
+    paper_trade_replay_key: str,
+    size_sharp_carry: dict[str, object] | None = None,
+    entry_model_truth_carry: dict[str, object] | None = None,
+) -> dict[str, object]:
+    """Build the trade-close quant event payload without emitting or mutating trader state."""
+    metadata_dict = metadata if isinstance(metadata, dict) else {}
+    close_payload = {
+        "position_id": getattr(position, "position_id", ""),
+        "market_id": getattr(position, "symbol", ""),
+        "ticker": ticker,
+        "token_id": token_id,
+        "outcome": outcome,
+        "reason": reason,
+        "exit_price": float(exit_price),
+        "exit_timestamp": exit_timestamp,
+        "hold_seconds": hold_seconds,
+        "size": float(size),
+        "pnl": float(pnl),
+        "pnl_usdc": float(pnl),
+        "trade_result": trade_result,
+        "entry_price": entry_price,
+        "partial": bool(partial),
+        "receipt": receipt_payload or {},
+        "mode": mode,
+        "condition_id": condition_id,
+        "epoch_start_ts": epoch_start_ts,
+        "asset": ticker,
+        "paper_trade_replay_key": paper_trade_replay_key,
+        "candidate_peak_favorable": None,
+        "candidate_peak_adverse": None,
+        "true_probability": metadata_dict.get("true_probability") if isinstance(metadata, dict) else None,
+        "fair_value": metadata_dict.get("fair_value") if isinstance(metadata, dict) else None,
+        "ev": metadata_dict.get("entry_ev") if isinstance(metadata, dict) else None,
+        "ev_after_spread": metadata_dict.get("entry_ev") if isinstance(metadata, dict) else None,
+        "confidence": metadata_dict.get("confidence") if isinstance(metadata, dict) else None,
+        "signal_name": metadata_dict.get("signal_name") if isinstance(metadata, dict) else None,
+        "signal_reason": metadata_dict.get("signal_reason") if isinstance(metadata, dict) else None,
+        "strategy_signal_name": metadata_dict.get("strategy_signal_name") if isinstance(metadata, dict) else None,
+        "strategy_signal_reason": metadata_dict.get("strategy_signal_reason") if isinstance(metadata, dict) else None,
+        "lifecycle_phase": metadata_dict.get("lifecycle_phase") if isinstance(metadata, dict) else None,
+        "seconds_remaining": metadata_dict.get("seconds_remaining") if isinstance(metadata, dict) else None,
+        "bankroll_tier_id": metadata_dict.get("bankroll_tier_id") if isinstance(metadata, dict) else None,
+        "bankroll_family": metadata_dict.get("bankroll_family") if isinstance(metadata, dict) else None,
+        "risk_mode": metadata_dict.get("risk_mode") if isinstance(metadata, dict) else None,
+        "risk_budget": metadata_dict.get("risk_budget") if isinstance(metadata, dict) else None,
+        "current_exposure": metadata_dict.get("current_exposure") if isinstance(metadata, dict) else None,
+        "target_exposure": metadata_dict.get("target_exposure") if isinstance(metadata, dict) else None,
+        "notional_size": metadata_dict.get("notional_size") if isinstance(metadata, dict) else None,
+        "capital_score": metadata_dict.get("capital_score") if isinstance(metadata, dict) else None,
+        "capital_state": metadata_dict.get("capital_state") if isinstance(metadata, dict) else None,
+        "promotion_candidate": metadata_dict.get("promotion_candidate") if isinstance(metadata, dict) else None,
+        "demotion_candidate": metadata_dict.get("demotion_candidate") if isinstance(metadata, dict) else None,
+        "expected_risk_profile": metadata_dict.get("expected_risk_profile") if isinstance(metadata, dict) else None,
+        "bankroll_rank": metadata_dict.get("bankroll_rank") if isinstance(metadata, dict) else None,
+        "shadow_policy_decision": metadata_dict.get("shadow_policy_decision") if isinstance(metadata, dict) else None,
+        "shadow_policy_observed_ev": (
+            metadata_dict.get("shadow_policy_observed_ev") if isinstance(metadata, dict) else None
+        ),
+        "shadow_policy_observed_probability": (
+            metadata_dict.get("shadow_policy_observed_probability") if isinstance(metadata, dict) else None
+        ),
+        "shadow_policy_observed_risk_mode": (
+            metadata_dict.get("shadow_policy_observed_risk_mode") if isinstance(metadata, dict) else None
+        ),
+        "shadow_policy_id": metadata_dict.get("shadow_policy_id") if isinstance(metadata, dict) else None,
+        **(size_sharp_carry or {}),
+        **(entry_model_truth_carry or {}),
+    }
+    attribution = metadata_dict.get("entry_attribution")
+    if isinstance(attribution, dict):
+        close_payload["entry_attribution"] = attribution
+        close_payload["entry_attribution_status"] = "success"
+        for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
+            if field in attribution:
+                close_payload[field] = attribution[field]
+    else:
+        close_payload["entry_attribution_status"] = "missing_legacy"
+    return close_payload
+
+
 def build_trade_position_metadata(
     *,
     last_quant_details: dict,

@@ -2592,7 +2592,7 @@
     {
       "priority": 171,
       "task_id": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Extract trade-close payload construction into an observability helper while keeping _emit_quant_event and runtime lifecycle behavior in PolymarketTrader.",
@@ -2609,7 +2609,26 @@
       "outputs": [
         "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md"
       ],
-      "notes": "Next executable task from Phase 3G audit. Extract closed-event payload only. Do not extract _emit_trade_opened_event. Keep _emit_quant_event, reconciliation, order behavior, live client calls, risk, sizing, strategy, wallet/balance, and config out of scope."
+      "notes": "DONE. Extracted build_trade_closed_payload into trader_reconciliation_payload.py. _emit_trade_closed_event still computes local lifecycle values and emits log_trade_close exactly once in the tested normal path. _emit_trade_opened_event and _emit_quant_event unchanged. py_compile passed; tests/observability tests/polymarket passed 845/845."
+    },
+    {
+      "priority": 172,
+      "task_id": "TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Audit the trade-open event context collection and payload boundary before any open-event payload extraction.",
+      "blocked_by": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "polymarket/trader.py",
+        "polymarket/observability/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md"
+      ],
+      "notes": "Design/audit only. Do not extract build_trade_opened_payload yet. Classify self reads, phase2 lifecycle payload dependency, last_quant_details/model context dependency, size-sharp metadata, entry-model truth envelope, attribution override, replay key derivation, and event emission boundary."
     }
   ]
 }

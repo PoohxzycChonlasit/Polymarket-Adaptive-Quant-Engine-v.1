@@ -97,6 +97,7 @@ from polymarket.observability.trader_reconciliation_payload import (
     size_sharp_metadata as _opt_size_sharp_meta,
     size_sharp_close_carry as _opt_size_sharp_carry,
     build_entry_model_truth_envelope as _opt_build_envelope,
+    build_trade_closed_payload as _opt_build_trade_closed_payload,
     build_trade_position_metadata as _opt_build_position_metadata,
 )
 from polymarket.risk_modes import (
@@ -3257,80 +3258,29 @@ class PolymarketTrader:
             _entry_price: float | None = float(getattr(position, "entry_price", None) or 0.0) or None
         except Exception:
             _entry_price = None
-        # Flattened carry-forward metadata fields for analytical readiness
-        close_payload = {
-            "position_id": getattr(position, "position_id", ""),
-            "market_id": getattr(position, "symbol", ""),
-            "ticker": ticker,
-            "token_id": token_id,
-            "outcome": outcome,
-            "reason": reason,
-            "exit_price": float(exit_price),
-            "exit_timestamp": exit_ts,
-            "hold_seconds": hold_seconds,
-            "size": float(size),
-            "pnl": float(pnl),
-            "pnl_usdc": float(pnl),
-            "trade_result": _trade_result,
-            "entry_price": _entry_price,
-            "partial": bool(partial),
-            "receipt": asdict(receipt) if receipt else {},
-            "mode": self._runtime_mode(),
-            "condition_id": condition_id,
-            "epoch_start_ts": epoch_start_ts,
-            "asset": ticker,
-            "paper_trade_replay_key": paper_trade_replay_key,
-            "candidate_peak_favorable": None,
-            "candidate_peak_adverse": None,
-            
-            # Backfilled analytical metadata
-            "true_probability": metadata.get("true_probability") if isinstance(metadata, dict) else None,
-            "fair_value": metadata.get("fair_value") if isinstance(metadata, dict) else None,
-            "ev": metadata.get("entry_ev") if isinstance(metadata, dict) else None,
-            "ev_after_spread": metadata.get("entry_ev") if isinstance(metadata, dict) else None,
-            "confidence": metadata.get("confidence") if isinstance(metadata, dict) else None,
-            "signal_name": metadata.get("signal_name") if isinstance(metadata, dict) else None,
-            "signal_reason": metadata.get("signal_reason") if isinstance(metadata, dict) else None,
-            "strategy_signal_name": metadata.get("strategy_signal_name") if isinstance(metadata, dict) else None,
-            "strategy_signal_reason": metadata.get("strategy_signal_reason") if isinstance(metadata, dict) else None,
-            "lifecycle_phase": metadata.get("lifecycle_phase") if isinstance(metadata, dict) else None,
-            "seconds_remaining": metadata.get("seconds_remaining") if isinstance(metadata, dict) else None,
-            "bankroll_tier_id": metadata.get("bankroll_tier_id") if isinstance(metadata, dict) else None,
-            "bankroll_family": metadata.get("bankroll_family") if isinstance(metadata, dict) else None,
-            "risk_mode": metadata.get("risk_mode") if isinstance(metadata, dict) else None,
-            "risk_budget": metadata.get("risk_budget") if isinstance(metadata, dict) else None,
-            "current_exposure": metadata.get("current_exposure") if isinstance(metadata, dict) else None,
-            "target_exposure": metadata.get("target_exposure") if isinstance(metadata, dict) else None,
-            "notional_size": metadata.get("notional_size") if isinstance(metadata, dict) else None,
-            "capital_score": metadata.get("capital_score") if isinstance(metadata, dict) else None,
-            "capital_state": metadata.get("capital_state") if isinstance(metadata, dict) else None,
-            "promotion_candidate": metadata.get("promotion_candidate") if isinstance(metadata, dict) else None,
-            "demotion_candidate": metadata.get("demotion_candidate") if isinstance(metadata, dict) else None,
-            "expected_risk_profile": metadata.get("expected_risk_profile") if isinstance(metadata, dict) else None,
-            # P0.5: bankroll rank and capital score carry from entry metadata — observability only
-            "bankroll_rank": metadata.get("bankroll_rank") if isinstance(metadata, dict) else None,
-            "capital_score": metadata.get("capital_score") if isinstance(metadata, dict) else None,
-            # Shadow policy carry — observability only
-            "shadow_policy_decision": metadata.get("shadow_policy_decision") if isinstance(metadata, dict) else None,
-            "shadow_policy_observed_ev": metadata.get("shadow_policy_observed_ev") if isinstance(metadata, dict) else None,
-            "shadow_policy_observed_probability": metadata.get("shadow_policy_observed_probability") if isinstance(metadata, dict) else None,
-            "shadow_policy_observed_risk_mode": metadata.get("shadow_policy_observed_risk_mode") if isinstance(metadata, dict) else None,
-            "shadow_policy_id": metadata.get("shadow_policy_id") if isinstance(metadata, dict) else None,
-            **self._size_sharp_close_carry(metadata),
-            
-            # ENTRY_MODEL_TRUTH_ENVELOPE_V1 — carry from position metadata, observability-only
-            **self._carry_entry_model_truth_from_metadata(metadata),
-        }
-        attribution = metadata.get("entry_attribution")
-        if isinstance(attribution, dict):
-            close_payload["entry_attribution"] = attribution
-            close_payload["entry_attribution_status"] = "success"
-            for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
-                if field in attribution:
-                    close_payload[field] = attribution[field]
-        else:
-            close_payload["entry_attribution_status"] = "missing_legacy"
-
+        close_payload = _opt_build_trade_closed_payload(
+            position=position,
+            metadata=metadata,
+            reason=reason,
+            exit_price=exit_price,
+            exit_timestamp=exit_ts,
+            hold_seconds=hold_seconds,
+            size=size,
+            pnl=pnl,
+            trade_result=_trade_result,
+            entry_price=_entry_price,
+            partial=partial,
+            receipt_payload=asdict(receipt) if receipt else {},
+            mode=self._runtime_mode(),
+            ticker=ticker,
+            token_id=token_id,
+            outcome=outcome,
+            condition_id=condition_id,
+            epoch_start_ts=epoch_start_ts,
+            paper_trade_replay_key=paper_trade_replay_key,
+            size_sharp_carry=self._size_sharp_close_carry(metadata),
+            entry_model_truth_carry=self._carry_entry_model_truth_from_metadata(metadata),
+        )
         self._emit_quant_event("log_trade_close", close_payload)
 
     def _emit_risk_event(self, event: str, payload: dict[str, object] | None = None) -> None:

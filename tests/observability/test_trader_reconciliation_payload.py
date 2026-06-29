@@ -1,6 +1,9 @@
 """Unit tests for trader_reconciliation_payload.py and their equivalence with PolymarketTrader wrappers."""
 from __future__ import annotations
 
+import inspect
+from types import SimpleNamespace
+
 import pytest
 from unittest.mock import MagicMock
 from polymarket.observability.trader_reconciliation_payload import (
@@ -10,6 +13,7 @@ from polymarket.observability.trader_reconciliation_payload import (
     size_sharp_close_carry,
     build_entry_model_truth_envelope,
     build_trade_position_metadata,
+    build_trade_closed_payload,
 )
 from polymarket.trader import PolymarketTrader
 
@@ -232,3 +236,278 @@ def test_equivalence_with_trader_wrappers():
         ticker="BTC",
     )
     assert wrapper_pos == helper_pos
+
+
+def _legacy_trade_closed_payload(
+    *,
+    position,
+    metadata,
+    reason,
+    exit_price,
+    exit_timestamp,
+    hold_seconds,
+    size,
+    pnl,
+    trade_result,
+    entry_price,
+    partial,
+    receipt_payload,
+    mode,
+    ticker,
+    token_id,
+    outcome,
+    condition_id,
+    epoch_start_ts,
+    paper_trade_replay_key,
+    size_sharp_carry,
+    entry_model_truth_carry,
+):
+    meta = metadata if isinstance(metadata, dict) else {}
+    payload = {
+        "position_id": getattr(position, "position_id", ""),
+        "market_id": getattr(position, "symbol", ""),
+        "ticker": ticker,
+        "token_id": token_id,
+        "outcome": outcome,
+        "reason": reason,
+        "exit_price": float(exit_price),
+        "exit_timestamp": exit_timestamp,
+        "hold_seconds": hold_seconds,
+        "size": float(size),
+        "pnl": float(pnl),
+        "pnl_usdc": float(pnl),
+        "trade_result": trade_result,
+        "entry_price": entry_price,
+        "partial": bool(partial),
+        "receipt": receipt_payload,
+        "mode": mode,
+        "condition_id": condition_id,
+        "epoch_start_ts": epoch_start_ts,
+        "asset": ticker,
+        "paper_trade_replay_key": paper_trade_replay_key,
+        "candidate_peak_favorable": None,
+        "candidate_peak_adverse": None,
+        "true_probability": meta.get("true_probability") if isinstance(metadata, dict) else None,
+        "fair_value": meta.get("fair_value") if isinstance(metadata, dict) else None,
+        "ev": meta.get("entry_ev") if isinstance(metadata, dict) else None,
+        "ev_after_spread": meta.get("entry_ev") if isinstance(metadata, dict) else None,
+        "confidence": meta.get("confidence") if isinstance(metadata, dict) else None,
+        "signal_name": meta.get("signal_name") if isinstance(metadata, dict) else None,
+        "signal_reason": meta.get("signal_reason") if isinstance(metadata, dict) else None,
+        "strategy_signal_name": meta.get("strategy_signal_name") if isinstance(metadata, dict) else None,
+        "strategy_signal_reason": meta.get("strategy_signal_reason") if isinstance(metadata, dict) else None,
+        "lifecycle_phase": meta.get("lifecycle_phase") if isinstance(metadata, dict) else None,
+        "seconds_remaining": meta.get("seconds_remaining") if isinstance(metadata, dict) else None,
+        "bankroll_tier_id": meta.get("bankroll_tier_id") if isinstance(metadata, dict) else None,
+        "bankroll_family": meta.get("bankroll_family") if isinstance(metadata, dict) else None,
+        "risk_mode": meta.get("risk_mode") if isinstance(metadata, dict) else None,
+        "risk_budget": meta.get("risk_budget") if isinstance(metadata, dict) else None,
+        "current_exposure": meta.get("current_exposure") if isinstance(metadata, dict) else None,
+        "target_exposure": meta.get("target_exposure") if isinstance(metadata, dict) else None,
+        "notional_size": meta.get("notional_size") if isinstance(metadata, dict) else None,
+        "capital_score": meta.get("capital_score") if isinstance(metadata, dict) else None,
+        "capital_state": meta.get("capital_state") if isinstance(metadata, dict) else None,
+        "promotion_candidate": meta.get("promotion_candidate") if isinstance(metadata, dict) else None,
+        "demotion_candidate": meta.get("demotion_candidate") if isinstance(metadata, dict) else None,
+        "expected_risk_profile": meta.get("expected_risk_profile") if isinstance(metadata, dict) else None,
+        "bankroll_rank": meta.get("bankroll_rank") if isinstance(metadata, dict) else None,
+        "shadow_policy_decision": meta.get("shadow_policy_decision") if isinstance(metadata, dict) else None,
+        "shadow_policy_observed_ev": meta.get("shadow_policy_observed_ev") if isinstance(metadata, dict) else None,
+        "shadow_policy_observed_probability": (
+            meta.get("shadow_policy_observed_probability") if isinstance(metadata, dict) else None
+        ),
+        "shadow_policy_observed_risk_mode": (
+            meta.get("shadow_policy_observed_risk_mode") if isinstance(metadata, dict) else None
+        ),
+        "shadow_policy_id": meta.get("shadow_policy_id") if isinstance(metadata, dict) else None,
+        **size_sharp_carry,
+        **entry_model_truth_carry,
+    }
+    attribution = meta.get("entry_attribution")
+    if isinstance(attribution, dict):
+        payload["entry_attribution"] = attribution
+        payload["entry_attribution_status"] = "success"
+        for field in ("candidate_id", "candidate_instance_id", "paper_trade_replay_key", "signal_name", "signal_reason"):
+            if field in attribution:
+                payload[field] = attribution[field]
+    else:
+        payload["entry_attribution_status"] = "missing_legacy"
+    return payload
+
+
+def _trade_closed_payload_kwargs(metadata):
+    return {
+        "position": SimpleNamespace(
+            position_id="pos-1",
+            symbol="pm-5m-btc",
+            side="BUY",
+            entry_price=0.42,
+            entry_time="2026-06-29T08:30:00Z",
+            metadata=metadata,
+        ),
+        "metadata": metadata,
+        "reason": "take_profit_final",
+        "exit_price": 0.68,
+        "exit_timestamp": "2026-06-29T08:33:00Z",
+        "hold_seconds": 180,
+        "size": 12.5,
+        "pnl": 3.25,
+        "trade_result": "TP",
+        "entry_price": 0.42,
+        "partial": False,
+        "receipt_payload": {"order_id": "ord-1", "filled_size": 12.5},
+        "mode": "paper",
+        "ticker": "BTC",
+        "token_id": "tok-yes",
+        "outcome": "YES",
+        "condition_id": "cond-1",
+        "epoch_start_ts": 1710000000,
+        "paper_trade_replay_key": "cond-1|1710000000|BTC|YES|tok-yes",
+        "size_sharp_carry": {
+            "size_sharp_at_entry": 118.0,
+            "size_sharp_bucket": "Tier-1",
+            "size_sharp_close_carry_status": "carried",
+        },
+        "entry_model_truth_carry": {
+            "entry_model_truth_envelope_v1": {
+                "schema_version": "1.0",
+                "truth_status": "full",
+                "carried_from": "position_metadata",
+            }
+        },
+    }
+
+
+def test_build_trade_closed_payload_matches_legacy_local_construction():
+    metadata = {
+        "condition_id": "cond-1",
+        "epoch_start_ts": 1710000000,
+        "true_probability": 0.64,
+        "fair_value": 0.66,
+        "entry_ev": 0.08,
+        "confidence": 0.91,
+        "signal_name": "legacy_signal",
+        "signal_reason": "legacy_reason",
+        "strategy_signal_name": "strategy_signal",
+        "strategy_signal_reason": "strategy_reason",
+        "lifecycle_phase": "ACTIVE_INVENTORY_TRADING",
+        "seconds_remaining": 91,
+        "bankroll_tier_id": "T1",
+        "bankroll_family": "MAIN",
+        "risk_mode": "NORMAL",
+        "risk_budget": 44.0,
+        "current_exposure": 12.5,
+        "target_exposure": 20.0,
+        "notional_size": 12.5,
+        "capital_score": 0.77,
+        "capital_state": "OK",
+        "promotion_candidate": False,
+        "demotion_candidate": False,
+        "expected_risk_profile": "LOW",
+        "bankroll_rank": "T1_CORE",
+        "shadow_policy_decision": "ALLOW",
+        "shadow_policy_observed_ev": 0.08,
+        "shadow_policy_observed_probability": 0.64,
+        "shadow_policy_observed_risk_mode": "NORMAL",
+        "shadow_policy_id": "policy-1",
+        "entry_attribution": {
+            "candidate_id": "cand-override",
+            "candidate_instance_id": "inst-override",
+            "paper_trade_replay_key": "attrib-key",
+            "signal_name": "attrib_signal",
+            "signal_reason": "attrib_reason",
+        },
+    }
+    kwargs = _trade_closed_payload_kwargs(metadata)
+    assert build_trade_closed_payload(**kwargs) == _legacy_trade_closed_payload(**kwargs)
+
+
+def test_build_trade_closed_payload_missing_none_metadata_behavior():
+    kwargs = _trade_closed_payload_kwargs(None)
+    payload = build_trade_closed_payload(**kwargs)
+
+    assert payload == _legacy_trade_closed_payload(**kwargs)
+    assert payload["true_probability"] is None
+    assert payload["fair_value"] is None
+    assert payload["ev"] is None
+    assert payload["entry_attribution_status"] == "missing_legacy"
+
+
+def test_build_trade_closed_payload_preserves_pnl_exit_replay_and_carry_fields():
+    kwargs = _trade_closed_payload_kwargs({})
+    kwargs.update(
+        reason="stop_loss_hard",
+        exit_price=0.12,
+        size=4,
+        pnl=-1.2,
+        trade_result="SL",
+        partial=True,
+        paper_trade_replay_key="replay-key-2",
+    )
+    payload = build_trade_closed_payload(**kwargs)
+
+    assert payload["reason"] == "stop_loss_hard"
+    assert payload["exit_price"] == 0.12
+    assert payload["size"] == 4.0
+    assert payload["pnl"] == -1.2
+    assert payload["pnl_usdc"] == -1.2
+    assert payload["trade_result"] == "SL"
+    assert payload["partial"] is True
+    assert payload["paper_trade_replay_key"] == "replay-key-2"
+    assert payload["size_sharp_close_carry_status"] == "carried"
+    assert payload["entry_model_truth_envelope_v1"]["carried_from"] == "position_metadata"
+
+
+def test_build_trade_closed_payload_has_no_emission_or_trader_dependency():
+    signature = inspect.signature(build_trade_closed_payload)
+    forbidden_parameters = {"self", "trader", "emit", "emit_quant_event", "logger"}
+
+    assert not (forbidden_parameters & set(signature.parameters))
+
+
+def test_emit_trade_closed_event_calls_quant_event_once(monkeypatch):
+    fixed_now = SimpleNamespace(
+        isoformat=lambda: "2026-06-29T08:33:00+00:00",
+    )
+    monkeypatch.setattr("polymarket.trader.datetime", SimpleNamespace(now=lambda tz: fixed_now, fromisoformat=__import__("datetime").datetime.fromisoformat))
+
+    trader = PolymarketTrader.__new__(PolymarketTrader)
+    trader.settings = SimpleNamespace(paper_trading=True)
+    emitted = []
+
+    def _capture(event_method, payload):
+        emitted.append((event_method, payload))
+
+    trader._emit_quant_event = _capture
+    position = SimpleNamespace(
+        position_id="pos-emit",
+        symbol="pm-5m-btc",
+        side="BUY",
+        entry_price=0.4,
+        entry_time="2026-06-29T08:30:00Z",
+        metadata={
+            "condition_id": "cond-emit",
+            "epoch_start_ts": 1710000000,
+            "token_id": "tok-emit",
+            "outcome": "YES",
+            "entry_attribution": {"candidate_id": "cand-emit"},
+        },
+    )
+
+    PolymarketTrader._emit_trade_closed_event(
+        trader,
+        position=position,
+        reason="take_profit",
+        exit_price=0.7,
+        size=3,
+        pnl=0.9,
+        receipt=None,
+        partial=False,
+    )
+
+    assert len(emitted) == 1
+    event_method, payload = emitted[0]
+    assert event_method == "log_trade_close"
+    assert payload["position_id"] == "pos-emit"
+    assert payload["candidate_id"] == "cand-emit"
+    assert payload["paper_trade_replay_key"] == "cond-emit|1710000000|BTC|YES|tok-emit"
