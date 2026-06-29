@@ -3,7 +3,7 @@
     "last_updated": "2026-06-29",
     "current_phase": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001 complete; next is Phase 3C or next READY task",
     "last_completed_task": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
-    "last_commit": "pending-at-commit-time",
+    "last_commit": "b50dd07f",
     "last_commit_message": "refactor: extract trader orderbook detail helpers",
     "next_task": "TRADER_PHASE3C_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
     "navigator_state": {

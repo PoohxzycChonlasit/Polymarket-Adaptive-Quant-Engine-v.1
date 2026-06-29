@@ -2207,7 +2207,7 @@
     "repairs": 1,
     "evidence_grade": "A",
     "commits": [
-      "pending-at-commit-time"
+      "b50dd07f"
     ],
     "commit_messages": [
       "refactor: extract trader orderbook detail helpers"
