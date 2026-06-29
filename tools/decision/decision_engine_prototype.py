@@ -94,6 +94,11 @@ _LOW_MISSING_FIELDS = {
     "reason_codes",
     "replay_version",
     "resolved_outcome",
+    # Shadow policy primary outputs — observability-only feature, not a trading signal.
+    # LOW (not INFO) because these are live-feature outputs worth noting, not future placeholders.
+    # Fix: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001 (latent REVIEW_REQUIRED gap).
+    "shadow_policy_decision",
+    "shadow_policy_reasons",
     "source_event_ids",
     "trade_result",
 }
@@ -112,6 +117,14 @@ _INFO_MISSING_FIELDS = {
     "position_lifecycle_state",
     "promotion_candidate",
     "realized_pnl_before",
+    # Shadow policy observed telemetry — diagnostic/comparative fields, not trading signals.
+    # INFO (not LOW) because these are downstream measurements, not primary outputs.
+    # Fix: SHADOW_POLICY_SEVERITY_MAP_FIX_001.
+    "shadow_policy_confidence",
+    "shadow_policy_id",
+    "shadow_policy_observed_ev",
+    "shadow_policy_observed_probability",
+    "shadow_policy_observed_risk_mode",
     "size_sharp_at_entry",
     "size_sharp_boosts",
     "size_sharp_bucket",

@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 complete; 5 SizeSharp sentinel fields added, 26 builder tests pass",
-    "last_completed_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+    "current_phase": "SHADOW_POLICY_SEVERITY_MAP_FIX_001 complete; 7 shadow_policy_* severity fields added, 34 decision engine tests pass",
+    "last_completed_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
     "last_commit": "HEAD",
-    "last_commit_message": "test: repair canonical size sharp sentinels",
-    "next_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+    "last_commit_message": "test: repair shadow policy severity map",
+    "next_task": "TBD",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -100,9 +100,10 @@
             "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
             "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
             "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
-            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
+            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+            "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
         ],
-        "next_batch": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+        "next_batch": "TBD",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -227,7 +228,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 complete. Extended _EMPTY_COLLECTION_SENTINEL_FIELDS with 5 SizeSharp fields (size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs). shadow_policy_reasons intentionally excluded (severity-map gap must be resolved first). 26 canonical builder tests pass, 31 decision engine tests pass. Next: SHADOW_POLICY_SEVERITY_MAP_FIX_001 (add shadow_policy_* fields to decision engine severity sets).",
+    "notes": "SHADOW_POLICY_SEVERITY_MAP_FIX_001 complete. Added shadow_policy_decision/reasons to _LOW_MISSING_FIELDS; added 5 observed telemetry fields to _INFO_MISSING_FIELDS in decision_engine_prototype.py. 34 decision engine tests pass, 26 canonical builder tests pass. Severity gap closed — shadow_policy_* fields no longer fall to missing_medium_fields / REVIEW_REQUIRED. shadow_policy_reasons sentinel exclusion from _EMPTY_COLLECTION_SENTINEL_FIELDS unchanged.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -506,6 +507,24 @@
         },
         "runtime_changed": false,
         "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+    },
+    "shadow_policy_severity_map_fix": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md",
+        "file_repaired": "tools/decision/decision_engine_prototype.py",
+        "fix": "shadow_policy_decision + shadow_policy_reasons added to _LOW_MISSING_FIELDS; 5 observed telemetry fields added to _INFO_MISSING_FIELDS",
+        "low_fields_added": ["shadow_policy_decision", "shadow_policy_reasons"],
+        "info_fields_added": ["shadow_policy_observed_ev", "shadow_policy_observed_probability", "shadow_policy_observed_risk_mode", "shadow_policy_id", "shadow_policy_confidence"],
+        "severity_gap_closed": true,
+        "sentinel_set_unchanged": true,
+        "new_tests": 3,
+        "tests": {
+            "decision_engine": "34 passed",
+            "canonical_builder": "26 passed"
+        },
+        "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
+        "safety_verdict": "SAFE_OFFLINE_TOOLING",
+        "next_task": "TBD"
     },
     "canonical_context_size_sharp_sentinel_repair": {
         "status": "COMPLETE",

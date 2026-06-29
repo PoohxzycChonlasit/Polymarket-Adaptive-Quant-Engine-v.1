@@ -163,6 +163,54 @@ def test_missing_info_fields_pass_with_ignored_note():
     assert "ignored_missing_fields_present" in diagnostic["notes"]
 
 
+def test_shadow_policy_decision_and_reasons_classify_as_low():
+    diagnostic = validate_trade_context(
+        _good_context_row(missing_fields=["shadow_policy_decision", "shadow_policy_reasons"])
+    )
+
+    assert diagnostic["decision_state"] == PASS_CONTEXT
+    assert "shadow_policy_decision" in diagnostic["missing_low_fields"]
+    assert "shadow_policy_reasons" in diagnostic["missing_low_fields"]
+    assert diagnostic["missing_medium_fields"] == []
+    assert diagnostic["availability_quality"]["status"] == "PASS"
+
+
+def test_shadow_policy_observed_fields_classify_as_info():
+    observed_fields = [
+        "shadow_policy_observed_ev",
+        "shadow_policy_observed_probability",
+        "shadow_policy_observed_risk_mode",
+        "shadow_policy_id",
+        "shadow_policy_confidence",
+    ]
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=observed_fields))
+
+    assert diagnostic["decision_state"] == PASS_CONTEXT
+    for field in observed_fields:
+        assert field in diagnostic["missing_info_fields"]
+    assert diagnostic["missing_medium_fields"] == []
+    assert diagnostic["availability_quality"]["status"] == "PASS"
+
+
+def test_all_shadow_policy_fields_missing_passes_context():
+    all_shadow_fields = [
+        "shadow_policy_decision",
+        "shadow_policy_reasons",
+        "shadow_policy_observed_ev",
+        "shadow_policy_observed_probability",
+        "shadow_policy_observed_risk_mode",
+        "shadow_policy_id",
+        "shadow_policy_confidence",
+    ]
+    diagnostic = validate_trade_context(_good_context_row(missing_fields=all_shadow_fields))
+
+    assert diagnostic["decision_state"] == PASS_CONTEXT
+    assert diagnostic["missing_medium_fields"] == []
+    assert "shadow_policy_decision" in diagnostic["missing_low_fields"]
+    assert "shadow_policy_reasons" in diagnostic["missing_low_fields"]
+    assert "shadow_policy_observed_ev" in diagnostic["missing_info_fields"]
+
+
 def test_mixed_high_and_ignored_fields_review():
     diagnostic = validate_trade_context(_good_context_row(missing_fields=["risk_mode", "bankroll_rank", "blockers"]))
 

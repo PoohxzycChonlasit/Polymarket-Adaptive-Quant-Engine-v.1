@@ -2918,6 +2918,24 @@
         "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md"
       ],
       "notes": "DONE. Extended _EMPTY_COLLECTION_SENTINEL_FIELDS with 5 SizeSharp fields (size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs). Excluded shadow_policy_reasons per audit (severity-map gap must be resolved first). Updated test_non_sentinel_empty_collection_still_flagged_as_missing to use shadow_policy_reasons. Added test_size_sharp_empty_collections_not_flagged_as_missing. 26 canonical builder tests pass, 31 decision engine tests pass. Batch impact: future builds only."
+    },
+    {
+      "priority": 1.851,
+      "task_id": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "Add shadow_policy_* fields to the offline Decision Engine missing-field severity map so they no longer fall back to MEDIUM severity and incorrectly force REVIEW_REQUIRED.",
+      "blocked_by": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
+      "allowed_scope": [
+        "tools/decision/decision_engine_prototype.py",
+        "tests/tools/test_decision_engine_prototype.py",
+        "docs/reports/"
+      ],
+      "outputs": [
+        "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md"
+      ],
+      "notes": "DONE. Added shadow_policy_decision and shadow_policy_reasons to _LOW_MISSING_FIELDS; added shadow_policy_observed_ev, shadow_policy_observed_probability, shadow_policy_observed_risk_mode, shadow_policy_id, shadow_policy_confidence to _INFO_MISSING_FIELDS. 3 new regression tests. 34 decision engine tests pass. Unknown-field fallback no longer fires for shadow_policy_* fields. sentinel set for shadow_policy_reasons unchanged. Batch impact: future builder runs only."
     }
   ]
 }

@@ -3795,5 +3795,48 @@
     },
     "safety_verdict": "SAFE_OFFLINE_TOOLING",
     "next_recommendation": "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+    "task_class": 5,
+    "scope": [
+      "tools/decision/decision_engine_prototype.py",
+      "tests/tools/test_decision_engine_prototype.py",
+      "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "A",
+    "commits": [],
+    "files_changed": 2,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "fields_added_to_low": ["shadow_policy_decision", "shadow_policy_reasons"],
+      "fields_added_to_info": ["shadow_policy_observed_ev", "shadow_policy_observed_probability", "shadow_policy_observed_risk_mode", "shadow_policy_id", "shadow_policy_confidence"],
+      "severity_gap_closed": true,
+      "unknown_field_fallback_no_longer_triggers": true,
+      "shadow_policy_reasons_sentinel_exclusion_unchanged": true,
+      "tests_added": 3,
+      "airos_refreshed": true
+    },
+    "acceptance_criteria": {
+      "py_compile_passed": true,
+      "decision_engine_tests_pass": "34 passed",
+      "shadow_policy_decision_low_verified": true,
+      "shadow_policy_observed_info_verified": true,
+      "all_shadow_policy_pass_context_verified": true,
+      "report_written": true,
+      "ops_files_updated": true,
+      "runtime_code_modified": false,
+      "trader_py_modified": false,
+      "canonical_builder_sentinel_set_unchanged": true
+    },
+    "safety_verdict": "SAFE_OFFLINE_TOOLING",
+    "next_recommendation": "TBD"
   }
 ]
