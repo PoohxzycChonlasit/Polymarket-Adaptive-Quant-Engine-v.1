@@ -3,7 +3,7 @@
     "last_updated": "2026-06-29",
     "current_phase": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001 complete; next is TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
     "last_completed_task": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001",
-    "last_commit": "pending",
+    "last_commit": "a1493219",
     "last_commit_message": "docs: audit trader architecture after phase 3c",
     "next_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
     "navigator_state": {
