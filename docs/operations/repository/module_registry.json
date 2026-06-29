@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:26:56.262665Z",
-  "module_count": 457,
+  "generated_at_utc": "2026-06-29T14:38:46.807734Z",
+  "module_count": 459,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -5705,6 +5705,26 @@
       "recommended_target_folder": null
     },
     {
+      "path": "tests/tools/test_decision_engine_batch_validate.py",
+      "module_name": "tests.tools.test_decision_engine_batch_validate",
+      "domain": "tests",
+      "package": "tests/tools",
+      "line_count": 123,
+      "blast_radius_score": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "tools/decision/decision_engine_batch_validate.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "tools/decision/decision_engine_batch_validate.py"
+      ],
+      "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
       "path": "tests/tools/test_decision_engine_prototype.py",
       "module_name": "tests.tools.test_decision_engine_prototype",
       "domain": "tests",
@@ -7058,18 +7078,39 @@
       "recommended_target_folder": null
     },
     {
+      "path": "tools/decision/decision_engine_batch_validate.py",
+      "module_name": "tools.decision.decision_engine_batch_validate",
+      "domain": "tools",
+      "package": "tools/decision",
+      "line_count": 350,
+      "blast_radius_score": 2,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "tools/decision/decision_engine_prototype.py"
+      ],
+      "reverse_importers": [
+        "tests/tools/test_decision_engine_batch_validate.py"
+      ],
+      "tests": [],
+      "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
       "path": "tools/decision/decision_engine_prototype.py",
       "module_name": "tools.decision.decision_engine_prototype",
       "domain": "tools",
       "package": "tools/decision",
       "line_count": 238,
-      "blast_radius_score": 1,
+      "blast_radius_score": 2,
       "migration_safety_status": "SAFE_ATOMIC",
       "runtime_sensitive": false,
       "do_not_touch": false,
       "direct_imports": [],
       "reverse_importers": [
-        "tests/tools/test_decision_engine_prototype.py"
+        "tests/tools/test_decision_engine_prototype.py",
+        "tools/decision/decision_engine_batch_validate.py"
       ],
       "tests": [],
       "safe_move_status": "SAFE_ATOMIC",

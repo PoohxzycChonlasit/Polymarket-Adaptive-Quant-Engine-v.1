@@ -1280,7 +1280,7 @@
     {
       "priority": 1.81,
       "task_id": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 1,
       "description": "Run the offline Decision Engine Prototype across current canonical context JSONL outputs and report decision-state distribution, missing-field distribution, and quality bottlenecks.",
@@ -1292,9 +1292,30 @@
         "docs/operations/"
       ],
       "outputs": [
+        "tools/decision/decision_engine_batch_validate.py",
+        "tests/tools/test_decision_engine_batch_validate.py",
         "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md"
       ],
-      "notes": "Offline validation only. Must not wire decisions into runtime, risk, sizing, execution, wallet, config, or strategy thresholds."
+      "notes": "DONE. Evaluated 1,794 rows across 4 canonical context JSONL files. Distribution: REJECT_MISSING_CONTEXT=907, REVIEW_REQUIRED=886, REJECT_LOW_EVIDENCE=1. No PASS_CONTEXT observed in real rows because noncritical canonical missing fields still force review. Focused tests passed 14/14. No runtime imports or trading behavior changes."
+    },
+    {
+      "priority": 1.82,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 1,
+      "description": "Use controlled canonical fixture rows to exercise decision states not observed in real batch data and document whether validator semantics need adjustment.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
+      "allowed_scope": [
+        "tools/decision/",
+        "tests/tools/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md"
+      ],
+      "notes": "Offline fixture audit only. Focus on PASS_CONTEXT, REJECT_BAD_PROBABILITY, and REJECT_BAD_EV coverage gaps. Do not wire decisions into runtime, risk, sizing, execution, wallet, config, or strategy thresholds."
     },
     {
       "priority": 1.85,

@@ -577,6 +577,7 @@
     "docs/operations/VULTR_PAPER_RUN.md": [],
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md": [],
@@ -748,6 +749,8 @@
     "docs/reports/DASHBOARD_STATE_AGGREGATOR_COMMIT_REPORT_001.md": [],
     "docs/reports/DASHBOARD_STATE_AGGREGATOR_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/DECISION_ENGINE_DESIGN_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": [],
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md": [],
@@ -2631,6 +2634,9 @@
       "tools/shadow/cross_run_lifecycle_truth.py"
     ],
     "tests/tools/test_dashboard_state_aggregator.py": [],
+    "tests/tools/test_decision_engine_batch_validate.py": [
+      "tools/decision/decision_engine_batch_validate.py"
+    ],
     "tests/tools/test_decision_engine_prototype.py": [
       "tools/decision/decision_engine_prototype.py"
     ],
@@ -2813,6 +2819,9 @@
     ],
     "tools/canonical/canonical_regime_export.py": [],
     "tools/canonical/canonical_trade_table_v1.py": [],
+    "tools/decision/decision_engine_batch_validate.py": [
+      "tools/decision/decision_engine_prototype.py"
+    ],
     "tools/decision/decision_engine_prototype.py": [],
     "tools/execution_paper_runtime.py": [],
     "tools/flaos/README.md": [],
@@ -2976,7 +2985,7 @@
     "web-dashboard/src/app/page.tsx": [],
     "web-dashboard/tsconfig.json": []
   },
-  "edge_count": 477,
+  "edge_count": 479,
   "edges": [
     [
       "polymarket/arbitrage.py",
@@ -4487,6 +4496,10 @@
       "tools/shadow/cross_run_lifecycle_truth.py"
     ],
     [
+      "tests/tools/test_decision_engine_batch_validate.py",
+      "tools/decision/decision_engine_batch_validate.py"
+    ],
+    [
       "tests/tools/test_decision_engine_prototype.py",
       "tools/decision/decision_engine_prototype.py"
     ],
@@ -4769,6 +4782,10 @@
     [
       "tools/backtest_engine_v2/scenario.py",
       "tools/backtest_engine_v2/policy.py"
+    ],
+    [
+      "tools/decision/decision_engine_batch_validate.py",
+      "tools/decision/decision_engine_prototype.py"
     ],
     [
       "tools/outcome_truth/official_resolution_acquire_pilot.py",
@@ -5337,6 +5354,9 @@
     "tests/tools/test_cross_run_lifecycle_truth.py": [
       "tools/shadow/cross_run_lifecycle_truth.py"
     ],
+    "tests/tools/test_decision_engine_batch_validate.py": [
+      "tools/decision/decision_engine_batch_validate.py"
+    ],
     "tests/tools/test_decision_engine_prototype.py": [
       "tools/decision/decision_engine_prototype.py"
     ],
@@ -5453,7 +5473,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T14:26:50.514018Z",
+  "generated_at_utc": "2026-06-29T14:38:45.568340Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -8917,6 +8937,12 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -9938,6 +9964,18 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/DECISION_ENGINE_DESIGN_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -18097,6 +18135,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "tests/tools/test_decision_engine_batch_validate.py": {
+      "blast_radius_score": 1,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
     "tests/tools/test_decision_engine_prototype.py": {
       "blast_radius_score": 1,
       "inbound_dependencies_count": 0,
@@ -18517,9 +18561,15 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
-    "tools/decision/decision_engine_prototype.py": {
-      "blast_radius_score": 1,
+    "tools/decision/decision_engine_batch_validate.py": {
+      "blast_radius_score": 2,
       "inbound_dependencies_count": 1,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 1
+    },
+    "tools/decision/decision_engine_prototype.py": {
+      "blast_radius_score": 2,
+      "inbound_dependencies_count": 2,
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
@@ -19208,7 +19258,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2292,
+  "node_count": 2297,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -19787,6 +19837,7 @@
     "docs/operations/VULTR_PAPER_RUN.md",
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md",
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md",
@@ -19958,6 +20009,8 @@
     "docs/reports/DASHBOARD_STATE_AGGREGATOR_COMMIT_REPORT_001.md",
     "docs/reports/DASHBOARD_STATE_AGGREGATOR_IMPLEMENTATION_REPORT_001.md",
     "docs/reports/DECISION_ENGINE_DESIGN_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md",
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md",
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md",
@@ -21317,6 +21370,7 @@
     "tests/tools/test_compact_run_summary.py",
     "tests/tools/test_cross_run_lifecycle_truth.py",
     "tests/tools/test_dashboard_state_aggregator.py",
+    "tests/tools/test_decision_engine_batch_validate.py",
     "tests/tools/test_decision_engine_prototype.py",
     "tests/tools/test_decision_log_slim_index.py",
     "tests/tools/test_discovery_harness_validation.py",
@@ -21387,6 +21441,7 @@
     "tools/backtest_engine_v2/scenario.py",
     "tools/canonical/canonical_regime_export.py",
     "tools/canonical/canonical_trade_table_v1.py",
+    "tools/decision/decision_engine_batch_validate.py",
     "tools/decision/decision_engine_prototype.py",
     "tools/execution_paper_runtime.py",
     "tools/flaos/README.md",
@@ -22102,6 +22157,7 @@
     "docs/operations/VULTR_PAPER_RUN.md": [],
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md": [],
@@ -22273,6 +22329,8 @@
     "docs/reports/DASHBOARD_STATE_AGGREGATOR_COMMIT_REPORT_001.md": [],
     "docs/reports/DASHBOARD_STATE_AGGREGATOR_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/DECISION_ENGINE_DESIGN_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": [],
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md": [],
@@ -23927,6 +23985,7 @@
     "tests/tools/test_compact_run_summary.py": [],
     "tests/tools/test_cross_run_lifecycle_truth.py": [],
     "tests/tools/test_dashboard_state_aggregator.py": [],
+    "tests/tools/test_decision_engine_batch_validate.py": [],
     "tests/tools/test_decision_engine_prototype.py": [],
     "tests/tools/test_decision_log_slim_index.py": [],
     "tests/tools/test_discovery_harness_validation.py": [],
@@ -24053,8 +24112,12 @@
     "tools/canonical/canonical_trade_table_v1.py": [
       "tests/replay/test_canonical_trade_table_v1.py"
     ],
+    "tools/decision/decision_engine_batch_validate.py": [
+      "tests/tools/test_decision_engine_batch_validate.py"
+    ],
     "tools/decision/decision_engine_prototype.py": [
-      "tests/tools/test_decision_engine_prototype.py"
+      "tests/tools/test_decision_engine_prototype.py",
+      "tools/decision/decision_engine_batch_validate.py"
     ],
     "tools/execution_paper_runtime.py": [],
     "tools/flaos/README.md": [],
@@ -24446,6 +24509,7 @@
     "docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md",
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md",
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md",
@@ -25009,6 +25073,9 @@
     ],
     "tools/canonical/canonical_trade_table_v1.py": [
       "tests/replay/test_canonical_trade_table_v1.py"
+    ],
+    "tools/decision/decision_engine_batch_validate.py": [
+      "tests/tools/test_decision_engine_batch_validate.py"
     ],
     "tools/decision/decision_engine_prototype.py": [
       "tests/tools/test_decision_engine_prototype.py"
@@ -27526,6 +27593,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -28207,6 +28278,14 @@
       "unresolved_internal": []
     },
     "docs/reports/DECISION_ENGINE_DESIGN_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -34615,6 +34694,14 @@
         "tools.runtime.dashboard_state_aggregator"
       ]
     },
+    "tests/tools/test_decision_engine_batch_validate.py": {
+      "unresolved_external": [
+        "ast",
+        "json",
+        "pathlib"
+      ],
+      "unresolved_internal": []
+    },
     "tests/tools/test_decision_engine_prototype.py": {
       "unresolved_external": [
         "ast",
@@ -35339,6 +35426,19 @@
         "pathlib",
         "re",
         "statistics",
+        "typing"
+      ],
+      "unresolved_internal": []
+    },
+    "tools/decision/decision_engine_batch_validate.py": {
+      "unresolved_external": [
+        "__future__",
+        "argparse",
+        "collections",
+        "collections.abc",
+        "glob",
+        "json",
+        "pathlib",
         "typing"
       ],
       "unresolved_internal": []

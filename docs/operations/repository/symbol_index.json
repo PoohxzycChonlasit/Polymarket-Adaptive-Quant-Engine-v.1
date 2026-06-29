@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T14:27:00.732308Z",
-  "file_count": 457,
+  "generated_at_utc": "2026-06-29T14:38:51.786488Z",
+  "file_count": 459,
   "files": [
     {
       "path": "polymarket/trader.py",
@@ -44927,6 +44927,96 @@
       ]
     },
     {
+      "path": "tests/tools/test_decision_engine_batch_validate.py",
+      "total_lines": 124,
+      "class_count": 0,
+      "top_function_count": 7,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "_row",
+          "line": 13,
+          "size": 16,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_write_jsonl",
+          "line": 31,
+          "size": 7,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_load_jsonl_rows_skips_malformed_lines_and_counts_parse_errors",
+          "line": 40,
+          "size": 10,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_summarize_decision_diagnostics_counts_states_and_quality",
+          "line": 52,
+          "size": 26,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_validate_jsonl_files_returns_serializable_summary",
+          "line": 80,
+          "size": 10,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_build_markdown_report_includes_required_sections",
+          "line": 92,
+          "size": 13,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "test_batch_validator_has_no_runtime_imports",
+          "line": 107,
+          "size": 17,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "test_summarize_decision_diagnostics_counts_states_and_quality",
+          "class": null,
+          "size": 26
+        },
+        {
+          "name": "test_batch_validator_has_no_runtime_imports",
+          "class": null,
+          "size": 17
+        },
+        {
+          "name": "_row",
+          "class": null,
+          "size": 16
+        },
+        {
+          "name": "test_build_markdown_report_includes_required_sections",
+          "class": null,
+          "size": 13
+        },
+        {
+          "name": "test_load_jsonl_rows_skips_malformed_lines_and_counts_parse_errors",
+          "class": null,
+          "size": 10
+        },
+        {
+          "name": "test_validate_jsonl_files_returns_serializable_summary",
+          "class": null,
+          "size": 10
+        },
+        {
+          "name": "_write_jsonl",
+          "class": null,
+          "size": 7
+        }
+      ],
+      "runtime_sensitive_symbols": []
+    },
+    {
       "path": "tests/tools/test_decision_engine_prototype.py",
       "total_lines": 142,
       "class_count": 0,
@@ -54972,6 +55062,118 @@
         "_preferred_fill_execution",
         "_risk_split"
       ]
+    },
+    {
+      "path": "tools/decision/decision_engine_batch_validate.py",
+      "total_lines": 351,
+      "class_count": 0,
+      "top_function_count": 9,
+      "method_count": 0,
+      "classes": [],
+      "top_functions": [
+        {
+          "name": "load_jsonl_rows",
+          "line": 43,
+          "size": 37,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "validate_jsonl_files",
+          "line": 82,
+          "size": 12,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "summarize_decision_diagnostics",
+          "line": 96,
+          "size": 72,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "build_markdown_report",
+          "line": 170,
+          "size": 109,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "main",
+          "line": 281,
+          "size": 22,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_expand_paths",
+          "line": 305,
+          "size": 9,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_compact_example",
+          "line": 316,
+          "size": 15,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_counter_dict",
+          "line": 333,
+          "size": 2,
+          "runtime_sensitive": false
+        },
+        {
+          "name": "_markdown_table",
+          "line": 337,
+          "size": 10,
+          "runtime_sensitive": false
+        }
+      ],
+      "largest_symbols": [
+        {
+          "name": "build_markdown_report",
+          "class": null,
+          "size": 109
+        },
+        {
+          "name": "summarize_decision_diagnostics",
+          "class": null,
+          "size": 72
+        },
+        {
+          "name": "load_jsonl_rows",
+          "class": null,
+          "size": 37
+        },
+        {
+          "name": "main",
+          "class": null,
+          "size": 22
+        },
+        {
+          "name": "_compact_example",
+          "class": null,
+          "size": 15
+        },
+        {
+          "name": "validate_jsonl_files",
+          "class": null,
+          "size": 12
+        },
+        {
+          "name": "_markdown_table",
+          "class": null,
+          "size": 10
+        },
+        {
+          "name": "_expand_paths",
+          "class": null,
+          "size": 9
+        },
+        {
+          "name": "_counter_dict",
+          "class": null,
+          "size": 2
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "tools/decision/decision_engine_prototype.py",

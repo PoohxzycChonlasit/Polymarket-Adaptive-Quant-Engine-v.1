@@ -3208,5 +3208,76 @@
     },
     "verdict": "PASS",
     "next_recommendation": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "LOOP_20260629_DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
+    "task_id": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
+    "task_class": 1,
+    "scope": [
+      "tools/decision/decision_engine_batch_validate.py",
+      "tests/tools/test_decision_engine_batch_validate.py",
+      "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 0,
+    "evidence_grade": "B+C+D",
+    "commit_messages": [
+      "test: validate offline decision engine batch behavior"
+    ],
+    "files_changed": 15,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "key_findings": {
+      "module_created": "tools/decision/decision_engine_batch_validate.py",
+      "rows_evaluated": 1794,
+      "source_files": 4,
+      "parse_errors": 0,
+      "decision_state_counts": {
+        "REJECT_MISSING_CONTEXT": 907,
+        "REVIEW_REQUIRED": 886,
+        "REJECT_LOW_EVIDENCE": 1
+      },
+      "confidence_counts": {
+        "LOW": 908,
+        "MEDIUM": 886
+      },
+      "top_reject_reasons": {
+        "missing_required_context": 907,
+        "low_evidence_quality": 1
+      },
+      "pass_context_observed": false,
+      "unobserved_states": [
+        "PASS_CONTEXT",
+        "REJECT_BAD_PROBABILITY",
+        "REJECT_BAD_EV"
+      ],
+      "focused_tests": "14 passed",
+      "runtime_imports": false,
+      "paper_runtime_run": false,
+      "live_runtime_run": false
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "active_loop_memory_pointer_used": true,
+      "prototype_report_read": true,
+      "prototype_module_inspected": true,
+      "real_canonical_rows_located": true,
+      "execution_contract_done": true,
+      "red_test_done": true,
+      "batch_validator_created": true,
+      "report_generated_from_real_rows": true,
+      "py_compile_passed": true,
+      "focused_tests_passed": true,
+      "airos_refreshed": true
+    },
+    "verdict": "PASS",
+    "next_recommendation": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001"
   }
 ]

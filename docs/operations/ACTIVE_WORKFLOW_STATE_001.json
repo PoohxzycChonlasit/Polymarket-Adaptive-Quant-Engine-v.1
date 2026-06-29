@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_001 complete; next is DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_001",
+    "current_phase": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001 complete; next is DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
+    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
     "last_commit": "HEAD",
-    "last_commit_message": "feat: add offline decision engine prototype",
-    "next_task": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
+    "last_commit_message": "test: validate offline decision engine batch behavior",
+    "next_task": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -98,7 +98,7 @@
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
         ],
-        "next_batch": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001",
+        "next_batch": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -223,7 +223,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_001 complete. Added offline-only canonical trade context decision diagnostics with conservative labels, 9 focused tests, canonical builder regression coverage, and no runtime trading imports. Next: DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.",
+    "notes": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001 complete. Evaluated 1,794 canonical context rows across 4 JSONL files. Distribution: REJECT_MISSING_CONTEXT=907, REVIEW_REQUIRED=886, REJECT_LOW_EVIDENCE=1, PASS_CONTEXT=0. Next: DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -352,5 +352,33 @@
             "canonical_builder_regression": "22 passed"
         },
         "next_task": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001"
+    },
+    "decision_engine_prototype_batch_validation": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
+        "module": "tools/decision/decision_engine_batch_validate.py",
+        "test_suite": "tests/tools/test_decision_engine_batch_validate.py",
+        "schema_version": "decision_engine_batch_validation.v1",
+        "rows_evaluated": 1794,
+        "source_files": 4,
+        "parse_errors": 0,
+        "decision_state_counts": {
+            "REJECT_MISSING_CONTEXT": 907,
+            "REVIEW_REQUIRED": 886,
+            "REJECT_LOW_EVIDENCE": 1
+        },
+        "confidence_counts": {
+            "LOW": 908,
+            "MEDIUM": 886
+        },
+        "top_reject_reasons": {
+            "missing_required_context": 907,
+            "low_evidence_quality": 1
+        },
+        "runtime_imports": false,
+        "tests": {
+            "focused": "14 passed"
+        },
+        "next_task": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001"
     }
 }
