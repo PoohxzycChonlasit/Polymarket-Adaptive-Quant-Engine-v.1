@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001 complete; next is DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
-    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001",
+    "current_phase": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001 complete; next is DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+    "last_completed_task": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
     "last_commit": "HEAD",
-    "last_commit_message": "test: add decision engine edge case fixtures",
-    "next_task": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
+    "last_commit_message": "docs: audit decision engine review semantics",
+    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -98,7 +98,7 @@
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
             "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
         ],
-        "next_batch": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
+        "next_batch": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -223,7 +223,7 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001 complete. Controlled fixtures covered all six prototype states; no validator logic repair applied and no canonical context repair required from fixture evidence. Next: DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.",
+    "notes": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001 complete. Classified 88 current canonical fields by severity and documented PASS_CONTEXT/REVIEW_REQUIRED semantics. No validator/runtime logic changed. Next: DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -405,5 +405,21 @@
             "combined_required": "21 passed"
         },
         "next_task": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001"
+    },
+    "decision_engine_prototype_review_semantics_audit": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md",
+        "fields_classified": 88,
+        "recommendation": "SEPARATE_MISSING_FIELDS_BY_SEVERITY_BEFORE_CHANGING_VALIDATOR",
+        "critical_missing_reject_fields": [
+            "intended_price",
+            "probability_or_true_probability",
+            "ev_after_spread"
+        ],
+        "review_policy": "important missing fields, medium/unknown evidence, thin source streams, or missing liquidity context should require review",
+        "pass_context_policy": "valid core price/probability/ev context plus acceptable evidence and no missing critical or important fields",
+        "logic_changed": false,
+        "runtime_changed": false,
+        "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001"
     }
 }

@@ -1321,7 +1321,7 @@
     {
       "priority": 1.83,
       "task_id": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 2,
       "description": "Audit whether noncritical canonical missing_fields should continue to force REVIEW_REQUIRED or be separated from core-context completeness in the offline decision validator.",
@@ -1335,7 +1335,26 @@
       "outputs": [
         "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md"
       ],
-      "notes": "Design/audit only unless separately scoped. Must not change runtime, risk, sizing, execution, wallet, config, strategy thresholds, or live/paper behavior."
+      "notes": "DONE. Classified 88 canonical fields as CRITICAL, IMPORTANT, OPTIONAL, DIAGNOSTIC, or FUTURE. Recommended separating canonical missing_fields by severity before any validator change. No runtime or validator logic changed."
+    },
+    {
+      "priority": 1.84,
+      "task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001",
+      "status": "READY",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Design a missing-field severity map for the offline Decision Engine Prototype before any implementation changes.",
+      "blocked_by": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "tools/decision/",
+        "tests/tools/"
+      ],
+      "outputs": [
+        "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md"
+      ],
+      "notes": "Design/audit only. Do not change validator logic unless a later implementation task explicitly scopes it. Do not touch runtime, risk, sizing, execution, wallet, config, strategy thresholds, or live/paper behavior."
     },
     {
       "priority": 1.85,
