@@ -1,1 +1,628 @@
-{"schema_version": "repository_navigator_v1", "generated_at_utc": "2026-06-29T05:34:16.572270Z", "major_domains": {"polymarket": {"description": "Runtime trading modules \u2014 execution loop, market data, models, signals", "module_count": 46, "safe_move_candidates": 9, "do_not_touch_count": 20}, "tools": {"description": "Offline analysis, replay, research, and AIROS tooling", "subdomains": {"tools.airos": 7, "tools.flaos": 9, "tools.backtest_engine_v2": 9, "tools.outcome_truth": 10, "tools.replay": 10, "tools.research": 8, "tools.runtime": 11, "tools.unknown": 16}}, "tests": {"description": "Test suite (flat, 160+ files \u2014 Wave 3 will organize)", "module_count": 172}, "utils": {"description": "Shared utilities: logging, Telegram alerts, quant event logger", "module_count": 18}}, "current_folder_map": {".": 6, "api": 1, "config": 2, "crypto_scalper": 6, "crypto_scalper/freqtrade_strategies": 1, "dashboard": 6, "hft": 10, "polymarket": 30, "polymarket/market": 2, "polymarket/models": 2, "polymarket/observability": 10, "polymarket/orchestration": 2, "research": 2, "scratch": 60, "scripts": 3, "tests/airos": 6, "tests/integration": 37, "tests/observability": 10, "tests/other": 5, "tests/polymarket": 40, "tests/replay": 17, "tests/runtime": 9, "tests/tools": 48, "tools": 2, "tools/airos": 7, "tools/audit": 7, "tools/backtest_engine_v2": 9, "tools/canonical": 2, "tools/flaos": 9, "tools/outcome_truth": 10, "tools/probes": 12, "tools/replay": 10, "tools/research": 8, "tools/runtime": 11, "tools/shadow": 8, "tools/unknown": 16, "utils": 18}, "target_folder_map": {"polymarket/models/": ["polymarket/delta_engine.py", "polymarket/expected_value.py", "polymarket/probability_model.py"], "polymarket/market/": ["polymarket/arbitrage.py", "polymarket/backtester_5m.py", "polymarket/delta_engine.py", "polymarket/expected_value.py", "polymarket/gamma_fetcher.py", "polymarket/lucky_shot.py", "polymarket/probability_model.py", "polymarket/regime_diagnostics.py", "polymarket/trend_runner.py"], "polymarket/observability/": ["polymarket/regime_diagnostics.py"], "polymarket/backtest/": ["polymarket/backtester_5m.py"]}, "runtime_sensitive_zones": {"description": "Modules that must not be moved or modified without explicit operator approval", "files": ["config/settings.py", "main.py", "polymarket/arbitrage_executor.py", "polymarket/bankroll_rank_engine.py", "polymarket/bankroll_tiers.py", "polymarket/client.py", "polymarket/market_availability_engine.py", "polymarket/market_feed.py", "polymarket/opportunity_scanner.py", "polymarket/oracle_price_feed.py", "polymarket/order_intent.py", "polymarket/order_manager.py", "polymarket/position_manager.py", "polymarket/position_sizing.py", "polymarket/price_to_beat_fetcher.py", "polymarket/risk_modes.py", "polymarket/shadow_policy.py", "polymarket/signal.py", "polymarket/size_sharp_engine.py", "polymarket/trade_frequency.py", "polymarket/trader.py", "polymarket/virtual_ptb.py", "tools/execution_paper_runtime.py", "tools/replay_analyzer.py"]}, "do_not_touch_zones": {"execution_path": ["polymarket/trader.py (_submit_order, _validate_submit_order_intent)", "polymarket/client.py", "polymarket/order_manager.py", "polymarket/order_intent.py"], "risk_sizing": ["polymarket/position_sizing.py", "polymarket/bankroll_tiers.py", "polymarket/bankroll_rank_engine.py", "polymarket/risk_modes.py", "polymarket/size_sharp_engine.py"], "live_market_feed": ["polymarket/signal.py", "polymarket/oracle_price_feed.py", "polymarket/market_feed.py", "polymarket/price_to_beat_fetcher.py", "polymarket/opportunity_scanner.py"], "configuration": ["config/settings.py", ".env"], "flagged_by_graph": ["tools/execution_paper_runtime.py", "tools/replay_analyzer.py"]}, "trader_py_method_groups": {"balance": {"count": 6, "methods": ["_apply_balance", "_fetch_live_balance_snapshot", "_record_balance_snapshot", "_update_bankroll_rank_lock", "_update_bankroll_state", "refresh_live_balance"], "high_risk": true, "safe_first_extraction": false}, "dashboard": {"count": 7, "methods": ["_compile_dashboard_v2a_stats", "_log_session_runtime_evaluation", "dashboard_portfolio_state", "dashboard_probe_counts", "dashboard_session_summary", "dashboard_v2a_stats", "update_dashboard_status"], "high_risk": false, "safe_first_extraction": true}, "decision_diag": {"count": 2, "methods": ["_decision_diagnostics_payload", "_risk_boundary_payload_from_decision"], "high_risk": false, "safe_first_extraction": true}, "execution": {"count": 9, "methods": ["_close_position_with_retry", "_compute_limit_price", "_exit_agent_force_exit_seconds", "_force_exit_position", "_reduce_position_with_retry", "_submit_order", "_validate_submit_order_intent", "_verify_balance_for_order", "auto_redeem_cycle"], "high_risk": true, "safe_first_extraction": false}, "lifecycle_infra": {"count": 11, "methods": ["_begin_cycle_timing", "_call_shutdown_hook", "_cycle_elapsed_ms", "_finish_cycle_timing", "_mark_market_evaluation_started", "_seconds_to_close", "close", "run_ghost_position_sentinel", "run_single_cycle", "shutdown", "stop"], "high_risk": false, "safe_first_extraction": false}, "market_evaluation": {"count": 10, "methods": ["_analyze_market", "_analyze_market_quant", "_check_and_alert_true_empty", "_classify_orderbook_readiness_reason", "_fetch_orderbook_pair_once", "_fetch_orderbook_pair_with_empty_recovery", "_select_markets", "_token_mapping_warning", "get_market_display_metrics", "verify_account_readiness"], "high_risk": false, "safe_first_extraction": false}, "observability": {"count": 27, "methods": ["_evaluate_size_sharp_observability", "_get_observability", "_observability_health_from_payload", "_orderbook_refresh_observability_detail", "_phase2_authoritative_orderbook_availability", "_phase2_book_state_level", "_phase2_candidate_block_detail", "_phase2_candidate_survival_ms", "_phase2_complete_lifecycle_observability", "_phase2_elapsed_second", "_phase2_ev_null_reason", "_phase2_ev_null_reason_detail", "_phase2_exposure_timeline", "_phase2_lifecycle_phase", "_phase2_mark_readiness", "_phase2_market_readiness_state", "_phase2_model_activation_detail", "_phase2_observability_payload", "_phase2_orderbook_state_classification", "_phase2_pre_model_gate_detail", "_phase2_readiness_store", "_phase2_readiness_timestamps", "_phase2_safe_setting", "_preload_observability_payload", "_scheduler_cadence_observability_detail", "dashboard_observability_health_state", "set_runtime_cadence_observability"], "high_risk": false, "safe_first_extraction": true}, "orderbook_lineage": {"count": 17, "methods": ["_build_orderbook_lineage_probe_payload", "_emit_orderbook_lineage_probe", "_last_orderbook_refresh_at_utc", "_last_orderbook_refresh_at_utc", "_last_orderbook_refresh_monotonic", "_last_orderbook_refresh_monotonic", "_last_orderbook_refresh_source", "_last_orderbook_refresh_source", "_last_orderbook_refresh_token_pair_key", "_last_orderbook_refresh_token_pair_key", "_last_orderbook_refresh_trigger", "_last_orderbook_refresh_trigger", "_mark_orderbook_refresh", "_orderbook_lineage_compact_text", "_orderbook_lineage_current_fetch_status", "_orderbook_lineage_raw_count", "_orderbook_lineage_side_status"], "high_risk": false, "safe_first_extraction": true}, "paper": {"count": 26, "methods": ["_activate_paper_virtual_fallback", "_apply_paper_reference_balance", "_build_paper_trade_replay_key", "_paper_apply_entry_cash", "_paper_apply_exit_cash", "_paper_available_balance", "_paper_balance_source_setting", "_paper_enabled", "_paper_min_balance_fallback", "_paper_open_position_entry_cost", "_paper_record_cancel", "_paper_record_close", "_paper_record_model", "_paper_record_position_state", "_paper_record_skip", "_paper_record_trade", "_paper_starting_balance_source_setting", "_paper_update_drawdown", "_paper_wallet_reference_enabled", "_paper_wallet_reference_refresh_seconds", "_paper_wallet_reference_visible", "_paper_wallet_sync_mode", "_paper_wallet_sync_on_start", "_phase3_paper_proxy_ms", "log_paper_session_summary", "paper_session_summary"], "high_risk": false, "safe_first_extraction": true}, "path_truth": {"count": 8, "methods": ["_path_truth_elapsed_seconds", "_path_truth_emitted_checkpoints", "_path_truth_lifecycle_phase", "_path_truth_market_state", "_path_truth_metadata", "_path_truth_parse_ts", "_path_truth_session_hour_utc", "_remember_path_truth_checkpoint"], "high_risk": false, "safe_first_extraction": true}, "position": {"count": 9, "methods": ["_close_tracked_position", "_entry_count_for_market", "_manage_open_positions_for_cycle", "_open_positions_for_market", "_open_tracked_position", "_position_mark_price", "_position_outcome", "_position_token_id", "_record_market_entry"], "high_risk": false, "safe_first_extraction": false}, "reconciliation": {"count": 4, "methods": ["_block_on_reconciliation_if_needed", "_poll_pending_live_orders", "_reconcile_after_order_attempt", "reconcile_live_positions"], "high_risk": true, "safe_first_extraction": false}, "risk": {"count": 7, "methods": ["_apply_risk_mode_to_plan", "_risk_off", "_trigger_lockdown", "_update_risk_mode", "check_stop_loss", "check_take_profit", "panic_sell_check"], "high_risk": true, "safe_first_extraction": false}, "sizing": {"count": 10, "methods": ["_bankroll_mode", "_bankroll_mode_detail", "_entry_min_position_size_usd", "_maybe_apply_micro_survival_plan", "_micro_survival_active", "_micro_survival_allows_fractional_shares", "_micro_survival_min_position_size", "_micro_survival_risk_fraction", "_micro_survival_threshold", "_sync_sizing_bankroll"], "high_risk": true, "safe_first_extraction": false}, "telemetry": {"count": 15, "methods": ["_emit_cycle_selection_probe_event", "_emit_decision_event", "_emit_entry_budget_probe_event", "_emit_path_truth_checkpoint", "_emit_path_truth_shutdown_events", "_emit_risk_event", "_emit_telegram_route_telemetry", "_emit_trade_closed_event", "_emit_trade_opened_event", "_emit_zero_size_probe_event", "_evaluate_passive_shadow_telemetry", "_maybe_emit_path_truth_checkpoints", "_maybe_emit_risk_state_event", "_size_sharp_close_carry", "_size_sharp_metadata"], "high_risk": false, "safe_first_extraction": true}, "unknown": {"count": 136, "methods": ["__init__", "__post_init__", "__post_init__", "_active_window_alignment_detail", "_adaptive_entry_cutoff_seconds", "_bankroll_tier_detail", "_build_entry_model_truth_envelope", "_build_trade_position_metadata", "_cache_market_tokens", "_cached_active_market_valid", "_cancel_entry_orders_for_market", "_cancel_stale_entry_orders_if_needed", "_carry_entry_model_truth_from_metadata", "_check_stalled_positions", "_clob_orderbook_error_detail", "_clob_orderbook_health_detail", "_coerce_cash_balance", "_collateral_allowance_snapshot", "_compute_lifecycle_latency_ms", "_consecutive_losses", "_current_cycle_market_sequence_count", "_current_cycle_market_sequence_count", "_current_cycle_market_sequence_index", "_current_cycle_market_sequence_index", "_current_five_min_epoch", "_cutoff_decision_detail", "_diagnostic_float", "_diagnostic_int", "_display_payload_with_candidate_trace_identity", "_display_skip_reason", "_edge_label", "_emit_hybrid_v1_snapshot", "_emit_lifecycle_milestone_event", "_emit_quant_event", "_empty_book_recovery_detail", "_empty_book_recovery_research_enabled", "_ensure_bankroll_state_matches_settings", "_ensure_connected", "_entry_cutoff_skip_reason", "_entry_hard_block_seconds", "_evaluate_and_log_delta_extreme_shadow", "_evaluate_entry_cutoff", "_event_driven_admission_packet_price_detail", "_event_producer_label", "_execution_parent_detail", "_execution_payload_with_parent_context", "_exit_agent_action", "_exit_agent_check_position", "_exit_agent_entry_cutoff_seconds", "_exit_agent_tick", "_feed_age_seconds", "_infer_clob_orderbook_error_category", "_init_quant_event_logger", "_init_telegram_alert_layer", "_is_empty_orderbook_error", "_is_liquidity_recovery_error", "_last_decision_cycle_monotonic", "_last_decision_cycle_monotonic", "_last_successful_yes_no_book_at_utc", "_last_successful_yes_no_book_at_utc", "_last_successful_yes_no_book_monotonic", "_last_successful_yes_no_book_monotonic", "_last_successful_yes_no_book_token_pair_key", "_last_successful_yes_no_book_token_pair_key", "_liquidity_label", "_load_position_tracker_state", "_log_order_section", "_log_portfolio_source", "_log_risk_section", "_log_section", "_log_wallet_startup_verification", "_market_evaluation_started_at_utc", "_market_evaluation_started_at_utc", "_market_evaluation_started_monotonic", "_market_evaluation_started_monotonic", "_market_preload_lead_seconds", "_market_slug_for_ticker", "_market_timing_detail", "_maybe_emit_system_health", "_maybe_log_cycle_summary", "_maybe_send_telegram_summary", "_meta_int", "_micro_adaptive_cutoff_seconds", "_micro_adaptive_timing_active", "_micro_adaptive_timing_skipped_reason", "_micro_hard_close_floor_seconds", "_micro_position_size", "_momentum_label", "_notify_telegram", "_order_matches_market", "_orderbook_age_ms", "_orderbook_token_pair_key", "_phase1_execution_latency_truth_level", "_phase4_build_quote_lineage", "_phase4_quote_lineage_carry", "_position_tracker_persistence_enabled", "_position_tracker_state_path", "_preload_next_market", "_promote_preloaded_market", "_push_event_stream_metrics", "_reconciliation_safe_for_entry", "_record_display_trade", "_record_quant_detail", "_recovery_candidate_survival_detail", "_recovery_exit_reason_for_block", "_refresh_token_ids", "_refresh_wallet_reference_balance", "_regime_pass_through_fields", "_risk_plan_payload", "_risk_plan_zero_diagnostics", "_risk_plan_zero_reason", "_runtime_mode", "_save_position_tracker_state", "_set_wallet_reference_snapshot", "_setting", "_skip_outcome", "_snipe_score", "_summary_body", "_ticker_from_market_id", "_tracked_exit_inventory_size", "_trades_last_hour", "_unrealized_pct", "_utc_timestamp", "_volatility_label", "_wallet_address_for_logs", "_warm_orderbooks_for_ticker", "_zero_size_primary_constraint", "average_confidence", "average_ev", "average_position_size", "enforce_pre_close_exits", "get_arbitrage_opportunity", "get_recent_display_trades", "log_quant_summary", "settle_and_record", "win_rate"], "high_risk": false, "safe_first_extraction": false}}, "next_wave_recommendation": {"wave": 2, "task": "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001", "description": "Move 14 SAFE_MOVE polymarket/ files into models/, market/, observability/, backtest/", "safe_move_candidates": [{"path": "polymarket/arbitrage.py", "target": "polymarket/market/"}, {"path": "polymarket/backtester_5m.py", "target": "polymarket/backtest/"}, {"path": "polymarket/delta_engine.py", "target": "polymarket/models/"}, {"path": "polymarket/expected_value.py", "target": "polymarket/models/"}, {"path": "polymarket/gamma_fetcher.py", "target": "polymarket/market/"}, {"path": "polymarket/lucky_shot.py", "target": "polymarket/market/"}, {"path": "polymarket/probability_model.py", "target": "polymarket/models/"}, {"path": "polymarket/regime_diagnostics.py", "target": "polymarket/observability/"}, {"path": "polymarket/trend_runner.py", "target": "polymarket/market/"}], "prerequisite": "blast-radius check via dependency_graph.json before execution"}, "ai_startup_read_order": ["docs/operations/AI_REPO_BOOTSTRAP_001.md", "PROJECT_RULES.md", "MASTER_AGENT_ROUTER.md", "docs/operations/ACTIVE_WORKFLOW_STATE_001.json", "docs/operations/repository/navigation.json", "docs/operations/repository/module_registry.json", "docs/operations/repository/symbol_index.json", "docs/operations/TASK_QUEUE_001.json", "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"]}
+{
+  "schema_version": "repository_navigator_v1",
+  "generated_at_utc": "2026-06-29T07:38:46.243821Z",
+  "major_domains": {
+    "polymarket": {
+      "description": "Runtime trading modules \u2014 execution loop, market data, models, signals",
+      "module_count": 48,
+      "safe_move_candidates": 9,
+      "do_not_touch_count": 20
+    },
+    "tools": {
+      "description": "Offline analysis, replay, research, and AIROS tooling",
+      "subdomains": {
+        "tools.airos": 7,
+        "tools.flaos": 9,
+        "tools.backtest_engine_v2": 9,
+        "tools.outcome_truth": 10,
+        "tools.replay": 10,
+        "tools.research": 8,
+        "tools.runtime": 11,
+        "tools.unknown": 16
+      }
+    },
+    "tests": {
+      "description": "Test suite (flat, 160+ files \u2014 Wave 3 will organize)",
+      "module_count": 174
+    },
+    "utils": {
+      "description": "Shared utilities: logging, Telegram alerts, quant event logger",
+      "module_count": 18
+    }
+  },
+  "current_folder_map": {
+    ".": 6,
+    "api": 1,
+    "config": 2,
+    "crypto_scalper": 6,
+    "crypto_scalper/freqtrade_strategies": 1,
+    "dashboard": 6,
+    "hft": 10,
+    "polymarket": 30,
+    "polymarket/market": 2,
+    "polymarket/models": 2,
+    "polymarket/observability": 12,
+    "polymarket/orchestration": 2,
+    "research": 2,
+    "scratch": 60,
+    "scripts": 3,
+    "tests/airos": 6,
+    "tests/integration": 37,
+    "tests/observability": 12,
+    "tests/other": 5,
+    "tests/polymarket": 40,
+    "tests/replay": 17,
+    "tests/runtime": 9,
+    "tests/tools": 48,
+    "tools": 2,
+    "tools/airos": 7,
+    "tools/audit": 7,
+    "tools/backtest_engine_v2": 9,
+    "tools/canonical": 2,
+    "tools/flaos": 9,
+    "tools/outcome_truth": 10,
+    "tools/probes": 12,
+    "tools/replay": 10,
+    "tools/research": 8,
+    "tools/runtime": 11,
+    "tools/shadow": 8,
+    "tools/unknown": 16,
+    "utils": 18
+  },
+  "target_folder_map": {
+    "polymarket/models/": [
+      "polymarket/delta_engine.py",
+      "polymarket/expected_value.py",
+      "polymarket/probability_model.py"
+    ],
+    "polymarket/market/": [
+      "polymarket/arbitrage.py",
+      "polymarket/backtester_5m.py",
+      "polymarket/delta_engine.py",
+      "polymarket/expected_value.py",
+      "polymarket/gamma_fetcher.py",
+      "polymarket/lucky_shot.py",
+      "polymarket/probability_model.py",
+      "polymarket/regime_diagnostics.py",
+      "polymarket/trend_runner.py"
+    ],
+    "polymarket/observability/": [
+      "polymarket/regime_diagnostics.py"
+    ],
+    "polymarket/backtest/": [
+      "polymarket/backtester_5m.py"
+    ]
+  },
+  "runtime_sensitive_zones": {
+    "description": "Modules that must not be moved or modified without explicit operator approval",
+    "files": [
+      "config/settings.py",
+      "main.py",
+      "polymarket/arbitrage_executor.py",
+      "polymarket/bankroll_rank_engine.py",
+      "polymarket/bankroll_tiers.py",
+      "polymarket/client.py",
+      "polymarket/market_availability_engine.py",
+      "polymarket/market_feed.py",
+      "polymarket/opportunity_scanner.py",
+      "polymarket/oracle_price_feed.py",
+      "polymarket/order_intent.py",
+      "polymarket/order_manager.py",
+      "polymarket/position_manager.py",
+      "polymarket/position_sizing.py",
+      "polymarket/price_to_beat_fetcher.py",
+      "polymarket/risk_modes.py",
+      "polymarket/shadow_policy.py",
+      "polymarket/signal.py",
+      "polymarket/size_sharp_engine.py",
+      "polymarket/trade_frequency.py",
+      "polymarket/trader.py",
+      "polymarket/virtual_ptb.py",
+      "tools/execution_paper_runtime.py",
+      "tools/replay_analyzer.py"
+    ]
+  },
+  "do_not_touch_zones": {
+    "execution_path": [
+      "polymarket/trader.py (_submit_order, _validate_submit_order_intent)",
+      "polymarket/client.py",
+      "polymarket/order_manager.py",
+      "polymarket/order_intent.py"
+    ],
+    "risk_sizing": [
+      "polymarket/position_sizing.py",
+      "polymarket/bankroll_tiers.py",
+      "polymarket/bankroll_rank_engine.py",
+      "polymarket/risk_modes.py",
+      "polymarket/size_sharp_engine.py"
+    ],
+    "live_market_feed": [
+      "polymarket/signal.py",
+      "polymarket/oracle_price_feed.py",
+      "polymarket/market_feed.py",
+      "polymarket/price_to_beat_fetcher.py",
+      "polymarket/opportunity_scanner.py"
+    ],
+    "configuration": [
+      "config/settings.py",
+      ".env"
+    ],
+    "flagged_by_graph": [
+      "tools/execution_paper_runtime.py",
+      "tools/replay_analyzer.py"
+    ]
+  },
+  "trader_py_method_groups": {
+    "balance": {
+      "count": 6,
+      "methods": [
+        "_apply_balance",
+        "_fetch_live_balance_snapshot",
+        "_record_balance_snapshot",
+        "_update_bankroll_rank_lock",
+        "_update_bankroll_state",
+        "refresh_live_balance"
+      ],
+      "high_risk": true,
+      "safe_first_extraction": false
+    },
+    "dashboard": {
+      "count": 7,
+      "methods": [
+        "_compile_dashboard_v2a_stats",
+        "_log_session_runtime_evaluation",
+        "dashboard_portfolio_state",
+        "dashboard_probe_counts",
+        "dashboard_session_summary",
+        "dashboard_v2a_stats",
+        "update_dashboard_status"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "decision_diag": {
+      "count": 2,
+      "methods": [
+        "_decision_diagnostics_payload",
+        "_risk_boundary_payload_from_decision"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "execution": {
+      "count": 9,
+      "methods": [
+        "_close_position_with_retry",
+        "_compute_limit_price",
+        "_exit_agent_force_exit_seconds",
+        "_force_exit_position",
+        "_reduce_position_with_retry",
+        "_submit_order",
+        "_validate_submit_order_intent",
+        "_verify_balance_for_order",
+        "auto_redeem_cycle"
+      ],
+      "high_risk": true,
+      "safe_first_extraction": false
+    },
+    "lifecycle_infra": {
+      "count": 11,
+      "methods": [
+        "_begin_cycle_timing",
+        "_call_shutdown_hook",
+        "_cycle_elapsed_ms",
+        "_finish_cycle_timing",
+        "_mark_market_evaluation_started",
+        "_seconds_to_close",
+        "close",
+        "run_ghost_position_sentinel",
+        "run_single_cycle",
+        "shutdown",
+        "stop"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": false
+    },
+    "market_evaluation": {
+      "count": 10,
+      "methods": [
+        "_analyze_market",
+        "_analyze_market_quant",
+        "_check_and_alert_true_empty",
+        "_classify_orderbook_readiness_reason",
+        "_fetch_orderbook_pair_once",
+        "_fetch_orderbook_pair_with_empty_recovery",
+        "_select_markets",
+        "_token_mapping_warning",
+        "get_market_display_metrics",
+        "verify_account_readiness"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": false
+    },
+    "observability": {
+      "count": 27,
+      "methods": [
+        "_evaluate_size_sharp_observability",
+        "_get_observability",
+        "_observability_health_from_payload",
+        "_orderbook_refresh_observability_detail",
+        "_phase2_authoritative_orderbook_availability",
+        "_phase2_book_state_level",
+        "_phase2_candidate_block_detail",
+        "_phase2_candidate_survival_ms",
+        "_phase2_complete_lifecycle_observability",
+        "_phase2_elapsed_second",
+        "_phase2_ev_null_reason",
+        "_phase2_ev_null_reason_detail",
+        "_phase2_exposure_timeline",
+        "_phase2_lifecycle_phase",
+        "_phase2_mark_readiness",
+        "_phase2_market_readiness_state",
+        "_phase2_model_activation_detail",
+        "_phase2_observability_payload",
+        "_phase2_orderbook_state_classification",
+        "_phase2_pre_model_gate_detail",
+        "_phase2_readiness_store",
+        "_phase2_readiness_timestamps",
+        "_phase2_safe_setting",
+        "_preload_observability_payload",
+        "_scheduler_cadence_observability_detail",
+        "dashboard_observability_health_state",
+        "set_runtime_cadence_observability"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "orderbook_lineage": {
+      "count": 17,
+      "methods": [
+        "_build_orderbook_lineage_probe_payload",
+        "_emit_orderbook_lineage_probe",
+        "_last_orderbook_refresh_at_utc",
+        "_last_orderbook_refresh_at_utc",
+        "_last_orderbook_refresh_monotonic",
+        "_last_orderbook_refresh_monotonic",
+        "_last_orderbook_refresh_source",
+        "_last_orderbook_refresh_source",
+        "_last_orderbook_refresh_token_pair_key",
+        "_last_orderbook_refresh_token_pair_key",
+        "_last_orderbook_refresh_trigger",
+        "_last_orderbook_refresh_trigger",
+        "_mark_orderbook_refresh",
+        "_orderbook_lineage_compact_text",
+        "_orderbook_lineage_current_fetch_status",
+        "_orderbook_lineage_raw_count",
+        "_orderbook_lineage_side_status"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "paper": {
+      "count": 26,
+      "methods": [
+        "_activate_paper_virtual_fallback",
+        "_apply_paper_reference_balance",
+        "_build_paper_trade_replay_key",
+        "_paper_apply_entry_cash",
+        "_paper_apply_exit_cash",
+        "_paper_available_balance",
+        "_paper_balance_source_setting",
+        "_paper_enabled",
+        "_paper_min_balance_fallback",
+        "_paper_open_position_entry_cost",
+        "_paper_record_cancel",
+        "_paper_record_close",
+        "_paper_record_model",
+        "_paper_record_position_state",
+        "_paper_record_skip",
+        "_paper_record_trade",
+        "_paper_starting_balance_source_setting",
+        "_paper_update_drawdown",
+        "_paper_wallet_reference_enabled",
+        "_paper_wallet_reference_refresh_seconds",
+        "_paper_wallet_reference_visible",
+        "_paper_wallet_sync_mode",
+        "_paper_wallet_sync_on_start",
+        "_phase3_paper_proxy_ms",
+        "log_paper_session_summary",
+        "paper_session_summary"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "path_truth": {
+      "count": 8,
+      "methods": [
+        "_path_truth_elapsed_seconds",
+        "_path_truth_emitted_checkpoints",
+        "_path_truth_lifecycle_phase",
+        "_path_truth_market_state",
+        "_path_truth_metadata",
+        "_path_truth_parse_ts",
+        "_path_truth_session_hour_utc",
+        "_remember_path_truth_checkpoint"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "position": {
+      "count": 9,
+      "methods": [
+        "_close_tracked_position",
+        "_entry_count_for_market",
+        "_manage_open_positions_for_cycle",
+        "_open_positions_for_market",
+        "_open_tracked_position",
+        "_position_mark_price",
+        "_position_outcome",
+        "_position_token_id",
+        "_record_market_entry"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": false
+    },
+    "reconciliation": {
+      "count": 4,
+      "methods": [
+        "_block_on_reconciliation_if_needed",
+        "_poll_pending_live_orders",
+        "_reconcile_after_order_attempt",
+        "reconcile_live_positions"
+      ],
+      "high_risk": true,
+      "safe_first_extraction": false
+    },
+    "risk": {
+      "count": 7,
+      "methods": [
+        "_apply_risk_mode_to_plan",
+        "_risk_off",
+        "_trigger_lockdown",
+        "_update_risk_mode",
+        "check_stop_loss",
+        "check_take_profit",
+        "panic_sell_check"
+      ],
+      "high_risk": true,
+      "safe_first_extraction": false
+    },
+    "sizing": {
+      "count": 10,
+      "methods": [
+        "_bankroll_mode",
+        "_bankroll_mode_detail",
+        "_entry_min_position_size_usd",
+        "_maybe_apply_micro_survival_plan",
+        "_micro_survival_active",
+        "_micro_survival_allows_fractional_shares",
+        "_micro_survival_min_position_size",
+        "_micro_survival_risk_fraction",
+        "_micro_survival_threshold",
+        "_sync_sizing_bankroll"
+      ],
+      "high_risk": true,
+      "safe_first_extraction": false
+    },
+    "telemetry": {
+      "count": 15,
+      "methods": [
+        "_emit_cycle_selection_probe_event",
+        "_emit_decision_event",
+        "_emit_entry_budget_probe_event",
+        "_emit_path_truth_checkpoint",
+        "_emit_path_truth_shutdown_events",
+        "_emit_risk_event",
+        "_emit_telegram_route_telemetry",
+        "_emit_trade_closed_event",
+        "_emit_trade_opened_event",
+        "_emit_zero_size_probe_event",
+        "_evaluate_passive_shadow_telemetry",
+        "_maybe_emit_path_truth_checkpoints",
+        "_maybe_emit_risk_state_event",
+        "_size_sharp_close_carry",
+        "_size_sharp_metadata"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": true
+    },
+    "unknown": {
+      "count": 136,
+      "methods": [
+        "__init__",
+        "__post_init__",
+        "__post_init__",
+        "_active_window_alignment_detail",
+        "_adaptive_entry_cutoff_seconds",
+        "_bankroll_tier_detail",
+        "_build_entry_model_truth_envelope",
+        "_build_trade_position_metadata",
+        "_cache_market_tokens",
+        "_cached_active_market_valid",
+        "_cancel_entry_orders_for_market",
+        "_cancel_stale_entry_orders_if_needed",
+        "_carry_entry_model_truth_from_metadata",
+        "_check_stalled_positions",
+        "_clob_orderbook_error_detail",
+        "_clob_orderbook_health_detail",
+        "_coerce_cash_balance",
+        "_collateral_allowance_snapshot",
+        "_compute_lifecycle_latency_ms",
+        "_consecutive_losses",
+        "_current_cycle_market_sequence_count",
+        "_current_cycle_market_sequence_count",
+        "_current_cycle_market_sequence_index",
+        "_current_cycle_market_sequence_index",
+        "_current_five_min_epoch",
+        "_cutoff_decision_detail",
+        "_diagnostic_float",
+        "_diagnostic_int",
+        "_display_payload_with_candidate_trace_identity",
+        "_display_skip_reason",
+        "_edge_label",
+        "_emit_hybrid_v1_snapshot",
+        "_emit_lifecycle_milestone_event",
+        "_emit_quant_event",
+        "_empty_book_recovery_detail",
+        "_empty_book_recovery_research_enabled",
+        "_ensure_bankroll_state_matches_settings",
+        "_ensure_connected",
+        "_entry_cutoff_skip_reason",
+        "_entry_hard_block_seconds",
+        "_evaluate_and_log_delta_extreme_shadow",
+        "_evaluate_entry_cutoff",
+        "_event_driven_admission_packet_price_detail",
+        "_event_producer_label",
+        "_execution_parent_detail",
+        "_execution_payload_with_parent_context",
+        "_exit_agent_action",
+        "_exit_agent_check_position",
+        "_exit_agent_entry_cutoff_seconds",
+        "_exit_agent_tick",
+        "_feed_age_seconds",
+        "_infer_clob_orderbook_error_category",
+        "_init_quant_event_logger",
+        "_init_telegram_alert_layer",
+        "_is_empty_orderbook_error",
+        "_is_liquidity_recovery_error",
+        "_last_decision_cycle_monotonic",
+        "_last_decision_cycle_monotonic",
+        "_last_successful_yes_no_book_at_utc",
+        "_last_successful_yes_no_book_at_utc",
+        "_last_successful_yes_no_book_monotonic",
+        "_last_successful_yes_no_book_monotonic",
+        "_last_successful_yes_no_book_token_pair_key",
+        "_last_successful_yes_no_book_token_pair_key",
+        "_liquidity_label",
+        "_load_position_tracker_state",
+        "_log_order_section",
+        "_log_portfolio_source",
+        "_log_risk_section",
+        "_log_section",
+        "_log_wallet_startup_verification",
+        "_market_evaluation_started_at_utc",
+        "_market_evaluation_started_at_utc",
+        "_market_evaluation_started_monotonic",
+        "_market_evaluation_started_monotonic",
+        "_market_preload_lead_seconds",
+        "_market_slug_for_ticker",
+        "_market_timing_detail",
+        "_maybe_emit_system_health",
+        "_maybe_log_cycle_summary",
+        "_maybe_send_telegram_summary",
+        "_meta_int",
+        "_micro_adaptive_cutoff_seconds",
+        "_micro_adaptive_timing_active",
+        "_micro_adaptive_timing_skipped_reason",
+        "_micro_hard_close_floor_seconds",
+        "_micro_position_size",
+        "_momentum_label",
+        "_notify_telegram",
+        "_order_matches_market",
+        "_orderbook_age_ms",
+        "_orderbook_token_pair_key",
+        "_phase1_execution_latency_truth_level",
+        "_phase4_build_quote_lineage",
+        "_phase4_quote_lineage_carry",
+        "_position_tracker_persistence_enabled",
+        "_position_tracker_state_path",
+        "_preload_next_market",
+        "_promote_preloaded_market",
+        "_push_event_stream_metrics",
+        "_reconciliation_safe_for_entry",
+        "_record_display_trade",
+        "_record_quant_detail",
+        "_recovery_candidate_survival_detail",
+        "_recovery_exit_reason_for_block",
+        "_refresh_token_ids",
+        "_refresh_wallet_reference_balance",
+        "_regime_pass_through_fields",
+        "_risk_plan_payload",
+        "_risk_plan_zero_diagnostics",
+        "_risk_plan_zero_reason",
+        "_runtime_mode",
+        "_save_position_tracker_state",
+        "_set_wallet_reference_snapshot",
+        "_setting",
+        "_skip_outcome",
+        "_snipe_score",
+        "_summary_body",
+        "_ticker_from_market_id",
+        "_tracked_exit_inventory_size",
+        "_trades_last_hour",
+        "_unrealized_pct",
+        "_utc_timestamp",
+        "_volatility_label",
+        "_wallet_address_for_logs",
+        "_warm_orderbooks_for_ticker",
+        "_zero_size_primary_constraint",
+        "average_confidence",
+        "average_ev",
+        "average_position_size",
+        "enforce_pre_close_exits",
+        "get_arbitrage_opportunity",
+        "get_recent_display_trades",
+        "log_quant_summary",
+        "settle_and_record",
+        "win_rate"
+      ],
+      "high_risk": false,
+      "safe_first_extraction": false
+    }
+  },
+  "next_wave_recommendation": {
+    "wave": 2,
+    "task": "REPOSITORY_WAVE2_POLYMARKET_SAFE_PACKAGES_001",
+    "description": "Move 14 SAFE_MOVE polymarket/ files into models/, market/, observability/, backtest/",
+    "safe_move_candidates": [
+      {
+        "path": "polymarket/arbitrage.py",
+        "target": "polymarket/market/"
+      },
+      {
+        "path": "polymarket/backtester_5m.py",
+        "target": "polymarket/backtest/"
+      },
+      {
+        "path": "polymarket/delta_engine.py",
+        "target": "polymarket/models/"
+      },
+      {
+        "path": "polymarket/expected_value.py",
+        "target": "polymarket/models/"
+      },
+      {
+        "path": "polymarket/gamma_fetcher.py",
+        "target": "polymarket/market/"
+      },
+      {
+        "path": "polymarket/lucky_shot.py",
+        "target": "polymarket/market/"
+      },
+      {
+        "path": "polymarket/probability_model.py",
+        "target": "polymarket/models/"
+      },
+      {
+        "path": "polymarket/regime_diagnostics.py",
+        "target": "polymarket/observability/"
+      },
+      {
+        "path": "polymarket/trend_runner.py",
+        "target": "polymarket/market/"
+      }
+    ],
+    "prerequisite": "blast-radius check via dependency_graph.json before execution"
+  },
+  "ai_startup_read_order": [
+    "docs/operations/AI_REPO_BOOTSTRAP_001.md",
+    "PROJECT_RULES.md",
+    "MASTER_AGENT_ROUTER.md",
+    "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+    "docs/operations/repository/navigation.json",
+    "docs/operations/repository/module_registry.json",
+    "docs/operations/repository/symbol_index.json",
+    "docs/operations/TASK_QUEUE_001.json",
+    "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+  ]
+}

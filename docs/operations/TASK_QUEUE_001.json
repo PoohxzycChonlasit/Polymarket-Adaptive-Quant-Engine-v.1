@@ -2555,7 +2555,7 @@
     {
       "priority": 160,
       "task_id": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 6,
       "description": "Extract reconciliation and fill-related observability logic from polymarket/trader.py into polymarket/observability/trader_reconciliation_payload.py.",
@@ -2569,6 +2569,23 @@
       ],
       "outputs": [
         "polymarket/observability/trader_reconciliation_payload.py"
+      ],
+      "notes": "DONE. Extracted 6 read-only metadata/reconciliation helpers to trader_reconciliation_payload.py. wrappers retained. 840 targeted tests passing."
+    },
+    {
+      "priority": 170,
+      "task_id": "TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001",
+      "status": "READY",
+      "workflow_tier": "STANDARD",
+      "task_class": 1,
+      "description": "Perform trade open/closed event payload audit and design clean lifecycle serialization boundaries before extraction.",
+      "blocked_by": "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md"
       ],
       "notes": "Planned next task."
     }
