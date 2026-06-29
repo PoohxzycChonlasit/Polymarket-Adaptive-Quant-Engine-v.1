@@ -2488,6 +2488,28 @@
         "docs/reports/TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001.md"
       ],
       "notes": "DONE. Audit complete: trader.py 12,751 LOC, 17 wrappers, 727 tests. Phase2 lifecycle observability builders identified as richest safe extraction target (~520 lines in 8 methods). Recommended next task: TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001 targeting _phase2_pre_model_gate_detail, _phase2_ev_null_reason, _phase2_ev_null_reason_detail, _phase2_model_activation_detail, _phase2_candidate_block_detail, _phase2_book_state_level, _phase2_orderbook_state_classification, _phase2_market_readiness_state."
+    },
+    {
+      "priority": 130,
+      "task_id": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 6,
+      "description": "Extract 9 phase2 lifecycle/observability builder helpers from polymarket/trader.py into polymarket/observability/trader_phase2_observability.py.",
+      "blocked_by": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "polymarket/observability/trader_phase2_observability.py",
+        "tests/observability/test_trader_phase2_observability.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_phase2_observability.py",
+        "tests/observability/test_trader_phase2_observability.py",
+        "docs/reports/TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001.md"
+      ],
+      "notes": "DONE. Extracted 9 methods: _phase2_ev_null_reason, _phase2_pre_model_gate_detail, _phase2_ev_null_reason_detail, _phase2_orderbook_state_classification, _phase2_book_state_level, _phase2_authoritative_orderbook_availability, _phase2_market_readiness_state, _phase2_model_activation_detail, _phase2_candidate_block_detail. Wrappers retained in trader.py. 92 new golden equivalence tests. ~529L removed from trader.py. 819 targeted tests passed. Deferred: _phase2_mark_readiness (writes self), _phase2_complete_lifecycle_observability (reads self preload), _phase2_observability_payload (reads self tokens), _emit_lifecycle_milestone_event (emits events via self)."
     }
   ]
 }

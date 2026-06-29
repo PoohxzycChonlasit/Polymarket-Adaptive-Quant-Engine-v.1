@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001 complete; next is TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
-    "last_completed_task": "TRADER_ARCHITECTURE_AUDIT_AFTER_PHASE3C_001",
-    "last_commit": "a1493219",
-    "last_commit_message": "docs: audit trader architecture after phase 3c",
-    "next_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+    "current_phase": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001 complete; next is TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
+    "last_completed_task": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+    "last_commit": "TBD",
+    "last_commit_message": "refactor: extract trader phase2 observability helpers",
+    "next_task": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -30,9 +30,9 @@
         ]
     },
     "decomposition_state": {
-        "trader_py_lines": 12811,
+        "trader_py_lines": 12282,
         "trader_py_methods": 298,
-        "phases_completed": 3,
+        "phases_completed": 4,
         "phases_planned": 9,
         "already_extracted": [
             "shadow_policy.py",
@@ -43,7 +43,8 @@
             "polymarket/observability/trader_decision_diagnostics.py",
             "polymarket/observability/trader_orderbook_lineage.py",
             "polymarket/observability/trader_orderbook_details.py",
-            "polymarket/observability/trader_path_truth.py"
+            "polymarket/observability/trader_path_truth.py",
+            "polymarket/observability/trader_phase2_observability.py"
         ],
         "target_trader_py_lines_after_phase8": 5000
     },
@@ -70,7 +71,7 @@
     "blocked": false,
     "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
     "refactor_state": {
-        "trader_py_lines": 12811,
+        "trader_py_lines": 12282,
         "completed_batches": [
             "Batch-1",
             "Batch-2A",
@@ -82,11 +83,13 @@
             "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
             "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
             "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
-            "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001"
+            "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
+            "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRACTION_001",
+            "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+        "next_batch": "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
-        "last_runtime_refactor_commit": "ed14faa51b7dd196fcd6041a274446f57e457c8d"
+        "last_runtime_refactor_commit": "TBD"
     },
     "workflow_governance": {
         "loop_engineering_enabled": true,
@@ -130,5 +133,5 @@
         "compiler_script": "tools/canonical_trade_context_builder.py",
         "test_suite": "tests/test_canonical_trade_context_builder.py"
     },
-    "notes": "Architecture audit after Phase 3C complete. trader.py is 12,751 LOC with 17 wrappers, 727 tests. Phase2 lifecycle observability builders are the richest safe extraction target (~520 lines in 8 methods). Next: TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001 targeting _phase2_pre_model_gate_detail, _phase2_ev_null_reason, _phase2_ev_null_reason_detail, _phase2_model_activation_detail, _phase2_candidate_block_detail, _phase2_book_state_level, _phase2_orderbook_state_classification, _phase2_market_readiness_state."
+    "notes": "Phase 3D complete. Extracted 9 phase2 observability helpers into trader_phase2_observability.py. trader.py reduced ~529L to ~12,282 LOC. 92 new tests, 819 targeted tests passing. Deferred: _phase2_mark_readiness, _phase2_complete_lifecycle_observability, _phase2_observability_payload (all read/write self). Next: TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001 targeting _phase2_complete_lifecycle_observability, _phase2_observability_payload, _emit_lifecycle_milestone_event."
 }
