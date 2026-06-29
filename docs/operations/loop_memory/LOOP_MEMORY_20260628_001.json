@@ -3054,5 +3054,49 @@
     },
     "verdict": "PASS",
     "next_recommendation": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-29",
+    "loop_id": "LOOP_20260629_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT",
+    "task_id": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
+    "task_class": 2,
+    "scope": [
+      "polymarket/observability/contracts.py",
+      "polymarket/observability/trader_reconciliation_carry.py",
+      "polymarket/observability/trader_trade_event_payload.py",
+      "tests/observability/test_trade_payload_schema_contracts.py",
+      "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS",
+    "repairs": 1,
+    "repair_notes": "Fixed test_exception_returns_empty_dict: utc_timestamp=None does not raise, produces computed_at=None. Updated test to reflect actual behavior.",
+    "evidence_grade": "A",
+    "files_changed": 7,
+    "new_modules": ["polymarket/observability/contracts.py"],
+    "new_test_files": ["tests/observability/test_trade_payload_schema_contracts.py"],
+    "typedicts_defined": 9,
+    "annotations_updated": 8,
+    "new_tests_added": 37,
+    "tests_before": 854,
+    "tests_after": 891,
+    "acceptance_criteria": {
+      "contracts_module_created": true,
+      "return_annotations_updated_carry": 5,
+      "return_annotations_updated_event_payload": 3,
+      "golden_snapshot_trade_opened": true,
+      "golden_snapshot_trade_closed": true,
+      "no_unexpected_keys_test": true,
+      "json_serializable_tests": true,
+      "py_compile_pass": true,
+      "891_tests_pass": true,
+      "no_runtime_behavior_change": true,
+      "no_trader_logic_modified": true
+    },
+    "verdict": "PASS",
+    "next_recommendation": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
   }
 ]

@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T10:44:33.967757Z",
-  "file_count": 451,
+  "generated_at_utc": "2026-06-29T11:26:04.428808Z",
+  "file_count": 453,
   "files": [
     {
       "path": "polymarket/trader.py",
@@ -8415,6 +8415,72 @@
       "runtime_sensitive_symbols": []
     },
     {
+      "path": "polymarket/observability/contracts.py",
+      "total_lines": 297,
+      "class_count": 9,
+      "top_function_count": 0,
+      "method_count": 0,
+      "classes": [
+        {
+          "name": "EntryModelTruthEnvelope",
+          "line": 22,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "EntryModelTruthEnvelopeWrapper",
+          "line": 51,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "SizeSharpMetadata",
+          "line": 56,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "SizeSharpCloseCarry",
+          "line": 76,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "CarryMetadata",
+          "line": 92,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "TradeOpenContext",
+          "line": 102,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "TradePositionMetadata",
+          "line": 124,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "TradeOpenedPayload",
+          "line": 182,
+          "method_count": 0,
+          "methods": []
+        },
+        {
+          "name": "TradeClosedPayload",
+          "line": 234,
+          "method_count": 0,
+          "methods": []
+        }
+      ],
+      "top_functions": [],
+      "largest_symbols": [],
+      "runtime_sensitive_symbols": []
+    },
+    {
       "path": "polymarket/observability/realtime_logger.py",
       "total_lines": 369,
       "class_count": 3,
@@ -9243,7 +9309,7 @@
     },
     {
       "path": "polymarket/observability/trader_reconciliation_carry.py",
-      "total_lines": 321,
+      "total_lines": 329,
       "class_count": 0,
       "top_function_count": 6,
       "method_count": 0,
@@ -9251,37 +9317,37 @@
       "top_functions": [
         {
           "name": "carry_entry_model_truth_from_metadata",
-          "line": 11,
+          "line": 19,
           "size": 11,
           "runtime_sensitive": false
         },
         {
           "name": "build_paper_trade_replay_key",
-          "line": 24,
+          "line": 32,
           "size": 20,
           "runtime_sensitive": false
         },
         {
           "name": "size_sharp_metadata",
-          "line": 46,
+          "line": 54,
           "size": 20,
           "runtime_sensitive": false
         },
         {
           "name": "size_sharp_close_carry",
-          "line": 68,
+          "line": 76,
           "size": 23,
           "runtime_sensitive": false
         },
         {
           "name": "build_entry_model_truth_envelope",
-          "line": 93,
+          "line": 101,
           "size": 89,
           "runtime_sensitive": false
         },
         {
           "name": "build_trade_position_metadata",
-          "line": 184,
+          "line": 192,
           "size": 137,
           "runtime_sensitive": false
         }
@@ -9333,7 +9399,7 @@
     },
     {
       "path": "polymarket/observability/trader_trade_event_payload.py",
-      "total_lines": 360,
+      "total_lines": 366,
       "class_count": 0,
       "top_function_count": 4,
       "method_count": 0,
@@ -9341,25 +9407,25 @@
       "top_functions": [
         {
           "name": "_trade_open_context_value_available",
-          "line": 11,
+          "line": 17,
           "size": 2,
           "runtime_sensitive": false
         },
         {
           "name": "collect_trade_open_context",
-          "line": 15,
+          "line": 21,
           "size": 162,
           "runtime_sensitive": false
         },
         {
           "name": "build_trade_opened_payload",
-          "line": 179,
+          "line": 185,
           "size": 81,
           "runtime_sensitive": false
         },
         {
           "name": "build_trade_closed_payload",
-          "line": 262,
+          "line": 268,
           "size": 98,
           "runtime_sensitive": false
         }
@@ -23642,6 +23708,371 @@
       "runtime_sensitive_symbols": [
         "_risk_plan"
       ]
+    },
+    {
+      "path": "tests/observability/test_trade_payload_schema_contracts.py",
+      "total_lines": 683,
+      "class_count": 8,
+      "top_function_count": 0,
+      "method_count": 41,
+      "classes": [
+        {
+          "name": "TestContractsImportable",
+          "line": 47,
+          "method_count": 3,
+          "methods": [
+            {
+              "name": "test_all_typedicts_importable",
+              "line": 48,
+              "size": 13,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_carry_return_annotation_updated",
+              "line": 62,
+              "size": 16,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_event_payload_return_annotation_updated",
+              "line": 79,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestCarryMetadataContract",
+          "line": 88,
+          "method_count": 4,
+          "methods": [
+            {
+              "name": "test_absent_returns_carry_status_key",
+              "line": 89,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_carry_returns_envelope_key",
+              "line": 94,
+              "size": 12,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_non_dict_envelope_returns_absent",
+              "line": 107,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_result_is_json_serializable",
+              "line": 111,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestSizeSharpMetadataContract",
+          "line": 116,
+          "method_count": 3,
+          "methods": [
+            {
+              "name": "test_none_result_returns_missing_status",
+              "line": 117,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_dict_result_returns_eleven_fields",
+              "line": 122,
+              "size": 20,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_result_is_json_serializable",
+              "line": 143,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestSizeSharpCloseCarryContract",
+          "line": 148,
+          "method_count": 4,
+          "methods": [
+            {
+              "name": "test_none_metadata_returns_missing",
+              "line": 149,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_empty_metadata_returns_missing_status",
+              "line": 153,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_present_fields_carry_with_status",
+              "line": 157,
+              "size": 18,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_result_is_json_serializable",
+              "line": 176,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestEntryModelTruthEnvelopeContract",
+          "line": 181,
+          "method_count": 6,
+          "methods": [
+            {
+              "name": "test_full_truth_status_when_both_present",
+              "line": 182,
+              "size": 13,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_probability_only_when_no_ev",
+              "line": 196,
+              "size": 9,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_absent_when_neither_present",
+              "line": 206,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_required_fields_always_present",
+              "line": 215,
+              "size": 12,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_none_utc_timestamp_still_produces_envelope",
+              "line": 228,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_result_is_json_serializable",
+              "line": 237,
+              "size": 7,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestTradePositionMetadataContract",
+          "line": 250,
+          "method_count": 6,
+          "methods": [
+            {
+              "name": "_build",
+              "line": 251,
+              "size": 21,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_required_keys_present",
+              "line": 273,
+              "size": 9,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_paper_trade_replay_key_built",
+              "line": 283,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_shadow_policy_fields_present",
+              "line": 287,
+              "size": 9,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_size_sharp_fields_present_when_none",
+              "line": 297,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_result_is_json_serializable",
+              "line": 301,
+              "size": 3,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestTradeOpenedPayloadGoldenSnapshot",
+          "line": 379,
+          "method_count": 7,
+          "methods": [
+            {
+              "name": "_build",
+              "line": 380,
+              "size": 16,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_golden_snapshot_exact_match",
+              "line": 397,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_no_unexpected_keys",
+              "line": 401,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_required_declared_keys_present",
+              "line": 406,
+              "size": 8,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_is_json_serializable",
+              "line": 415,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_condition_id_empty_string_becomes_empty_string",
+              "line": 419,
+              "size": 14,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_entry_attribution_dict_overrides_fields",
+              "line": 434,
+              "size": 26,
+              "runtime_sensitive": false
+            }
+          ]
+        },
+        {
+          "name": "TestTradeClosedPayloadGoldenSnapshot",
+          "line": 554,
+          "method_count": 8,
+          "methods": [
+            {
+              "name": "_position",
+              "line": 555,
+              "size": 2,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "_build",
+              "line": 558,
+              "size": 24,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_golden_snapshot_exact_match",
+              "line": 583,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_no_unexpected_keys",
+              "line": 587,
+              "size": 4,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_is_json_serializable",
+              "line": 592,
+              "size": 3,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_none_metadata_all_metadata_fields_none",
+              "line": 596,
+              "size": 25,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_size_sharp_carry_spreads_into_payload",
+              "line": 622,
+              "size": 30,
+              "runtime_sensitive": false
+            },
+            {
+              "name": "test_entry_attribution_dict_overrides_status",
+              "line": 653,
+              "size": 30,
+              "runtime_sensitive": false
+            }
+          ]
+        }
+      ],
+      "top_functions": [],
+      "largest_symbols": [
+        {
+          "name": "test_size_sharp_carry_spreads_into_payload",
+          "class": "TestTradeClosedPayloadGoldenSnapshot",
+          "size": 30
+        },
+        {
+          "name": "test_entry_attribution_dict_overrides_status",
+          "class": "TestTradeClosedPayloadGoldenSnapshot",
+          "size": 30
+        },
+        {
+          "name": "test_entry_attribution_dict_overrides_fields",
+          "class": "TestTradeOpenedPayloadGoldenSnapshot",
+          "size": 26
+        },
+        {
+          "name": "test_none_metadata_all_metadata_fields_none",
+          "class": "TestTradeClosedPayloadGoldenSnapshot",
+          "size": 25
+        },
+        {
+          "name": "_build",
+          "class": "TestTradeClosedPayloadGoldenSnapshot",
+          "size": 24
+        },
+        {
+          "name": "_build",
+          "class": "TestTradePositionMetadataContract",
+          "size": 21
+        },
+        {
+          "name": "test_dict_result_returns_eleven_fields",
+          "class": "TestSizeSharpMetadataContract",
+          "size": 20
+        },
+        {
+          "name": "test_present_fields_carry_with_status",
+          "class": "TestSizeSharpCloseCarryContract",
+          "size": 18
+        },
+        {
+          "name": "test_carry_return_annotation_updated",
+          "class": "TestContractsImportable",
+          "size": 16
+        },
+        {
+          "name": "_build",
+          "class": "TestTradeOpenedPayloadGoldenSnapshot",
+          "size": 16
+        }
+      ],
+      "runtime_sensitive_symbols": []
     },
     {
       "path": "tests/observability/test_trader_lifecycle_payload.py",

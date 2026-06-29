@@ -7,8 +7,16 @@ trader_reconciliation_payload.py in Phase 3M.
 
 from typing import Any
 
+from polymarket.observability.contracts import (
+    CarryMetadata,
+    EntryModelTruthEnvelopeWrapper,
+    SizeSharpCloseCarry,
+    SizeSharpMetadata,
+    TradePositionMetadata,
+)
 
-def carry_entry_model_truth_from_metadata(metadata: dict) -> dict[str, object]:
+
+def carry_entry_model_truth_from_metadata(metadata: dict) -> CarryMetadata:
     """ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, carry from position metadata, fail-soft"""
     try:
         envelope = metadata.get("entry_model_truth_envelope_v1")
@@ -43,7 +51,7 @@ def build_paper_trade_replay_key(
     return ""
 
 
-def size_sharp_metadata(result: Any) -> dict[str, object]:
+def size_sharp_metadata(result: Any) -> SizeSharpMetadata:
     """Format SizeSharpResult or dict as flattened telemetry fields."""
     if result is None:
         return {
@@ -65,7 +73,7 @@ def size_sharp_metadata(result: Any) -> dict[str, object]:
     }
 
 
-def size_sharp_close_carry(metadata: dict | None) -> dict[str, object]:
+def size_sharp_close_carry(metadata: dict | None) -> SizeSharpCloseCarry:
     """Retrieve size_sharp entry metadata fields for close payload carry-forward."""
     if not isinstance(metadata, dict):
         return {"size_sharp_close_carry_status": "missing_legacy_metadata"}
@@ -108,7 +116,7 @@ def build_entry_model_truth_envelope(
     ev_missing_reason: object = None,
     computed_by: str = "unknown",
     serialization_source: str = "unknown",
-) -> dict[str, object]:
+) -> EntryModelTruthEnvelopeWrapper:
     """ENTRY_MODEL_TRUTH_ENVELOPE_V1 — observability-only, additive, fail-soft"""
     try:
         def _sf(v: object) -> float | None:
@@ -218,7 +226,7 @@ def build_trade_position_metadata(
     expected_risk_profile: object = None,
     size_sharp_result: object = None,
     bankroll_rank: object = None,
-) -> dict[str, object]:
+) -> TradePositionMetadata:
     """Construct full position metadata dictionary for tracking/reconciliation."""
     paper_trade_replay_key = build_paper_trade_replay_key(
         condition_id=condition_id,

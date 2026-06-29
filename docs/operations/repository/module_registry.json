@@ -1,7 +1,7 @@
 {
   "schema_version": "repository_navigator_v1",
-  "generated_at_utc": "2026-06-29T10:44:29.565649Z",
-  "module_count": 451,
+  "generated_at_utc": "2026-06-29T11:25:56.405591Z",
+  "module_count": 453,
   "modules": [
     {
       "path": "api/dashboard_api.py",
@@ -928,6 +928,26 @@
       "recommended_target_folder": null
     },
     {
+      "path": "polymarket/observability/contracts.py",
+      "module_name": "polymarket.observability.contracts",
+      "domain": "polymarket",
+      "package": "polymarket/observability",
+      "line_count": 296,
+      "blast_radius_score": 9,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [],
+      "reverse_importers": [
+        "polymarket/observability/trader_reconciliation_carry.py",
+        "polymarket/observability/trader_trade_event_payload.py",
+        "tests/observability/test_trade_payload_schema_contracts.py"
+      ],
+      "tests": [],
+      "safe_move_status": "DO_NOT_MOVE",
+      "recommended_target_folder": null
+    },
+    {
       "path": "polymarket/observability/realtime_logger.py",
       "module_name": "polymarket.observability.realtime_logger",
       "domain": "polymarket",
@@ -1146,15 +1166,18 @@
       "module_name": "polymarket.observability.trader_reconciliation_carry",
       "domain": "polymarket",
       "package": "polymarket/observability",
-      "line_count": 320,
-      "blast_radius_score": 9,
+      "line_count": 328,
+      "blast_radius_score": 15,
       "migration_safety_status": "DO_NOT_MOVE",
-      "runtime_sensitive": false,
+      "runtime_sensitive": true,
       "do_not_touch": false,
-      "direct_imports": [],
+      "direct_imports": [
+        "polymarket/observability/contracts.py"
+      ],
       "reverse_importers": [
         "polymarket/observability/trader_reconciliation_payload.py",
         "polymarket/trader.py",
+        "tests/observability/test_trade_payload_schema_contracts.py",
         "tests/observability/test_trader_reconciliation_payload.py"
       ],
       "tests": [],
@@ -1187,15 +1210,18 @@
       "module_name": "polymarket.observability.trader_trade_event_payload",
       "domain": "polymarket",
       "package": "polymarket/observability",
-      "line_count": 359,
-      "blast_radius_score": 12,
+      "line_count": 365,
+      "blast_radius_score": 18,
       "migration_safety_status": "DO_NOT_MOVE",
       "runtime_sensitive": true,
       "do_not_touch": false,
-      "direct_imports": [],
+      "direct_imports": [
+        "polymarket/observability/contracts.py"
+      ],
       "reverse_importers": [
         "polymarket/observability/trader_reconciliation_payload.py",
         "polymarket/trader.py",
+        "tests/observability/test_trade_payload_schema_contracts.py",
         "tests/observability/test_trader_reconciliation_payload.py",
         "tests/observability/test_trader_trade_open_context.py"
       ],
@@ -3859,6 +3885,30 @@
       "tests": [
         "polymarket/client.py",
         "polymarket/trader.py"
+      ],
+      "safe_move_status": "SAFE_ATOMIC",
+      "recommended_target_folder": null
+    },
+    {
+      "path": "tests/observability/test_trade_payload_schema_contracts.py",
+      "module_name": "tests.observability.test_trade_payload_schema_contracts",
+      "domain": "tests",
+      "package": "tests/observability",
+      "line_count": 682,
+      "blast_radius_score": 3,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "runtime_sensitive": false,
+      "do_not_touch": false,
+      "direct_imports": [
+        "polymarket/observability/contracts.py",
+        "polymarket/observability/trader_reconciliation_carry.py",
+        "polymarket/observability/trader_trade_event_payload.py"
+      ],
+      "reverse_importers": [],
+      "tests": [
+        "polymarket/observability/contracts.py",
+        "polymarket/observability/trader_reconciliation_carry.py",
+        "polymarket/observability/trader_trade_event_payload.py"
       ],
       "safe_move_status": "SAFE_ATOMIC",
       "recommended_target_folder": null

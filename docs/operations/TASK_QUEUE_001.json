@@ -2716,7 +2716,7 @@
     {
       "priority": 177,
       "task_id": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
-      "status": "READY",
+      "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
       "description": "Add TypedDict schema contracts for TradeOpenedPayload, TradeClosedPayload, and TradePositionMetadata as return type annotations on the canonical event payload and carry modules.",
@@ -2728,10 +2728,11 @@
         "docs/operations/"
       ],
       "outputs": [
-        "polymarket/observability/trader_trade_payload_schema.py",
+        "polymarket/observability/contracts.py",
+        "tests/observability/test_trade_payload_schema_contracts.py",
         "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md"
       ],
-      "notes": "Design/audit + implementation. Create TypedDict definitions. Wire as return type annotations. No runtime behavior change. Enables silent key regression detection by type checkers."
+      "notes": "DONE. Created contracts.py with 9 TypedDicts (EntryModelTruthEnvelope, EntryModelTruthEnvelopeWrapper, SizeSharpMetadata, SizeSharpCloseCarry, CarryMetadata, TradeOpenContext, TradePositionMetadata, TradeOpenedPayload, TradeClosedPayload). Updated return annotations on 5 carry helpers and 3 event payload builders. 37 new schema contract tests (including golden snapshots). 891/891 tests pass."
     }
   ]
 }

@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-29",
-    "current_phase": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001 complete; next is TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
-    "last_completed_task": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001",
+    "current_phase": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001 complete; next is MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001",
+    "last_completed_task": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
     "last_commit": "HEAD",
-    "last_commit_message": "refactor: split trader trade event payload helpers",
-    "next_task": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
+    "last_commit_message": "refactor: add trade payload schema contracts",
+    "next_task": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -96,7 +96,7 @@
             "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
             "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001"
         ],
-        "next_batch": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001",
+        "next_batch": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
         "last_runtime_refactor_commit": "HEAD"
     },
@@ -221,7 +221,32 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001 complete. trader_reconciliation_payload.py split: 6 carry helpers → trader_reconciliation_carry.py, 4 event builders → trader_trade_event_payload.py. Shim retained. trader.py imports updated to canonical modules. 854 tests pass (+3 shim tests). Next: TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.",
+    "notes": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001 complete. contracts.py created with 9 TypedDicts. Return annotations updated on 5 carry helpers and 3 event payload builders. 37 new schema contract tests (golden snapshots for TradeOpenedPayload and TradeClosedPayload). 891 tests pass. Next: MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.",
+    "trade_event_payload_schema_contracts": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md",
+        "contracts_module": "polymarket/observability/contracts.py",
+        "typedicts_defined": [
+            "EntryModelTruthEnvelope",
+            "EntryModelTruthEnvelopeWrapper",
+            "SizeSharpMetadata",
+            "SizeSharpCloseCarry",
+            "CarryMetadata",
+            "TradeOpenContext",
+            "TradePositionMetadata",
+            "TradeOpenedPayload",
+            "TradeClosedPayload"
+        ],
+        "carry_annotations_updated": 5,
+        "event_payload_annotations_updated": 3,
+        "new_tests": 37,
+        "golden_snapshot_tests": ["test_golden_snapshot_exact_match (TradeOpenedPayload)", "test_golden_snapshot_exact_match (TradeClosedPayload)"],
+        "tests": {
+            "focused": "37 passed",
+            "acceptance": "891 passed"
+        },
+        "next_task": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
+    },
     "trade_event_payload_split": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md",

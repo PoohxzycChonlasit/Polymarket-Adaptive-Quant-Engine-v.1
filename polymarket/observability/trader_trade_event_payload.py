@@ -7,6 +7,12 @@ Extracted from trader_reconciliation_payload.py in Phase 3M.
 
 from typing import Any
 
+from polymarket.observability.contracts import (
+    TradeClosedPayload,
+    TradeOpenContext,
+    TradeOpenedPayload,
+)
+
 
 def _trade_open_context_value_available(value: object) -> bool:
     return value is not None and value != ""
@@ -29,7 +35,7 @@ def collect_trade_open_context(
     ev_after_spread: float | None = None,
     confidence: float | None = None,
     entry_attribution: dict[str, object] | None = None,
-) -> dict[str, object]:
+) -> TradeOpenContext:
     """Collect trader-aware context for trade-open payload assembly without emitting events."""
     model_context = {}
     last_quant_details = getattr(trader, "last_quant_details", {})
@@ -191,7 +197,7 @@ def build_trade_opened_payload(
     condition_id: str = "",
     position_id: str | None = None,
     trade_open_context: dict[str, object] | None = None,
-) -> dict[str, object]:
+) -> TradeOpenedPayload:
     """Build the trade-open quant event payload without emitting or reading trader state."""
     context = trade_open_context if isinstance(trade_open_context, dict) else {}
     model_context = context.get("model_context") if isinstance(context.get("model_context"), dict) else {}
@@ -282,7 +288,7 @@ def build_trade_closed_payload(
     paper_trade_replay_key: str,
     size_sharp_carry: dict[str, object] | None = None,
     entry_model_truth_carry: dict[str, object] | None = None,
-) -> dict[str, object]:
+) -> TradeClosedPayload:
     """Build the trade-close quant event payload without emitting or mutating trader state."""
     metadata_dict = metadata if isinstance(metadata, dict) else {}
     close_payload = {
