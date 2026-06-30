@@ -3568,6 +3568,34 @@
       "risk_changed": false,
       "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
       "notes": "DONE. Mapped existing backtest, canonical-context, decision, runtime, replay, shadow, and outcome-truth tools into framework roles. Defined ReplayRow, ReplayIdentity, ReplayMarketState, ReplayModelState, ReplayRuntimeDecision, ReplayLifecycleTruth, ReplayPathTruth, ReplayQuality, StrategyPluginMetadata, StrategyDecision, StrategyRunContext, StrategySummary, and EvidenceDecision v0.1 contracts. Next: SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001."
+    },
+    {
+      "priority": 1.875,
+      "task_id": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 4,
+      "description": "Implement schema-only offline TypedDict contracts for the Shadow Strategy Evaluation Framework. Package: tools/shadow_strategy_framework/. 13 TypedDicts, 4 enums, 3 helper functions, 10 tests.",
+      "blocked_by": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
+      "allowed_scope": [
+        "tools/shadow_strategy_framework/",
+        "tests/tools/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "tools/shadow_strategy_framework/__init__.py",
+        "tools/shadow_strategy_framework/contracts.py",
+        "tests/tools/test_shadow_strategy_framework_contracts.py",
+        "docs/reports/SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001.md"
+      ],
+      "verdict": "SCHEMA_CONTRACTS_IMPLEMENTED_TESTS_PASS",
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
+      "notes": "DONE. Created tools/shadow_strategy_framework/contracts.py with all 13 TypedDict contracts (ReplayRow containers + strategy framework contracts), StrategyAction/EvidenceGrade/Recommendation/PluginFamily enums, PATH_TRUTH_SCORING_ONLY_FIELDS frozenset, REQUIRED_REPLAY_ROW_CONTAINER_KEYS frozenset, and 3 helpers. 10/10 tests pass including subprocess import-safety check. py_compile OK. No runtime files touched. Next: SHADOW_STRATEGY_FRAMEWORK_ADAPTER_INTERFACE_001."
     }
   ]
 }

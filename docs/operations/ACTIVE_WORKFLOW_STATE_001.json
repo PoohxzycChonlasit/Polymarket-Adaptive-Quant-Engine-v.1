@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-07-01",
-  "current_phase": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001 complete; ReplayRow and StrategyDecision v0.1 contracts defined for offline shadow evaluation",
-  "last_completed_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
+  "current_phase": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001 complete; 13 TypedDict contracts, 4 enums, 3 helpers in tools/shadow_strategy_framework/contracts.py",
+  "last_completed_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001",
+  "next_task": "SHADOW_STRATEGY_FRAMEWORK_ADAPTER_INTERFACE_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1337,5 +1337,60 @@
     "risk_changed": false,
     "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
     "next_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001"
+  },
+  "shadow_strategy_framework_replayrow_schema_implementation": {
+    "status": "COMPLETE",
+    "task_class": 4,
+    "report_doc": "docs/reports/SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001.md",
+    "verdict": "SCHEMA_CONTRACTS_IMPLEMENTED_TESTS_PASS",
+    "package_created": "tools/shadow_strategy_framework/",
+    "contracts_module": "tools/shadow_strategy_framework/contracts.py",
+    "test_suite": "tests/tools/test_shadow_strategy_framework_contracts.py",
+    "schema_version": "shadow_replay_row.v0_1",
+    "typedicts_defined": [
+      "ReplayIdentity",
+      "ReplayMarketState",
+      "ReplayModelState",
+      "ReplayRuntimeDecision",
+      "ReplayLifecycleTruth",
+      "ReplayPathTruth",
+      "ReplayQuality",
+      "ReplayRow",
+      "StrategyPluginMetadata",
+      "StrategyDecision",
+      "StrategyRunContext",
+      "StrategySummary",
+      "EvidenceDecision"
+    ],
+    "enums_defined": [
+      "StrategyAction",
+      "EvidenceGrade",
+      "Recommendation",
+      "PluginFamily"
+    ],
+    "helpers_defined": [
+      "validate_required_replay_row_containers",
+      "make_minimal_replay_row",
+      "make_minimal_strategy_decision"
+    ],
+    "module_constants": [
+      "REPLAY_ROW_SCHEMA_VERSION",
+      "STRATEGY_DECISION_SCHEMA_VERSION",
+      "PATH_TRUTH_SCORING_ONLY_FIELDS",
+      "REQUIRED_REPLAY_ROW_CONTAINER_KEYS",
+      "STRATEGY_SUMMARY_REQUIRED_METRIC_KEYS"
+    ],
+    "tests": {
+      "focused": "10 passed",
+      "scoped_tools_suite": "789 passed, 12 pre-existing failures (unrelated)",
+      "py_compile": "passed",
+      "runtime_import_safety": "subprocess verified"
+    },
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "sizing_changed": false,
+    "risk_changed": false,
+    "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
+    "next_task": "SHADOW_STRATEGY_FRAMEWORK_ADAPTER_INTERFACE_001"
   }
 }
