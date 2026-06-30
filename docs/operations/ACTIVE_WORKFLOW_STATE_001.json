@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "PAPER_RUNTIME_STATE_RESET_FOR_VALIDATION_001 complete; synthetic c0ad7970 paper state neutralized; risk mode diagnostic NORMAL; next task: fresh post-fill trade_open validation",
-  "last_completed_task": "PAPER_RUNTIME_STATE_RESET_FOR_VALIDATION_001",
+  "current_phase": "POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001 complete; paper fill -> trade_open -> cash/exposure accounting validated; next task: close/PnL lifecycle validation",
+  "last_completed_task": "POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001",
   "last_commit": "50d8589c",
   "last_commit_message": "docs: verify paper fill path",
-  "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001",
+  "next_task": "TRADE_CLOSE_AND_PNL_ACCOUNTING_VALIDATION_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -927,5 +927,38 @@
     "runtime_logic_changed": false,
     "logs_deleted_or_edited": false,
     "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001"
+  },
+  "post_fill_accounting_pipeline_revalidation": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001.md",
+    "contract_doc": "docs/operations/execution_contracts/POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001_CONTRACT_001.md",
+    "run_id": "20260630T091800Z_33760_45ee6798",
+    "runtime_command": ".\\.venv\\Scripts\\python.exe main.py --mode paper --interval 60 --ui compact",
+    "duration_seconds": 156,
+    "stop_reason": "fill_and_trade_open_observed",
+    "return_code": 0,
+    "fill_count": 1,
+    "trade_open_count": 1,
+    "trade_close_count": 0,
+    "attribute_error_count": 0,
+    "position_ids": [
+      "bd919e7a"
+    ],
+    "paper_virtual_cash_before": 20.09901,
+    "paper_virtual_cash_after": 19.99901,
+    "current_exposure_after": 0.098,
+    "paper_open_position_value_after": 0.098,
+    "risk_modes": [
+      "NORMAL"
+    ],
+    "live_order_submission_markers": 0,
+    "live_marker_false_positive_note": "keyword matches came from no_live_orders=true risk rows/status text, not live execution",
+    "tests": {
+      "compile": "PASS",
+      "focused_pytest": "958 passed, 5 warnings"
+    },
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "runtime_logic_changed": false,
+    "next_task": "TRADE_CLOSE_AND_PNL_ACCOUNTING_VALIDATION_001"
   }
 }
