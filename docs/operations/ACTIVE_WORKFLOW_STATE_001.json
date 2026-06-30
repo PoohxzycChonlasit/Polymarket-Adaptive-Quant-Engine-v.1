@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001 complete; bot_status snapshot refresh after successful close repaired and tested",
-  "last_completed_task": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001",
-  "last_commit": "50d8589c",
-  "last_commit_message": "docs: verify paper fill path",
-  "next_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001",
+  "current_phase": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001 complete; bot_status.json close snapshot freshness fix confirmed in fresh paper runtime with natural open+close cycle",
+  "last_completed_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001",
+  "last_commit": "72da3e67",
+  "last_commit_message": "fix: refresh bot status after paper close",
+  "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1017,5 +1017,29 @@
     "live_order_submission_markers": 0,
     "safety_verdict": "SAFE_STATUS_ONLY_REPAIR",
     "next_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001"
+  },
+  "post_fix_paper_close_status_freshness_runtime_confirmation": {
+    "status": "COMPLETE",
+    "verdict": "PASS_CONFIRMED",
+    "report_doc": "docs/reports/POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001.md",
+    "run_id": "20260630T101747Z_34776_236e2f3a",
+    "position_id": "5e5f073b",
+    "asset": "ETH",
+    "entry_price": 0.53,
+    "exit_price": 0.45,
+    "exit_reason": "stop_loss",
+    "realized_pnl": -0.015094,
+    "hold_seconds": 6,
+    "trade_open_emitted": true,
+    "trade_close_emitted": true,
+    "bot_status_refreshed_at_close": true,
+    "bot_status_timestamp_utc": "2026-06-30T10:30:09Z",
+    "bot_status_open_positions_after": 0,
+    "cash_after_close": 20.083915,
+    "current_exposure_after": 0.0,
+    "live_order_markers": 0,
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "minor_issue": "paper_virtual_cash: None in trade journal payload (pre-existing data quality gap, not introduced by fix)",
+    "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001"
   }
 }
