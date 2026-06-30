@@ -2971,6 +2971,24 @@
         "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md"
       ],
       "notes": "DONE. Bounded paper runtime command ran 90s with return code 0 after CTRL_BREAK. Runtime showed MODE PAPER and STATUS NO LIVE ORDERS, reached decision loop, emitted system_health/research/risk JSONL rows, and shut down cleanly after 2 cycles. Market data was DEGRADED_TRUE_EMPTY/no_orderbook, so no paper trade path was reached. Targeted tests passed 987/987. No live order submission markers found."
+    },
+    {
+      "priority": 1.854,
+      "task_id": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Diagnose TRUE EMPTY / empty_orderbook / no_orderbook during the main paper runtime smoke run.",
+      "blocked_by": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md",
+        "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md"
+      ],
+      "notes": "DONE. Root cause classified as AVAILABILITY_FALSE_NEGATIVE with secondary STALE_MARKET/MARKET_CLOSED_OR_ROTATED noise. Exact GammaFetcher and direct CLOB checks found active/nonzero BTC/ETH 5m books while MarketAvailabilityEngine returned MARKET_NOT_SCHEDULED from broad /markets?limit=50. Runtime behavior unchanged. Next: MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001."
     }
   ]
 }

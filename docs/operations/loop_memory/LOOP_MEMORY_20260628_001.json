@@ -3904,5 +3904,58 @@
     ],
     "safety_verdict": "PASS_WITH_MARKET_DATA_DEGRADED",
     "next_recommendation": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise next replay/backtest or sizing-readiness validation"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001",
+    "task_class": 5,
+    "scope": [
+      "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md",
+      "logs/polytrade_bot_20260630_101450_14888.log",
+      "runtime/quant_data/system_health/2026-06-30.jsonl",
+      "runtime/quant_data/research_log/2026-06-30.jsonl",
+      "runtime/quant_data/risk_log/2026-06-30.jsonl"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "ROOT_CAUSE_IDENTIFIED",
+    "repairs": 0,
+    "evidence_grade": "A+B+D",
+    "commits": [],
+    "files_changed": 5,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "paper_runtime_run": false,
+    "key_findings": {
+      "root_cause_classification": "AVAILABILITY_FALSE_NEGATIVE",
+      "secondary_classification": "STALE_MARKET / MARKET_CLOSED_OR_ROTATED",
+      "mae_result": "MARKET_NOT_SCHEDULED active_market_count=0 matching_slugs=[]",
+      "gammafetcher_result": "BTC/ETH current and next 5m markets found with token ids",
+      "direct_clob_current_books": "ACTIVE_NONZERO_BOOK",
+      "smoke_preloaded_next_books": "WARMED",
+      "stale_token_noise": "old 1782789000 token ids produced empty/cooldown/stale after rollover",
+      "runtime_behavior_changed": false
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "smoke_report_read": true,
+      "smoke_log_inspected": true,
+      "jsonl_rows_inspected": true,
+      "code_paths_inspected": true,
+      "offline_direct_fetch_done": true,
+      "root_cause_classified": true,
+      "report_written": true,
+      "ops_files_updated": true,
+      "runtime_code_modified": false,
+      "trader_py_modified": false
+    },
+    "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
+    "next_recommendation": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001"
   }
 ]

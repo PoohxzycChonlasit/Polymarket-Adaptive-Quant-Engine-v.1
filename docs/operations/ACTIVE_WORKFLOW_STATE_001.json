@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001 complete; paper runtime starts, reaches decision loop, emits telemetry, and shuts down cleanly with market data degraded",
-    "last_completed_task": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001",
+    "current_phase": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 complete; root cause classified as Market Availability Engine false negative with stale old-epoch orderbook noise",
+    "last_completed_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001",
     "last_commit": "HEAD",
-    "last_commit_message": "docs: add main paper runtime smoke verification",
-    "next_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise next replay/backtest or sizing-readiness validation",
+    "last_commit_message": "docs: diagnose true empty orderbook runtime smoke",
+    "next_task": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -249,6 +249,31 @@
         "safety_verdict": "PASS_WITH_MARKET_DATA_DEGRADED",
         "next_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise continue replay/backtest or sizing-readiness validation"
     },
+    "market_data_orderbook_true_empty_runtime_diagnostic": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md",
+        "root_cause_classification": "AVAILABILITY_FALSE_NEGATIVE",
+        "secondary_classification": "STALE_MARKET / MARKET_CLOSED_OR_ROTATED",
+        "markets_inspected": [
+            "btc-updown-5m-1782789000",
+            "btc-updown-5m-1782789300",
+            "btc-updown-5m-1782789600",
+            "eth-updown-5m-1782789000",
+            "eth-updown-5m-1782789300",
+            "eth-updown-5m-1782789600"
+        ],
+        "orderbook_fetch_status": {
+            "smoke_current_btc": "NONZERO_BOOK then stale/empty after expiry",
+            "smoke_current_eth": "empty/cooldown/stale near expiry",
+            "smoke_preloaded_next": "WARMED for BTC/ETH",
+            "diagnostic_current_direct_fetch": "ACTIVE_NONZERO_BOOK",
+            "diagnostic_mae_check": "MARKET_NOT_SCHEDULED false negative"
+        },
+        "empty_orderbook_reason": "MAE broad Gamma /markets limit=50 query missed exact BTC/ETH 5m markets; old epoch tokens then produced empty/cooldown/stale orderbook failures after rollover",
+        "runtime_changed": false,
+        "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
+        "next_task": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001"
+    },
     "airos_hygiene_cleanup": {
         "status": "COMPLETE",
         "files_removed": [
@@ -261,7 +286,7 @@
         "unique_data_preserved": false,
         "commit_required": false
     },
-    "notes": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001 complete. AIROS generated outputs under tools/airos were stale duplicates and deleted without commit. Paper runtime ran bounded for 90s, returned 0 after CTRL_BREAK, completed 2 cycles, emitted JSONL telemetry, and showed MODE PAPER / STATUS NO LIVE ORDERS. Market data degraded with TRUE EMPTY/no_orderbook, so no paper trade path was reached. Targeted tests: 987 passed.",
+    "notes": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 complete. TRUE EMPTY/no_orderbook root cause is primarily an MAE false negative: exact slug GammaFetcher and direct CLOB checks found active/nonzero BTC/ETH 5m books, while MarketAvailabilityEngine returned MARKET_NOT_SCHEDULED from broad /markets?limit=50. Stale old-epoch token ids explain empty/cooldown/stale orderbook noise after rollover. Runtime behavior unchanged.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
