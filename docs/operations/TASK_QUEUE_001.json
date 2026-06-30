@@ -1,6 +1,6 @@
 {
   "$schema": "task_queue_v1",
-  "last_updated": "2026-06-29",
+  "last_updated": "2026-06-30",
   "queue": [
     {
       "priority": -2,
@@ -47,8 +47,13 @@
       "task_class": 5,
       "description": "Validate new trade_open telemetry fields in a real runtime session and canonical builder.",
       "blocked_by": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001",
-      "allowed_scope": ["docs/reports/", "docs/operations/"],
-      "outputs": ["docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001.md"],
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001.md"
+      ],
       "notes": "DONE — Verdict: UNIT_TEST_VERIFIED / RUNTIME_NO_TRADE_DATA. 30/30 tests pass. Bounded paper session ran 90s but markets were TRUE EMPTY (between BTC/ETH epochs). No trade_open events generated. Unit tests verify all new fields emit correctly. Known issue: log_bankroll_rank_evaluation event not written (QuantEventLogger missing method). Next: BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001."
     },
     {
@@ -59,8 +64,15 @@
       "task_class": 1,
       "description": "Run 630+ config policy grid on 886-row signal-driven dataset. Focus on EV × probability × risk_mode combinations. Surface best policy for NORMAL mode with positive Sharpe.",
       "blocked_by": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001",
-      "allowed_scope": ["tools/", "docs/reports/", "docs/operations/", "runtime/reports/"],
-      "outputs": ["docs/reports/BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001.md"],
+      "allowed_scope": [
+        "tools/",
+        "docs/reports/",
+        "docs/operations/",
+        "runtime/reports/"
+      ],
+      "outputs": [
+        "docs/reports/BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001.md"
+      ],
       "notes": "Use BacktestEngineV2. Signal-driven rows only (886). Apply risk_mode=NORMAL filter. Grid: ev 0.0-0.25 × prob 0.60-0.70 × decision_score thresholds. Identify configs with Sharpe > 0 and n >= 50."
     },
     {
@@ -71,7 +83,11 @@
       "task_class": 2,
       "description": "Design Market Availability Engine — scheduler states, Gamma API detection, resource governance, bankroll_rank schema clarification.",
       "blocked_by": null,
-      "allowed_scope": ["docs/architecture/", "docs/reports/", "docs/operations/"],
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
       "outputs": [
         "docs/architecture/MARKET_AVAILABILITY_ENGINE_001.md",
         "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md"
@@ -1720,8 +1736,14 @@
       "task_class": 2,
       "description": "Perform the final live trading readiness gate check audit.",
       "blocked_by": "LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001",
-      "allowed_scope": ["docs/audits/", "docs/reports/", "docs/operations/"],
-      "outputs": ["docs/audits/LIVE_TRADING_READINESS_FINAL_CHECK_001.md"],
+      "allowed_scope": [
+        "docs/audits/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/audits/LIVE_TRADING_READINESS_FINAL_CHECK_001.md"
+      ],
       "notes": "Final live readiness check."
     },
     {
@@ -2340,8 +2362,13 @@
       "task_class": 2,
       "description": "Design/audit plan for polymarket/ folder organization, tests/ folder organization, and trader.py orchestration decomposition. 35 polymarket files inventoried, 166 tests classified, 304 trader methods grouped.",
       "blocked_by": null,
-      "allowed_scope": ["docs/reports/", "docs/operations/"],
-      "outputs": ["docs/reports/POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001.md"],
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/POLYMARKET_AND_TRADER_ORCHESTRATION_DECOMPOSITION_PLAN_001.md"
+      ],
       "notes": "DONE. 14 SAFE_MOVE polymarket files identified. 7 trader.py extraction phases planned. First executable: TESTS_AIROS_SUBFOLDER_BATCH_001."
     },
     {
@@ -2352,8 +2379,17 @@
       "task_class": 6,
       "description": "Move 5 test_airos_*.py files from tests/ to tests/airos/ subfolder. Create tests/airos/__init__.py. Update any monkeypatch strings. Run targeted pytest. Commit and push.",
       "blocked_by": null,
-      "allowed_scope": ["tests/airos/", "tests/test_airos_*.py"],
-      "outputs": ["tests/airos/test_airos_atomic_batch_executor.py", "tests/airos/test_airos_batch_generator.py", "tests/airos/test_airos_dependency_graph_builder.py", "tests/airos/test_airos_migration_analyzer.py", "tests/airos/test_airos_repository_index_generator.py"],
+      "allowed_scope": [
+        "tests/airos/",
+        "tests/test_airos_*.py"
+      ],
+      "outputs": [
+        "tests/airos/test_airos_atomic_batch_executor.py",
+        "tests/airos/test_airos_batch_generator.py",
+        "tests/airos/test_airos_dependency_graph_builder.py",
+        "tests/airos/test_airos_migration_analyzer.py",
+        "tests/airos/test_airos_repository_index_generator.py"
+      ],
       "notes": "SAFE_ATOMIC. No polymarket imports in these files. Pure offline AIROS tooling tests."
     },
     {
@@ -2364,8 +2400,21 @@
       "task_class": 6,
       "description": "Move realtime_logger.py, regime_diagnostics.py, shadow_telemetry.py, trader_presentation.py from polymarket/ to polymarket/observability/. Update all import sites including trader.py, main.py, and affected tests.",
       "blocked_by": "TESTS_AIROS_SUBFOLDER_BATCH_001",
-      "allowed_scope": ["polymarket/observability/", "polymarket/realtime_logger.py", "polymarket/regime_diagnostics.py", "polymarket/shadow_telemetry.py", "polymarket/trader_presentation.py", "tests/"],
-      "outputs": ["polymarket/observability/__init__.py", "polymarket/observability/realtime_logger.py", "polymarket/observability/regime_diagnostics.py", "polymarket/observability/shadow_telemetry.py", "polymarket/observability/trader_presentation.py"],
+      "allowed_scope": [
+        "polymarket/observability/",
+        "polymarket/realtime_logger.py",
+        "polymarket/regime_diagnostics.py",
+        "polymarket/shadow_telemetry.py",
+        "polymarket/trader_presentation.py",
+        "tests/"
+      ],
+      "outputs": [
+        "polymarket/observability/__init__.py",
+        "polymarket/observability/realtime_logger.py",
+        "polymarket/observability/regime_diagnostics.py",
+        "polymarket/observability/shadow_telemetry.py",
+        "polymarket/observability/trader_presentation.py"
+      ],
       "notes": "MEDIUM_ATOMIC. trader.py imports all 4. Run migration_analyzer.py first."
     },
     {
@@ -2376,8 +2425,17 @@
       "task_class": 6,
       "description": "Move probability_model.py, quant_indicators.py, expected_value.py, delta_engine.py from polymarket/ to polymarket/models/. Update import sites.",
       "blocked_by": "POLYMARKET_OBSERVABILITY_SUBFOLDER_BATCH_001",
-      "allowed_scope": ["polymarket/models/", "tests/"],
-      "outputs": ["polymarket/models/__init__.py", "polymarket/models/probability_model.py", "polymarket/models/quant_indicators.py", "polymarket/models/expected_value.py", "polymarket/models/delta_engine.py"],
+      "allowed_scope": [
+        "polymarket/models/",
+        "tests/"
+      ],
+      "outputs": [
+        "polymarket/models/__init__.py",
+        "polymarket/models/probability_model.py",
+        "polymarket/models/quant_indicators.py",
+        "polymarket/models/expected_value.py",
+        "polymarket/models/delta_engine.py"
+      ],
       "notes": "SAFE_ATOMIC for pure model files. Run migration_analyzer.py before execution."
     },
     {
@@ -2388,8 +2446,13 @@
       "task_class": 6,
       "description": "Move gamma_fetcher.py, five_min_monitor.py, trend_runner.py, lucky_shot.py, arbitrage.py from polymarket/ to polymarket/market/. Update import sites.",
       "blocked_by": "POLYMARKET_MODELS_SUBFOLDER_BATCH_001",
-      "allowed_scope": ["polymarket/market/", "tests/"],
-      "outputs": ["polymarket/market/__init__.py"],
+      "allowed_scope": [
+        "polymarket/market/",
+        "tests/"
+      ],
+      "outputs": [
+        "polymarket/market/__init__.py"
+      ],
       "notes": "SAFE_ATOMIC. Low blast radius. backtester_5m.py also moves to polymarket/backtest/."
     },
     {
@@ -2400,8 +2463,13 @@
       "task_class": 6,
       "description": "Extract ~37 pure observability/timing methods from trader.py into polymarket/observability/trader_observability.py as a mixin. No order/risk/sizing/execution methods. Paper validation required before commit.",
       "blocked_by": "POLYMARKET_OBSERVABILITY_SUBFOLDER_BATCH_001",
-      "allowed_scope": ["polymarket/observability/", "polymarket/trader.py"],
-      "outputs": ["polymarket/observability/trader_observability.py"],
+      "allowed_scope": [
+        "polymarket/observability/",
+        "polymarket/trader.py"
+      ],
+      "outputs": [
+        "polymarket/observability/trader_observability.py"
+      ],
       "notes": "HIGH risk for trader.py changes. Requires Architecture Governance gate PASSED. Paper session validation required."
     },
     {
@@ -2902,7 +2970,7 @@
       "notes": "DONE. 5 fields approved as sentinels (schema-confirmed via SizeSharpMetadata TypedDict): size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs. shadow_policy_reasons DEFERRED (generic object type; severity-map gap found). CRITICAL FINDING: shadow_policy_* fields absent from all decision engine severity sets — unknown fields → MEDIUM → REVIEW_REQUIRED. Gap latent in existing JSONL but active on next builder run. Next: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (5-field patch) + SHADOW_POLICY_SEVERITY_MAP_FIX_001 (decision engine fix)."
     },
     {
-      "priority": 1.850,
+      "priority": 1.85,
       "task_id": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
       "status": "DONE",
       "workflow_tier": "LOOP",
@@ -2989,6 +3057,27 @@
         "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md"
       ],
       "notes": "DONE. Root cause classified as AVAILABILITY_FALSE_NEGATIVE with secondary STALE_MARKET/MARKET_CLOSED_OR_ROTATED noise. Exact GammaFetcher and direct CLOB checks found active/nonzero BTC/ETH 5m books while MarketAvailabilityEngine returned MARKET_NOT_SCHEDULED from broad /markets?limit=50. Runtime behavior unchanged. Next: MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001."
+    },
+    {
+      "priority": 1.855,
+      "task_id": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 6,
+      "description": "Repair MarketAvailabilityEngine broad-scan false negative by adding bounded exact-slug fallback for active BTC/ETH 5m markets.",
+      "blocked_by": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001",
+      "allowed_scope": [
+        "polymarket/market_availability_engine.py",
+        "tests/polymarket/test_market_availability_engine.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md",
+        "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md",
+        "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md"
+      ],
+      "notes": "DONE. Added bounded exact-slug Gamma /events fallback when broad /markets scan finds no BTC/ETH 5m candidates. Diagnostics added: fallback_used, exact_slug_checked, exact_slug_match_count, availability_source. Tests passed: 42 focused, 957 acceptance. Direct diagnostic and 2-cycle paper smoke returned ACTIVE via exact_slug_fallback with zero run-id scoped live/order markers."
     }
   ]
 }

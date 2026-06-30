@@ -578,6 +578,10 @@
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md": [],
@@ -620,6 +624,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
+    "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": [],
@@ -728,7 +733,10 @@
     "docs/reports/CANDIDATE_LIFECYCLE_ANALYTICS_V1_COMMIT_REPORT_001.md": [],
     "docs/reports/CANDIDATE_LIFECYCLE_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/CANDIDATE_PIPELINE_NEXT_ACTIONS_001.md": [],
+    "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md": [],
     "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md": [],
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md": [],
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md": [],
     "docs/reports/CANONICAL_FIELD_COVERAGE_AUDIT_001.md": [],
     "docs/reports/CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001.md": [],
     "docs/reports/CANONICAL_TRADE_CONTEXT_V1_001.md": [],
@@ -752,6 +760,11 @@
     "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md": [],
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md": [],
@@ -812,10 +825,12 @@
     "docs/reports/LOOP_SYSTEM_SMOKE_TEST_001.md": [],
     "docs/reports/MAE_MFE_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/MAINTENANCE_HEALTH_ENGINE_DESIGN_001.md": [],
+    "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md": [],
     "docs/reports/MAIN_PY_DASHBOARD_RUN_ID_COMMIT_REPORT.md": [],
     "docs/reports/MANUAL_ALLOWANCE_APPROVAL_AND_VERIFY_001.md": [],
     "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md": [],
     "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md": [],
+    "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md": [],
     "docs/reports/MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001.md": [],
     "docs/reports/MARKET_STATE_CLASSIFIER_DESIGN_001.md": [],
     "docs/reports/MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001.md": [],
@@ -995,6 +1010,7 @@
     "docs/reports/SESSION_ANALYTICS_V1_COMMIT_REPORT_001.md": [],
     "docs/reports/SESSION_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/SESSION_GOVERNANCE_CLEANUP_001.md": [],
+    "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md": [],
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_BUILTIN_RECOVERY_ENABLE_001.md": [],
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_COMMIT_REPORT_001.md": [],
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_CONTROLLED_ENABLE_001.md": [],
@@ -1634,6 +1650,9 @@
     "logs/polytrade_bot_20260628_191322_18280.log.3": [],
     "logs/polytrade_bot_20260628_191322_18280.log.4": [],
     "logs/polytrade_bot_20260628_191322_18280.log.5": [],
+    "logs/polytrade_bot_20260630_101450_14888.log": [],
+    "logs/polytrade_bot_20260630_110048_43284.log": [],
+    "logs/polytrade_bot_20260630_110243_44448.log": [],
     "main.py": [],
     "memory/MEMORY.md": [],
     "memory/project_exit_convergence_replay.md": [],
@@ -5474,7 +5493,7 @@
       "polymarket/trader.py"
     ]
   },
-  "generated_at_utc": "2026-06-29T15:28:51.837288Z",
+  "generated_at_utc": "2026-06-30T04:05:38.692616Z",
   "migration_safety_summary": {
     ".claude/scheduled_tasks.lock": {
       "blast_radius_score": 0,
@@ -8944,6 +8963,30 @@
       "migration_safety_status": "DO_NOT_MOVE",
       "outbound_dependencies_count": 0
     },
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -9194,6 +9237,12 @@
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "DO_NOT_MOVE",
+      "outbound_dependencies_count": 0
+    },
+    "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": {
@@ -9844,7 +9893,25 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -9983,6 +10050,36 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -10348,6 +10445,12 @@
       "migration_safety_status": "SAFE_ATOMIC",
       "outbound_dependencies_count": 0
     },
+    "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
     "docs/reports/MAIN_PY_DASHBOARD_RUN_ID_COMMIT_REPORT.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
@@ -10367,6 +10470,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -11441,6 +11550,12 @@
       "outbound_dependencies_count": 0
     },
     "docs/reports/SESSION_GOVERNANCE_CLEANUP_001.md": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -15275,6 +15390,24 @@
       "outbound_dependencies_count": 0
     },
     "logs/polytrade_bot_20260628_191322_18280.log.5": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "logs/polytrade_bot_20260630_101450_14888.log": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "logs/polytrade_bot_20260630_110048_43284.log": {
+      "blast_radius_score": 0,
+      "inbound_dependencies_count": 0,
+      "migration_safety_status": "SAFE_ATOMIC",
+      "outbound_dependencies_count": 0
+    },
+    "logs/polytrade_bot_20260630_110243_44448.log": {
       "blast_radius_score": 0,
       "inbound_dependencies_count": 0,
       "migration_safety_status": "SAFE_ATOMIC",
@@ -19265,7 +19398,7 @@
       "outbound_dependencies_count": 0
     }
   },
-  "node_count": 2298,
+  "node_count": 2317,
   "nodes": [
     ".claude/scheduled_tasks.lock",
     ".claude/settings.local.json",
@@ -19845,6 +19978,10 @@
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md",
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md",
@@ -19887,6 +20024,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+    "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md",
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json",
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json",
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md",
@@ -19995,7 +20133,10 @@
     "docs/reports/CANDIDATE_LIFECYCLE_ANALYTICS_V1_COMMIT_REPORT_001.md",
     "docs/reports/CANDIDATE_LIFECYCLE_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md",
     "docs/reports/CANDIDATE_PIPELINE_NEXT_ACTIONS_001.md",
+    "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md",
     "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md",
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md",
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md",
     "docs/reports/CANONICAL_FIELD_COVERAGE_AUDIT_001.md",
     "docs/reports/CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001.md",
     "docs/reports/CANONICAL_TRADE_CONTEXT_V1_001.md",
@@ -20019,6 +20160,11 @@
     "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md",
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
     "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md",
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md",
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md",
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md",
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md",
@@ -20079,10 +20225,12 @@
     "docs/reports/LOOP_SYSTEM_SMOKE_TEST_001.md",
     "docs/reports/MAE_MFE_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md",
     "docs/reports/MAINTENANCE_HEALTH_ENGINE_DESIGN_001.md",
+    "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md",
     "docs/reports/MAIN_PY_DASHBOARD_RUN_ID_COMMIT_REPORT.md",
     "docs/reports/MANUAL_ALLOWANCE_APPROVAL_AND_VERIFY_001.md",
     "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md",
     "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
+    "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md",
     "docs/reports/MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001.md",
     "docs/reports/MARKET_STATE_CLASSIFIER_DESIGN_001.md",
     "docs/reports/MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001.md",
@@ -20262,6 +20410,7 @@
     "docs/reports/SESSION_ANALYTICS_V1_COMMIT_REPORT_001.md",
     "docs/reports/SESSION_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md",
     "docs/reports/SESSION_GOVERNANCE_CLEANUP_001.md",
+    "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md",
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_BUILTIN_RECOVERY_ENABLE_001.md",
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_COMMIT_REPORT_001.md",
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_CONTROLLED_ENABLE_001.md",
@@ -20901,6 +21050,9 @@
     "logs/polytrade_bot_20260628_191322_18280.log.3",
     "logs/polytrade_bot_20260628_191322_18280.log.4",
     "logs/polytrade_bot_20260628_191322_18280.log.5",
+    "logs/polytrade_bot_20260630_101450_14888.log",
+    "logs/polytrade_bot_20260630_110048_43284.log",
+    "logs/polytrade_bot_20260630_110243_44448.log",
     "main.py",
     "memory/MEMORY.md",
     "memory/project_exit_convergence_replay.md",
@@ -22166,6 +22318,10 @@
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md": [],
+    "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md": [],
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md": [],
@@ -22208,6 +22364,7 @@
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md": [],
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": [],
+    "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/RKG_PYTHON_TOOL_SMOKE_TEST_RETRY_OUTPUTS_001.json": [],
     "docs/operations/graph_queries/TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001.md": [],
@@ -22316,7 +22473,10 @@
     "docs/reports/CANDIDATE_LIFECYCLE_ANALYTICS_V1_COMMIT_REPORT_001.md": [],
     "docs/reports/CANDIDATE_LIFECYCLE_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/CANDIDATE_PIPELINE_NEXT_ACTIONS_001.md": [],
+    "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md": [],
     "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md": [],
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md": [],
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md": [],
     "docs/reports/CANONICAL_FIELD_COVERAGE_AUDIT_001.md": [],
     "docs/reports/CANONICAL_TRADE_CONTEXT_OFFLINE_BUILDER_001.md": [],
     "docs/reports/CANONICAL_TRADE_CONTEXT_V1_001.md": [],
@@ -22340,6 +22500,11 @@
     "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md": [],
     "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md": [],
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md": [],
     "docs/reports/DECISION_GATE_NEXT_ACTIONS_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_COMMIT_REPORT_001.md": [],
     "docs/reports/DECISION_LOG_SLIM_INDEX_FULL_BUILD_001.md": [],
@@ -22400,10 +22565,12 @@
     "docs/reports/LOOP_SYSTEM_SMOKE_TEST_001.md": [],
     "docs/reports/MAE_MFE_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/MAINTENANCE_HEALTH_ENGINE_DESIGN_001.md": [],
+    "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md": [],
     "docs/reports/MAIN_PY_DASHBOARD_RUN_ID_COMMIT_REPORT.md": [],
     "docs/reports/MANUAL_ALLOWANCE_APPROVAL_AND_VERIFY_001.md": [],
     "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md": [],
     "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md": [],
+    "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md": [],
     "docs/reports/MARKET_INTELLIGENCE_CONTRACTS_EXPANSION_001.md": [],
     "docs/reports/MARKET_STATE_CLASSIFIER_DESIGN_001.md": [],
     "docs/reports/MEMORY_OS_V2_BOOTSTRAP_INTEGRATION_001.md": [],
@@ -22583,6 +22750,7 @@
     "docs/reports/SESSION_ANALYTICS_V1_COMMIT_REPORT_001.md": [],
     "docs/reports/SESSION_ANALYTICS_V1_IMPLEMENTATION_REPORT_001.md": [],
     "docs/reports/SESSION_GOVERNANCE_CLEANUP_001.md": [],
+    "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md": [],
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_BUILTIN_RECOVERY_ENABLE_001.md": [],
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_COMMIT_REPORT_001.md": [],
     "docs/reports/SHADOW_TELEMETRY_PHASE_B_CONTROLLED_ENABLE_001.md": [],
@@ -23222,6 +23390,9 @@
     "logs/polytrade_bot_20260628_191322_18280.log.3": [],
     "logs/polytrade_bot_20260628_191322_18280.log.4": [],
     "logs/polytrade_bot_20260628_191322_18280.log.5": [],
+    "logs/polytrade_bot_20260630_101450_14888.log": [],
+    "logs/polytrade_bot_20260630_110048_43284.log": [],
+    "logs/polytrade_bot_20260630_110243_44448.log": [],
     "main.py": [],
     "memory/MEMORY.md": [],
     "memory/project_exit_convergence_replay.md": [],
@@ -24519,6 +24690,10 @@
     "docs/operations/execution_contracts/BATCH_3C_IMPLEMENTATION_CONTRACT_001.md",
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md",
+    "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/POSITION_TRACKER_PERSISTENCE_REFACTOR_001_CONTRACT_001.md",
     "docs/operations/execution_contracts/PROXY_WALLET_ALLOWANCE_SEMANTICS_FIX_001_CONTRACT_001.md",
@@ -27606,6 +27781,22 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/operations/execution_contracts/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/execution_contracts/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001_CONTRACT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/operations/execution_contracts/MICRO_LIVE_1USD_SUPERVISED_RUN_001_CONTRACT_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -27771,6 +27962,10 @@
       "unresolved_internal": []
     },
     "docs/operations/graph_queries/QUERY-20260629-TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -28206,7 +28401,19 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -28299,6 +28506,26 @@
       "unresolved_internal": []
     },
     "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -28542,6 +28769,10 @@
       "unresolved_external": [],
       "unresolved_internal": []
     },
+    "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
     "docs/reports/MAIN_PY_DASHBOARD_RUN_ID_COMMIT_REPORT.md": {
       "unresolved_external": [],
       "unresolved_internal": []
@@ -28555,6 +28786,10 @@
       "unresolved_internal": []
     },
     "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -29271,6 +29506,10 @@
       "unresolved_internal": []
     },
     "docs/reports/SESSION_GOVERNANCE_CLEANUP_001.md": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md": {
       "unresolved_external": [],
       "unresolved_internal": []
     },
@@ -31827,6 +32066,18 @@
       "unresolved_internal": []
     },
     "logs/polytrade_bot_20260628_191322_18280.log.5": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "logs/polytrade_bot_20260630_101450_14888.log": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "logs/polytrade_bot_20260630_110048_43284.log": {
+      "unresolved_external": [],
+      "unresolved_internal": []
+    },
+    "logs/polytrade_bot_20260630_110243_44448.log": {
       "unresolved_external": [],
       "unresolved_internal": []
     },

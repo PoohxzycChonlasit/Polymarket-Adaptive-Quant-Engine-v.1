@@ -54,7 +54,7 @@
       "5752825"
     ],
     "commit_messages": [
-      "feat: add BacktestEngineV2 \u0e42\u20ac\u201d offline replay over Canonical Context data"
+      "feat: add BacktestEngineV2 โ€” offline replay over Canonical Context data"
     ],
     "files_changed": 11,
     "net_lines": 1765,
@@ -109,13 +109,13 @@
       "date_range": "2026-06-26 to 2026-06-28"
     },
     "key_findings": [
-      "Only 14 HIGH-confidence rows with complete signal data \u0e42\u20ac\u201d sample too small for policy decisions",
+      "Only 14 HIGH-confidence rows with complete signal data โ€” sample too small for policy decisions",
       "334 grade D rows are test/settlement events (exit_reason=test), bankroll=None, ev=None",
-      "Grade D rows cannot be used for signal-based policy \u0e42\u20ac\u201d they lack ev/probability/lifecycle_phase",
+      "Grade D rows cannot be used for signal-based policy โ€” they lack ev/probability/lifecycle_phase",
       "The $153 total PnL from grade D rows is not a usable backtest signal",
       "EV vs PnL Pearson correlation on n=14 = -0.24 (no predictive signal detectable)",
-      "12/14 HIGH-confidence trades are stop_loss outcomes \u0e42\u20ac\u201d single adverse period, not policy signal",
-      "Size Sharp and Bankroll Rank both 0% populated \u0e42\u20ac\u201d cannot run those policy buckets yet",
+      "12/14 HIGH-confidence trades are stop_loss outcomes โ€” single adverse period, not policy signal",
+      "Size Sharp and Bankroll Rank both 0% populated โ€” cannot run those policy buckets yet",
       "Engine mechanics VERIFIED CORRECT: 51 unit tests, determinism confirmed, grade A filter works"
     ],
     "policy_readiness": "POLICY_NOT_READY_DATA_TOO_SMALL",
@@ -191,12 +191,12 @@
       "270d255"
     ],
     "key_findings": [
-      "size_sharp_at_entry: already wired via _size_sharp_metadata(model_context.get('size_sharp_result')) in _emit_trade_opened_event \u0e42\u20ac\u201d verified by unit test",
-      "bankroll_rank: NEW \u0e42\u20ac\u201d added _last_bankroll_rank/_last_bankroll_family to __init__, persist in _update_bankroll_state, emit in trade_open payload and close carry",
-      "capital_score: NEW in trade_open \u0e42\u20ac\u201d reads from bankroll_state.capital_score",
-      "Source guard: _last_bankroll_rank absent from all risk/sizing/execution paths \u0e42\u20ac\u201d confirmed by test",
-      "KNOWN ISSUE: log_bankroll_rank_evaluation fails because QuantEventLogger has no such method \u0e42\u20ac\u201d persistence of _last_bankroll_rank unaffected but the separate JSONL event is not written",
-      "Historical 0% coverage is unfixable (sessions predate this code) \u0e42\u20ac\u201d forward-only improvement"
+      "size_sharp_at_entry: already wired via _size_sharp_metadata(model_context.get('size_sharp_result')) in _emit_trade_opened_event โ€” verified by unit test",
+      "bankroll_rank: NEW โ€” added _last_bankroll_rank/_last_bankroll_family to __init__, persist in _update_bankroll_state, emit in trade_open payload and close carry",
+      "capital_score: NEW in trade_open โ€” reads from bankroll_state.capital_score",
+      "Source guard: _last_bankroll_rank absent from all risk/sizing/execution paths โ€” confirmed by test",
+      "KNOWN ISSUE: log_bankroll_rank_evaluation fails because QuantEventLogger has no such method โ€” persistence of _last_bankroll_rank unaffected but the separate JSONL event is not written",
+      "Historical 0% coverage is unfixable (sessions predate this code) โ€” forward-only improvement"
     ],
     "tests_run": "30 passed (test_telemetry_backfill.py + test_canonical_trade_context_builder.py)",
     "next_recommendation": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001"
@@ -213,10 +213,10 @@
     "evidence_grade": "B",
     "commits": [],
     "key_findings": [
-      "Bounded paper session ran 90s but BTC/ETH markets showed TRUE EMPTY (between 5-minute epochs) \u0e42\u20ac\u201d no trade_open events generated",
+      "Bounded paper session ran 90s but BTC/ETH markets showed TRUE EMPTY (between 5-minute epochs) โ€” no trade_open events generated",
       "30/30 unit tests confirm new field emission is correct",
       "Decision log created (258 events) but no bankroll_rank or size_sharp in decision events (size_sharp not evaluated without active orderbook)",
-      "log_bankroll_rank_evaluation JSONL event fails (missing method in QuantEventLogger) \u0e42\u20ac\u201d pre-existing issue, _last_bankroll_rank persistence unaffected",
+      "log_bankroll_rank_evaluation JSONL event fails (missing method in QuantEventLogger) โ€” pre-existing issue, _last_bankroll_rank persistence unaffected",
       "Forward-looking: new fields will appear in trade_open in next active trading session"
     ],
     "known_issues": [
@@ -259,8 +259,8 @@
     "commits": [],
     "key_findings": [
       "Zero active 5-minute BTC/ETH binary markets on Polymarket Gamma API at 05:21 UTC 2026-06-28",
-      "Sessions remain TRUE EMPTY \u0e42\u20ac\u201d not an epoch gap but a market schedule gap (no updown-5m markets today)",
-      "bankroll_rank_evaluation: 56 events written to research_log \u0e42\u20ac\u201d LOGGER FIX VERIFIED",
+      "Sessions remain TRUE EMPTY โ€” not an epoch gap but a market schedule gap (no updown-5m markets today)",
+      "bankroll_rank_evaluation: 56 events written to research_log โ€” LOGGER FIX VERIFIED",
       "bankroll_rank type mismatch found and fixed: evaluate()['bankroll_rank'] returns tier-string not float. _last_bankroll_rank now stores evaluate()['capital_score'] (float)",
       "36/36 tests pass including type fix",
       "Implementation unit-test verified. Runtime validation requires active market hours."
@@ -295,9 +295,9 @@
       "UNKNOWN": 30
     },
     "schema_decision": {
-      "bankroll_rank": "tier-string e.g. T0_MICRO_SEED \u0e42\u20ac\u201d must NOT silently become capital_score",
-      "capital_score": "float 0.0-1.0 \u0e42\u20ac\u201d the numeric quality rank",
-      "revert_required": "commit 5458885 changed _last_bankroll_rank to evaluation.get('capital_score') \u0e42\u20ac\u201d must be reverted in impl task",
+      "bankroll_rank": "tier-string e.g. T0_MICRO_SEED โ€” must NOT silently become capital_score",
+      "capital_score": "float 0.0-1.0 โ€” the numeric quality rank",
+      "revert_required": "commit 5458885 changed _last_bankroll_rank to evaluation.get('capital_score') โ€” must be reverted in impl task",
       "action": "add _last_capital_score float attribute; fix canonical builder to use string for bankroll_rank and float for capital_score"
     },
     "resource_savings_expected": "91% API call reduction in dead market windows; eliminates 54-min idle loops",
@@ -2298,7 +2298,7 @@
       "test_suite_passed": true,
       "tests_added": 26,
       "tests_total": 727,
-      "repair_note": "test_golden_lifecycle_phase_computed: epoch_start offset fixed from -50 to -20 (50s since open > 35s threshold \u2192 ACTIVE not OPENING_SCAN)"
+      "repair_note": "test_golden_lifecycle_phase_computed: epoch_start offset fixed from -50 to -20 (50s since open > 35s threshold → ACTIVE not OPENING_SCAN)"
     },
     "acceptance_criteria": {
       "git_preflight_done": true,
@@ -2962,11 +2962,11 @@
       "tier_1_functions": 9,
       "tier_3_functions": 1,
       "import_dependencies": "stdlib only (typing.Any)",
-      "naming_coherence": "PARTIAL \u2014 name accurate for 48% of LOC only",
+      "naming_coherence": "PARTIAL — name accurate for 48% of LOC only",
       "growth_since_creation": "91% (+320L in 3 phases)",
       "split_recommendation": "SPLIT",
-      "split_module_a": "trader_reconciliation_carry.py \u2014 6 Phase-3F carry helpers (~255L)",
-      "split_module_b": "trader_trade_event_payload.py \u2014 4 Phase-3H/3J/3K event builders (~345L)",
+      "split_module_a": "trader_reconciliation_carry.py — 6 Phase-3F carry helpers (~255L)",
+      "split_module_b": "trader_trade_event_payload.py — 4 Phase-3H/3J/3K event builders (~345L)",
       "schema_contract_recommendation": "ADD TypedDicts for TradeOpenedPayload, TradeClosedPayload, TradePositionMetadata",
       "golden_snapshot_recommendation": "ADD frozen JSON fixtures for build_trade_opened_payload and build_trade_closed_payload",
       "coverage_gaps": "No public-symbol gaps; _trade_open_context_value_available tested indirectly only; Phase-3F helpers have 1 test each (thin)"
@@ -3637,12 +3637,20 @@
       "event_classification": "signal_driven_trade",
       "evidence_quality": "grade_A_HIGH_join_3_source_streams",
       "position_id_present": "41 of 41",
-      "missing_low_fields": ["blockers"],
+      "missing_low_fields": [
+        "blockers"
+      ],
       "missing_low_note": "Empty list sentinel incorrectly flagged by canonical builder Bug 1; LOW classification correctly avoids blocking PASS_CONTEXT",
       "missing_info_count": 17,
       "missing_info_note": "All 17 are future telemetry not yet populated in any canonical row",
-      "probability_range": [0.5719, 0.7118],
-      "ev_after_spread_range": [0.0566, 0.2652],
+      "probability_range": [
+        0.5719,
+        0.7118
+      ],
+      "ev_after_spread_range": [
+        0.0566,
+        0.2652
+      ],
       "canonical_builder_bug_interaction": "Bug 1 and Bug 2 do not affect legitimacy of PASS_CONTEXT rows; severity policy correctly handles both",
       "batch_distribution_confirmed": {
         "PASS_CONTEXT": 41,
@@ -3701,7 +3709,14 @@
     },
     "fix_description": "Added _EMPTY_COLLECTION_SENTINEL_FIELDS = frozenset({'blockers', 'reason_codes'}) and updated missing-field detection to exclude these fields when empty. Schema-confirmed §3.B list fields only.",
     "data_flow_finding": "validate_trade_context reads stored row['missing_fields'] from JSONL; fix applies to future builder runs only — existing JSONL unchanged",
-    "excluded_pending": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs", "shadow_policy_reasons"],
+    "excluded_pending": [
+      "size_sharp_component_scores",
+      "size_sharp_penalties",
+      "size_sharp_boosts",
+      "size_sharp_hard_caps",
+      "size_sharp_missing_inputs",
+      "shadow_policy_reasons"
+    ],
     "exclusion_reason": "Not in §3.B schema doc; task spec says schema-confirmed only; INFO-severity so not urgent",
     "safety_verdict": "SAFE_OFFLINE_TOOLING",
     "next_recommendation": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
@@ -3728,8 +3743,16 @@
     "live_trading_enabled": false,
     "key_findings": {
       "fields_audited": 6,
-      "fields_approved": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs"],
-      "fields_deferred": ["shadow_policy_reasons"],
+      "fields_approved": [
+        "size_sharp_component_scores",
+        "size_sharp_penalties",
+        "size_sharp_boosts",
+        "size_sharp_hard_caps",
+        "size_sharp_missing_inputs"
+      ],
+      "fields_deferred": [
+        "shadow_policy_reasons"
+      ],
       "schema_source": "contracts.py SizeSharpMetadata TypedDict — all 5 approved fields typed as dict[str,object] or list[object]",
       "shadow_policy_contract_weakness": "shadow_policy_reasons typed as generic object (not list[str]) — schema confirmation insufficient for sentinel approval",
       "empirical_check": "1794 rows across 4 canonical JSONL files; all 5 SizeSharp collection fields 100% empty, 100% in missing_fields as INFO; shadow_policy_reasons ABSENT from all stored rows",
@@ -3775,8 +3798,16 @@
     "strategy_files_modified": false,
     "live_trading_enabled": false,
     "key_findings": {
-      "sentinel_fields_added": ["size_sharp_component_scores", "size_sharp_penalties", "size_sharp_boosts", "size_sharp_hard_caps", "size_sharp_missing_inputs"],
-      "excluded_intentionally": ["shadow_policy_reasons"],
+      "sentinel_fields_added": [
+        "size_sharp_component_scores",
+        "size_sharp_penalties",
+        "size_sharp_boosts",
+        "size_sharp_hard_caps",
+        "size_sharp_missing_inputs"
+      ],
+      "excluded_intentionally": [
+        "shadow_policy_reasons"
+      ],
       "exclusion_reason": "generic object type in contracts.py; severity-map gap in decision engine must be resolved first",
       "test_updated": "test_non_sentinel_empty_collection_still_flagged_as_missing now uses shadow_policy_reasons instead of size_sharp_component_scores (which is now a sentinel)",
       "test_added": "test_size_sharp_empty_collections_not_flagged_as_missing covers all 5 fields + regression for blockers/reason_codes + proves shadow_policy_reasons still flags",
@@ -3816,8 +3847,17 @@
     "strategy_files_modified": false,
     "live_trading_enabled": false,
     "key_findings": {
-      "fields_added_to_low": ["shadow_policy_decision", "shadow_policy_reasons"],
-      "fields_added_to_info": ["shadow_policy_observed_ev", "shadow_policy_observed_probability", "shadow_policy_observed_risk_mode", "shadow_policy_id", "shadow_policy_confidence"],
+      "fields_added_to_low": [
+        "shadow_policy_decision",
+        "shadow_policy_reasons"
+      ],
+      "fields_added_to_info": [
+        "shadow_policy_observed_ev",
+        "shadow_policy_observed_probability",
+        "shadow_policy_observed_risk_mode",
+        "shadow_policy_id",
+        "shadow_policy_confidence"
+      ],
       "severity_gap_closed": true,
       "unknown_field_fallback_no_longer_triggers": true,
       "shadow_policy_reasons_sentinel_exclusion_unchanged": true,
@@ -3957,5 +3997,70 @@
     },
     "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
     "next_recommendation": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001",
+    "task_class": 6,
+    "scope": [
+      "polymarket/market_availability_engine.py",
+      "tests/polymarket/test_market_availability_engine.py",
+      "docs/reports/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md",
+      "docs/operations/execution_contracts/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001_CONTRACT_001.md",
+      "docs/operations/repository/"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS_SAFE_RUNTIME_REPAIR",
+    "repairs": 1,
+    "repair_notes": "First paper-smoke wrapper completed the child runtime with return code 0 but wrapper output failed on Windows cp1252; reran with UTF-8-safe wrapper and it passed cleanly.",
+    "evidence_grade": "A+B+C+D",
+    "commits": [],
+    "files_changed": "pending_commit",
+    "runtime_files_modified": true,
+    "strategy_files_modified": false,
+    "risk_sizing_execution_modified": false,
+    "live_trading_enabled": false,
+    "paper_runtime_run": true,
+    "key_findings": {
+      "fix_applied": "bounded exact-slug fallback for current/next BTC/ETH 5m Gamma events when broad scan finds no candidates",
+      "diagnostics_added": [
+        "fallback_used",
+        "exact_slug_checked",
+        "exact_slug_match_count",
+        "availability_source"
+      ],
+      "focused_tests": "42 passed",
+      "acceptance_tests": "957 passed",
+      "direct_diagnostic": "ACTIVE via exact_slug_fallback, active_market_count=4",
+      "paper_smoke_run_id": "20260630T040247Z_44448_80399ee5",
+      "paper_smoke_cycles": 2,
+      "paper_smoke_market_availability_rows": 2,
+      "paper_smoke_selection_probes": 2,
+      "paper_smoke_selected_btc_eth": true,
+      "paper_smoke_live_order_markers": 0
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed": true,
+      "graph_query_done": true,
+      "execution_contract_done": true,
+      "red_tests_done": true,
+      "fallback_tests_passed": true,
+      "py_compile_passed": true,
+      "acceptance_tests_passed": true,
+      "direct_diagnostic_done": true,
+      "paper_smoke_done": true,
+      "airos_refreshed": true,
+      "report_written": true,
+      "ops_files_updated": true,
+      "strategy_risk_sizing_execution_unchanged": true
+    },
+    "safety_verdict": "SAFE_RUNTIME_REPAIR",
+    "next_recommendation": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001"
   }
 ]

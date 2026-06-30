@@ -1,7 +1,7 @@
 {
   "active_workflow": {
     "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
-    "active_task_id": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001"
+    "active_task_id": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001"
   },
   "git_state": {
     "branch_ahead": 0,
@@ -12,10 +12,10 @@
     "runtime_files": 54,
     "tests_count": 174,
     "tools_count": 103,
-    "total_files": 2302,
-    "total_lines": 632963,
-    "total_size_bytes": 13710606258
+    "total_files": 2317,
+    "total_lines": 550771,
+    "total_size_bytes": 13710284377
   },
   "status": "HEALTHY",
-  "timestamp_utc": "2026-06-29T15:29:34.034741Z"
+  "timestamp_utc": "2026-06-30T04:05:31.863544Z"
 }

@@ -138,6 +138,90 @@ class TestMarketAvailabilityStates:
         assert result.state == MarketAvailabilityState.MARKET_NOT_SCHEDULED
         assert result.next_check_seconds == 300
 
+    def test_exact_slug_fallback_active_when_broad_scan_empty(self):
+        engine = _engine()
+        exact_market = _market("btc-updown-5m-1782565800", bid=0.48, ask=0.52)
+        event_payload = [{"slug": "btc-updown-5m-1782565800", "markets": [exact_market]}]
+
+        def fake_get(url, params=None, timeout=None):
+            if params and "limit" in params:
+                return _mock_response([])
+            if params and params.get("slug") == "btc-updown-5m-1782565800":
+                return _mock_response(event_payload)
+            return _mock_response([])
+
+        with patch("polymarket.market_availability_engine.time.time", return_value=1782565800), \
+             patch("polymarket.market_availability_engine._requests.get", side_effect=fake_get) as mock_get:
+            result = engine.check()
+
+        assert result.state == MarketAvailabilityState.ACTIVE
+        assert result.active_market_count == 1
+        assert result.btc_market_count == 1
+        assert result.eth_market_count == 0
+        assert result.fallback_used is True
+        assert result.exact_slug_checked == [
+            "btc-updown-5m-1782565800",
+            "btc-updown-5m-1782566100",
+            "eth-updown-5m-1782565800",
+            "eth-updown-5m-1782566100",
+        ]
+        assert result.exact_slug_match_count == 1
+        assert result.availability_source == "exact_slug_fallback"
+        assert mock_get.call_count == 5
+
+    def test_exact_slug_fallback_empty_preserves_market_not_scheduled(self):
+        engine = _engine()
+
+        def fake_get(url, params=None, timeout=None):
+            return _mock_response([])
+
+        with patch("polymarket.market_availability_engine.time.time", return_value=1782565800), \
+             patch("polymarket.market_availability_engine._requests.get", side_effect=fake_get):
+            result = engine.check()
+
+        assert result.state == MarketAvailabilityState.MARKET_NOT_SCHEDULED
+        assert result.active_market_count == 0
+        assert result.fallback_used is True
+        assert result.exact_slug_checked == [
+            "btc-updown-5m-1782565800",
+            "btc-updown-5m-1782566100",
+            "eth-updown-5m-1782565800",
+            "eth-updown-5m-1782566100",
+        ]
+        assert result.exact_slug_match_count == 0
+        assert result.availability_source == "exact_slug_fallback"
+
+    def test_exact_slug_fallback_diagnostics_in_telemetry_payload(self):
+        result = MarketAvailabilityResult(
+            state=MarketAvailabilityState.ACTIVE,
+            fallback_used=True,
+            exact_slug_checked=["btc-updown-5m-1782565800"],
+            exact_slug_match_count=1,
+            availability_source="exact_slug_fallback",
+        )
+
+        payload = result.to_telemetry_payload()
+
+        assert payload["fallback_used"] is True
+        assert payload["exact_slug_checked"] == ["btc-updown-5m-1782565800"]
+        assert payload["exact_slug_match_count"] == 1
+        assert payload["availability_source"] == "exact_slug_fallback"
+
+    def test_existing_broad_scan_active_path_does_not_use_fallback(self):
+        engine = _engine()
+        markets = [_market("btc-updown-5m-1782565800", bid=0.48, ask=0.52)]
+
+        with patch("polymarket.market_availability_engine._requests.get",
+                   return_value=_mock_response(markets)) as mock_get:
+            result = engine.check()
+
+        assert result.state == MarketAvailabilityState.ACTIVE
+        assert result.fallback_used is False
+        assert result.exact_slug_checked == []
+        assert result.exact_slug_match_count == 0
+        assert result.availability_source == "broad_markets"
+        assert mock_get.call_count == 1
+
     def test_api_unavailable_request_exception(self):
         engine = _engine()
         with patch("polymarket.market_availability_engine._requests.get",

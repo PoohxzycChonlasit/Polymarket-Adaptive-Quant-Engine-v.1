@@ -25,7 +25,8 @@ except ImportError:
 
 LOGGER = logging.getLogger(__name__)
 
-_GAMMA_MARKETS_URL = "https://gamma-api.polymarket.com/markets"
+_GAMMA_BASE_URL = "https://gamma-api.polymarket.com"
+_GAMMA_MARKETS_URL = _GAMMA_BASE_URL
 
 _SLUG_PATTERNS: tuple[str, ...] = (
     "btc-updown-5m-",
@@ -57,6 +58,10 @@ class MarketAvailabilityResult:
     cache_hit: bool = False
     api_latency_ms: int = 0
     error: str | None = None
+    fallback_used: bool = False
+    exact_slug_checked: list[str] = field(default_factory=list)
+    exact_slug_match_count: int = 0
+    availability_source: str = "broad_markets"
 
     def is_active(self) -> bool:
         return self.state == MarketAvailabilityState.ACTIVE
@@ -76,6 +81,10 @@ class MarketAvailabilityResult:
             "cache_hit": self.cache_hit,
             "api_latency_ms": self.api_latency_ms,
             "error": self.error,
+            "fallback_used": self.fallback_used,
+            "exact_slug_checked": self.exact_slug_checked,
+            "exact_slug_match_count": self.exact_slug_match_count,
+            "availability_source": self.availability_source,
             "schema_version": _SCHEMA_VERSION,
         }
 
@@ -110,6 +119,7 @@ class MarketAvailabilityEngine:
         self._gamma_url = gamma_url or _GAMMA_MARKETS_URL
         if settings is not None:
             self._gamma_url = str(getattr(settings, "polymarket_gamma_url", _GAMMA_MARKETS_URL) or _GAMMA_MARKETS_URL)
+        self._gamma_base_url = self._normalize_gamma_base_url(self._gamma_url)
 
         self._slug_patterns = slug_patterns or _SLUG_PATTERNS
         self._cache_ttl = int(
@@ -163,6 +173,10 @@ class MarketAvailabilityEngine:
                 cache_hit=True,
                 api_latency_ms=self._cache.api_latency_ms,
                 error=self._cache.error,
+                fallback_used=self._cache.fallback_used,
+                exact_slug_checked=list(self._cache.exact_slug_checked),
+                exact_slug_match_count=self._cache.exact_slug_match_count,
+                availability_source=self._cache.availability_source,
             )
             return cached
 
@@ -192,7 +206,7 @@ class MarketAvailabilityEngine:
         t0 = time.monotonic()
         try:
             resp = _requests.get(
-                self._gamma_url + "/markets",
+                self._gamma_base_url + "/markets",
                 params={"limit": 50, "closed": False, "active": True},
                 timeout=self._request_timeout,
             )
@@ -210,11 +224,31 @@ class MarketAvailabilityEngine:
             return self._api_unavailable(str(exc), latency_ms)
 
         self._api_failure_count = 0
-        return self._classify(raw, latency_ms)
+        result = self._classify(raw, latency_ms)
+        if result.state == MarketAvailabilityState.MARKET_NOT_SCHEDULED:
+            exact_candidates, exact_slugs, exact_latency_ms = self._fetch_exact_slug_candidates(t0)
+            if exact_slugs:
+                return self._classify(
+                    exact_candidates,
+                    max(latency_ms, exact_latency_ms),
+                    fallback_used=True,
+                    exact_slug_checked=exact_slugs,
+                    exact_slug_match_count=len(exact_candidates),
+                    availability_source="exact_slug_fallback",
+                )
+        return result
 
     def _classify(
-        self, raw: Any, latency_ms: int
+        self,
+        raw: Any,
+        latency_ms: int,
+        *,
+        fallback_used: bool = False,
+        exact_slug_checked: list[str] | None = None,
+        exact_slug_match_count: int = 0,
+        availability_source: str = "broad_markets",
     ) -> MarketAvailabilityResult:
+        exact_slug_checked = exact_slug_checked or []
         if not isinstance(raw, list):
             raw = raw.get("data", []) if isinstance(raw, dict) else []
 
@@ -225,6 +259,10 @@ class MarketAvailabilityEngine:
                 state=MarketAvailabilityState.UNKNOWN,
                 next_check_seconds=30,
                 api_latency_ms=latency_ms,
+                fallback_used=fallback_used,
+                exact_slug_checked=exact_slug_checked,
+                exact_slug_match_count=exact_slug_match_count,
+                availability_source=availability_source,
                 error=f"classification error: {exc}",
             )
 
@@ -240,6 +278,10 @@ class MarketAvailabilityEngine:
                 matching_slugs=[],
                 next_check_seconds=self._not_scheduled_sleep,
                 api_latency_ms=latency_ms,
+                fallback_used=fallback_used,
+                exact_slug_checked=exact_slug_checked,
+                exact_slug_match_count=exact_slug_match_count,
+                availability_source=availability_source,
             )
 
         try:
@@ -256,6 +298,10 @@ class MarketAvailabilityEngine:
                 next_check_seconds=30,
                 api_latency_ms=latency_ms,
                 matching_slugs=matching_slugs,
+                fallback_used=fallback_used,
+                exact_slug_checked=exact_slug_checked,
+                exact_slug_match_count=exact_slug_match_count,
+                availability_source=availability_source,
                 error=f"tradable filter error: {exc}",
             )
 
@@ -277,6 +323,10 @@ class MarketAvailabilityEngine:
                 matching_slugs=matching_slugs,
                 next_check_seconds=self._cache_ttl,
                 api_latency_ms=latency_ms,
+                fallback_used=fallback_used,
+                exact_slug_checked=exact_slug_checked,
+                exact_slug_match_count=exact_slug_match_count,
+                availability_source=availability_source,
             )
 
         LOGGER.info(
@@ -291,7 +341,71 @@ class MarketAvailabilityEngine:
             matching_slugs=matching_slugs,
             next_check_seconds=self._between_epochs_sleep,
             api_latency_ms=latency_ms,
+            fallback_used=fallback_used,
+            exact_slug_checked=exact_slug_checked,
+            exact_slug_match_count=exact_slug_match_count,
+            availability_source=availability_source,
         )
+
+    def _fetch_exact_slug_candidates(self, started_at_monotonic: float) -> tuple[list[dict[str, Any]], list[str], int]:
+        """Bounded fallback for exact current/next BTC/ETH 5-minute event slugs."""
+        now_ts = int(time.time())
+        current_epoch = now_ts - (now_ts % 300)
+        slugs = [
+            f"{asset}-updown-5m-{current_epoch + offset}"
+            for asset in ("btc", "eth")
+            for offset in (0, 300)
+        ]
+        candidates: list[dict[str, Any]] = []
+
+        for slug in slugs:
+            try:
+                resp = _requests.get(
+                    self._gamma_base_url + "/events",
+                    params={"slug": slug},
+                    timeout=self._request_timeout,
+                )
+                if resp.status_code != 200:
+                    LOGGER.debug("[MAE] exact slug fallback HTTP %s for %s", resp.status_code, slug)
+                    continue
+                payload = resp.json()
+            except Exception as exc:
+                LOGGER.debug("[MAE] exact slug fallback failed for %s: %s", slug, exc)
+                continue
+
+            candidates.extend(self._markets_from_event_payload(payload))
+
+        latency_ms = int((time.monotonic() - started_at_monotonic) * 1000)
+        if candidates:
+            LOGGER.info(
+                "[MAE] exact slug fallback found %d BTC/ETH 5m candidate(s): %s",
+                len(candidates),
+                [str(m.get("slug", "")) for m in candidates],
+            )
+        else:
+            LOGGER.info("[MAE] exact slug fallback found no BTC/ETH 5m candidates")
+        return candidates, slugs, latency_ms
+
+    def _markets_from_event_payload(self, payload: Any) -> list[dict[str, Any]]:
+        events = payload if isinstance(payload, list) else [payload]
+        markets: list[dict[str, Any]] = []
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            event_slug = str(event.get("slug") or "")
+            event_markets = event.get("markets") or []
+            if isinstance(event_markets, dict):
+                event_markets = [event_markets]
+            if not isinstance(event_markets, list):
+                continue
+            for market in event_markets:
+                if not isinstance(market, dict):
+                    continue
+                market_copy = dict(market)
+                if not market_copy.get("slug") and event_slug:
+                    market_copy["slug"] = event_slug
+                markets.append(market_copy)
+        return markets
 
     def _api_unavailable(self, error: str, latency_ms: int) -> MarketAvailabilityResult:
         self._api_failure_count += 1
@@ -311,6 +425,15 @@ class MarketAvailabilityEngine:
     def _is_5m_binary(self, market: dict[str, Any]) -> bool:
         slug = str(market.get("slug") or "").lower()
         return any(pat in slug for pat in self._slug_patterns)
+
+    @staticmethod
+    def _normalize_gamma_base_url(url: str) -> str:
+        clean = str(url or _GAMMA_BASE_URL).rstrip("/")
+        if clean.endswith("/markets"):
+            clean = clean[:-len("/markets")]
+        if clean.endswith("/events"):
+            clean = clean[:-len("/events")]
+        return clean or _GAMMA_BASE_URL
 
     @staticmethod
     def _symbol_from_slug(slug: str) -> str:
