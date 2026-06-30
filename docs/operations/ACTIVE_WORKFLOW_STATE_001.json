@@ -1,855 +1,931 @@
 {
-    "$schema": "active_workflow_state_v1",
-    "last_updated": "2026-06-30",
-    "current_phase": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete; bankroll_family AttributeError fixed (trader.py:8321); position_id now populated after fills; trade_open/cash-deduction still broken (downstream issue); next task: diagnose trade_open + VirtualPTB cash deduction",
-    "last_completed_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001",
-    "last_commit": "50d8589c",
-    "last_commit_message": "docs: verify paper fill path",
-    "next_task": "TRADE_OPEN_CASH_DEDUCTION_REPAIR_001",
-    "navigator_state": {
-        "module_registry": "docs/operations/repository/module_registry.json",
-        "symbol_index": "docs/operations/repository/symbol_index.json",
-        "navigation": "docs/operations/repository/navigation.json",
-        "safe_move_candidates": 14,
-        "trader_method_groups": 16,
-        "high_risk_groups": [
-            "execution",
-            "risk",
-            "sizing",
-            "reconciliation",
-            "balance"
-        ],
-        "safe_first_extraction_groups": [
-            "observability",
-            "telemetry",
-            "path_truth",
-            "orderbook_lineage",
-            "decision_diag",
-            "paper",
-            "dashboard"
-        ]
-    },
-    "decomposition_state": {
-        "trader_py_lines": 11863,
-        "trader_py_methods": 293,
-        "phases_completed": 5,
-        "phases_planned": 9,
-        "already_extracted": [
-            "shadow_policy.py",
-            "market_availability_engine.py",
-            "bankroll_rank_engine.py",
-            "size_sharp_engine.py",
-            "polymarket/observability/trader_lifecycle_observability.py",
-            "polymarket/observability/trader_decision_diagnostics.py",
-            "polymarket/observability/trader_orderbook_lineage.py",
-            "polymarket/observability/trader_orderbook_details.py",
-            "polymarket/observability/trader_path_truth.py",
-            "polymarket/observability/trader_phase2_observability.py",
-            "polymarket/observability/trader_lifecycle_payload.py",
-            "polymarket/observability/trader_reconciliation_carry.py",
-            "polymarket/observability/trader_trade_event_payload.py",
-            "polymarket/observability/market_availability.py"
-        ],
-        "target_trader_py_lines_after_phase8": 5000
-    },
-    "policy_candidate": {
-        "min_ev": 0.12,
-        "min_probability": 0.65,
-        "risk_mode_allowlist": [
-            "NORMAL"
-        ],
-        "n": 122,
-        "sharpe": 0.0605,
-        "total_pnl": 0.1256,
-        "profit_factor": 1.178,
-        "confidence": "HIGH",
-        "statistical_significance": "NOT_SIGNIFICANT_AT_95PCT",
-        "note": "Edge candidate confirmed but needs 2000+ trades for statistical significance"
-    },
-    "next_workflow_tier": "LOOP",
-    "working_tree_expected": "clean",
-    "github_status": "CURRENT",
-    "resource_governance": "ACTIVE - see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
-    "repo_health_check": "ACTIVE - see docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
-    "batch_3c_started": true,
-    "blocked": false,
-    "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
-    "refactor_state": {
-        "trader_py_lines": 10744,
-        "completed_batches": [
-            "Batch-1",
-            "Batch-2A",
-            "Batch-3A",
-            "Batch-3B-1",
-            "Batch-3B-2",
-            "Batch-3B-dedup",
-            "Batch-3C-observability",
-            "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
-            "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
-            "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
-            "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
-            "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRA_001",
-            "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
-            "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
-            "TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001",
-            "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
-            "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
-            "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
-            "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
-            "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
-            "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
-            "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
-            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
-            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
-            "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
-            "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
-            "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
-            "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001",
-            "PAPER_FILL_PATH_VERIFICATION_001",
-            "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
-        ],
-        "next_batch": "TBD",
-        "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
-        "last_runtime_refactor_commit": "HEAD"
-    },
-    "workflow_governance": {
-        "loop_engineering_enabled": true,
-        "loop_memory_operational": true,
-        "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
-        "loop_memory_policy": "append_only_to_active",
-        "last_loop_memory_rollover_utc": "2026-06-28T08:28:41Z",
-        "awe_design_committed": true,
-        "awe_implemented": false,
-        "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
-    },
-    "recommended_first_reads": [
-        "docs/operations/AI_REPO_BOOTSTRAP_001.md",
-        "PROJECT_RULES.md",
-        "MASTER_AGENT_ROUTER.md",
-        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
-        "docs/operations/TASK_QUEUE_001.json",
-        "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+  "$schema": "active_workflow_state_v1",
+  "last_updated": "2026-06-30",
+  "current_phase": "PAPER_RUNTIME_STATE_RESET_FOR_VALIDATION_001 complete; synthetic c0ad7970 paper state neutralized; risk mode diagnostic NORMAL; next task: fresh post-fill trade_open validation",
+  "last_completed_task": "PAPER_RUNTIME_STATE_RESET_FOR_VALIDATION_001",
+  "last_commit": "50d8589c",
+  "last_commit_message": "docs: verify paper fill path",
+  "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001",
+  "navigator_state": {
+    "module_registry": "docs/operations/repository/module_registry.json",
+    "symbol_index": "docs/operations/repository/symbol_index.json",
+    "navigation": "docs/operations/repository/navigation.json",
+    "safe_move_candidates": 14,
+    "trader_method_groups": 16,
+    "high_risk_groups": [
+      "execution",
+      "risk",
+      "sizing",
+      "reconciliation",
+      "balance"
     ],
-    "loop_runtime_engine": {
-        "version": "v1",
-        "spec": "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
-        "schema_ref": "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
-        "status": "specification_only"
+    "safe_first_extraction_groups": [
+      "observability",
+      "telemetry",
+      "path_truth",
+      "orderbook_lineage",
+      "decision_diag",
+      "paper",
+      "dashboard"
+    ]
+  },
+  "decomposition_state": {
+    "trader_py_lines": 11863,
+    "trader_py_methods": 293,
+    "phases_completed": 5,
+    "phases_planned": 9,
+    "already_extracted": [
+      "shadow_policy.py",
+      "market_availability_engine.py",
+      "bankroll_rank_engine.py",
+      "size_sharp_engine.py",
+      "polymarket/observability/trader_lifecycle_observability.py",
+      "polymarket/observability/trader_decision_diagnostics.py",
+      "polymarket/observability/trader_orderbook_lineage.py",
+      "polymarket/observability/trader_orderbook_details.py",
+      "polymarket/observability/trader_path_truth.py",
+      "polymarket/observability/trader_phase2_observability.py",
+      "polymarket/observability/trader_lifecycle_payload.py",
+      "polymarket/observability/trader_reconciliation_carry.py",
+      "polymarket/observability/trader_trade_event_payload.py",
+      "polymarket/observability/market_availability.py"
+    ],
+    "target_trader_py_lines_after_phase8": 5000
+  },
+  "policy_candidate": {
+    "min_ev": 0.12,
+    "min_probability": 0.65,
+    "risk_mode_allowlist": [
+      "NORMAL"
+    ],
+    "n": 122,
+    "sharpe": 0.0605,
+    "total_pnl": 0.1256,
+    "profit_factor": 1.178,
+    "confidence": "HIGH",
+    "statistical_significance": "NOT_SIGNIFICANT_AT_95PCT",
+    "note": "Edge candidate confirmed but needs 2000+ trades for statistical significance"
+  },
+  "next_workflow_tier": "LOOP",
+  "working_tree_expected": "clean",
+  "github_status": "CURRENT_AFTER_COMMIT_AND_PUSH",
+  "resource_governance": "ACTIVE - see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
+  "repo_health_check": "ACTIVE - see docs/operations/REPOSITORY_HEALTH_CHECK_001.md",
+  "batch_3c_started": true,
+  "blocked": false,
+  "active_question_status": "OPEN: LOW_PRICE_TRUTH_RESOLUTION_001; strategy/sizer/execution changes remain blocked, design-only Size Sharp may proceed",
+  "refactor_state": {
+    "trader_py_lines": 10744,
+    "completed_batches": [
+      "Batch-1",
+      "Batch-2A",
+      "Batch-3A",
+      "Batch-3B-1",
+      "Batch-3B-2",
+      "Batch-3B-dedup",
+      "Batch-3C-observability",
+      "TRADER_PHASE1_PURE_OBSERVABILITY_EXTRACTION_001",
+      "TRADER_PHASE2_DECISION_DIAGNOSTICS_EXTRACTION_001",
+      "TRADER_PHASE3A_ORDERBOOK_LINEAGE_OBSERVABILITY_EXTRACTION_001",
+      "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
+      "TRADER_PHASE3C_PATH_TRUTH_OBSERVABILITY_EXTRA_001",
+      "TRADER_PHASE3D_OBSERVABILITY_PRESENTATION_EXTRACTION_001",
+      "TRADER_PHASE3E_LIFECYCLE_PAYLOAD_EXTRACTION_001",
+      "TRADER_POST_PHASE3E_ARCHITECTURE_HEATMAP_AND_HYGIENE_001",
+      "TRADER_PHASE3F_RECONCILIATION_OBSERVABILITY_EXTRA_001",
+      "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001",
+      "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001",
+      "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001",
+      "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001",
+      "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001",
+      "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
+      "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
+      "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+      "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+      "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
+      "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
+      "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001",
+      "PAPER_FILL_PATH_VERIFICATION_001",
+      "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
+    ],
+    "next_batch": "TBD",
+    "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
+    "last_runtime_refactor_commit": "HEAD"
+  },
+  "workflow_governance": {
+    "loop_engineering_enabled": true,
+    "loop_memory_operational": true,
+    "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+    "loop_memory_policy": "append_only_to_active",
+    "last_loop_memory_rollover_utc": "2026-06-28T08:28:41Z",
+    "awe_design_committed": true,
+    "awe_implemented": false,
+    "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
+  },
+  "recommended_first_reads": [
+    "docs/operations/AI_REPO_BOOTSTRAP_001.md",
+    "PROJECT_RULES.md",
+    "MASTER_AGENT_ROUTER.md",
+    "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+    "docs/operations/TASK_QUEUE_001.json",
+    "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+  ],
+  "loop_runtime_engine": {
+    "version": "v1",
+    "spec": "docs/architecture/LOOP_RUNTIME_ENGINE_V1.md",
+    "schema_ref": "docs/operations/LOOP_RUNTIME_STATE_SCHEMA_001.md",
+    "status": "specification_only"
+  },
+  "quant_truth_engine_audit": {
+    "status": "COMPLETE",
+    "data_readiness": "PARTIAL",
+    "trade_open_count": 797,
+    "real_close_count": 1469,
+    "paper_win_rate": 0.629,
+    "gross_pnl": 347.43,
+    "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
+    "next_task": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
+    "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
+  },
+  "canonical_trade_context": {
+    "status": "LINEAGE_AUDITED",
+    "spec_doc": "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
+    "report_doc": "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
+    "compiler_script": "tools/canonical_trade_context_builder.py",
+    "test_suite": "tests/test_canonical_trade_context_builder.py"
+  },
+  "trade_event_payload_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md",
+    "methods_audited": [
+      "_emit_trade_opened_event",
+      "_emit_trade_closed_event"
+    ],
+    "recommendation": "PROCEED_WITH_CLOSED_EVENT_ONLY",
+    "open_payload_readiness_score": 57,
+    "closed_payload_readiness_score": 72,
+    "next_task": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001"
+  },
+  "trade_closed_payload_extraction": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
+    "helper": "polymarket.observability.trader_reconciliation_payload.build_trade_closed_payload",
+    "methods_extracted": [
+      "build_trade_closed_payload"
+    ],
+    "methods_unchanged": [
+      "_emit_trade_opened_event",
+      "_emit_quant_event"
+    ],
+    "tests": {
+      "focused": "12 passed",
+      "acceptance": "845 passed"
     },
-    "quant_truth_engine_audit": {
-        "status": "COMPLETE",
-        "data_readiness": "PARTIAL",
-        "trade_open_count": 797,
-        "real_close_count": 1469,
-        "paper_win_rate": 0.629,
-        "gross_pnl": 347.43,
-        "critical_gap": "trade_close missing: ev, fair_value, true_probability, bankroll_tier, risk_mode",
-        "next_task": "TRADER_PHASE3B_ORDERBOOK_DETAILS_OBSERVABILITY_EXTRACTION_001",
-        "audit_doc": "docs/audits/QUANT_TRUTH_ENGINE_AUDIT_001.md"
+    "next_task": "TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001"
+  },
+  "trade_open_payload_context_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md",
+    "method_audited": "_emit_trade_opened_event",
+    "recommendation": "PROCEED_WITH_CONTEXT_COLLECTOR_FIRST",
+    "collect_context_readiness_score": 66,
+    "payload_builder_readiness_score": 57,
+    "combined_extraction_readiness_score": 49,
+    "next_task": "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001"
+  },
+  "trade_open_context_collector_extraction": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
+    "helper": "polymarket.observability.trader_reconciliation_payload.collect_trade_open_context",
+    "methods_extracted": [
+      "collect_trade_open_context"
+    ],
+    "methods_unchanged": [
+      "_emit_quant_event",
+      "_emit_trade_closed_event"
+    ],
+    "payload_assembly_retained_in_trader": true,
+    "event_emission_boundary_retained": true,
+    "tests": {
+      "focused": "4 passed",
+      "acceptance": "849 passed"
     },
-    "canonical_trade_context": {
-        "status": "LINEAGE_AUDITED",
-        "spec_doc": "docs/architecture/CANONICAL_TRADE_CONTEXT_V1_001.md",
-        "report_doc": "docs/reports/TRADE_CONTEXT_LINEAGE_AUDIT_001.md",
-        "compiler_script": "tools/canonical_trade_context_builder.py",
-        "test_suite": "tests/test_canonical_trade_context_builder.py"
+    "next_task": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001"
+  },
+  "trade_open_payload_builder_extraction": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
+    "helper": "polymarket.observability.trader_reconciliation_payload.build_trade_opened_payload",
+    "methods_extracted": [
+      "build_trade_opened_payload"
+    ],
+    "methods_unchanged": [
+      "_emit_quant_event",
+      "_emit_trade_closed_event",
+      "_phase2_observability_payload",
+      "collect_trade_open_context"
+    ],
+    "payload_assembly_extracted": true,
+    "event_emission_boundary_retained": true,
+    "tests": {
+      "focused": "6 passed",
+      "acceptance": "851 passed"
     },
-    "trade_event_payload_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3G_TRADE_EVENT_PAYLOAD_AUDIT_001.md",
-        "methods_audited": [
-            "_emit_trade_opened_event",
-            "_emit_trade_closed_event"
-        ],
-        "recommendation": "PROCEED_WITH_CLOSED_EVENT_ONLY",
-        "open_payload_readiness_score": 57,
-        "closed_payload_readiness_score": 72,
-        "next_task": "TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001"
+    "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
+  },
+  "main_paper_runtime_smoke_verification": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md",
+    "runtime_command": ".\\.venv\\Scripts\\python.exe main.py --mode paper --interval 60",
+    "bounded_runtime_seconds": 90,
+    "return_code": 0,
+    "cycles_completed": 2,
+    "startup_status": "PASS",
+    "decision_loop_reached": true,
+    "market_data_status": "DEGRADED_TRUE_EMPTY",
+    "paper_trade_path_reached": false,
+    "live_order_submission_markers": 0,
+    "runtime_owner_leftover": false,
+    "tests": {
+      "runtime_compile": "PASS with root main.py; task-specified polymarket/main.py path missing",
+      "observability_compile": "PASS",
+      "targeted_pytest": "987 passed"
     },
-    "trade_closed_payload_extraction": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3H_TRADE_CLOSED_PAYLOAD_EXTRACTION_001.md",
-        "helper": "polymarket.observability.trader_reconciliation_payload.build_trade_closed_payload",
-        "methods_extracted": [
-            "build_trade_closed_payload"
-        ],
-        "methods_unchanged": [
-            "_emit_trade_opened_event",
-            "_emit_quant_event"
-        ],
-        "tests": {
-            "focused": "12 passed",
-            "acceptance": "845 passed"
-        },
-        "next_task": "TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001"
+    "safety_verdict": "PASS_WITH_MARKET_DATA_DEGRADED",
+    "next_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise continue replay/backtest or sizing-readiness validation"
+  },
+  "market_data_orderbook_true_empty_runtime_diagnostic": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md",
+    "root_cause_classification": "AVAILABILITY_FALSE_NEGATIVE",
+    "secondary_classification": "STALE_MARKET / MARKET_CLOSED_OR_ROTATED",
+    "markets_inspected": [
+      "btc-updown-5m-1782789000",
+      "btc-updown-5m-1782789300",
+      "btc-updown-5m-1782789600",
+      "eth-updown-5m-1782789000",
+      "eth-updown-5m-1782789300",
+      "eth-updown-5m-1782789600"
+    ],
+    "orderbook_fetch_status": {
+      "smoke_current_btc": "NONZERO_BOOK then stale/empty after expiry",
+      "smoke_current_eth": "empty/cooldown/stale near expiry",
+      "smoke_preloaded_next": "WARMED for BTC/ETH",
+      "diagnostic_current_direct_fetch": "ACTIVE_NONZERO_BOOK",
+      "diagnostic_mae_check": "MARKET_NOT_SCHEDULED false negative"
     },
-    "trade_open_payload_context_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3I_TRADE_OPEN_PAYLOAD_CONTEXT_AUDIT_001.md",
-        "method_audited": "_emit_trade_opened_event",
-        "recommendation": "PROCEED_WITH_CONTEXT_COLLECTOR_FIRST",
-        "collect_context_readiness_score": 66,
-        "payload_builder_readiness_score": 57,
-        "combined_extraction_readiness_score": 49,
-        "next_task": "TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001"
+    "empty_orderbook_reason": "MAE broad Gamma /markets limit=50 query missed exact BTC/ETH 5m markets; old epoch tokens then produced empty/cooldown/stale orderbook failures after rollover",
+    "runtime_changed": false,
+    "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
+    "next_task": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001"
+  },
+  "airos_hygiene_cleanup": {
+    "status": "COMPLETE",
+    "files_removed": [
+      "tools/airos/repo_health.json",
+      "tools/airos/repository_index.json",
+      "tools/airos/test_registry.json",
+      "tools/airos/tool_registry.json"
+    ],
+    "classification": "stale_duplicate_generated_outputs_in_wrong_directory",
+    "unique_data_preserved": false,
+    "commit_required": false
+  },
+  "notes": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete. Fixed trader.py:8321: self.bankroll_family → self._last_bankroll_family (1-line fix). bankroll_family AttributeError eliminated (0 errors vs 3/session before). position_id now populated in fill receipts (f6d2a324 confirmed). 958 focused tests pass. 22 paper fills in validation run, 0 errors. Remaining downstream issues: trade_open event not emitting, paper_virtual_cash not deducting, current_exposure stays 0 — these are separate bugs in the post-position-open path. 29 pre-existing test failures unchanged (missing files, unrelated to fix). Next: TRADE_OPEN_CASH_DEDUCTION_REPAIR_001.",
+  "market_availability_engine_observability": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
+    "module_created": "polymarket/observability/market_availability.py",
+    "typedicts_defined": [
+      "AvailabilityReason",
+      "AvailabilityScore",
+      "AvailabilitySnapshot",
+      "AvailabilitySummary",
+      "AvailabilityHealth",
+      "AvailabilityDiagnostics"
+    ],
+    "reason_codes": [
+      "MARKET_CLOSED",
+      "STALE_FEED",
+      "EMPTY_ORDERBOOK",
+      "LOW_LIQUIDITY",
+      "HIGH_SPREAD",
+      "TOKEN_NOT_FOUND",
+      "CLIENT_ERROR",
+      "ORDERBOOK_NOT_READY",
+      "UNKNOWN"
+    ],
+    "builders": [
+      "evaluate_market_availability",
+      "summarize_market_availability",
+      "build_availability_health",
+      "build_market_availability_payload"
+    ],
+    "schema_version": "market_availability_obs_v1",
+    "new_tests": 62,
+    "golden_snapshot_tests": [
+      "test_golden_snapshot_exact_match (evaluate_market_availability)",
+      "test_golden_snapshot_exact_match (build_market_availability_payload)"
+    ],
+    "tests": {
+      "focused": "62 passed",
+      "acceptance": "953 passed"
     },
-    "trade_open_context_collector_extraction": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3J_TRADE_OPEN_CONTEXT_COLLECTOR_EXTRACTION_001.md",
-        "helper": "polymarket.observability.trader_reconciliation_payload.collect_trade_open_context",
-        "methods_extracted": [
-            "collect_trade_open_context"
-        ],
-        "methods_unchanged": [
-            "_emit_quant_event",
-            "_emit_trade_closed_event"
-        ],
-        "payload_assembly_retained_in_trader": true,
-        "event_emission_boundary_retained": true,
-        "tests": {
-            "focused": "4 passed",
-            "acceptance": "849 passed"
-        },
-        "next_task": "TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001"
+    "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+  },
+  "trade_event_payload_schema_contracts": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md",
+    "contracts_module": "polymarket/observability/contracts.py",
+    "typedicts_defined": [
+      "EntryModelTruthEnvelope",
+      "EntryModelTruthEnvelopeWrapper",
+      "SizeSharpMetadata",
+      "SizeSharpCloseCarry",
+      "CarryMetadata",
+      "TradeOpenContext",
+      "TradePositionMetadata",
+      "TradeOpenedPayload",
+      "TradeClosedPayload"
+    ],
+    "carry_annotations_updated": 5,
+    "event_payload_annotations_updated": 3,
+    "new_tests": 37,
+    "golden_snapshot_tests": [
+      "test_golden_snapshot_exact_match (TradeOpenedPayload)",
+      "test_golden_snapshot_exact_match (TradeClosedPayload)"
+    ],
+    "tests": {
+      "focused": "37 passed",
+      "acceptance": "891 passed"
     },
-    "trade_open_payload_builder_extraction": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3K_TRADE_OPEN_PAYLOAD_BUILDER_EXTRACTION_001.md",
-        "helper": "polymarket.observability.trader_reconciliation_payload.build_trade_opened_payload",
-        "methods_extracted": [
-            "build_trade_opened_payload"
-        ],
-        "methods_unchanged": [
-            "_emit_quant_event",
-            "_emit_trade_closed_event",
-            "_phase2_observability_payload",
-            "collect_trade_open_context"
-        ],
-        "payload_assembly_extracted": true,
-        "event_emission_boundary_retained": true,
-        "tests": {
-            "focused": "6 passed",
-            "acceptance": "851 passed"
-        },
-        "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
+    "next_task": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
+  },
+  "trade_event_payload_split": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md",
+    "modules_created": [
+      "polymarket/observability/trader_reconciliation_carry.py (282 LOC, 6 carry helpers)",
+      "polymarket/observability/trader_trade_event_payload.py (271 LOC, 4 event builders)"
+    ],
+    "shim_retained": "polymarket/observability/trader_reconciliation_payload.py (34 LOC, re-exports only)",
+    "trader_py_imports_updated": true,
+    "tests": {
+      "acceptance": "854 passed",
+      "new_tests": "3 shim compatibility tests"
     },
-    "main_paper_runtime_smoke_verification": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md",
-        "runtime_command": ".\\.venv\\Scripts\\python.exe main.py --mode paper --interval 60",
-        "bounded_runtime_seconds": 90,
-        "return_code": 0,
-        "cycles_completed": 2,
-        "startup_status": "PASS",
-        "decision_loop_reached": true,
-        "market_data_status": "DEGRADED_TRUE_EMPTY",
-        "paper_trade_path_reached": false,
-        "live_order_submission_markers": 0,
-        "runtime_owner_leftover": false,
-        "tests": {
-            "runtime_compile": "PASS with root main.py; task-specified polymarket/main.py path missing",
-            "observability_compile": "PASS",
-            "targeted_pytest": "987 passed"
-        },
-        "safety_verdict": "PASS_WITH_MARKET_DATA_DEGRADED",
-        "next_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise continue replay/backtest or sizing-readiness validation"
+    "next_task": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001"
+  },
+  "trade_event_payload_helper_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md",
+    "module_audited": "polymarket/observability/trader_reconciliation_payload.py",
+    "helpers_inventoried": 10,
+    "responsibility_domains": 6,
+    "module_cohesion_score": "LOW-MEDIUM (3/5)",
+    "module_loc": 669,
+    "tests_covering_module": 18,
+    "split_recommendation": "SPLIT",
+    "split_module_a": "trader_reconciliation_carry.py (retain existing name, 6 Phase-3F carry helpers, ~255L)",
+    "split_module_b": "trader_trade_event_payload.py (new, 4 Phase-3H/3J/3K event builders, ~345L)",
+    "schema_contract_recommendation": "ADD TypedDicts for TradeOpenedPayload, TradeClosedPayload, TradePositionMetadata",
+    "golden_snapshot_recommendation": "ADD frozen JSON fixtures for build_trade_opened_payload and build_trade_closed_payload",
+    "next_task": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001"
+  },
+  "canonical_context_data_quality_repair": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md",
+    "fields_repaired": [
+      "true_probability",
+      "fair_value",
+      "ev",
+      "ev_after_spread",
+      "bankroll_tier_id"
+    ],
+    "grade_check_fixed": "entry_price replaced with intended_price",
+    "new_tests": 2,
+    "tests": {
+      "focused": "22 passed",
+      "acceptance": "814 passed"
     },
-    "market_data_orderbook_true_empty_runtime_diagnostic": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001.md",
-        "root_cause_classification": "AVAILABILITY_FALSE_NEGATIVE",
-        "secondary_classification": "STALE_MARKET / MARKET_CLOSED_OR_ROTATED",
-        "markets_inspected": [
-            "btc-updown-5m-1782789000",
-            "btc-updown-5m-1782789300",
-            "btc-updown-5m-1782789600",
-            "eth-updown-5m-1782789000",
-            "eth-updown-5m-1782789300",
-            "eth-updown-5m-1782789600"
-        ],
-        "orderbook_fetch_status": {
-            "smoke_current_btc": "NONZERO_BOOK then stale/empty after expiry",
-            "smoke_current_eth": "empty/cooldown/stale near expiry",
-            "smoke_preloaded_next": "WARMED for BTC/ETH",
-            "diagnostic_current_direct_fetch": "ACTIVE_NONZERO_BOOK",
-            "diagnostic_mae_check": "MARKET_NOT_SCHEDULED false negative"
-        },
-        "empty_orderbook_reason": "MAE broad Gamma /markets limit=50 query missed exact BTC/ETH 5m markets; old epoch tokens then produced empty/cooldown/stale orderbook failures after rollover",
-        "runtime_changed": false,
-        "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
-        "next_task": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001"
+    "next_task": "DECISION_ENGINE_PROTOTYPE_001"
+  },
+  "decision_engine_prototype": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md",
+    "module": "tools/decision/decision_engine_prototype.py",
+    "test_suite": "tests/tools/test_decision_engine_prototype.py",
+    "schema_version": "decision_engine_prototype.v1",
+    "decision_states": [
+      "PASS_CONTEXT",
+      "REJECT_MISSING_CONTEXT",
+      "REJECT_BAD_PROBABILITY",
+      "REJECT_BAD_EV",
+      "REJECT_LOW_EVIDENCE",
+      "REVIEW_REQUIRED"
+    ],
+    "runtime_imports": false,
+    "tests": {
+      "focused": "9 passed",
+      "canonical_builder_regression": "22 passed"
     },
-    "airos_hygiene_cleanup": {
-        "status": "COMPLETE",
-        "files_removed": [
-            "tools/airos/repo_health.json",
-            "tools/airos/repository_index.json",
-            "tools/airos/test_registry.json",
-            "tools/airos/tool_registry.json"
-        ],
-        "classification": "stale_duplicate_generated_outputs_in_wrong_directory",
-        "unique_data_preserved": false,
-        "commit_required": false
+    "next_task": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001"
+  },
+  "decision_engine_prototype_batch_validation": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
+    "module": "tools/decision/decision_engine_batch_validate.py",
+    "test_suite": "tests/tools/test_decision_engine_batch_validate.py",
+    "schema_version": "decision_engine_batch_validation.v1",
+    "rows_evaluated": 1794,
+    "source_files": 4,
+    "parse_errors": 0,
+    "decision_state_counts": {
+      "REJECT_MISSING_CONTEXT": 907,
+      "REVIEW_REQUIRED": 886,
+      "REJECT_LOW_EVIDENCE": 1
     },
-    "notes": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete. Fixed trader.py:8321: self.bankroll_family → self._last_bankroll_family (1-line fix). bankroll_family AttributeError eliminated (0 errors vs 3/session before). position_id now populated in fill receipts (f6d2a324 confirmed). 958 focused tests pass. 22 paper fills in validation run, 0 errors. Remaining downstream issues: trade_open event not emitting, paper_virtual_cash not deducting, current_exposure stays 0 — these are separate bugs in the post-position-open path. 29 pre-existing test failures unchanged (missing files, unrelated to fix). Next: TRADE_OPEN_CASH_DEDUCTION_REPAIR_001.",
-    "market_availability_engine_observability": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
-        "module_created": "polymarket/observability/market_availability.py",
-        "typedicts_defined": [
-            "AvailabilityReason",
-            "AvailabilityScore",
-            "AvailabilitySnapshot",
-            "AvailabilitySummary",
-            "AvailabilityHealth",
-            "AvailabilityDiagnostics"
-        ],
-        "reason_codes": [
-            "MARKET_CLOSED",
-            "STALE_FEED",
-            "EMPTY_ORDERBOOK",
-            "LOW_LIQUIDITY",
-            "HIGH_SPREAD",
-            "TOKEN_NOT_FOUND",
-            "CLIENT_ERROR",
-            "ORDERBOOK_NOT_READY",
-            "UNKNOWN"
-        ],
-        "builders": [
-            "evaluate_market_availability",
-            "summarize_market_availability",
-            "build_availability_health",
-            "build_market_availability_payload"
-        ],
-        "schema_version": "market_availability_obs_v1",
-        "new_tests": 62,
-        "golden_snapshot_tests": [
-            "test_golden_snapshot_exact_match (evaluate_market_availability)",
-            "test_golden_snapshot_exact_match (build_market_availability_payload)"
-        ],
-        "tests": {
-            "focused": "62 passed",
-            "acceptance": "953 passed"
-        },
-        "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+    "confidence_counts": {
+      "LOW": 908,
+      "MEDIUM": 886
     },
-    "trade_event_payload_schema_contracts": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001.md",
-        "contracts_module": "polymarket/observability/contracts.py",
-        "typedicts_defined": [
-            "EntryModelTruthEnvelope",
-            "EntryModelTruthEnvelopeWrapper",
-            "SizeSharpMetadata",
-            "SizeSharpCloseCarry",
-            "CarryMetadata",
-            "TradeOpenContext",
-            "TradePositionMetadata",
-            "TradeOpenedPayload",
-            "TradeClosedPayload"
-        ],
-        "carry_annotations_updated": 5,
-        "event_payload_annotations_updated": 3,
-        "new_tests": 37,
-        "golden_snapshot_tests": [
-            "test_golden_snapshot_exact_match (TradeOpenedPayload)",
-            "test_golden_snapshot_exact_match (TradeClosedPayload)"
-        ],
-        "tests": {
-            "focused": "37 passed",
-            "acceptance": "891 passed"
-        },
-        "next_task": "MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001"
+    "top_reject_reasons": {
+      "missing_required_context": 907,
+      "low_evidence_quality": 1
     },
-    "trade_event_payload_split": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001.md",
-        "modules_created": [
-            "polymarket/observability/trader_reconciliation_carry.py (282 LOC, 6 carry helpers)",
-            "polymarket/observability/trader_trade_event_payload.py (271 LOC, 4 event builders)"
-        ],
-        "shim_retained": "polymarket/observability/trader_reconciliation_payload.py (34 LOC, re-exports only)",
-        "trader_py_imports_updated": true,
-        "tests": {
-            "acceptance": "854 passed",
-            "new_tests": "3 shim compatibility tests"
-        },
-        "next_task": "TRADER_PHASE3N_TRADE_EVENT_PAYLOAD_SCHEMA_CONTRACT_001"
+    "runtime_imports": false,
+    "tests": {
+      "focused": "14 passed"
     },
-    "trade_event_payload_helper_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001.md",
-        "module_audited": "polymarket/observability/trader_reconciliation_payload.py",
-        "helpers_inventoried": 10,
-        "responsibility_domains": 6,
-        "module_cohesion_score": "LOW-MEDIUM (3/5)",
-        "module_loc": 669,
-        "tests_covering_module": 18,
-        "split_recommendation": "SPLIT",
-        "split_module_a": "trader_reconciliation_carry.py (retain existing name, 6 Phase-3F carry helpers, ~255L)",
-        "split_module_b": "trader_trade_event_payload.py (new, 4 Phase-3H/3J/3K event builders, ~345L)",
-        "schema_contract_recommendation": "ADD TypedDicts for TradeOpenedPayload, TradeClosedPayload, TradePositionMetadata",
-        "golden_snapshot_recommendation": "ADD frozen JSON fixtures for build_trade_opened_payload and build_trade_closed_payload",
-        "next_task": "TRADER_PHASE3M_TRADE_EVENT_PAYLOAD_SPLIT_001"
+    "next_task": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001"
+  },
+  "decision_engine_prototype_edge_case_fixture_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md",
+    "test_suite": "tests/tools/test_decision_engine_prototype.py",
+    "states_covered": [
+      "PASS_CONTEXT",
+      "REJECT_MISSING_CONTEXT",
+      "REJECT_BAD_PROBABILITY",
+      "REJECT_BAD_EV",
+      "REJECT_LOW_EVIDENCE",
+      "REVIEW_REQUIRED"
+    ],
+    "logic_fixes_applied": false,
+    "canonical_data_repair_needed": false,
+    "real_data_unobserved_states": [
+      "PASS_CONTEXT",
+      "REJECT_BAD_PROBABILITY",
+      "REJECT_BAD_EV"
+    ],
+    "tests": {
+      "prototype_focused": "16 passed",
+      "combined_required": "21 passed"
     },
-    "canonical_context_data_quality_repair": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md",
-        "fields_repaired": [
-            "true_probability",
-            "fair_value",
-            "ev",
-            "ev_after_spread",
-            "bankroll_tier_id"
-        ],
-        "grade_check_fixed": "entry_price replaced with intended_price",
-        "new_tests": 2,
-        "tests": {
-            "focused": "22 passed",
-            "acceptance": "814 passed"
-        },
-        "next_task": "DECISION_ENGINE_PROTOTYPE_001"
+    "next_task": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001"
+  },
+  "decision_engine_prototype_review_semantics_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md",
+    "fields_classified": 88,
+    "recommendation": "SEPARATE_MISSING_FIELDS_BY_SEVERITY_BEFORE_CHANGING_VALIDATOR",
+    "critical_missing_reject_fields": [
+      "intended_price",
+      "probability_or_true_probability",
+      "ev_after_spread"
+    ],
+    "review_policy": "important missing fields, medium/unknown evidence, thin source streams, or missing liquidity context should require review",
+    "pass_context_policy": "valid core price/probability/ev context plus acceptable evidence and no missing critical or important fields",
+    "logic_changed": false,
+    "runtime_changed": false,
+    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001"
+  },
+  "decision_engine_prototype_missing_field_severity_design": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md",
+    "severity_levels": [
+      "CRITICAL",
+      "HIGH",
+      "MEDIUM",
+      "LOW",
+      "INFO"
+    ],
+    "hard_reject_policy": [
+      "missing_or_invalid_intended_price",
+      "missing_or_invalid_probability_alias",
+      "missing_or_invalid_ev_after_spread",
+      "weak_data_quality_grade",
+      "weak_join_confidence",
+      "unusable_source_stream_support"
+    ],
+    "review_policy": "HIGH fields missing should review; MEDIUM fields review in strict mode until batch-comparison evidence supports relaxation",
+    "ignore_policy": "LOW and INFO fields should produce notes only and should not block PASS_CONTEXT when critical and high-severity checks pass",
+    "logic_changed": false,
+    "runtime_changed": false,
+    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001"
+  },
+  "decision_engine_prototype_missing_field_severity_test_plan": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md",
+    "fixture_matrix_cases": [
+      "no_missing_fields_passes",
+      "missing_critical_intended_price",
+      "missing_critical_probability_aliases",
+      "missing_critical_ev_after_spread",
+      "missing_high_field_only",
+      "missing_medium_field_only_strict_v1",
+      "missing_low_field_only",
+      "missing_info_field_only",
+      "mixed_severity_missing_fields",
+      "unknown_missing_field"
+    ],
+    "batch_acceptance": "hard reject semantics must remain stable; REVIEW_REQUIRED should become more meaningful; PASS_CONTEXT may appear only for LOW/INFO-only omissions",
+    "recommendation": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
+    "logic_changed": false,
+    "runtime_changed": false,
+    "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001"
+  },
+  "decision_engine_prototype_missing_field_severity_implementation": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md",
+    "module": "tools/decision/decision_engine_prototype.py",
+    "batch_module": "tools/decision/decision_engine_batch_validate.py",
+    "severity_outputs": [
+      "missing_critical_fields",
+      "missing_high_fields",
+      "missing_medium_fields",
+      "missing_low_fields",
+      "missing_info_fields"
+    ],
+    "decision_behavior": {
+      "critical": "REJECT_MISSING_CONTEXT",
+      "high": "REVIEW_REQUIRED",
+      "medium": "REVIEW_REQUIRED",
+      "low": "PASS_CONTEXT_ALLOWED_WITH_NOTE",
+      "info": "PASS_CONTEXT_ALLOWED_WITH_NOTE",
+      "unknown": "REVIEW_REQUIRED"
     },
-    "decision_engine_prototype": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_001.md",
-        "module": "tools/decision/decision_engine_prototype.py",
-        "test_suite": "tests/tools/test_decision_engine_prototype.py",
-        "schema_version": "decision_engine_prototype.v1",
-        "decision_states": [
-            "PASS_CONTEXT",
-            "REJECT_MISSING_CONTEXT",
-            "REJECT_BAD_PROBABILITY",
-            "REJECT_BAD_EV",
-            "REJECT_LOW_EVIDENCE",
-            "REVIEW_REQUIRED"
-        ],
-        "runtime_imports": false,
-        "tests": {
-            "focused": "9 passed",
-            "canonical_builder_regression": "22 passed"
-        },
-        "next_task": "DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001"
+    "batch_distribution": {
+      "rows": 1794,
+      "parse_errors": 0,
+      "PASS_CONTEXT": 41,
+      "REVIEW_REQUIRED": 845,
+      "REJECT_MISSING_CONTEXT": 907,
+      "REJECT_LOW_EVIDENCE": 1
     },
-    "decision_engine_prototype_batch_validation": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_BATCH_VALIDATION_001.md",
-        "module": "tools/decision/decision_engine_batch_validate.py",
-        "test_suite": "tests/tools/test_decision_engine_batch_validate.py",
-        "schema_version": "decision_engine_batch_validation.v1",
-        "rows_evaluated": 1794,
-        "source_files": 4,
-        "parse_errors": 0,
-        "decision_state_counts": {
-            "REJECT_MISSING_CONTEXT": 907,
-            "REVIEW_REQUIRED": 886,
-            "REJECT_LOW_EVIDENCE": 1
-        },
-        "confidence_counts": {
-            "LOW": 908,
-            "MEDIUM": 886
-        },
-        "top_reject_reasons": {
-            "missing_required_context": 907,
-            "low_evidence_quality": 1
-        },
-        "runtime_imports": false,
-        "tests": {
-            "focused": "14 passed"
-        },
-        "next_task": "DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001"
+    "tests": {
+      "focused": "31 passed",
+      "py_compile": "passed",
+      "batch_validator_rows": 1794
     },
-    "decision_engine_prototype_edge_case_fixture_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_EDGE_CASE_FIXTURE_AUDIT_001.md",
-        "test_suite": "tests/tools/test_decision_engine_prototype.py",
-        "states_covered": [
-            "PASS_CONTEXT",
-            "REJECT_MISSING_CONTEXT",
-            "REJECT_BAD_PROBABILITY",
-            "REJECT_BAD_EV",
-            "REJECT_LOW_EVIDENCE",
-            "REVIEW_REQUIRED"
-        ],
-        "logic_fixes_applied": false,
-        "canonical_data_repair_needed": false,
-        "real_data_unobserved_states": [
-            "PASS_CONTEXT",
-            "REJECT_BAD_PROBABILITY",
-            "REJECT_BAD_EV"
-        ],
-        "tests": {
-            "prototype_focused": "16 passed",
-            "combined_required": "21 passed"
-        },
-        "next_task": "DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001"
+    "runtime_changed": false,
+    "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+  },
+  "shadow_policy_severity_map_fix": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md",
+    "file_repaired": "tools/decision/decision_engine_prototype.py",
+    "fix": "shadow_policy_decision + shadow_policy_reasons added to _LOW_MISSING_FIELDS; 5 observed telemetry fields added to _INFO_MISSING_FIELDS",
+    "low_fields_added": [
+      "shadow_policy_decision",
+      "shadow_policy_reasons"
+    ],
+    "info_fields_added": [
+      "shadow_policy_observed_ev",
+      "shadow_policy_observed_probability",
+      "shadow_policy_observed_risk_mode",
+      "shadow_policy_id",
+      "shadow_policy_confidence"
+    ],
+    "severity_gap_closed": true,
+    "sentinel_set_unchanged": true,
+    "new_tests": 3,
+    "tests": {
+      "decision_engine": "34 passed",
+      "canonical_builder": "26 passed"
     },
-    "decision_engine_prototype_review_semantics_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_REVIEW_SEMANTICS_AUDIT_001.md",
-        "fields_classified": 88,
-        "recommendation": "SEPARATE_MISSING_FIELDS_BY_SEVERITY_BEFORE_CHANGING_VALIDATOR",
-        "critical_missing_reject_fields": [
-            "intended_price",
-            "probability_or_true_probability",
-            "ev_after_spread"
-        ],
-        "review_policy": "important missing fields, medium/unknown evidence, thin source streams, or missing liquidity context should require review",
-        "pass_context_policy": "valid core price/probability/ev context plus acceptable evidence and no missing critical or important fields",
-        "logic_changed": false,
-        "runtime_changed": false,
-        "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001"
+    "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
+    "safety_verdict": "SAFE_OFFLINE_TOOLING",
+    "next_task": "TBD"
+  },
+  "canonical_context_size_sharp_sentinel_repair": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md",
+    "file_repaired": "tools/runtime/canonical_trade_context_builder.py",
+    "fix": "_EMPTY_COLLECTION_SENTINEL_FIELDS extended with 5 SizeSharp collection fields",
+    "sentinel_fields_added": [
+      "size_sharp_component_scores",
+      "size_sharp_penalties",
+      "size_sharp_boosts",
+      "size_sharp_hard_caps",
+      "size_sharp_missing_inputs"
+    ],
+    "excluded_fields": [
+      "shadow_policy_reasons"
+    ],
+    "exclusion_reason": "severity-map gap in decision engine must be resolved first",
+    "new_tests": 1,
+    "updated_tests": 1,
+    "tests": {
+      "canonical_builder": "26 passed",
+      "decision_engine": "31 passed"
     },
-    "decision_engine_prototype_missing_field_severity_design": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_DESIGN_001.md",
-        "severity_levels": [
-            "CRITICAL",
-            "HIGH",
-            "MEDIUM",
-            "LOW",
-            "INFO"
-        ],
-        "hard_reject_policy": [
-            "missing_or_invalid_intended_price",
-            "missing_or_invalid_probability_alias",
-            "missing_or_invalid_ev_after_spread",
-            "weak_data_quality_grade",
-            "weak_join_confidence",
-            "unusable_source_stream_support"
-        ],
-        "review_policy": "HIGH fields missing should review; MEDIUM fields review in strict mode until batch-comparison evidence supports relaxation",
-        "ignore_policy": "LOW and INFO fields should produce notes only and should not block PASS_CONTEXT when critical and high-severity checks pass",
-        "logic_changed": false,
-        "runtime_changed": false,
-        "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001"
+    "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
+    "safety_verdict": "SAFE_OFFLINE_TOOLING",
+    "next_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
+  },
+  "canonical_context_size_sharp_sentinel_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md",
+    "fields_audited": 6,
+    "fields_approved_as_sentinels": [
+      "size_sharp_component_scores",
+      "size_sharp_penalties",
+      "size_sharp_boosts",
+      "size_sharp_hard_caps",
+      "size_sharp_missing_inputs"
+    ],
+    "fields_deferred": [
+      "shadow_policy_reasons"
+    ],
+    "schema_source": "polymarket/observability/contracts.py SizeSharpMetadata TypedDict",
+    "empirical_data": "1794 rows across 4 canonical JSONL files; all 5 SizeSharp collection fields 100% empty; size_sharp_schema_version=missing_legacy_metadata 100%",
+    "shadow_policy_severity_gap": "shadow_policy_* fields not in any severity set in decision engine; unknown fields → MEDIUM → REVIEW_REQUIRED; latent in existing JSONL, active on next builder run",
+    "code_modified": false,
+    "safety_verdict": "SAFE_OFFLINE_AUDIT",
+    "next_tasks": [
+      "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
+      "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
+    ]
+  },
+  "canonical_context_blockers_sentinel_repair": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md",
+    "file_repaired": "tools/runtime/canonical_trade_context_builder.py",
+    "fix": "_EMPTY_COLLECTION_SENTINEL_FIELDS frozenset added; missing-field detection updated to exclude schema-confirmed list sentinels",
+    "sentinel_fields": [
+      "blockers",
+      "reason_codes"
+    ],
+    "excluded_fields_pending": [
+      "size_sharp_component_scores",
+      "size_sharp_penalties",
+      "size_sharp_boosts",
+      "size_sharp_hard_caps",
+      "size_sharp_missing_inputs",
+      "shadow_policy_reasons"
+    ],
+    "new_tests": 3,
+    "tests": {
+      "canonical_builder": "25 passed",
+      "decision_engine": "31 passed"
     },
-    "decision_engine_prototype_missing_field_severity_test_plan": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_TEST_PLAN_001.md",
-        "fixture_matrix_cases": [
-            "no_missing_fields_passes",
-            "missing_critical_intended_price",
-            "missing_critical_probability_aliases",
-            "missing_critical_ev_after_spread",
-            "missing_high_field_only",
-            "missing_medium_field_only_strict_v1",
-            "missing_low_field_only",
-            "missing_info_field_only",
-            "mixed_severity_missing_fields",
-            "unknown_missing_field"
-        ],
-        "batch_acceptance": "hard reject semantics must remain stable; REVIEW_REQUIRED should become more meaningful; PASS_CONTEXT may appear only for LOW/INFO-only omissions",
-        "recommendation": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001",
-        "logic_changed": false,
-        "runtime_changed": false,
-        "next_task": "DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001"
+    "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
+    "safety_verdict": "SAFE_OFFLINE_TOOLING",
+    "next_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
+  },
+  "decision_engine_prototype_severity_batch_review": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md",
+    "rows_reviewed": 41,
+    "pass_context_legitimate": 41,
+    "false_positives": 0,
+    "common_missing_low": [
+      "blockers"
+    ],
+    "common_missing_info_count": 17,
+    "common_missing_info_category": "future_telemetry_placeholders",
+    "probability_range": [
+      0.5719,
+      0.7118
+    ],
+    "ev_after_spread_range": [
+      0.0566,
+      0.2652
+    ],
+    "source_file": "canonical_trade_context_20260627.jsonl",
+    "event_classification": "signal_driven_trade",
+    "evidence_quality": "grade_A_HIGH_join_3_source_streams",
+    "verdict": "KEEP_SEVERITY_POLICY",
+    "safety_verdict": "SAFE_OFFLINE_REVIEW_ONLY",
+    "code_modified": false,
+    "runtime_changed": false,
+    "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+  },
+  "polymarket_executable_sizing_reality_audit": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001.md",
+    "clob_minimum_usd": 0.1,
+    "t0_practical_order_usd": 0.55,
+    "t0_bankroll": 20.1,
+    "t0_per_market_cap_usd": 2.0,
+    "t0_portfolio_cap_usd": 4.0,
+    "loss_cluster_pause_issue_documented": true,
+    "no_fixed_cooldown_policy_designed": true,
+    "ladder_designed": true,
+    "dust_zone_defined": true,
+    "code_changed": false,
+    "critical_blocker": "zero paper fills — fill path unverified",
+    "safety_verdict": "SAFE_DESIGN_AUDIT",
+    "next_task": "TBD"
+  },
+  "execution_reality_architecture_masterplan": {
+    "status": "COMPLETE",
+    "report_doc": "docs/architecture/EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001.md",
+    "task_class": 2,
+    "sections": 21,
+    "pipeline_layers": 7,
+    "lifecycle_states_designed": [
+      "PROBE",
+      "BUILD",
+      "ADD",
+      "HOLD",
+      "REDUCE",
+      "MERGE",
+      "REDEEM",
+      "EXIT",
+      "CLOSED"
+    ],
+    "market_window_phases_reconciled": [
+      "OPENING_SCAN",
+      "ACTIVE_INVENTORY_TRADING",
+      "PROFIT_MANAGEMENT",
+      "FINAL_DERISK",
+      "CLOSED_OR_UNSAFE"
+    ],
+    "new_modules_designed": [
+      "MarketWindowTracker",
+      "InventoryEngine",
+      "FillTracker",
+      "ExecutionPlanner",
+      "LadderEngine",
+      "PositionLifecycleEngine",
+      "OpportunityQueue",
+      "CapitalAllocationEngine",
+      "OpportunityThrottle",
+      "ExecutionPlanSerializer"
+    ],
+    "critical_path_item": "paper_fill_verification",
+    "roadmap_milestones": 11,
+    "code_changed": false,
+    "committed": false,
+    "safety_verdict": "SAFE_ARCHITECTURE_ONLY"
+  },
+  "market_availability_engine_post_repair_paper_validation": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001.md",
+    "run_id": "20260630T042355Z_20576_c2e9e6af",
+    "duration_minutes": 8,
+    "cycles_completed": 9,
+    "mae_checks": 8,
+    "mae_state_all_active": true,
+    "fallback_used_all": true,
+    "availability_source_all": "exact_slug_fallback",
+    "epoch_rollovers_observed": 2,
+    "epochs_covered": [
+      1782793200,
+      1782793500,
+      1782793800
+    ],
+    "tradable_snapshots": 15,
+    "live_order_markers": 0,
+    "exceptions": 0,
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "final_verdict": "PASS",
+    "next_task": "TBD"
+  },
+  "market_availability_engine_false_negative_repair": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md",
+    "file_repaired": "polymarket/market_availability_engine.py",
+    "fix": "Added bounded exact-slug fallback to Gamma /events?slug= for current/next BTC/ETH 5m markets when broad /markets scan finds no 5m candidates.",
+    "fallback_behavior": {
+      "broad_scan_first": true,
+      "fallback_slugs_per_check": 4,
+      "preserve_market_not_scheduled_if_exact_empty": true,
+      "diagnostics": [
+        "fallback_used",
+        "exact_slug_checked",
+        "exact_slug_match_count",
+        "availability_source"
+      ]
     },
-    "decision_engine_prototype_missing_field_severity_implementation": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_MISSING_FIELD_SEVERITY_IMPLEMENTATION_001.md",
-        "module": "tools/decision/decision_engine_prototype.py",
-        "batch_module": "tools/decision/decision_engine_batch_validate.py",
-        "severity_outputs": [
-            "missing_critical_fields",
-            "missing_high_fields",
-            "missing_medium_fields",
-            "missing_low_fields",
-            "missing_info_fields"
-        ],
-        "decision_behavior": {
-            "critical": "REJECT_MISSING_CONTEXT",
-            "high": "REVIEW_REQUIRED",
-            "medium": "REVIEW_REQUIRED",
-            "low": "PASS_CONTEXT_ALLOWED_WITH_NOTE",
-            "info": "PASS_CONTEXT_ALLOWED_WITH_NOTE",
-            "unknown": "REVIEW_REQUIRED"
-        },
-        "batch_distribution": {
-            "rows": 1794,
-            "parse_errors": 0,
-            "PASS_CONTEXT": 41,
-            "REVIEW_REQUIRED": 845,
-            "REJECT_MISSING_CONTEXT": 907,
-            "REJECT_LOW_EVIDENCE": 1
-        },
-        "tests": {
-            "focused": "31 passed",
-            "py_compile": "passed",
-            "batch_validator_rows": 1794
-        },
-        "runtime_changed": false,
-        "next_task": "DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001"
+    "tests": {
+      "market_availability_file": "42 passed",
+      "compile": "PASS",
+      "acceptance": "957 passed"
     },
-    "shadow_policy_severity_map_fix": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md",
-        "file_repaired": "tools/decision/decision_engine_prototype.py",
-        "fix": "shadow_policy_decision + shadow_policy_reasons added to _LOW_MISSING_FIELDS; 5 observed telemetry fields added to _INFO_MISSING_FIELDS",
-        "low_fields_added": [
-            "shadow_policy_decision",
-            "shadow_policy_reasons"
-        ],
-        "info_fields_added": [
-            "shadow_policy_observed_ev",
-            "shadow_policy_observed_probability",
-            "shadow_policy_observed_risk_mode",
-            "shadow_policy_id",
-            "shadow_policy_confidence"
-        ],
-        "severity_gap_closed": true,
-        "sentinel_set_unchanged": true,
-        "new_tests": 3,
-        "tests": {
-            "decision_engine": "34 passed",
-            "canonical_builder": "26 passed"
-        },
-        "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
-        "safety_verdict": "SAFE_OFFLINE_TOOLING",
-        "next_task": "TBD"
+    "direct_diagnostic": {
+      "state": "ACTIVE",
+      "availability_source": "exact_slug_fallback",
+      "fallback_used": true,
+      "active_market_count": 4,
+      "exact_slug_match_count": 4
     },
-    "canonical_context_size_sharp_sentinel_repair": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001.md",
-        "file_repaired": "tools/runtime/canonical_trade_context_builder.py",
-        "fix": "_EMPTY_COLLECTION_SENTINEL_FIELDS extended with 5 SizeSharp collection fields",
-        "sentinel_fields_added": [
-            "size_sharp_component_scores",
-            "size_sharp_penalties",
-            "size_sharp_boosts",
-            "size_sharp_hard_caps",
-            "size_sharp_missing_inputs"
-        ],
-        "excluded_fields": [
-            "shadow_policy_reasons"
-        ],
-        "exclusion_reason": "severity-map gap in decision engine must be resolved first",
-        "new_tests": 1,
-        "updated_tests": 1,
-        "tests": {
-            "canonical_builder": "26 passed",
-            "decision_engine": "31 passed"
-        },
-        "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
-        "safety_verdict": "SAFE_OFFLINE_TOOLING",
-        "next_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
+    "paper_smoke": {
+      "run_id": "20260630T040247Z_44448_80399ee5",
+      "return_code": 0,
+      "cycles_completed": 2,
+      "market_availability_rows": 2,
+      "market_availability_state": "ACTIVE",
+      "fallback_used": true,
+      "selected_market_count": 2,
+      "live_order_submission_markers": 0
     },
-    "canonical_context_size_sharp_sentinel_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md",
-        "fields_audited": 6,
-        "fields_approved_as_sentinels": [
-            "size_sharp_component_scores",
-            "size_sharp_penalties",
-            "size_sharp_boosts",
-            "size_sharp_hard_caps",
-            "size_sharp_missing_inputs"
-        ],
-        "fields_deferred": [
-            "shadow_policy_reasons"
-        ],
-        "schema_source": "polymarket/observability/contracts.py SizeSharpMetadata TypedDict",
-        "empirical_data": "1794 rows across 4 canonical JSONL files; all 5 SizeSharp collection fields 100% empty; size_sharp_schema_version=missing_legacy_metadata 100%",
-        "shadow_policy_severity_gap": "shadow_policy_* fields not in any severity set in decision engine; unknown fields → MEDIUM → REVIEW_REQUIRED; latent in existing JSONL, active on next builder run",
-        "code_modified": false,
-        "safety_verdict": "SAFE_OFFLINE_AUDIT",
-        "next_tasks": [
-            "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
-            "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
-        ]
-    },
-    "canonical_context_blockers_sentinel_repair": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md",
-        "file_repaired": "tools/runtime/canonical_trade_context_builder.py",
-        "fix": "_EMPTY_COLLECTION_SENTINEL_FIELDS frozenset added; missing-field detection updated to exclude schema-confirmed list sentinels",
-        "sentinel_fields": [
-            "blockers",
-            "reason_codes"
-        ],
-        "excluded_fields_pending": [
-            "size_sharp_component_scores",
-            "size_sharp_penalties",
-            "size_sharp_boosts",
-            "size_sharp_hard_caps",
-            "size_sharp_missing_inputs",
-            "shadow_policy_reasons"
-        ],
-        "new_tests": 3,
-        "tests": {
-            "canonical_builder": "25 passed",
-            "decision_engine": "31 passed"
-        },
-        "batch_impact": "future_builds_only; existing JSONL stores pre-fix missing_fields",
-        "safety_verdict": "SAFE_OFFLINE_TOOLING",
-        "next_task": "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001"
-    },
-    "decision_engine_prototype_severity_batch_review": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/DECISION_ENGINE_PROTOTYPE_SEVERITY_BATCH_REVIEW_001.md",
-        "rows_reviewed": 41,
-        "pass_context_legitimate": 41,
-        "false_positives": 0,
-        "common_missing_low": [
-            "blockers"
-        ],
-        "common_missing_info_count": 17,
-        "common_missing_info_category": "future_telemetry_placeholders",
-        "probability_range": [
-            0.5719,
-            0.7118
-        ],
-        "ev_after_spread_range": [
-            0.0566,
-            0.2652
-        ],
-        "source_file": "canonical_trade_context_20260627.jsonl",
-        "event_classification": "signal_driven_trade",
-        "evidence_quality": "grade_A_HIGH_join_3_source_streams",
-        "verdict": "KEEP_SEVERITY_POLICY",
-        "safety_verdict": "SAFE_OFFLINE_REVIEW_ONLY",
-        "code_modified": false,
-        "runtime_changed": false,
-        "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
-    },
-    "polymarket_executable_sizing_reality_audit": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001.md",
-        "clob_minimum_usd": 0.10,
-        "t0_practical_order_usd": 0.55,
-        "t0_bankroll": 20.10,
-        "t0_per_market_cap_usd": 2.00,
-        "t0_portfolio_cap_usd": 4.00,
-        "loss_cluster_pause_issue_documented": true,
-        "no_fixed_cooldown_policy_designed": true,
-        "ladder_designed": true,
-        "dust_zone_defined": true,
-        "code_changed": false,
-        "critical_blocker": "zero paper fills — fill path unverified",
-        "safety_verdict": "SAFE_DESIGN_AUDIT",
-        "next_task": "TBD"
-    },
-    "execution_reality_architecture_masterplan": {
-        "status": "COMPLETE",
-        "report_doc": "docs/architecture/EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001.md",
-        "task_class": 2,
-        "sections": 21,
-        "pipeline_layers": 7,
-        "lifecycle_states_designed": ["PROBE", "BUILD", "ADD", "HOLD", "REDUCE", "MERGE", "REDEEM", "EXIT", "CLOSED"],
-        "market_window_phases_reconciled": ["OPENING_SCAN", "ACTIVE_INVENTORY_TRADING", "PROFIT_MANAGEMENT", "FINAL_DERISK", "CLOSED_OR_UNSAFE"],
-        "new_modules_designed": ["MarketWindowTracker", "InventoryEngine", "FillTracker", "ExecutionPlanner", "LadderEngine", "PositionLifecycleEngine", "OpportunityQueue", "CapitalAllocationEngine", "OpportunityThrottle", "ExecutionPlanSerializer"],
-        "critical_path_item": "paper_fill_verification",
-        "roadmap_milestones": 11,
-        "code_changed": false,
-        "committed": false,
-        "safety_verdict": "SAFE_ARCHITECTURE_ONLY"
-    },
-    "market_availability_engine_post_repair_paper_validation": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001.md",
-        "run_id": "20260630T042355Z_20576_c2e9e6af",
-        "duration_minutes": 8,
-        "cycles_completed": 9,
-        "mae_checks": 8,
-        "mae_state_all_active": true,
-        "fallback_used_all": true,
-        "availability_source_all": "exact_slug_fallback",
-        "epoch_rollovers_observed": 2,
-        "epochs_covered": [1782793200, 1782793500, 1782793800],
-        "tradable_snapshots": 15,
-        "live_order_markers": 0,
-        "exceptions": 0,
-        "safety_verdict": "SAFE_PAPER_VALIDATION",
-        "final_verdict": "PASS",
-        "next_task": "TBD"
-    },
-    "market_availability_engine_false_negative_repair": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md",
-        "file_repaired": "polymarket/market_availability_engine.py",
-        "fix": "Added bounded exact-slug fallback to Gamma /events?slug= for current/next BTC/ETH 5m markets when broad /markets scan finds no 5m candidates.",
-        "fallback_behavior": {
-            "broad_scan_first": true,
-            "fallback_slugs_per_check": 4,
-            "preserve_market_not_scheduled_if_exact_empty": true,
-            "diagnostics": [
-                "fallback_used",
-                "exact_slug_checked",
-                "exact_slug_match_count",
-                "availability_source"
-            ]
-        },
-        "tests": {
-            "market_availability_file": "42 passed",
-            "compile": "PASS",
-            "acceptance": "957 passed"
-        },
-        "direct_diagnostic": {
-            "state": "ACTIVE",
-            "availability_source": "exact_slug_fallback",
-            "fallback_used": true,
-            "active_market_count": 4,
-            "exact_slug_match_count": 4
-        },
-        "paper_smoke": {
-            "run_id": "20260630T040247Z_44448_80399ee5",
-            "return_code": 0,
-            "cycles_completed": 2,
-            "market_availability_rows": 2,
-            "market_availability_state": "ACTIVE",
-            "fallback_used": true,
-            "selected_market_count": 2,
-            "live_order_submission_markers": 0
-        },
-        "runtime_changed": true,
-        "strategy_risk_sizing_execution_changed": false,
-        "safety_verdict": "SAFE_RUNTIME_REPAIR",
-        "next_task": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001"
-    },
-    "paper_fill_path_verification_001": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/PAPER_FILL_PATH_VERIFICATION_001.md",
-        "task_class": 5,
-        "run_id": "20260630T061207Z_44404_cc56ece6",
-        "duration_minutes": 29.5,
-        "cycles_completed": 199,
-        "epochs_covered": 7,
-        "mae_checks_active": 30,
-        "decision_log_rows": 57,
-        "fill_path_verdict": "VERIFIED",
-        "fills_confirmed": 3,
-        "fills": [
-            {"timestamp": "2026-06-30T06:20:23Z", "asset": "ETH", "outcome": "NO", "shares": 0.185185, "price": 0.54, "order_id": "paper-55559880"},
-            {"timestamp": "2026-06-30T06:30:25Z", "asset": "ETH", "outcome": "NO", "shares": 0.175439, "price": 0.57, "order_id": "paper-86082713"},
-            {"timestamp": "2026-06-30T06:40:43Z", "asset": "ETH", "outcome": "YES", "shares": 0.200000, "price": 0.50, "order_id": "paper-22889476"}
-        ],
-        "post_fill_exception": "AttributeError: 'PolymarketTrader' object has no attribute 'bankroll_family'",
-        "post_fill_accounting_verdict": "BROKEN",
-        "primary_skip_reason": "delta_extreme (25/57, 43.9%)",
-        "live_order_markers": 0,
-        "code_changed": false,
-        "safety_verdict": "SAFE_PAPER_VALIDATION",
-        "next_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
-    },
-    "post_fill_accounting_bug_repair_001": {
-        "status": "COMPLETE",
-        "report_doc": "docs/reports/POST_FILL_ACCOUNTING_BUG_REPAIR_001.md",
-        "task_class": 3,
-        "files_changed": ["polymarket/trader.py", "tests/observability/test_telemetry_backfill.py"],
-        "root_cause": "self.bankroll_family does not exist on PolymarketTrader; correct attr is self._last_bankroll_family",
-        "fix_location": "polymarket/trader.py:8321",
-        "fix_summary": "self.bankroll_family → self._last_bankroll_family (1 line)",
-        "regression_test_added": "test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr",
-        "tests_focused": "958 passed",
-        "tests_broader_pre_existing_failures": 29,
-        "paper_fills": 22,
-        "bankroll_family_errors": 0,
-        "position_id_populated": true,
-        "trade_open_emitted": false,
-        "cash_deducted": false,
-        "exposure_updated": false,
-        "live_order_markers": 0,
-        "safety_verdict": "SAFE_PAPER_ONLY",
-        "next_task": "TRADE_OPEN_CASH_DEDUCTION_REPAIR_001"
-    }
+    "runtime_changed": true,
+    "strategy_risk_sizing_execution_changed": false,
+    "safety_verdict": "SAFE_RUNTIME_REPAIR",
+    "next_task": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001"
+  },
+  "paper_fill_path_verification_001": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/PAPER_FILL_PATH_VERIFICATION_001.md",
+    "task_class": 5,
+    "run_id": "20260630T061207Z_44404_cc56ece6",
+    "duration_minutes": 29.5,
+    "cycles_completed": 199,
+    "epochs_covered": 7,
+    "mae_checks_active": 30,
+    "decision_log_rows": 57,
+    "fill_path_verdict": "VERIFIED",
+    "fills_confirmed": 3,
+    "fills": [
+      {
+        "timestamp": "2026-06-30T06:20:23Z",
+        "asset": "ETH",
+        "outcome": "NO",
+        "shares": 0.185185,
+        "price": 0.54,
+        "order_id": "paper-55559880"
+      },
+      {
+        "timestamp": "2026-06-30T06:30:25Z",
+        "asset": "ETH",
+        "outcome": "NO",
+        "shares": 0.175439,
+        "price": 0.57,
+        "order_id": "paper-86082713"
+      },
+      {
+        "timestamp": "2026-06-30T06:40:43Z",
+        "asset": "ETH",
+        "outcome": "YES",
+        "shares": 0.2,
+        "price": 0.5,
+        "order_id": "paper-22889476"
+      }
+    ],
+    "post_fill_exception": "AttributeError: 'PolymarketTrader' object has no attribute 'bankroll_family'",
+    "post_fill_accounting_verdict": "BROKEN",
+    "primary_skip_reason": "delta_extreme (25/57, 43.9%)",
+    "live_order_markers": 0,
+    "code_changed": false,
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "next_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
+  },
+  "post_fill_accounting_bug_repair_001": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/POST_FILL_ACCOUNTING_BUG_REPAIR_001.md",
+    "task_class": 3,
+    "files_changed": [
+      "polymarket/trader.py",
+      "tests/observability/test_telemetry_backfill.py"
+    ],
+    "root_cause": "self.bankroll_family does not exist on PolymarketTrader; correct attr is self._last_bankroll_family",
+    "fix_location": "polymarket/trader.py:8321",
+    "fix_summary": "self.bankroll_family → self._last_bankroll_family (1 line)",
+    "regression_test_added": "test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr",
+    "tests_focused": "958 passed",
+    "tests_broader_pre_existing_failures": 29,
+    "paper_fills": 22,
+    "bankroll_family_errors": 0,
+    "position_id_populated": true,
+    "trade_open_emitted": false,
+    "cash_deducted": false,
+    "exposure_updated": false,
+    "live_order_markers": 0,
+    "safety_verdict": "SAFE_PAPER_ONLY",
+    "next_task": "TRADE_OPEN_CASH_DEDUCTION_REPAIR_001"
+  },
+  "paper_runtime_state_reset_for_validation": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/PAPER_RUNTIME_STATE_RESET_FOR_VALIDATION_001.md",
+    "backup_path": "runtime/backups/paper_state_reset_20260630_155858/",
+    "runtime_files_changed": [
+      "runtime/position_tracker_state.json",
+      "runtime/bot_status.json"
+    ],
+    "synthetic_artifact_removed": "c0ad7970",
+    "paper_balance": 20.09901,
+    "wallet_reference_balance": 20.09901,
+    "open_positions": 0,
+    "current_exposure": 0.0,
+    "risk_mode_after_reset": "NORMAL",
+    "drawdown_pct_after_reset": 0.0,
+    "allow_new_entries_after_reset": true,
+    "live_order_markers": 0,
+    "runtime_logic_changed": false,
+    "logs_deleted_or_edited": false,
+    "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REVALIDATION_001"
+  }
 }
