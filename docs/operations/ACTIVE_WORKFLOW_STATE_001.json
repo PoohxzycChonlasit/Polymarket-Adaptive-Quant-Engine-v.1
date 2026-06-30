@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001 complete; entry starvation traced to protective gates plus risk-plan side-confidence semantics",
-  "last_completed_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001",
+  "current_phase": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001 complete; one-gate offline replay found no strong clean candidates and identified risk_plan_zero semantics as next audit target",
+  "last_completed_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001",
+  "next_task": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1208,5 +1208,36 @@
     "runtime_changed": false,
     "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
     "next_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001"
+  },
+  "entry_gate_counterfactual_replay": {
+    "status": "COMPLETE",
+    "task_class": 1,
+    "report_doc": "docs/reports/ENTRY_GATE_COUNTERFACTUAL_REPLAY_001.md",
+    "verdict": "COUNTERFACTUAL_COMPLETE_NO_RUNTIME_TUNING_JUSTIFIED",
+    "source_run_id": "20260630T135455Z_6592_5fac8cf4",
+    "decision_rows": 120,
+    "baseline_entry_count": 0,
+    "baseline_distribution": {
+      "delta_extreme": 44,
+      "confidence_too_low": 21,
+      "risk_plan_zero": 17,
+      "time_unsafe": 17,
+      "clob_empty_response": 13,
+      "ev_below_threshold": 8
+    },
+    "counterfactual_core_candidates": {
+      "delta_extreme": 2,
+      "confidence_too_low": 0,
+      "risk_plan_zero": 2,
+      "time_unsafe": 0,
+      "ev_below_threshold": 1,
+      "clob_empty_response": 0
+    },
+    "strong_clean_candidates": 0,
+    "next_audit_target": "risk_plan_zero",
+    "tuning_justified": false,
+    "runtime_changed": false,
+    "safety_verdict": "SAFE_OFFLINE_REPLAY_ONLY",
+    "next_task": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001"
   }
 }
