@@ -1,8 +1,8 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001 complete; bot_status.json close snapshot freshness fix confirmed in fresh paper runtime with natural open+close cycle",
-  "last_completed_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001",
+  "current_phase": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001 complete; 60-minute bounded paper run confirmed 2 full open+close cycles, all reconciliation checks pass, DEFENSIVE risk mode correctly activated after consecutive stop-losses",
+  "last_completed_task": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
   "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001",
@@ -1017,6 +1017,39 @@
     "live_order_submission_markers": 0,
     "safety_verdict": "SAFE_STATUS_ONLY_REPAIR",
     "next_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001"
+  },
+  "paper_runtime_long_validation_baseline": {
+    "status": "COMPLETE",
+    "verdict": "PASS_WITH_MINOR_ISSUES",
+    "report_doc": "docs/reports/PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001.md",
+    "run_id": "20260630T104339Z_52084_999c4023",
+    "duration_minutes": 60.6,
+    "decision_count": 120,
+    "fill_count": 2,
+    "trade_open_count": 2,
+    "trade_close_count": 2,
+    "positions": [
+      {"id": "3fdd7312", "asset": "ETH", "entry": 0.51, "exit": 0.42, "pnl": -0.017647, "reason": "stop_loss", "hold_seconds": 27},
+      {"id": "78725623", "asset": "ETH", "entry": 0.48, "exit": 0.36, "pnl": -0.025000, "reason": "stop_loss", "hold_seconds": 29}
+    ],
+    "session_pnl": -0.042647,
+    "cash_start": 20.09901,
+    "cash_end": 20.056363,
+    "open_positions_at_end": 0,
+    "tracker_open_at_end": 0,
+    "reconciliation_pass": 7,
+    "reconciliation_total": 7,
+    "risk_modes_seen": ["NORMAL", "DEFENSIVE"],
+    "defensive_mode_rows": 111,
+    "normal_mode_rows": 67,
+    "live_order_markers": 0,
+    "exceptions": 0,
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "minor_issues": [
+      "exit_reason=None in trade_close journal payload (pre-existing)",
+      "paper_virtual_cash=None in trade_close journal payload (pre-existing)"
+    ],
+    "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001"
   },
   "post_fix_paper_close_status_freshness_runtime_confirmation": {
     "status": "COMPLETE",

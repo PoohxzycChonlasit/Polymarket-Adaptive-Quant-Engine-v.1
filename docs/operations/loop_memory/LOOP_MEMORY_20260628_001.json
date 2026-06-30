@@ -4365,5 +4365,63 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "commits": []
+  },
+  {
+    "task_id": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001",
+    "task_class": 5,
+    "completed_at": "2026-06-30T10:30:09Z",
+    "status": "COMPLETE",
+    "verdict": "PASS_CONFIRMED",
+    "report_doc": "docs/reports/POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001.md",
+    "summary": "Fresh paper runtime confirmed bot_status.json close snapshot freshness fix working. Position 5e5f073b (ETH YES, entry=0.53) closed via stop_loss at 10:30:09Z. bot_status.json refreshed at close with open_positions=[], cash=20.083915. Timestamp matched trade_close exactly.",
+    "run_id": "20260630T101747Z_34776_236e2f3a",
+    "position_id": "5e5f073b",
+    "pnl": -0.015094,
+    "cash_after": 20.083915,
+    "open_positions_after": 0,
+    "live_markers": 0,
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "commits": [
+      "72da3e67"
+    ],
+    "commit_messages": [
+      "fix: refresh bot status after paper close"
+    ],
+    "next_task": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001"
+  },
+  {
+    "task_id": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001",
+    "task_class": 5,
+    "completed_at": "2026-06-30T11:44:14Z",
+    "status": "COMPLETE",
+    "verdict": "PASS_WITH_MINOR_ISSUES",
+    "report_doc": "docs/reports/PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001.md",
+    "summary": "60-minute bounded paper validation baseline. 120 decisions, 2 fills, 2 complete open+close cycles (both ETH YES stop_loss). DEFENSIVE risk mode activated after 2 consecutive stop-losses; blocked all further entries from T+22 to T+60. All reconciliation checks pass (7/7). Cash 0.056363 = wallet_ref 0.09901 - session_pnl /usr/bin/bash.042647 (diff=0.00000036). No exceptions, no live markers, runtime stable entire run.",
+    "run_id": "20260630T104339Z_52084_999c4023",
+    "duration_minutes": 60.6,
+    "decision_count": 120,
+    "fill_count": 2,
+    "trade_open_count": 2,
+    "trade_close_count": 2,
+    "session_pnl": -0.042647,
+    "cash_end": 20.056363,
+    "open_positions_at_end": 0,
+    "reconciliation_pass": 7,
+    "reconciliation_total": 7,
+    "risk_modes": [
+      "NORMAL",
+      "DEFENSIVE"
+    ],
+    "defensive_mode_dominant": true,
+    "defensive_trigger": "consecutive stop_loss exits",
+    "live_markers": 0,
+    "exceptions": 0,
+    "minor_issues": [
+      "exit_reason=None in trade_close journal (pre-existing)",
+      "paper_virtual_cash=None in trade_close journal (pre-existing)"
+    ],
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "commits": [],
+    "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001"
   }
 ]
