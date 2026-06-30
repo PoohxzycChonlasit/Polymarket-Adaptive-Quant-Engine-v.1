@@ -4626,5 +4626,37 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001"
+  },
+  {
+    "task_id": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001",
+    "task_class": 2,
+    "completed_at": "2026-06-30",
+    "status": "COMPLETE",
+    "verdict": "READY_FOR_OFFLINE_FRAMEWORK_IMPLEMENTATION_PLAN",
+    "report_doc": "docs/architecture/SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001.md",
+    "summary": "Designed reusable offline Shadow Strategy Evaluation Framework for Alpha Discovery. Framework defines six layers: Replay Dataset, Strategy Plugin Interface, Metrics Engine, Comparison Engine, Evidence Engine, and Leaderboard. It prevents Semantic C, relaxed gates, inventory ladder, adaptive inventory, low-price truth, and future alpha ideas from becoming separate replay systems.",
+    "evidence": {
+      "framework_layers": 6,
+      "plugin_families": [
+        "baseline",
+        "gate_relaxation",
+        "semantic",
+        "inventory",
+        "low_price_truth",
+        "future_alpha"
+      ],
+      "recommended_option": "OPTION 3 - STRUCTURAL / ROOT-CAUSE PATH",
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false
+    },
+    "files_changed": [
+      "docs/architecture/SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "next_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001"
   }
 ]

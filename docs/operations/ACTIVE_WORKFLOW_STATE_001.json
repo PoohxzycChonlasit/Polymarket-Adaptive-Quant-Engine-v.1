@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001 complete; risk_plan_zero traced to selected-side probability confidence floor, not multiplier or bankroll failure",
-  "last_completed_task": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001",
+  "current_phase": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001 complete; reusable offline shadow strategy evaluation framework designed for Alpha Discovery",
+  "last_completed_task": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001",
+  "next_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1267,5 +1267,38 @@
     "runtime_changed": false,
     "safety_verdict": "SAFE_DESIGN_AUDIT_ONLY",
     "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001"
+  },
+  "shadow_strategy_evaluation_framework": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "report_doc": "docs/architecture/SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001.md",
+    "verdict": "READY_FOR_OFFLINE_FRAMEWORK_IMPLEMENTATION_PLAN",
+    "framework_layers": [
+      "Replay Dataset",
+      "Strategy Plugin Interface",
+      "Metrics Engine",
+      "Comparison Engine",
+      "Evidence Engine",
+      "Leaderboard"
+    ],
+    "strategy_families": [
+      "Current Runtime",
+      "Semantic C",
+      "Relax Delta",
+      "Relax Confidence",
+      "Relax EV",
+      "Inventory Ladder",
+      "Adaptive Inventory",
+      "Dynamic Confidence",
+      "Low Price Truth",
+      "Future Alpha Ideas"
+    ],
+    "recommended_path": "OPTION 3 - STRUCTURAL / ROOT-CAUSE PATH",
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "sizing_changed": false,
+    "risk_changed": false,
+    "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
+    "next_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001"
   }
 }

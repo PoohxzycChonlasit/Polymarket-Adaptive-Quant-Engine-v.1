@@ -3514,6 +3514,37 @@
       "runtime_repair_justified": false,
       "safety_verdict": "SAFE_DESIGN_AUDIT_ONLY",
       "notes": "DONE. Active sizing confidence is selected-side probability, while top-level confidence is model confidence_score. All 17 risk_plan_zero rows were blocked by selected-side probability below the 0.54 confidence floor; other multipliers were nonzero. Next: offline Semantic C shadow replay."
+    },
+    {
+      "priority": 1.873,
+      "task_id": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Design reusable offline Shadow Strategy Evaluation Framework for Alpha Discovery so future experimental strategies run through one shared replay/plugin/metrics/comparison/evidence/leaderboard pipeline.",
+      "blocked_by": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001",
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001.md"
+      ],
+      "verdict": "READY_FOR_OFFLINE_FRAMEWORK_IMPLEMENTATION_PLAN",
+      "framework_layers": [
+        "Replay Dataset",
+        "Strategy Plugin Interface",
+        "Metrics Engine",
+        "Comparison Engine",
+        "Evidence Engine",
+        "Leaderboard"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
+      "notes": "DONE. Architecture-only framework created. Recommends consolidating Semantic C, relaxed gates, inventory ladder, adaptive inventory, low-price truth, and future alpha ideas into reusable offline strategy plugins over a common ReplayRow and StrategyDecision contract. Next: SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001."
     }
   ]
 }
