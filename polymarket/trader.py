@@ -8892,6 +8892,7 @@ class PolymarketTrader:
         pos,
         reason: str,
         exit_price: float | None = None,
+        dashboard_countdown: int | None = None,
     ) -> bool:
         token_id = self._position_token_id(pos)
         price = exit_price if exit_price is not None else self._position_mark_price(pos)
@@ -8974,6 +8975,7 @@ class PolymarketTrader:
                     receipt=receipt,
                     partial=False,
                 )
+                self.update_dashboard_status(int(dashboard_countdown or 0))
                 self._notify_telegram(
                     "notify_exit",
                     "",
@@ -9212,7 +9214,12 @@ class PolymarketTrader:
             seconds_to_close,
             reason,
         )
-        return self._close_position_with_retry(pos, reason=reason, exit_price=exit_price)
+        return self._close_position_with_retry(
+            pos,
+            reason=reason,
+            exit_price=exit_price,
+            dashboard_countdown=seconds_to_close,
+        )
 
     def _exit_agent_check_position(self, pos, seconds_to_close: int) -> bool:
         action = self._exit_agent_action(seconds_to_close)

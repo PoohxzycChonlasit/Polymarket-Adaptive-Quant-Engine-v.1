@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "TRADE_CLOSE_AND_PNL_ACCOUNTING_VALIDATION_001 complete; target bd919e7a closed with trade_close/PnL/cash restoration; bot_status stale snapshot caveat documented",
-  "last_completed_task": "TRADE_CLOSE_AND_PNL_ACCOUNTING_VALIDATION_001",
+  "current_phase": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001 complete; bot_status snapshot refresh after successful close repaired and tested",
+  "last_completed_task": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001",
   "last_commit": "50d8589c",
   "last_commit_message": "docs: verify paper fill path",
-  "next_task": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001",
+  "next_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -995,5 +995,27 @@
     "safety_verdict": "SAFE_PAPER_VALIDATION",
     "runtime_logic_changed": false,
     "next_task": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001"
+  },
+  "bot_status_close_snapshot_freshness_repair_or_validation": {
+    "status": "COMPLETE",
+    "verdict": "PASS_REPAIRED",
+    "report_doc": "docs/reports/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001.md",
+    "contract_doc": "docs/operations/execution_contracts/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001_CONTRACT_001.md",
+    "root_cause": "MISSING_FLUSH_AFTER_CLOSE",
+    "fix": "Successful _close_position_with_retry now refreshes bot_status.json after trade_close emission; exit-agent forced exits pass countdown through to the status snapshot.",
+    "regression_test": "tests/polymarket/test_exit_agent.py::ExitAgentTests::test_pre_close_exit_refreshes_bot_status_snapshot",
+    "tests": {
+      "red_test_before_fix": "failed with stale open_positions",
+      "compile": "PASS",
+      "exit_agent": "12 passed",
+      "focused_acceptance": "959 passed"
+    },
+    "paper_validation_result": "not rerun; focused paper-mode close-path regression reproduced and repaired exact stale snapshot condition",
+    "runtime_logic_changed": false,
+    "status_snapshot_changed": true,
+    "strategy_risk_sizing_execution_changed": false,
+    "live_order_submission_markers": 0,
+    "safety_verdict": "SAFE_STATUS_ONLY_REPAIR",
+    "next_task": "POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001"
   }
 }

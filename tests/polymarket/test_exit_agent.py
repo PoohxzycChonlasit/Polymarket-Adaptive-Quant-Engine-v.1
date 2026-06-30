@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -160,6 +164,29 @@ class ExitAgentTests(unittest.TestCase):
 
         self.assertEqual(trader.tracker.open_positions(), [])
         self.assertEqual(trader.tracker.closed_positions()[0].exit_reason, "forced_exit")
+
+    def test_pre_close_exit_refreshes_bot_status_snapshot(self) -> None:
+        trader = _trader()
+        _open_position(trader)
+        trader.client.get_orderbook.return_value = OrderbookSnapshot("yes-token", 0.54, 0.56, 0.02, 10, 10)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            previous_cwd = os.getcwd()
+            try:
+                os.chdir(tmp_dir)
+                Path("runtime").mkdir()
+                trader.update_dashboard_status(25)
+                before_status = json.loads(Path("runtime/bot_status.json").read_text())
+                self.assertEqual(len(before_status["open_positions"]), 1)
+
+                trader.enforce_pre_close_exits(25)
+
+                after_status = json.loads(Path("runtime/bot_status.json").read_text())
+                self.assertEqual(trader.tracker.open_positions(), [])
+                self.assertEqual(after_status["open_positions"], [])
+                self.assertEqual(after_status["current_countdown"], 25)
+            finally:
+                os.chdir(previous_cwd)
 
     def test_residual_sweep_triggers_at_t15_seconds(self) -> None:
         trader = _trader()

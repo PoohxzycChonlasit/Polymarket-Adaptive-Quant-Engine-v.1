@@ -3245,6 +3245,34 @@
       "caveat": "bot_status.json stale open_positions snapshot retained target as open after shutdown",
       "safety_verdict": "SAFE_PAPER_VALIDATION",
       "notes": "DONE. Target bd919e7a closed via forced_exit at 0.50; trade_close emitted; realized PnL 0.0; cash restored; position tracker has zero open positions. Caveat: bot_status.json open_positions stale after shutdown. Next: BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001."
+    },
+    {
+      "priority": 1.864,
+      "task_id": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Validate and repair stale bot_status.json after paper close while preserving runtime trading behavior.",
+      "blocked_by": "TRADE_CLOSE_AND_PNL_ACCOUNTING_VALIDATION_001",
+      "allowed_scope": [
+        "polymarket/trader.py",
+        "tests/polymarket/test_exit_agent.py",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001.md",
+        "docs/operations/execution_contracts/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001_CONTRACT_001.md"
+      ],
+      "root_cause": "MISSING_FLUSH_AFTER_CLOSE",
+      "fix": "Refresh bot_status.json after successful _close_position_with_retry trade_close emission; forced/pre-close exit path passes countdown through.",
+      "tests": {
+        "compile": "PASS",
+        "exit_agent": "12 passed",
+        "focused_acceptance": "959 passed"
+      },
+      "safety_verdict": "SAFE_STATUS_ONLY_REPAIR",
+      "notes": "DONE. Focused regression reproduced stale open_positions after enforce_pre_close_exits and now passes. No strategy, sizing, risk thresholds, execution behavior, live execution, config, or .env changes. Next: POST_FIX_PAPER_CLOSE_STATUS_FRESHNESS_RUNTIME_CONFIRMATION_001 if fresh runtime confirmation is desired."
     }
   ]
 }

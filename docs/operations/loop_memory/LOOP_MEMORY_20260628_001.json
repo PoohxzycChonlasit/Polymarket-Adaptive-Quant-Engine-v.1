@@ -4329,5 +4329,41 @@
       "docs\\operations\\loop_memory\\LOOP_MEMORY_20260628_001.json"
     ],
     "commits": []
+  },
+  {
+    "task_id": "BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001",
+    "task_class": 5,
+    "completed_at": "2026-06-30T10:05:00Z",
+    "status": "COMPLETE",
+    "verdict": "PASS_REPAIRED",
+    "report_doc": "docs/reports/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001.md",
+    "contract_doc": "docs/operations/execution_contracts/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001_CONTRACT_001.md",
+    "summary": "Reproduced stale bot_status open_positions after pre-close forced exit; repaired status-only refresh after successful close/trade_close emission and preserved runtime trading behavior.",
+    "tests_run": [
+      ".\\.venv\\Scripts\\python.exe -m pytest tests\\polymarket\\test_exit_agent.py::ExitAgentTests::test_pre_close_exit_refreshes_bot_status_snapshot -q --tb=short -ra",
+      ".\\.venv\\Scripts\\python.exe -m py_compile main.py polymarket\\trader.py",
+      ".\\.venv\\Scripts\\python.exe -m pytest tests\\polymarket\\test_exit_agent.py -q --tb=short -ra",
+      ".\\.venv\\Scripts\\python.exe -m pytest tests\\observability tests\\polymarket -q --tb=short -ra"
+    ],
+    "evidence": {
+      "root_cause": "MISSING_FLUSH_AFTER_CLOSE",
+      "red_test_before_fix": "failed with stale open_positions",
+      "target_status_source": "position_tracker_state correct; bot_status snapshot stale",
+      "compile": "PASS",
+      "exit_agent_tests": "12 passed",
+      "focused_acceptance": "959 passed",
+      "paper_validation_result": "not rerun; no active owner file and no active open target position",
+      "live_order_submission_markers": 0
+    },
+    "files_changed": [
+      "polymarket/trader.py",
+      "tests/polymarket/test_exit_agent.py",
+      "docs/reports/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001.md",
+      "docs/operations/execution_contracts/BOT_STATUS_CLOSE_SNAPSHOT_FRESHNESS_REPAIR_OR_VALIDATION_001_CONTRACT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "commits": []
   }
 ]
