@@ -3422,6 +3422,37 @@
       },
       "safety_verdict": "SAFE_PAPER_VALIDATION",
       "notes": "DONE. 60-minute paper run completed cleanly with 60 cycles and risk NORMAL throughout, but produced 0 trade_open and 0 trade_close events. TP threshold was not evaluated because there was no entry sample. Live-order markers: 0. Next: PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001."
+    },
+    {
+      "priority": 1.87,
+      "task_id": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Analyze why the 60-minute paper run produced zero entries and determine which gates block entry samples needed for TP evidence.",
+      "blocked_by": "TAKE_PROFIT_EXIT_EVIDENCE_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "runtime/validation_logs/",
+        "runtime/quant_data/"
+      ],
+      "outputs": [
+        "docs/reports/PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001.md"
+      ],
+      "verdict": "DIAGNOSTIC_COMPLETE_NO_TUNING_JUSTIFIED",
+      "source_run_id": "20260630T135455Z_6592_5fac8cf4",
+      "blocker_breakdown": {
+        "delta_extreme": 44,
+        "confidence_too_low": 21,
+        "risk_plan_zero": 17,
+        "time_unsafe": 17,
+        "clob_empty_response": 13,
+        "ev_below_threshold": 8
+      },
+      "tuning_justified": false,
+      "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
+      "notes": "DONE. Gates mostly protected correctly. risk_plan_zero is the strongest design question: all 17 rows were zeroed by side-confidence confidence_too_low despite some high top-level confidence and EV. Only 4 high top-confidence+EV rows had ready orderbooks, too small for tuning. Next: ENTRY_GATE_COUNTERFACTUAL_REPLAY_001."
     }
   ]
 }

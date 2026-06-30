@@ -4519,5 +4519,40 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "next_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001"
+  },
+  {
+    "task_id": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001",
+    "task_class": 2,
+    "completed_at": "2026-06-30",
+    "status": "COMPLETE",
+    "verdict": "DIAGNOSTIC_COMPLETE_NO_TUNING_JUSTIFIED",
+    "report_doc": "docs/reports/PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001.md",
+    "source_run_id": "20260630T135455Z_6592_5fac8cf4",
+    "summary": "Analyzed the 60-minute zero-entry paper run. Gates mostly protected correctly; risk_plan_zero is the main design question because side-confidence semantics zeroed 17 candidate sizes despite some high top-level confidence and EV. Tuning is not justified from this sample.",
+    "evidence": {
+      "decision_rows": 120,
+      "trade_open_count": 0,
+      "trade_close_count": 0,
+      "blocker_breakdown": {
+        "delta_extreme": 44,
+        "confidence_too_low": 21,
+        "risk_plan_zero": 17,
+        "time_unsafe": 17,
+        "clob_empty_response": 13,
+        "ev_below_threshold": 8
+      },
+      "risk_plan_zero_reason_from_order_manager": {
+        "confidence_too_low": 17
+      },
+      "high_top_confidence_ev_ready_rows": 4,
+      "tuning_justified": false
+    },
+    "files_changed": [
+      "docs/reports/PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "next_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001"
   }
 ]

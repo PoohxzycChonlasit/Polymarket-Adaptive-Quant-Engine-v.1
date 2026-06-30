@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "TAKE_PROFIT_EXIT_EVIDENCE_001 complete; 60-minute paper run produced zero opens/closes, so TP threshold was not evaluated",
-  "last_completed_task": "TAKE_PROFIT_EXIT_EVIDENCE_001",
+  "current_phase": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001 complete; entry starvation traced to protective gates plus risk-plan side-confidence semantics",
+  "last_completed_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001",
+  "next_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1181,5 +1181,32 @@
     "live_order_submission_markers": 0,
     "safety_verdict": "SAFE_PAPER_VALIDATION",
     "next_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001"
+  },
+  "paper_entry_sample_quality_for_tp_evidence": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "report_doc": "docs/reports/PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001.md",
+    "verdict": "DIAGNOSTIC_COMPLETE_NO_TUNING_JUSTIFIED",
+    "source_run_id": "20260630T135455Z_6592_5fac8cf4",
+    "decision_rows": 120,
+    "trade_open_count": 0,
+    "trade_close_count": 0,
+    "blocker_breakdown": {
+      "delta_extreme": 44,
+      "confidence_too_low": 21,
+      "risk_plan_zero": 17,
+      "time_unsafe": 17,
+      "clob_empty_response": 13,
+      "ev_below_threshold": 8
+    },
+    "primary_findings": [
+      "Most gates correctly protected against weak confidence, zero EV, late timing, unavailable orderbooks, or extended delta moves.",
+      "risk_plan_zero is the strongest design question: all 17 rows were zeroed by order-manager confidence_too_low despite some high top-level confidence and EV.",
+      "Only 4 rows had high top-level confidence plus EV and ready orderbooks, too small for threshold tuning."
+    ],
+    "tuning_justified": false,
+    "runtime_changed": false,
+    "safety_verdict": "SAFE_DIAGNOSTIC_ONLY",
+    "next_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001"
   }
 }
