@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001 complete; one-gate offline replay found no strong clean candidates and identified risk_plan_zero semantics as next audit target",
-  "last_completed_task": "ENTRY_GATE_COUNTERFACTUAL_REPLAY_001",
+  "current_phase": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001 complete; risk_plan_zero traced to selected-side probability confidence floor, not multiplier or bankroll failure",
+  "last_completed_task": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001",
+  "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1239,5 +1239,33 @@
     "runtime_changed": false,
     "safety_verdict": "SAFE_OFFLINE_REPLAY_ONLY",
     "next_task": "RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001"
+  },
+  "risk_plan_zero_side_confidence_semantics_audit": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "report_doc": "docs/reports/RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001.md",
+    "verdict": "SEMANTIC_MISMATCH_CONFIRMED_NO_RUNTIME_TUNING_JUSTIFIED",
+    "source_run_id": "20260630T135455Z_6592_5fac8cf4",
+    "risk_plan_zero_rows": 17,
+    "root_cause_classification": "EXPECTED_PROTECTIVE_BEHAVIOR_WITH_SEMANTIC_MISMATCH",
+    "field_lineage": {
+      "top_level_confidence": "ProbabilityModelResult.confidence_score",
+      "active_sizing_confidence": "selected-side probability passed as OrderRequest.win_rate",
+      "zero_size_trigger": "PositionSizingInput.confidence < confidence_floor"
+    },
+    "zero_size_cause_counts": {
+      "confidence_too_low": 17,
+      "bankroll_tier": 0,
+      "liquidity_multiplier": 0,
+      "spread_multiplier": 0,
+      "delta_or_frequency_multiplier": 0,
+      "micro_survival_floor_or_cap": 0
+    },
+    "tuning_justified": false,
+    "runtime_repair_justified": false,
+    "observability_label_repair_justified": true,
+    "runtime_changed": false,
+    "safety_verdict": "SAFE_DESIGN_AUDIT_ONLY",
+    "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001"
   }
 }
