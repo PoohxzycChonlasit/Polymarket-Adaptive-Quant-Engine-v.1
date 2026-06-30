@@ -3838,5 +3838,71 @@
     },
     "safety_verdict": "SAFE_OFFLINE_TOOLING",
     "next_recommendation": "TBD"
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "CLEAN_OR_ROUTE_UNTRACKED_AIROS_OUTPUTS_001_AND_MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001",
+    "task_class": 5,
+    "scope": [
+      "tools/airos/repo_health.json",
+      "tools/airos/repository_index.json",
+      "tools/airos/test_registry.json",
+      "tools/airos/tool_registry.json",
+      "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "PASS_WITH_MARKET_DATA_DEGRADED",
+    "repairs": 1,
+    "repair_notes": "Removed four stale duplicate untracked AIROS generated JSON files from tools/airos after comparing them to canonical docs/operations/repository outputs.",
+    "evidence_grade": "A+C+D",
+    "commits": [],
+    "files_changed": 4,
+    "runtime_files_modified": false,
+    "strategy_files_modified": false,
+    "live_trading_enabled": false,
+    "paper_runtime_run": true,
+    "key_findings": {
+      "airos_hygiene_clean": true,
+      "runtime_command": ".\\.venv\\Scripts\\python.exe main.py --mode paper --interval 60",
+      "bounded_seconds": 90,
+      "return_code": 0,
+      "cycles_completed": 2,
+      "mode_banner": "MODE PAPER",
+      "live_safety_banner": "STATUS NO LIVE ORDERS",
+      "decision_loop_reached": true,
+      "market_data_status": "DEGRADED_TRUE_EMPTY",
+      "paper_trade_path_reached": false,
+      "live_order_submission_markers": 0,
+      "system_health_rows_for_run": 20,
+      "research_rows_for_run": 29,
+      "risk_rows_for_run": 3,
+      "targeted_tests": "987 passed"
+    },
+    "acceptance_criteria": {
+      "git_preflight_done": true,
+      "clean_tree_confirmed_after_hygiene": true,
+      "runtime_compile_passed": true,
+      "observability_compile_passed": true,
+      "targeted_tests_passed": true,
+      "paper_runtime_started": true,
+      "clean_shutdown_observed": true,
+      "no_live_order_submission_observed": true,
+      "report_written": true,
+      "ops_files_updated": true,
+      "runtime_code_modified": false,
+      "trader_py_modified": false
+    },
+    "known_issues": [
+      "Task-specified polymarket/main.py compile path does not exist; root main.py is canonical.",
+      "main.py --help can fail on Windows default cp1252 due a Unicode arrow in help text.",
+      "BTC/ETH orderbooks were TRUE EMPTY during the run, producing no_orderbook blocks."
+    ],
+    "safety_verdict": "PASS_WITH_MARKET_DATA_DEGRADED",
+    "next_recommendation": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise next replay/backtest or sizing-readiness validation"
   }
 ]

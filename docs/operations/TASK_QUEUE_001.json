@@ -2936,6 +2936,41 @@
         "docs/reports/SHADOW_POLICY_SEVERITY_MAP_FIX_001.md"
       ],
       "notes": "DONE. Added shadow_policy_decision and shadow_policy_reasons to _LOW_MISSING_FIELDS; added shadow_policy_observed_ev, shadow_policy_observed_probability, shadow_policy_observed_risk_mode, shadow_policy_id, shadow_policy_confidence to _INFO_MISSING_FIELDS. 3 new regression tests. 34 decision engine tests pass. Unknown-field fallback no longer fires for shadow_policy_* fields. sentinel set for shadow_policy_reasons unchanged. Batch impact: future builder runs only."
+    },
+    {
+      "priority": 1.852,
+      "task_id": "CLEAN_OR_ROUTE_UNTRACKED_AIROS_OUTPUTS_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "Resolve untracked generated AIROS JSON files under tools/airos so the repository returns to a clean state before paper runtime smoke verification.",
+      "blocked_by": null,
+      "allowed_scope": [
+        "tools/airos/repo_health.json",
+        "tools/airos/repository_index.json",
+        "tools/airos/test_registry.json",
+        "tools/airos/tool_registry.json"
+      ],
+      "outputs": [],
+      "notes": "DONE. Four untracked files were inspected and compared with docs/operations/repository outputs. They were stale duplicate generated outputs in the wrong directory and contained no unique data. Deleted untracked copies only; no commit required for hygiene."
+    },
+    {
+      "priority": 1.853,
+      "task_id": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Verify that the main paper runtime still starts and behaves normally after recent refactors and offline tooling work.",
+      "blocked_by": "CLEAN_OR_ROUTE_UNTRACKED_AIROS_OUTPUTS_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md",
+        "docs/operations/execution_contracts/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001_CONTRACT_001.md"
+      ],
+      "notes": "DONE. Bounded paper runtime command ran 90s with return code 0 after CTRL_BREAK. Runtime showed MODE PAPER and STATUS NO LIVE ORDERS, reached decision loop, emitted system_health/research/risk JSONL rows, and shut down cleanly after 2 cycles. Market data was DEGRADED_TRUE_EMPTY/no_orderbook, so no paper trade path was reached. Targeted tests passed 987/987. No live order submission markers found."
     }
   ]
 }

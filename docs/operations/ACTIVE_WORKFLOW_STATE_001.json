@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "SHADOW_POLICY_SEVERITY_MAP_FIX_001 complete; 7 shadow_policy_* severity fields added, 34 decision engine tests pass",
-    "last_completed_task": "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+    "current_phase": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001 complete; paper runtime starts, reaches decision loop, emits telemetry, and shuts down cleanly with market data degraded",
+    "last_completed_task": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001",
     "last_commit": "HEAD",
-    "last_commit_message": "test: repair shadow policy severity map",
-    "next_task": "TBD",
+    "last_commit_message": "docs: add main paper runtime smoke verification",
+    "next_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise next replay/backtest or sizing-readiness validation",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -228,7 +228,40 @@
         },
         "next_task": "TRADER_PHASE3L_TRADE_EVENT_PAYLOAD_HELPER_AUDIT_001"
     },
-    "notes": "SHADOW_POLICY_SEVERITY_MAP_FIX_001 complete. Added shadow_policy_decision/reasons to _LOW_MISSING_FIELDS; added 5 observed telemetry fields to _INFO_MISSING_FIELDS in decision_engine_prototype.py. 34 decision engine tests pass, 26 canonical builder tests pass. Severity gap closed — shadow_policy_* fields no longer fall to missing_medium_fields / REVIEW_REQUIRED. shadow_policy_reasons sentinel exclusion from _EMPTY_COLLECTION_SENTINEL_FIELDS unchanged.",
+    "main_paper_runtime_smoke_verification": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001.md",
+        "runtime_command": ".\\.venv\\Scripts\\python.exe main.py --mode paper --interval 60",
+        "bounded_runtime_seconds": 90,
+        "return_code": 0,
+        "cycles_completed": 2,
+        "startup_status": "PASS",
+        "decision_loop_reached": true,
+        "market_data_status": "DEGRADED_TRUE_EMPTY",
+        "paper_trade_path_reached": false,
+        "live_order_submission_markers": 0,
+        "runtime_owner_leftover": false,
+        "tests": {
+            "runtime_compile": "PASS with root main.py; task-specified polymarket/main.py path missing",
+            "observability_compile": "PASS",
+            "targeted_pytest": "987 passed"
+        },
+        "safety_verdict": "PASS_WITH_MARKET_DATA_DEGRADED",
+        "next_task": "MARKET_DATA_ORDERBOOK_TRUE_EMPTY_RUNTIME_DIAGNOSTIC_001 if TRUE EMPTY persists; otherwise continue replay/backtest or sizing-readiness validation"
+    },
+    "airos_hygiene_cleanup": {
+        "status": "COMPLETE",
+        "files_removed": [
+            "tools/airos/repo_health.json",
+            "tools/airos/repository_index.json",
+            "tools/airos/test_registry.json",
+            "tools/airos/tool_registry.json"
+        ],
+        "classification": "stale_duplicate_generated_outputs_in_wrong_directory",
+        "unique_data_preserved": false,
+        "commit_required": false
+    },
+    "notes": "MAIN_PAPER_RUNTIME_SMOKE_VERIFICATION_001 complete. AIROS generated outputs under tools/airos were stale duplicates and deleted without commit. Paper runtime ran bounded for 90s, returned 0 after CTRL_BREAK, completed 2 cycles, emitted JSONL telemetry, and showed MODE PAPER / STATUS NO LIVE ORDERS. Market data degraded with TRUE EMPTY/no_orderbook, so no paper trade path was reached. Targeted tests: 987 passed.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
