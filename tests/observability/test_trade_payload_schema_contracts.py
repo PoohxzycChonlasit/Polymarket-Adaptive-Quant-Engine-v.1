@@ -501,6 +501,8 @@ _EXPECTED_CLOSE_PAYLOAD = {
     "token_id": "tok-abc",
     "outcome": "YES",
     "reason": "take_profit",
+    "exit_reason": "take_profit",
+    "paper_virtual_cash": None,
     "exit_price": 0.55,
     "exit_timestamp": "2026-01-01T00:00:00Z",
     "hold_seconds": 300,
@@ -649,6 +651,40 @@ class TestTradeClosedPayloadGoldenSnapshot:
         )
         assert payload["size_sharp_at_entry"] == 100.0
         assert payload["size_sharp_close_carry_status"] == "carried"
+
+    def test_exit_reason_mirrors_reason(self):
+        payload = self._build()
+        assert payload["exit_reason"] == payload["reason"]
+
+    def test_paper_virtual_cash_passed_through(self):
+        payload = build_trade_closed_payload(
+            position=self._position(),
+            metadata=None,
+            reason="stop_loss",
+            exit_price=0.42,
+            exit_timestamp="2026-01-01T00:00:00Z",
+            hold_seconds=27,
+            size=0.196078,
+            pnl=-0.017647,
+            trade_result="SL",
+            entry_price=0.51,
+            partial=False,
+            receipt_payload=None,
+            mode="paper",
+            ticker="ETH",
+            token_id="tok-eth",
+            outcome="YES",
+            condition_id="cond-02",
+            epoch_start_ts=1710000000,
+            paper_trade_replay_key="",
+            paper_virtual_cash=20.081363,
+        )
+        assert payload["paper_virtual_cash"] == 20.081363
+        assert payload["exit_reason"] == "stop_loss"
+
+    def test_paper_virtual_cash_none_when_omitted(self):
+        payload = self._build()
+        assert payload["paper_virtual_cash"] is None
 
     def test_entry_attribution_dict_overrides_status(self):
         metadata = dict(_CLOSE_METADATA)

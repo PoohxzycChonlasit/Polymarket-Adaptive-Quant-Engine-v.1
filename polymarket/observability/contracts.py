@@ -243,6 +243,8 @@ class TradeClosedPayload(TypedDict, total=False):
     token_id: str
     outcome: str
     reason: str
+    exit_reason: str
+    paper_virtual_cash: float | None
     exit_price: float
     exit_timestamp: str
     hold_seconds: int | None

@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001 complete; 60-minute bounded paper run confirmed 2 full open+close cycles, all reconciliation checks pass, DEFENSIVE risk mode correctly activated after consecutive stop-losses",
-  "last_completed_task": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001",
+  "current_phase": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001 complete; exit_reason and paper_virtual_cash fields added to trade_close JSONL payloads; 962 scoped tests pass",
+  "last_completed_task": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001",
+  "next_task": "TBD",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1029,8 +1029,24 @@
     "trade_open_count": 2,
     "trade_close_count": 2,
     "positions": [
-      {"id": "3fdd7312", "asset": "ETH", "entry": 0.51, "exit": 0.42, "pnl": -0.017647, "reason": "stop_loss", "hold_seconds": 27},
-      {"id": "78725623", "asset": "ETH", "entry": 0.48, "exit": 0.36, "pnl": -0.025000, "reason": "stop_loss", "hold_seconds": 29}
+      {
+        "id": "3fdd7312",
+        "asset": "ETH",
+        "entry": 0.51,
+        "exit": 0.42,
+        "pnl": -0.017647,
+        "reason": "stop_loss",
+        "hold_seconds": 27
+      },
+      {
+        "id": "78725623",
+        "asset": "ETH",
+        "entry": 0.48,
+        "exit": 0.36,
+        "pnl": -0.025,
+        "reason": "stop_loss",
+        "hold_seconds": 29
+      }
     ],
     "session_pnl": -0.042647,
     "cash_start": 20.09901,
@@ -1039,7 +1055,10 @@
     "tracker_open_at_end": 0,
     "reconciliation_pass": 7,
     "reconciliation_total": 7,
-    "risk_modes_seen": ["NORMAL", "DEFENSIVE"],
+    "risk_modes_seen": [
+      "NORMAL",
+      "DEFENSIVE"
+    ],
     "defensive_mode_rows": 111,
     "normal_mode_rows": 67,
     "live_order_markers": 0,
@@ -1074,5 +1093,29 @@
     "safety_verdict": "SAFE_PAPER_VALIDATION",
     "minor_issue": "paper_virtual_cash: None in trade journal payload (pre-existing data quality gap, not introduced by fix)",
     "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001"
+  },
+  "trade_close_journal_payload_completeness_repair": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001.md",
+    "fields_added": [
+      "exit_reason",
+      "paper_virtual_cash"
+    ],
+    "files_changed": [
+      "polymarket/observability/contracts.py",
+      "polymarket/observability/trader_trade_event_payload.py",
+      "polymarket/trader.py",
+      "tests/observability/test_trade_payload_schema_contracts.py",
+      "tests/observability/test_trader_reconciliation_payload.py"
+    ],
+    "cash_source": "bankroll_state.current_cash_balance (read after _paper_apply_exit_cash in all 3 close paths)",
+    "live_branch_value": "None (field not applicable in live mode)",
+    "offline_tool_impact": "exit_reason fallback eliminated; tools now read primary field directly",
+    "tests": {
+      "focused_schema_contracts": "40 passed",
+      "scoped_acceptance": "962 passed, exit 0"
+    },
+    "safety_verdict": "SAFE_OBSERVABILITY_ONLY",
+    "next_task": "TBD"
   }
 }

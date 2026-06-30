@@ -3118,6 +3118,11 @@ class PolymarketTrader:
             _entry_price: float | None = float(getattr(position, "entry_price", None) or 0.0) or None
         except Exception:
             _entry_price = None
+        _paper_virtual_cash = (
+            float(self.bankroll_state.current_cash_balance)
+            if self.settings.paper_trading
+            else None
+        )
         close_payload = _opt_build_trade_closed_payload(
             position=position,
             metadata=metadata,
@@ -3140,6 +3145,7 @@ class PolymarketTrader:
             paper_trade_replay_key=paper_trade_replay_key,
             size_sharp_carry=self._size_sharp_close_carry(metadata),
             entry_model_truth_carry=self._carry_entry_model_truth_from_metadata(metadata),
+            paper_virtual_cash=_paper_virtual_cash,
         )
         self._emit_quant_event("log_trade_close", close_payload)
 

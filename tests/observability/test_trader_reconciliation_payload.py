@@ -277,6 +277,8 @@ def _legacy_trade_closed_payload(
         "token_id": token_id,
         "outcome": outcome,
         "reason": reason,
+        "exit_reason": reason,
+        "paper_virtual_cash": None,
         "exit_price": float(exit_price),
         "exit_timestamp": exit_timestamp,
         "hold_seconds": hold_seconds,
@@ -480,6 +482,7 @@ def test_emit_trade_closed_event_calls_quant_event_once(monkeypatch):
 
     trader = PolymarketTrader.__new__(PolymarketTrader)
     trader.settings = SimpleNamespace(paper_trading=True)
+    trader.bankroll_state = SimpleNamespace(current_cash_balance=20.056363)
     emitted = []
 
     def _capture(event_method, payload):

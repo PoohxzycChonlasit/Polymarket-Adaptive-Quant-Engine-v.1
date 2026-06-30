@@ -4423,5 +4423,32 @@
     "safety_verdict": "SAFE_PAPER_VALIDATION",
     "commits": [],
     "next_task": "POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001"
+  },
+  {
+    "task_id": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001",
+    "task_class": 3,
+    "completed_at": "2026-06-30",
+    "status": "COMPLETE",
+    "verdict": "PASS",
+    "report_doc": "docs/reports/TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001.md",
+    "summary": "Added exit_reason (alias of reason) and paper_virtual_cash (post-close paper cash balance) to trade_close JSONL payloads. 5 files changed: contracts.py TypedDict, trader_trade_event_payload.py builder, trader.py emitter, 2 test files (golden snapshot + legacy helper + mock bankroll_state). All 3 close paths verified: cash is updated before emit. Offline tools already fell back from exit_reason to reason; now get primary field populated. 962/962 scoped acceptance pass.",
+    "fields_added": [
+      "exit_reason",
+      "paper_virtual_cash"
+    ],
+    "files_changed": [
+      "polymarket/observability/contracts.py",
+      "polymarket/observability/trader_trade_event_payload.py",
+      "polymarket/trader.py",
+      "tests/observability/test_trade_payload_schema_contracts.py",
+      "tests/observability/test_trader_reconciliation_payload.py"
+    ],
+    "tests": {
+      "focused_schema_contracts": "40 passed",
+      "scoped_acceptance": "962 passed"
+    },
+    "pre_existing_failures_in_full_suite": "present (not caused by this patch)",
+    "safety_verdict": "SAFE_OBSERVABILITY_ONLY",
+    "next_task": "TBD"
   }
 ]

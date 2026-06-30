@@ -288,6 +288,7 @@ def build_trade_closed_payload(
     paper_trade_replay_key: str,
     size_sharp_carry: dict[str, object] | None = None,
     entry_model_truth_carry: dict[str, object] | None = None,
+    paper_virtual_cash: float | None = None,
 ) -> TradeClosedPayload:
     """Build the trade-close quant event payload without emitting or mutating trader state."""
     metadata_dict = metadata if isinstance(metadata, dict) else {}
@@ -298,6 +299,8 @@ def build_trade_closed_payload(
         "token_id": token_id,
         "outcome": outcome,
         "reason": reason,
+        "exit_reason": reason,
+        "paper_virtual_cash": paper_virtual_cash,
         "exit_price": float(exit_price),
         "exit_timestamp": exit_timestamp,
         "hold_seconds": hold_seconds,

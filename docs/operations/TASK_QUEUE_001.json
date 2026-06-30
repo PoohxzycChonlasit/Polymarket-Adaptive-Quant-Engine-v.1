@@ -39,7 +39,7 @@
         "docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
         "docs/operations/REPOSITORY_HEALTH_CHECK_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 177 commits pushed to origin/main. GitHub now current. Resource governance and repo health check protocols active."
+      "notes": "COMPLETED â€” 177 commits pushed to origin/main. GitHub now current. Resource governance and repo health check protocols active."
     },
     {
       "priority": -1,
@@ -57,7 +57,7 @@
       "outputs": [
         "docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 30 tests pass. bankroll_rank and size_sharp_at_entry now emitted in trade_open payload. capital_score added. Source guard verified. Known issue: log_bankroll_rank_evaluation method missing from QuantEventLogger (separate fix needed)."
+      "notes": "COMPLETED â€” 30 tests pass. bankroll_rank and size_sharp_at_entry now emitted in trade_open payload. capital_score added. Source guard verified. Known issue: log_bankroll_rank_evaluation method missing from QuantEventLogger (separate fix needed)."
     },
     {
       "priority": -2,
@@ -74,7 +74,7 @@
       "outputs": [
         "docs/reports/CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001.md"
       ],
-      "notes": "DONE \u00e2\u20ac\u201d Verdict: UNIT_TEST_VERIFIED / RUNTIME_NO_TRADE_DATA. 30/30 tests pass. Bounded paper session ran 90s but markets were TRUE EMPTY (between BTC/ETH epochs). No trade_open events generated. Unit tests verify all new fields emit correctly. Known issue: log_bankroll_rank_evaluation event not written (QuantEventLogger missing method). Next: BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001."
+      "notes": "DONE â€” Verdict: UNIT_TEST_VERIFIED / RUNTIME_NO_TRADE_DATA. 30/30 tests pass. Bounded paper session ran 90s but markets were TRUE EMPTY (between BTC/ETH epochs). No trade_open events generated. Unit tests verify all new fields emit correctly. Known issue: log_bankroll_rank_evaluation event not written (QuantEventLogger missing method). Next: BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001."
     },
     {
       "priority": -3,
@@ -82,7 +82,7 @@
       "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 1,
-      "description": "Run 630+ config policy grid on 886-row signal-driven dataset. Focus on EV \u00c3\u2014 probability \u00c3\u2014 risk_mode combinations. Surface best policy for NORMAL mode with positive Sharpe.",
+      "description": "Run 630+ config policy grid on 886-row signal-driven dataset. Focus on EV Ã— probability Ã— risk_mode combinations. Surface best policy for NORMAL mode with positive Sharpe.",
       "blocked_by": "CANONICAL_TRADE_OPEN_TELEMETRY_BACKFILL_VALIDATION_001",
       "allowed_scope": [
         "tools/",
@@ -93,7 +93,7 @@
       "outputs": [
         "docs/reports/BACKTEST_ENGINE_V2_POLICY_GRID_EXPANSION_001.md"
       ],
-      "notes": "Use BacktestEngineV2. Signal-driven rows only (886). Apply risk_mode=NORMAL filter. Grid: ev 0.0-0.25 \u00c3\u2014 prob 0.60-0.70 \u00c3\u2014 decision_score thresholds. Identify configs with Sharpe > 0 and n >= 50."
+      "notes": "Use BacktestEngineV2. Signal-driven rows only (886). Apply risk_mode=NORMAL filter. Grid: ev 0.0-0.25 Ã— prob 0.60-0.70 Ã— decision_score thresholds. Identify configs with Sharpe > 0 and n >= 50."
     },
     {
       "priority": -4,
@@ -101,7 +101,7 @@
       "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 2,
-      "description": "Design Market Availability Engine \u00e2\u20ac\u201d scheduler states, Gamma API detection, resource governance, bankroll_rank schema clarification.",
+      "description": "Design Market Availability Engine â€” scheduler states, Gamma API detection, resource governance, bankroll_rank schema clarification.",
       "blocked_by": null,
       "allowed_scope": [
         "docs/architecture/",
@@ -112,7 +112,7 @@
         "docs/architecture/MARKET_AVAILABILITY_ENGINE_001.md",
         "docs/reports/MARKET_AVAILABILITY_ENGINE_DESIGN_001.md"
       ],
-      "notes": "DONE \u00e2\u20ac\u201d 5 states (ACTIVE, BETWEEN_EPOCHS, MARKET_NOT_SCHEDULED, API_UNAVAILABLE, UNKNOWN). Gamma API slug pattern detection. bankroll_rank=tier-string, capital_score=float. 91% API call reduction in dead windows. Revert of 5458885 bankroll_rank type change required in impl task."
+      "notes": "DONE â€” 5 states (ACTIVE, BETWEEN_EPOCHS, MARKET_NOT_SCHEDULED, API_UNAVAILABLE, UNKNOWN). Gamma API slug pattern detection. bankroll_rank=tier-string, capital_score=float. 91% API call reduction in dead windows. Revert of 5458885 bankroll_rank type change required in impl task."
     },
     {
       "priority": -4,
@@ -359,7 +359,7 @@
       "outputs": [
         "docs/reports/BACKTEST_ENGINE_V2_FROM_CANONICAL_CONTEXT_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 9-component engine implemented. 51 tests pass. tools/backtest_engine_v2/ only, zero runtime changes."
+      "notes": "COMPLETED â€” 9-component engine implemented. 51 tests pass. tools/backtest_engine_v2/ only, zero runtime changes."
     },
     {
       "priority": 0,
@@ -376,7 +376,7 @@
       "outputs": [
         "docs/reports/BACKTEST_ENGINE_V2_REAL_DATA_VALIDATION_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d Verdict: POLICY_NOT_READY_DATA_TOO_SMALL. Engine mechanics verified. Only 14 HIGH-confidence rows (need >= 50). 334 grade D rows are test/settlement events with no signal fields. Size Sharp and Bankroll Rank absent from all rows."
+      "notes": "COMPLETED â€” Verdict: POLICY_NOT_READY_DATA_TOO_SMALL. Engine mechanics verified. Only 14 HIGH-confidence rows (need >= 50). 334 grade D rows are test/settlement events with no signal fields. Size Sharp and Bankroll Rank absent from all rows."
     },
     {
       "priority": -1,
@@ -394,7 +394,7 @@
       "outputs": [
         "docs/reports/CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d Repaired probability, fair_value, EV, and bankroll_tier_id extractions in CanonicalContextBuilder. Fixed critical field check to use intended_price instead of entry_price. Added 2 regression tests."
+      "notes": "COMPLETED â€” Repaired probability, fair_value, EV, and bankroll_tier_id extractions in CanonicalContextBuilder. Fixed critical field check to use intended_price instead of entry_price. Added 2 regression tests."
     },
     {
       "priority": 0,
@@ -566,7 +566,7 @@
       "status": "DONE",
       "workflow_tier": "GATE",
       "task_class": 2,
-      "description": "Design document for Batch 3C extraction \u00e2\u20ac\u201d lifecycle observability payload methods.",
+      "description": "Design document for Batch 3C extraction â€” lifecycle observability payload methods.",
       "blocked_by": "BATCH_3C_GATE_CHECK_001",
       "allowed_scope": [
         "docs/reports/"
@@ -645,7 +645,7 @@
       "outputs": [
         "docs/operations/AGENT_PIPELINE_001.json"
       ],
-      "notes": "Phase 3 FLAOS migration \u00e2\u20ac\u201d completes automated role selection framework."
+      "notes": "Phase 3 FLAOS migration â€” completes automated role selection framework."
     },
     {
       "priority": 6,
@@ -694,7 +694,7 @@
       "outputs": [
         "docs/reports/LONG_RUNTIME_VALIDATION_001.md"
       ],
-      "notes": "Optional \u00e2\u20ac\u201d run when available. Use LOOP tier Class 0. No code changes. Monitor event_stream_file_size growth rate."
+      "notes": "Optional â€” run when available. Use LOOP tier Class 0. No code changes. Monitor event_stream_file_size growth rate."
     },
     {
       "priority": 5.5,
@@ -799,7 +799,7 @@
         "tools/flaos/log_governance.py",
         "docs/reports/RUNTIME_LOG_GOVERNANCE_IMPLEMENTATION_001.md"
       ],
-      "notes": "URGENCY HIGH \u00e2\u20ac\u201d logs/ at 1.6 GB. Implement dry-run first policy. Execute only with --confirm flag. Session guard required before DELETE."
+      "notes": "URGENCY HIGH â€” logs/ at 1.6 GB. Implement dry-run first policy. Execute only with --confirm flag. Session guard required before DELETE."
     },
     {
       "priority": 4.2,
@@ -809,7 +809,7 @@
       "task_class": 0,
       "description": "Run log_governance.py inspect, plan, and dry-run against real logs/ and runtime/ dirs. Verify expected actions without executing. No file mutations.",
       "blocked_by": null,
-      "finding": "0 DELETE candidates \u00e2\u20ac\u201d N>5 policy does not match actual structure (max N=5). Session-age-based cleanup needed."
+      "finding": "0 DELETE candidates â€” N>5 policy does not match actual structure (max N=5). Session-age-based cleanup needed."
     },
     {
       "priority": 4.1,
@@ -817,7 +817,7 @@
       "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
-      "description": "Corrected log governance policy \u00e2\u20ac\u201d session-age-based cleanup.",
+      "description": "Corrected log governance policy â€” session-age-based cleanup.",
       "blocked_by": null,
       "allowed_scope": [
         "tools/flaos/",
@@ -861,7 +861,7 @@
       "outputs": [
         "docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 800 deleted, 1,323.7 MB reclaimed, 0 failures. logs/ reduced from 1.6 GB to 303 MB."
+      "notes": "COMPLETED â€” 800 deleted, 1,323.7 MB reclaimed, 0 failures. logs/ reduced from 1.6 GB to 303 MB."
     },
     {
       "priority": 3.9,
@@ -878,7 +878,7 @@
       "outputs": [
         "docs/reports/RUNTIME_LOG_GOVERNANCE_EXECUTE_002.md"
       ],
-      "notes": "Completed \u00e2\u20ac\u201d 56 deleted, 88 MB reclaimed. logs/ at 219 MB."
+      "notes": "Completed â€” 56 deleted, 88 MB reclaimed. logs/ at 219 MB."
     },
     {
       "priority": 3.85,
@@ -911,7 +911,7 @@
       "outputs": [
         "docs/reports/RUNTIME_LOG_GOVERNANCE_PHASE_A_CLOSEOUT_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d CURRENT_PROJECT_STATUS.md updated with Phase A results."
+      "notes": "COMPLETED â€” CURRENT_PROJECT_STATUS.md updated with Phase A results."
     },
     {
       "priority": 3.7,
@@ -928,7 +928,7 @@
       "outputs": [
         "docs/audits/POST_MAINTENANCE_STRATEGY_REVIEW_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d verdict: Memory OS V2 Design is primary next. Full Batch 3D (payload methods) remains deferred. Batch 3D mini-gate secondary."
+      "notes": "COMPLETED â€” verdict: Memory OS V2 Design is primary next. Full Batch 3D (payload methods) remains deferred. Batch 3D mini-gate secondary."
     },
     {
       "priority": 3.6,
@@ -947,7 +947,7 @@
         "docs/architecture/MEMORY_OS_V2_001.md",
         "docs/reports/MEMORY_OS_V2_DESIGN_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 45-section design, 20 memory layers, JSONL format, Memory Index, Memory Graph, migration plan v2a-v4."
+      "notes": "COMPLETED â€” 45-section design, 20 memory layers, JSONL format, Memory Index, Memory Graph, migration plan v2a-v4."
     },
     {
       "priority": 3.5,
@@ -955,7 +955,7 @@
       "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 4,
-      "description": "Implement Memory OS V2: tools/flaos/memory_migrate.py (v1 JSON \u00e2\u2020\u2019 JSONL), tools/flaos/memory_os.py (read/write/query/validate CLI), MEMORY_INDEX.json, SAFETY_MEMORY.jsonl pre-seeded with QS-001 to QS-010.",
+      "description": "Implement Memory OS V2: tools/flaos/memory_migrate.py (v1 JSON â†’ JSONL), tools/flaos/memory_os.py (read/write/query/validate CLI), MEMORY_INDEX.json, SAFETY_MEMORY.jsonl pre-seeded with QS-001 to QS-010.",
       "blocked_by": null,
       "allowed_scope": [
         "tools/flaos/",
@@ -968,7 +968,7 @@
         "docs/operations/memory/MEMORY_INDEX.json",
         "docs/operations/memory/safety/SAFETY_MEMORY.jsonl"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 23/23 tests pass. 35 loop entries migrated, 10 QS entries seeded, MEMORY_INDEX_001.json created."
+      "notes": "COMPLETED â€” 23/23 tests pass. 35 loop entries migrated, 10 QS entries seeded, MEMORY_INDEX_001.json created."
     },
     {
       "priority": 3.4,
@@ -1005,7 +1005,7 @@
       "outputs": [
         "docs/architecture/EXECUTION_ENGINE_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 15-section design. ExecutionContract, ToolExecutionResult, Evidence Collector, Repair Loop, Commit Engine, Memory OS integration, v1-v5 migration roadmap."
+      "notes": "COMPLETED â€” 15-section design. ExecutionContract, ToolExecutionResult, Evidence Collector, Repair Loop, Commit Engine, Memory OS integration, v1-v5 migration roadmap."
     },
     {
       "priority": 3.3,
@@ -1022,7 +1022,7 @@
       "outputs": [
         "docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 20-section template with 3 examples (docs/refactor/destructive). Connects to bootstrap, Memory OS, safety memory."
+      "notes": "COMPLETED â€” 20-section template with 3 examples (docs/refactor/destructive). Connects to bootstrap, Memory OS, safety memory."
     },
     {
       "priority": 3.2,
@@ -1038,7 +1038,7 @@
       "outputs": [
         "docs/reports/EXECUTION_CONTRACT_SMOKE_TEST_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d template sufficient. CLASS 6+ mandate recommended. 2 template improvements suggested."
+      "notes": "COMPLETED â€” template sufficient. CLASS 6+ mandate recommended. 2 template improvements suggested."
     },
     {
       "priority": 3.1,
@@ -1057,7 +1057,7 @@
       "outputs": [
         "docs/reports/EXECUTION_CONTRACT_POLICY_ENABLEMENT_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d policy added to PROJECT_RULES.md, AGENTS.md, Playbook. Template patched v2.1 with evidence_baseline and trader_py_lines_before."
+      "notes": "COMPLETED â€” policy added to PROJECT_RULES.md, AGENTS.md, Playbook. Template patched v2.1 with evidence_baseline and trader_py_lines_before."
     },
     {
       "priority": 3.0,
@@ -1076,7 +1076,7 @@
         "docs/operations/memory/repository/REPO_MEMORY.jsonl",
         "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_DESIGN_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 14-section design, 23 node types, 24 edge types, 5 schemas, 6 query examples, 3 Mermaid, v1-v5 migration."
+      "notes": "COMPLETED â€” 14-section design, 23 node types, 24 edge types, 5 schemas, 6 query examples, 3 Mermaid, v1-v5 migration."
     },
     {
       "priority": 2.9,
@@ -1095,7 +1095,7 @@
         "docs/operations/memory/repository/REPO_GRAPH_EDGES.jsonl",
         "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_SEED_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 66 nodes, 45 edges, 17 node types, 14 edge types. All QS entries have protects/blocks edges. Batch 3 extraction history seeded."
+      "notes": "COMPLETED â€” 66 nodes, 45 edges, 17 node types, 14 edge types. All QS entries have protects/blocks edges. Batch 3 extraction history seeded."
     },
     {
       "priority": 2.8,
@@ -1112,7 +1112,7 @@
       "outputs": [
         "docs/architecture/RKG_QUERY_ENGINE_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 8 queries, input/output schemas, safety-first behavior, 5 seeded-graph examples, Execution Contract integration, v1-v5 migration."
+      "notes": "COMPLETED â€” 8 queries, input/output schemas, safety-first behavior, 5 seeded-graph examples, Execution Contract integration, v1-v5 migration."
     },
     {
       "priority": 2.7,
@@ -1120,7 +1120,7 @@
       "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
-      "description": "Implement RKG v2 query tool: docs/operations/GRAPH_QUERY_TEMPLATE_001.md \u00e2\u20ac\u201d Markdown form that AI fills using seeded JSONL to produce structured JSON query outputs. Proves queries work before Python implementation.",
+      "description": "Implement RKG v2 query tool: docs/operations/GRAPH_QUERY_TEMPLATE_001.md â€” Markdown form that AI fills using seeded JSONL to produce structured JSON query outputs. Proves queries work before Python implementation.",
       "blocked_by": null,
       "allowed_scope": [
         "docs/operations/",
@@ -1130,7 +1130,7 @@
         "docs/operations/GRAPH_QUERY_TEMPLATE_001.md",
         "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_TOOL_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 17-section template + 4 example fills (blast_radius, safety_check, why_deferred, evidence_for_commit). Section 16 produces Execution Contract attachment."
+      "notes": "COMPLETED â€” 17-section template + 4 example fills (blast_radius, safety_check, why_deferred, evidence_for_commit). Section 16 produces Execution Contract attachment."
     },
     {
       "priority": 2.6,
@@ -1146,7 +1146,7 @@
       "outputs": [
         "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_QUERY_SMOKE_TEST_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 4/4 queries matched. Template sufficient. Contract-ready attachment blocks verified."
+      "notes": "COMPLETED â€” 4/4 queries matched. Template sufficient. Contract-ready attachment blocks verified."
     },
     {
       "priority": 2.5,
@@ -1164,7 +1164,7 @@
       "outputs": [
         "docs/reports/GRAPH_QUERY_POLICY_ENABLEMENT_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 5 governance files patched. GRAPH_QUERY_NOT_EXECUTED stop condition added. knowledge_graph_evidence block in contract template."
+      "notes": "COMPLETED â€” 5 governance files patched. GRAPH_QUERY_NOT_EXECUTED stop condition added. knowledge_graph_evidence block in contract template."
     },
     {
       "priority": 2.4,
@@ -1172,7 +1172,7 @@
       "status": "DONE",
       "workflow_tier": "STANDARD",
       "task_class": 4,
-      "description": "Implement tools/flaos/knowledge_graph.py \u00e2\u20ac\u201d Python query tool for blast_radius, safety_check, evidence_for_commit, why_deferred reading seeded JSONL graph files. Stdlib only.",
+      "description": "Implement tools/flaos/knowledge_graph.py â€” Python query tool for blast_radius, safety_check, evidence_for_commit, why_deferred reading seeded JSONL graph files. Stdlib only.",
       "blocked_by": null,
       "allowed_scope": [
         "tools/flaos/",
@@ -1183,7 +1183,7 @@
         "tools/flaos/knowledge_graph.py",
         "docs/reports/RUNTIME_KNOWLEDGE_GRAPH_PYTHON_TOOL_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 5 subcommands, 24 tests, 24/24 pass. Reads seeded JSONL, outputs rkg_query_output_v1 JSON."
+      "notes": "COMPLETED â€” 5 subcommands, 24 tests, 24/24 pass. Reads seeded JSONL, outputs rkg_query_output_v1 JSON."
     },
     {
       "priority": 2.3,
@@ -1689,7 +1689,7 @@
       "outputs": [
         "docs/reports/LIVE_ALLOWANCE_AND_PREFLIGHT_IMPLEMENTATION_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 17 new tests pass, 128 regression tests pass. Zero-allowance bug fixed. approve_allowance requires Web3 (STOP condition hit \u00e2\u20ac\u201d documented)."
+      "notes": "COMPLETED â€” 17 new tests pass, 128 regression tests pass. Zero-allowance bug fixed. approve_allowance requires Web3 (STOP condition hit â€” documented)."
     },
     {
       "priority": 4.2,
@@ -1708,7 +1708,7 @@
       "outputs": [
         "docs/reports/LIVE_FILL_LOOP_IMPLEMENTATION_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 19+128 tests pass. fill_confirmed gate added. zero-status bug addressed."
+      "notes": "COMPLETED â€” 19+128 tests pass. fill_confirmed gate added. zero-status bug addressed."
     },
     {
       "priority": 4.1,
@@ -1727,7 +1727,7 @@
       "outputs": [
         "docs/reports/LIVE_RECONCILIATION_TIMER_IMPLEMENTATION_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 29+128 tests pass. Pending order tracking and periodic reconciliation working."
+      "notes": "COMPLETED â€” 29+128 tests pass. Pending order tracking and periodic reconciliation working."
     },
     {
       "priority": 4.0,
@@ -1746,7 +1746,7 @@
       "outputs": [
         "docs/reports/LIVE_SIGNING_VALIDATION_AND_TELEGRAM_001.md"
       ],
-      "notes": "COMPLETED \u00e2\u20ac\u201d 19+128 tests pass. 5 new notify_* methods. Wired to startup/fill/cancel/signing."
+      "notes": "COMPLETED â€” 19+128 tests pass. 5 new notify_* methods. Wired to startup/fill/cancel/signing."
     },
     {
       "priority": 5.0,
@@ -2970,7 +2970,7 @@
       "outputs": [
         "docs/reports/CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001.md"
       ],
-      "notes": "DONE. Added _EMPTY_COLLECTION_SENTINEL_FIELDS frozenset (blockers, reason_codes \u00e2\u20ac\u201d schema-confirmed \u00c2\u00a73.B). Updated missing-field detection to exclude sentinel fields when empty. 3 new regression tests (blockers explicit, blockers absent, non-sentinel still flags). 25 canonical builder tests pass, 31 decision engine tests pass. Batch impact: future builds only (existing JSONL stores pre-fix missing_fields). size_sharp and shadow_policy sentinel fix deferred to CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001."
+      "notes": "DONE. Added _EMPTY_COLLECTION_SENTINEL_FIELDS frozenset (blockers, reason_codes â€” schema-confirmed Â§3.B). Updated missing-field detection to exclude sentinel fields when empty. 3 new regression tests (blockers explicit, blockers absent, non-sentinel still flags). 25 canonical builder tests pass, 31 decision engine tests pass. Batch impact: future builds only (existing JSONL stores pre-fix missing_fields). size_sharp and shadow_policy sentinel fix deferred to CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001."
     },
     {
       "priority": 1.849,
@@ -2978,7 +2978,7 @@
       "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 2,
-      "description": "Audit whether SizeSharp and shadow_policy empty-collection fields in the canonical builder should be treated as valid sentinels or missing data. Design/audit only \u00e2\u20ac\u201d no builder changes.",
+      "description": "Audit whether SizeSharp and shadow_policy empty-collection fields in the canonical builder should be treated as valid sentinels or missing data. Design/audit only â€” no builder changes.",
       "blocked_by": "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
       "allowed_scope": [
         "docs/reports/",
@@ -2987,7 +2987,7 @@
       "outputs": [
         "docs/reports/CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001.md"
       ],
-      "notes": "DONE. 5 fields approved as sentinels (schema-confirmed via SizeSharpMetadata TypedDict): size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs. shadow_policy_reasons DEFERRED (generic object type; severity-map gap found). CRITICAL FINDING: shadow_policy_* fields absent from all decision engine severity sets \u00e2\u20ac\u201d unknown fields \u00e2\u2020\u2019 MEDIUM \u00e2\u2020\u2019 REVIEW_REQUIRED. Gap latent in existing JSONL but active on next builder run. Next: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (5-field patch) + SHADOW_POLICY_SEVERITY_MAP_FIX_001 (decision engine fix)."
+      "notes": "DONE. 5 fields approved as sentinels (schema-confirmed via SizeSharpMetadata TypedDict): size_sharp_component_scores, size_sharp_penalties, size_sharp_boosts, size_sharp_hard_caps, size_sharp_missing_inputs. shadow_policy_reasons DEFERRED (generic object type; severity-map gap found). CRITICAL FINDING: shadow_policy_* fields absent from all decision engine severity sets â€” unknown fields â†’ MEDIUM â†’ REVIEW_REQUIRED. Gap latent in existing JSONL but active on next builder run. Next: CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001 (5-field patch) + SHADOW_POLICY_SEVERITY_MAP_FIX_001 (decision engine fix)."
     },
     {
       "priority": 1.85,
@@ -3114,7 +3114,7 @@
       "outputs": [
         "docs/reports/MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001.md"
       ],
-      "notes": "DONE. Run ID 20260630T042355Z_20576_c2e9e6af, ~8 min, 9 cycles. 8 MAE checks: all state=ACTIVE, fallback_used=true, availability_source=exact_slug_fallback, active_market_count=4. Two epoch rollovers observed (1782793200\u00e2\u2020\u20191782793500\u00e2\u2020\u20191782793800). 15 TRADABLE orderbook snapshots. Model gate and EV gate reached. 0 live/order markers. Final verdict: PASS. Safety verdict: SAFE_PAPER_VALIDATION."
+      "notes": "DONE. Run ID 20260630T042355Z_20576_c2e9e6af, ~8 min, 9 cycles. 8 MAE checks: all state=ACTIVE, fallback_used=true, availability_source=exact_slug_fallback, active_market_count=4. Two epoch rollovers observed (1782793200â†’1782793500â†’1782793800). 15 TRADABLE orderbook snapshots. Model gate and EV gate reached. 0 live/order markers. Final verdict: PASS. Safety verdict: SAFE_PAPER_VALIDATION."
     },
     {
       "priority": 1.857,
@@ -3139,7 +3139,7 @@
       "status": "DONE",
       "workflow_tier": "LOOP",
       "task_class": 2,
-      "description": "Full 7-layer execution architecture masterplan for Adaptive Prediction Market Platform. Market Intelligence \u00e2\u2020\u2019 Opportunity Intelligence \u00e2\u2020\u2019 Execution Intelligence \u00e2\u2020\u2019 Portfolio Intelligence \u00e2\u2020\u2019 Execution \u00e2\u2020\u2019 Replay 2.0 \u00e2\u2020\u2019 Learning Engine. 21 sections. Position Lifecycle Engine (PROBE/BUILD/ADD/HOLD/REDUCE/MERGE/REDEEM/EXIT) reconciled with existing market window vocabulary (OPENING_SCAN/ACTIVE_INVENTORY_TRADING/PROFIT_MANAGEMENT/FINAL_DERISK). Capital Allocation Engine, Opportunity Queue, OpportunityThrottle (replaces 30-min pause), 11-milestone roadmap to Micro Live Pilot.",
+      "description": "Full 7-layer execution architecture masterplan for Adaptive Prediction Market Platform. Market Intelligence â†’ Opportunity Intelligence â†’ Execution Intelligence â†’ Portfolio Intelligence â†’ Execution â†’ Replay 2.0 â†’ Learning Engine. 21 sections. Position Lifecycle Engine (PROBE/BUILD/ADD/HOLD/REDUCE/MERGE/REDEEM/EXIT) reconciled with existing market window vocabulary (OPENING_SCAN/ACTIVE_INVENTORY_TRADING/PROFIT_MANAGEMENT/FINAL_DERISK). Capital Allocation Engine, Opportunity Queue, OpportunityThrottle (replaces 30-min pause), 11-milestone roadmap to Micro Live Pilot.",
       "notes": "DONE. Architecture-only sprint. No code changed. No commit per task spec. Critical path: paper fill verification is Milestone 1 before all execution intelligence work."
     },
     {
@@ -3179,7 +3179,7 @@
         "docs/operations/"
       ],
       "report_doc": "docs/reports/POST_FILL_ACCOUNTING_BUG_REPAIR_001.md",
-      "fix": "trader.py:8321 self.bankroll_family \u00e2\u2020\u2019 self._last_bankroll_family",
+      "fix": "trader.py:8321 self.bankroll_family â†’ self._last_bankroll_family",
       "regression_test": "test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr",
       "paper_fills": 22,
       "bankroll_family_errors": 0,
@@ -3323,6 +3323,37 @@
       "live_order_markers": 0,
       "safety_verdict": "SAFE_PAPER_VALIDATION",
       "notes": "DONE. 2 complete stop_loss cycles observed. All accounting correct. Cash 0.056363 = wallet_ref 0.09901 - pnl /usr/bin/bash.042647. DEFENSIVE risk mode activated after 2 consecutive stop-losses; blocked 16 further entry attempts. Minor: exit_reason=None and paper_virtual_cash=None in trade_close journal (both pre-existing). Next: POST_FILL_ACCOUNTING_PIPELINE_REPAIR_001."
+    },
+    {
+      "priority": 1.867,
+      "task_id": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 3,
+      "description": "Add exit_reason (alias of reason) and paper_virtual_cash (post-close paper cash balance) to trade_close journal payloads. Payload completeness only — no execution, risk, sizing, strategy, config, .env, or live behavior changes.",
+      "blocked_by": "PAPER_RUNTIME_LONG_VALIDATION_BASELINE_001",
+      "allowed_scope": [
+        "polymarket/observability/contracts.py",
+        "polymarket/observability/trader_trade_event_payload.py",
+        "polymarket/trader.py",
+        "tests/observability/",
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001.md"
+      ],
+      "fields_added": [
+        "exit_reason",
+        "paper_virtual_cash"
+      ],
+      "verdict": "PASS",
+      "tests": {
+        "focused_schema_contracts": "40 passed",
+        "scoped_acceptance": "962 passed, 0 failed"
+      },
+      "safety_verdict": "SAFE_OBSERVABILITY_ONLY",
+      "notes": "DONE. exit_reason=reason (alias) and paper_virtual_cash=float(bankroll_state.current_cash_balance) now present in all trade_close JSONL events. 5 files changed: contracts.py, trader_trade_event_payload.py, trader.py, 2 test files. Cash sourced after _paper_apply_exit_cash() in all 3 close paths (main, partial, settlement). Offline tools (canonical_trade_table_v1, execution_paper_runtime, executable_truth_overlay) already read exit_reason with fallback — now get primary field. 962/962 scoped acceptance pass."
     }
   ]
 }
