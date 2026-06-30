@@ -4195,5 +4195,21 @@
     },
     "safety_verdict": "SAFE_PAPER_VALIDATION",
     "next_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
+  },
+  {
+    "loop_id": "POST_FILL_ACCOUNTING_BUG_REPAIR_001",
+    "date_utc": "2026-06-30",
+    "task_class": 3,
+    "code_changed": true,
+    "runtime_changed": true,
+    "files_changed": ["polymarket/trader.py", "tests/observability/test_telemetry_backfill.py"],
+    "fix_summary": "trader.py:8321 self.bankroll_family → self._last_bankroll_family (1 line; post-refactor regression)",
+    "tests_focused": "958 passed",
+    "paper_fills": 22,
+    "bankroll_family_errors": 0,
+    "position_id_populated": true,
+    "remaining_gaps": ["trade_open event not emitting", "VirtualPTB cash not deducting", "exposure not updating"],
+    "safety_verdict": "SAFE_PAPER_ONLY",
+    "next_task": "TRADE_OPEN_CASH_DEDUCTION_REPAIR_001"
   }
 ]

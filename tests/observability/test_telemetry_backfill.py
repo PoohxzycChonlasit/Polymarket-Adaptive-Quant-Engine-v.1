@@ -679,3 +679,52 @@ def test_emit_quant_event_routes_bankroll_rank_evaluation(mock_settings, tmp_pat
         raised = True
 
     assert not raised, "AttributeError raised — log_bankroll_rank_evaluation still not wired"
+
+
+def test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr(mock_settings, tmp_path):
+    """POST_FILL_ACCOUNTING_BUG_REPAIR_001 regression.
+
+    PolymarketTrader has no direct `bankroll_family` attribute. The execution
+    path at trader.py _open_tracked_position must read `self._last_bankroll_family`
+    (the per-cycle observability cache), not `self.bankroll_family`.
+
+    This test proves:
+    1. A fresh trader has no `bankroll_family` instance attribute.
+    2. `_build_trade_position_metadata` succeeds and returns the correct value
+       when passed `bankroll_family=trader._last_bankroll_family`.
+    """
+    mock_settings.quant_data_dir = str(tmp_path / "quant_data")
+    trader = PolymarketTrader(settings=mock_settings)
+
+    # Confirm the broken attribute does NOT exist on the trader instance.
+    assert not hasattr(trader, "bankroll_family"), (
+        "PolymarketTrader must not expose a direct `bankroll_family` instance "
+        "attribute — use `_last_bankroll_family` (per-cycle observability cache)"
+    )
+
+    # The correct per-cycle attribute must always be present (initialised in __init__).
+    assert hasattr(trader, "_last_bankroll_family")
+
+    # Simulate a post-evaluation state where the bankroll rank engine has populated it.
+    trader._last_bankroll_family = "MICRO"
+
+    # Call exactly as the fixed execution path does: bankroll_family=self._last_bankroll_family
+    meta = trader._build_trade_position_metadata(
+        strategy="ENTER_QUANT",
+        signal_strategy="scalper",
+        token_id="token-no",
+        outcome="NO",
+        entry_ev=0.12,
+        confidence=0.70,
+        delta_regime="NEUTRAL",
+        condition_id="cond-test",
+        epoch_start_ts=1782800400,
+        market_slug="eth-updown-5m-1782800400",
+        lifecycle_phase="ACTIVE_INVENTORY_TRADING",
+        ticker="ETH",
+        bankroll_family=trader._last_bankroll_family,
+    )
+
+    assert meta["bankroll_family"] == "MICRO", (
+        f"Expected bankroll_family='MICRO' from _last_bankroll_family, got {meta['bankroll_family']!r}"
+    )

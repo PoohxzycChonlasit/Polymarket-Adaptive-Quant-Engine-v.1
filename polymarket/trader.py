@@ -8318,7 +8318,7 @@ class PolymarketTrader:
                     strategy_signal_name=clob_detail.get("strategy_signal_name"),
                     strategy_signal_reason=clob_detail.get("strategy_signal_reason"),
                     bankroll_tier_id=tier.value if tier else None,
-                    bankroll_family=self.bankroll_family,
+                    bankroll_family=self._last_bankroll_family,
                     risk_mode=self._risk_mgr.mode.value if hasattr(self._risk_mgr, "mode") and hasattr(self._risk_mgr.mode, "value") else str(getattr(self._risk_mgr, "mode", "NORMAL")),
                     risk_budget=float(risk_plan.risk_amount) if risk_plan else None,
                     current_exposure=float(sum(p.notional_size for p in self.tracker.open_positions())) if self.tracker else None,

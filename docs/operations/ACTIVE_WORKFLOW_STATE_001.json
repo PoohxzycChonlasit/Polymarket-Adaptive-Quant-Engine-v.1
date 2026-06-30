@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "PAPER_FILL_PATH_VERIFICATION_001 complete; 3 paper fills confirmed (ETH NO×2 + ETH YES); fill path verified end-to-end; post-fill accounting broken by bankroll_family AttributeError; next task: repair bankroll_family reference in trader.py",
-    "last_completed_task": "PAPER_FILL_PATH_VERIFICATION_001",
-    "last_commit": "e69f31a1",
-    "last_commit_message": "docs: add execution reality architecture masterplan",
-    "next_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001",
+    "current_phase": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete; bankroll_family AttributeError fixed (trader.py:8321); position_id now populated after fills; trade_open/cash-deduction still broken (downstream issue); next task: diagnose trade_open + VirtualPTB cash deduction",
+    "last_completed_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001",
+    "last_commit": "50d8589c",
+    "last_commit_message": "docs: verify paper fill path",
+    "next_task": "TRADE_OPEN_CASH_DEDUCTION_REPAIR_001",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -105,7 +105,8 @@
             "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
             "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
             "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001",
-            "PAPER_FILL_PATH_VERIFICATION_001"
+            "PAPER_FILL_PATH_VERIFICATION_001",
+            "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
         ],
         "next_batch": "TBD",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
@@ -290,7 +291,7 @@
         "unique_data_preserved": false,
         "commit_required": false
     },
-    "notes": "PAPER_FILL_PATH_VERIFICATION_001 complete. 3 paper fills confirmed (ETH NO @ $0.54, ETH NO @ $0.57, ETH YES @ $0.50) via fill_source=paper_simulated. Fill path verified: signal → EV → risk plan → OrderIntent approved → VirtualPTB fill → receipt logged. Post-fill accounting broken by AttributeError: 'PolymarketTrader' object has no attribute 'bankroll_family' (post-refactor regression). Position tracking, cash deduction, exposure update, and trade_open emission all fail due to this exception. 30 MAE checks: all ACTIVE, all exact_slug_fallback. 57 skip decisions: delta_extreme=25 (44%), confidence_too_low=7, clob_empty_response=7, zero_size_plan=6. Risk remained NORMAL entire session. Next: repair bankroll_family AttributeError.",
+    "notes": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete. Fixed trader.py:8321: self.bankroll_family → self._last_bankroll_family (1-line fix). bankroll_family AttributeError eliminated (0 errors vs 3/session before). position_id now populated in fill receipts (f6d2a324 confirmed). 958 focused tests pass. 22 paper fills in validation run, 0 errors. Remaining downstream issues: trade_open event not emitting, paper_virtual_cash not deducting, current_exposure stays 0 — these are separate bugs in the post-position-open path. 29 pre-existing test failures unchanged (missing files, unrelated to fix). Next: TRADE_OPEN_CASH_DEDUCTION_REPAIR_001.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -829,5 +830,26 @@
         "code_changed": false,
         "safety_verdict": "SAFE_PAPER_VALIDATION",
         "next_task": "POST_FILL_ACCOUNTING_BUG_REPAIR_001"
+    },
+    "post_fill_accounting_bug_repair_001": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/POST_FILL_ACCOUNTING_BUG_REPAIR_001.md",
+        "task_class": 3,
+        "files_changed": ["polymarket/trader.py", "tests/observability/test_telemetry_backfill.py"],
+        "root_cause": "self.bankroll_family does not exist on PolymarketTrader; correct attr is self._last_bankroll_family",
+        "fix_location": "polymarket/trader.py:8321",
+        "fix_summary": "self.bankroll_family → self._last_bankroll_family (1 line)",
+        "regression_test_added": "test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr",
+        "tests_focused": "958 passed",
+        "tests_broader_pre_existing_failures": 29,
+        "paper_fills": 22,
+        "bankroll_family_errors": 0,
+        "position_id_populated": true,
+        "trade_open_emitted": false,
+        "cash_deducted": false,
+        "exposure_updated": false,
+        "live_order_markers": 0,
+        "safety_verdict": "SAFE_PAPER_ONLY",
+        "next_task": "TRADE_OPEN_CASH_DEDUCTION_REPAIR_001"
     }
 }

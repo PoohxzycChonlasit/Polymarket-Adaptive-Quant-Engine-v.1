@@ -3140,6 +3140,25 @@
       "code_changed": false,
       "safety_verdict": "SAFE_PAPER_VALIDATION",
       "notes": "DONE. 3 fills confirmed: ETH NO@0.54, ETH NO@0.57, ETH YES@0.50. Fill path end-to-end verified. Post-fill accounting broken by bankroll_family AttributeError. Next: POST_FILL_ACCOUNTING_BUG_REPAIR_001."
+    },
+    {
+      "priority": 1.860,
+      "task_id": "POST_FILL_ACCOUNTING_BUG_REPAIR_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Fix AttributeError: 'PolymarketTrader' has no attribute 'bankroll_family' in post-fill execution context builder.",
+      "blocked_by": null,
+      "allowed_scope": ["polymarket/trader.py", "tests/observability/test_telemetry_backfill.py", "docs/reports/", "docs/operations/"],
+      "report_doc": "docs/reports/POST_FILL_ACCOUNTING_BUG_REPAIR_001.md",
+      "fix": "trader.py:8321 self.bankroll_family → self._last_bankroll_family",
+      "regression_test": "test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr",
+      "paper_fills": 22,
+      "bankroll_family_errors": 0,
+      "position_id_populated": true,
+      "remaining_gaps": ["trade_open not emitting", "cash not deducting", "exposure not updating"],
+      "safety_verdict": "SAFE_PAPER_ONLY",
+      "notes": "DONE. 1-line fix in trader.py. position_id now populated. bankroll_family AttributeError eliminated. Downstream cash/trade_open issues are separate bugs. 958 focused tests pass."
     }
   ]
 }
