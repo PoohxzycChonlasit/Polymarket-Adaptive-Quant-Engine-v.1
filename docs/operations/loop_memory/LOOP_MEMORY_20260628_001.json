@@ -4450,5 +4450,26 @@
     "pre_existing_failures_in_full_suite": "present (not caused by this patch)",
     "safety_verdict": "SAFE_OBSERVABILITY_ONLY",
     "next_task": "TBD"
+  },
+  {
+    "task_id": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001",
+    "task_class": 2,
+    "completed_at": "2026-06-30",
+    "status": "COMPLETE",
+    "verdict": "RESEARCH_COMPLETE_NO_CODE_CHANGES",
+    "report_doc": "docs/reports/EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001.md",
+    "summary": "Research: current paper runtime produces /usr/bin/bash.10 notional fractional-share fills (~0.188-0.208 shares at entry 0.48-0.53). All 795 micro-era opens are sub-1-share. Real Polymarket traders use whole-share sizing, multiple entries, merges, redeems. min_shares_per_order=1 is a dead setting (not enforced by micro_survival path). max_active_positions=1 + max_entries=1 structurally block any ladder. No take_profit exits observed in micro-era (all stop_loss). LOSS_CLUSTER_PAUSE=1800s will mask ladder testing. T0 ladder design from masterplan is sound: PROBE=/usr/bin/bash.10, BASE=/usr/bin/bash.10-/usr/bin/bash.60, ADD=/usr/bin/bash.10, per-market cap=.00, portfolio cap=.00. 5 implementation blockers documented. No code changes.",
+    "files_changed": [],
+    "blockers_identified": [
+      "max_active_positions_per_market=1",
+      "max_entries_per_market=1",
+      "zero TP exits in micro-era",
+      "CLOB fractional share acceptance unknown",
+      "no MarketWindowTracker",
+      "LOSS_CLUSTER_PAUSE=1800s",
+      "min_shares_per_order=1 not enforced"
+    ],
+    "safety_verdict": "SAFE_RESEARCH_ONLY",
+    "next_task": "TAKE_PROFIT_EXIT_EVIDENCE_001"
   }
 ]

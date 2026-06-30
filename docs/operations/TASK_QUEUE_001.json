@@ -3354,6 +3354,39 @@
       },
       "safety_verdict": "SAFE_OBSERVABILITY_ONLY",
       "notes": "DONE. exit_reason=reason (alias) and paper_virtual_cash=float(bankroll_state.current_cash_balance) now present in all trade_close JSONL events. 5 files changed: contracts.py, trader_trade_event_payload.py, trader.py, 2 test files. Cash sourced after _paper_apply_exit_cash() in all 3 close paths (main, partial, settlement). Offline tools (canonical_trade_table_v1, execution_paper_runtime, executable_truth_overlay) already read exit_reason with fallback — now get primary field. 962/962 scoped acceptance pass."
+    },
+    {
+      "priority": 1.868,
+      "task_id": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Research real Polymarket position-building behavior and compare with current paper runtime sizing. Design T0_MICRO_SEED ladder. Research/design only — no runtime code changes.",
+      "blocked_by": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001.md"
+      ],
+      "verdict": "RESEARCH_COMPLETE_NO_CODE_CHANGES",
+      "safety_verdict": "SAFE_RESEARCH_ONLY",
+      "implementation_blockers": [
+        "max_active_positions_per_market=1",
+        "max_entries_per_market=1",
+        "zero take_profit exits in micro-era",
+        "CLOB fractional share acceptance unknown",
+        "no MarketWindowTracker"
+      ],
+      "proposed_ladder": {
+        "probe": "/usr/bin/bash.10",
+        "base": "/usr/bin/bash.10-/usr/bin/bash.60",
+        "add": "/usr/bin/bash.10 single",
+        "per_market_cap": ".00",
+        "portfolio_cap": ".00"
+      },
+      "notes": "DONE. Research confirms: (1) current paper produces fractional shares at /usr/bin/bash.10 notional floor; (2) real CLOB is whole-share-first; (3) min_shares_per_order=1 is a dead setting (not enforced in micro_survival path); (4) max_entries_per_market=1 structurally blocks any ladder; (5) no TP exits observed in 795 micro-era fills; (6) LOSS_CLUSTER_PAUSE=1800s will mask ladder testing; (7) T0 ladder design from masterplan is sound. Next: TAKE_PROFIT_EXIT_EVIDENCE_001."
     }
   ]
 }

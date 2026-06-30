@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001 complete; exit_reason and paper_virtual_cash fields added to trade_close JSONL payloads; 962 scoped tests pass",
-  "last_completed_task": "TRADE_CLOSE_JOURNAL_PAYLOAD_COMPLETENESS_REPAIR_001",
+  "current_phase": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001 complete; research/design only; no code changes; 5 implementation blockers documented",
+  "last_completed_task": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "TBD",
+  "next_task": "TAKE_PROFIT_EXIT_EVIDENCE_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1117,5 +1117,34 @@
     },
     "safety_verdict": "SAFE_OBSERVABILITY_ONLY",
     "next_task": "TBD"
+  },
+  "execution_reality_position_ladder_research": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "report_doc": "docs/reports/EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001.md",
+    "verdict": "RESEARCH_COMPLETE_NO_CODE_CHANGES",
+    "current_paper_sizing": {
+      "bankroll_mode": "MICRO_SURVIVAL",
+      "notional_per_fill": 0.1,
+      "share_count": "fractional (0.132-0.333, entry-price dependent)",
+      "all_recent_exits": "stop_loss",
+      "hold_seconds_range": "6-29"
+    },
+    "critical_blockers": [
+      "max_active_positions_per_market=1",
+      "max_entries_per_market=1",
+      "zero take_profit exits in micro-era",
+      "CLOB fractional share acceptance unknown",
+      "no MarketWindowTracker"
+    ],
+    "proposed_ladder": {
+      "probe": "/usr/bin/bash.10 fixed",
+      "base": "/usr/bin/bash.10-/usr/bin/bash.60 via multipliers",
+      "add": "/usr/bin/bash.10 single add (position profitable, held>=35s)",
+      "per_market_cap": ".00",
+      "portfolio_cap": ".00"
+    },
+    "next_task": "TAKE_PROFIT_EXIT_EVIDENCE_001",
+    "safety_verdict": "SAFE_RESEARCH_ONLY"
   }
 }
