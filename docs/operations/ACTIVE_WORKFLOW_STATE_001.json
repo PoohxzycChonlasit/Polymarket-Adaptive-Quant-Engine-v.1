@@ -1,11 +1,11 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001 complete; exact-slug fallback repaired MAE broad-scan false negatives",
-    "last_completed_task": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001",
+    "current_phase": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001 complete; 8-minute paper run confirmed MAE ACTIVE across 2 epoch rollovers with TRADABLE orderbooks",
+    "last_completed_task": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
     "last_commit": "HEAD",
-    "last_commit_message": "fix: repair market availability exact slug fallback",
-    "next_task": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
+    "last_commit_message": "docs: validate market availability post repair paper run",
+    "next_task": "TBD",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
         "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -101,7 +101,8 @@
             "CANONICAL_CONTEXT_BLOCKERS_EMPTY_LIST_SENTINEL_REPAIR_001",
             "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
             "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
-            "SHADOW_POLICY_SEVERITY_MAP_FIX_001"
+            "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
+            "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001"
         ],
         "next_batch": "TBD",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
@@ -286,7 +287,7 @@
         "unique_data_preserved": false,
         "commit_required": false
     },
-    "notes": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001 complete. MAE now keeps broad /markets scan first, then uses bounded exact current/next BTC/ETH 5m /events?slug fallback only when broad scan finds no 5m candidates. Direct diagnostic and bounded paper smoke returned ACTIVE via exact_slug_fallback; run-id scoped live/order markers were zero.",
+    "notes": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001 complete. 8-minute paper run (run_id=20260630T042355Z_20576_c2e9e6af) confirmed: MAE state=ACTIVE on all 8 checks, exact_slug_fallback on all 8, 2 epoch rollovers observed (1782793200→1782793500→1782793800), 15 TRADABLE orderbook snapshots, EV/model gates reached, 0 live/order markers. PASS.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -706,6 +707,25 @@
         "code_modified": false,
         "runtime_changed": false,
         "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+    },
+    "market_availability_engine_post_repair_paper_validation": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001.md",
+        "run_id": "20260630T042355Z_20576_c2e9e6af",
+        "duration_minutes": 8,
+        "cycles_completed": 9,
+        "mae_checks": 8,
+        "mae_state_all_active": true,
+        "fallback_used_all": true,
+        "availability_source_all": "exact_slug_fallback",
+        "epoch_rollovers_observed": 2,
+        "epochs_covered": [1782793200, 1782793500, 1782793800],
+        "tradable_snapshots": 15,
+        "live_order_markers": 0,
+        "exceptions": 0,
+        "safety_verdict": "SAFE_PAPER_VALIDATION",
+        "final_verdict": "PASS",
+        "next_task": "TBD"
     },
     "market_availability_engine_false_negative_repair": {
         "status": "COMPLETE",

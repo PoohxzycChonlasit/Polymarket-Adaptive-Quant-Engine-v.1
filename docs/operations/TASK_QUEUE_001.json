@@ -3078,6 +3078,23 @@
         "docs/operations/graph_queries/QUERY-20260630-MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001.md"
       ],
       "notes": "DONE. Added bounded exact-slug Gamma /events fallback when broad /markets scan finds no BTC/ETH 5m candidates. Diagnostics added: fallback_used, exact_slug_checked, exact_slug_match_count, availability_source. Tests passed: 42 focused, 957 acceptance. Direct diagnostic and 2-cycle paper smoke returned ACTIVE via exact_slug_fallback with zero run-id scoped live/order markers."
+    },
+    {
+      "priority": 1.856,
+      "task_id": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "8-minute bounded paper validation confirming repaired MarketAvailabilityEngine across BTC/ETH 5-minute epoch rollovers.",
+      "blocked_by": "MARKET_AVAILABILITY_ENGINE_FALSE_NEGATIVE_REPAIR_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001.md"
+      ],
+      "notes": "DONE. Run ID 20260630T042355Z_20576_c2e9e6af, ~8 min, 9 cycles. 8 MAE checks: all state=ACTIVE, fallback_used=true, availability_source=exact_slug_fallback, active_market_count=4. Two epoch rollovers observed (1782793200→1782793500→1782793800). 15 TRADABLE orderbook snapshots. Model gate and EV gate reached. 0 live/order markers. Final verdict: PASS. Safety verdict: SAFE_PAPER_VALIDATION."
     }
   ]
 }
