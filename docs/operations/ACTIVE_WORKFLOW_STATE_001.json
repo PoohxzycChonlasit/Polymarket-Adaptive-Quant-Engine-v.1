@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
-  "last_updated": "2026-06-30",
-  "current_phase": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001 complete; reusable offline shadow strategy evaluation framework designed for Alpha Discovery",
-  "last_completed_task": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001",
+  "last_updated": "2026-07-01",
+  "current_phase": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001 complete; ReplayRow and StrategyDecision v0.1 contracts defined for offline shadow evaluation",
+  "last_completed_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
+  "next_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1300,5 +1300,42 @@
     "risk_changed": false,
     "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
     "next_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001"
+  },
+  "shadow_strategy_framework_inventory_and_dataset_contract": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "report_doc": "docs/architecture/SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001.md",
+    "verdict": "READY_FOR_SCHEMA_ONLY_IMPLEMENTATION",
+    "dataset_contracts": [
+      "ReplayRow",
+      "ReplayIdentity",
+      "ReplayMarketState",
+      "ReplayModelState",
+      "ReplayRuntimeDecision",
+      "ReplayLifecycleTruth",
+      "ReplayPathTruth",
+      "ReplayQuality"
+    ],
+    "strategy_contracts": [
+      "StrategyPluginMetadata",
+      "StrategyDecision",
+      "StrategyRunContext",
+      "StrategySummary",
+      "EvidenceDecision"
+    ],
+    "first_plugin_candidates": [
+      "current_runtime_baseline",
+      "semantic_c_zero_size_probe",
+      "relax_delta_one_gate",
+      "risk_plan_zero_semantic_c",
+      "lifecycle_profit_management",
+      "semantic_c_bounded_reload"
+    ],
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "sizing_changed": false,
+    "risk_changed": false,
+    "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
+    "next_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001"
   }
 }

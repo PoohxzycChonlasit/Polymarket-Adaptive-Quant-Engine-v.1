@@ -1,6 +1,6 @@
 {
   "$schema": "task_queue_v1",
-  "last_updated": "2026-06-30",
+  "last_updated": "2026-07-01",
   "queue": [
     {
       "priority": -10,
@@ -3545,6 +3545,29 @@
       "risk_changed": false,
       "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
       "notes": "DONE. Architecture-only framework created. Recommends consolidating Semantic C, relaxed gates, inventory ladder, adaptive inventory, low-price truth, and future alpha ideas into reusable offline strategy plugins over a common ReplayRow and StrategyDecision contract. Next: SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001."
+    },
+    {
+      "priority": 1.874,
+      "task_id": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 2,
+      "description": "Inventory existing offline replay/backtest/shadow tooling and define ReplayRow plus StrategyDecision v0.1 contracts for the Shadow Strategy Evaluation Framework.",
+      "blocked_by": "SHADOW_STRATEGY_EVALUATION_FRAMEWORK_001",
+      "allowed_scope": [
+        "docs/architecture/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/architecture/SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001.md"
+      ],
+      "verdict": "READY_FOR_SCHEMA_ONLY_IMPLEMENTATION",
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
+      "notes": "DONE. Mapped existing backtest, canonical-context, decision, runtime, replay, shadow, and outcome-truth tools into framework roles. Defined ReplayRow, ReplayIdentity, ReplayMarketState, ReplayModelState, ReplayRuntimeDecision, ReplayLifecycleTruth, ReplayPathTruth, ReplayQuality, StrategyPluginMetadata, StrategyDecision, StrategyRunContext, StrategySummary, and EvidenceDecision v0.1 contracts. Next: SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001."
     }
   ]
 }

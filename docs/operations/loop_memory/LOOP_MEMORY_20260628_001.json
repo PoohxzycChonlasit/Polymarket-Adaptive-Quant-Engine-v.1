@@ -4658,5 +4658,52 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "next_task": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001"
+  },
+  {
+    "task_id": "SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001",
+    "task_class": 2,
+    "completed_at": "2026-07-01",
+    "status": "COMPLETE",
+    "verdict": "READY_FOR_SCHEMA_ONLY_IMPLEMENTATION",
+    "report_doc": "docs/architecture/SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001.md",
+    "summary": "Inventoried existing offline replay, backtest, decision, runtime, shadow, canonical, and outcome-truth tooling and defined formal v0.1 ReplayRow and StrategyDecision contracts for the Shadow Strategy Evaluation Framework.",
+    "evidence": {
+      "dataset_contracts": [
+        "ReplayRow",
+        "ReplayIdentity",
+        "ReplayMarketState",
+        "ReplayModelState",
+        "ReplayRuntimeDecision",
+        "ReplayLifecycleTruth",
+        "ReplayPathTruth",
+        "ReplayQuality"
+      ],
+      "strategy_contracts": [
+        "StrategyPluginMetadata",
+        "StrategyDecision",
+        "StrategyRunContext",
+        "StrategySummary",
+        "EvidenceDecision"
+      ],
+      "first_plugin_candidates": [
+        "current_runtime_baseline",
+        "semantic_c_zero_size_probe",
+        "relax_delta_one_gate",
+        "risk_plan_zero_semantic_c",
+        "lifecycle_profit_management",
+        "semantic_c_bounded_reload"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false
+    },
+    "files_changed": [
+      "docs/architecture/SHADOW_STRATEGY_FRAMEWORK_INVENTORY_AND_DATASET_CONTRACT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "next_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001"
   }
 ]
