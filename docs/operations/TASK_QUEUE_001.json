@@ -3387,6 +3387,41 @@
         "portfolio_cap": ".00"
       },
       "notes": "DONE. Research confirms: (1) current paper produces fractional shares at /usr/bin/bash.10 notional floor; (2) real CLOB is whole-share-first; (3) min_shares_per_order=1 is a dead setting (not enforced in micro_survival path); (4) max_entries_per_market=1 structurally blocks any ladder; (5) no TP exits observed in 795 micro-era fills; (6) LOSS_CLUSTER_PAUSE=1800s will mask ladder testing; (7) T0 ladder design from masterplan is sound. Next: TAKE_PROFIT_EXIT_EVIDENCE_001."
+    },
+    {
+      "priority": 1.869,
+      "task_id": "TAKE_PROFIT_EXIT_EVIDENCE_001",
+      "status": "DONE",
+      "workflow_tier": "STANDARD",
+      "task_class": 5,
+      "description": "Run bounded paper validation to determine whether current paper runtime can naturally produce at least one take_profit exit.",
+      "blocked_by": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/TAKE_PROFIT_EXIT_EVIDENCE_001.md",
+        "docs/operations/execution_contracts/TAKE_PROFIT_EXIT_EVIDENCE_001_CONTRACT_001.md"
+      ],
+      "verdict": "NO_TAKE_PROFIT_OBSERVED_NO_ENTRY_SAMPLE",
+      "run_id": "20260630T135455Z_6592_5fac8cf4",
+      "duration_minutes": 60,
+      "trade_open_count": 0,
+      "trade_close_count": 0,
+      "take_profit_count": 0,
+      "stop_loss_count": 0,
+      "blocker_classification": "ENTRY_QUALITY_LOW",
+      "top_blockers": {
+        "delta_extreme": 44,
+        "confidence_too_low": 21,
+        "risk_plan_zero": 17,
+        "time_unsafe": 17,
+        "clob_empty_response": 13,
+        "ev_below_threshold": 8
+      },
+      "safety_verdict": "SAFE_PAPER_VALIDATION",
+      "notes": "DONE. 60-minute paper run completed cleanly with 60 cycles and risk NORMAL throughout, but produced 0 trade_open and 0 trade_close events. TP threshold was not evaluated because there was no entry sample. Live-order markers: 0. Next: PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001."
     }
   ]
 }

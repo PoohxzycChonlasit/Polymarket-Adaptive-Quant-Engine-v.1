@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-06-30",
-  "current_phase": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001 complete; research/design only; no code changes; 5 implementation blockers documented",
-  "last_completed_task": "EXECUTION_REALITY_POSITION_LADDER_RESEARCH_001",
+  "current_phase": "TAKE_PROFIT_EXIT_EVIDENCE_001 complete; 60-minute paper run produced zero opens/closes, so TP threshold was not evaluated",
+  "last_completed_task": "TAKE_PROFIT_EXIT_EVIDENCE_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "TAKE_PROFIT_EXIT_EVIDENCE_001",
+  "next_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1146,5 +1146,40 @@
     },
     "next_task": "TAKE_PROFIT_EXIT_EVIDENCE_001",
     "safety_verdict": "SAFE_RESEARCH_ONLY"
+  },
+  "take_profit_exit_evidence": {
+    "status": "COMPLETE",
+    "task_class": 5,
+    "report_doc": "docs/reports/TAKE_PROFIT_EXIT_EVIDENCE_001.md",
+    "contract_doc": "docs/operations/execution_contracts/TAKE_PROFIT_EXIT_EVIDENCE_001_CONTRACT_001.md",
+    "verdict": "NO_TAKE_PROFIT_OBSERVED_NO_ENTRY_SAMPLE",
+    "run_id": "20260630T135455Z_6592_5fac8cf4",
+    "duration_minutes": 60,
+    "cycles": 60,
+    "trade_open_count": 0,
+    "trade_close_count": 0,
+    "take_profit_count": 0,
+    "stop_loss_count": 0,
+    "exit_reason_distribution": {},
+    "decision_rows": 120,
+    "decision_counts": {
+      "skip": 120
+    },
+    "top_blockers": {
+      "delta_extreme": 44,
+      "confidence_too_low": 21,
+      "risk_plan_zero": 17,
+      "time_unsafe": 17,
+      "clob_empty_response": 13,
+      "ev_below_threshold": 8
+    },
+    "risk_modes": {
+      "NORMAL": 181
+    },
+    "blocker_classification": "ENTRY_QUALITY_LOW",
+    "paper_validation_result": "clean paper run, no entries, no exits, no TP sample",
+    "live_order_submission_markers": 0,
+    "safety_verdict": "SAFE_PAPER_VALIDATION",
+    "next_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001"
   }
 }

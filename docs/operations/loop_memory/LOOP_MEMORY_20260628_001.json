@@ -4471,5 +4471,53 @@
     ],
     "safety_verdict": "SAFE_RESEARCH_ONLY",
     "next_task": "TAKE_PROFIT_EXIT_EVIDENCE_001"
+  },
+  {
+    "task_id": "TAKE_PROFIT_EXIT_EVIDENCE_001",
+    "task_class": 5,
+    "completed_at": "2026-06-30T14:55:00Z",
+    "status": "COMPLETE",
+    "verdict": "NO_TAKE_PROFIT_OBSERVED_NO_ENTRY_SAMPLE",
+    "report_doc": "docs/reports/TAKE_PROFIT_EXIT_EVIDENCE_001.md",
+    "contract_doc": "docs/operations/execution_contracts/TAKE_PROFIT_EXIT_EVIDENCE_001_CONTRACT_001.md",
+    "run_id": "20260630T135455Z_6592_5fac8cf4",
+    "summary": "60-minute paper validation completed cleanly but produced zero opens and zero closes. No natural take_profit exit was observed; TP threshold was not evaluated because current decision flow produced no entry sample.",
+    "tests_run": [
+      ".\\.venv\\Scripts\\python.exe -m py_compile main.py polymarket\\trader.py polymarket\\observability\\trader_trade_event_payload.py",
+      ".\\.venv\\Scripts\\python.exe main.py --mode paper --interval 60 --ui compact"
+    ],
+    "evidence": {
+      "duration_minutes": 60,
+      "cycles": 60,
+      "trade_open_count": 0,
+      "trade_close_count": 0,
+      "take_profit_count": 0,
+      "stop_loss_count": 0,
+      "decision_rows": 120,
+      "decision_counts": {
+        "skip": 120
+      },
+      "top_blockers": {
+        "delta_extreme": 44,
+        "confidence_too_low": 21,
+        "risk_plan_zero": 17,
+        "time_unsafe": 17,
+        "clob_empty_response": 13,
+        "ev_below_threshold": 8
+      },
+      "risk_modes": {
+        "NORMAL": 181
+      },
+      "blocker_classification": "ENTRY_QUALITY_LOW",
+      "live_order_submission_markers": 0
+    },
+    "files_changed": [
+      "docs/reports/TAKE_PROFIT_EXIT_EVIDENCE_001.md",
+      "docs/operations/execution_contracts/TAKE_PROFIT_EXIT_EVIDENCE_001_CONTRACT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "next_task": "PAPER_ENTRY_SAMPLE_QUALITY_FOR_TP_EVIDENCE_001"
   }
 ]
