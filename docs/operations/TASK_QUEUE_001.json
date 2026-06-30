@@ -1,6 +1,6 @@
 {
   "$schema": "task_queue_v1",
-  "last_updated": "2026-06-30",
+  "last_updated": "2026-06-30T06:50:00Z",
   "queue": [
     {
       "priority": -2,
@@ -3121,6 +3121,25 @@
       "task_class": 2,
       "description": "Full 7-layer execution architecture masterplan for Adaptive Prediction Market Platform. Market Intelligence \u2192 Opportunity Intelligence \u2192 Execution Intelligence \u2192 Portfolio Intelligence \u2192 Execution \u2192 Replay 2.0 \u2192 Learning Engine. 21 sections. Position Lifecycle Engine (PROBE/BUILD/ADD/HOLD/REDUCE/MERGE/REDEEM/EXIT) reconciled with existing market window vocabulary (OPENING_SCAN/ACTIVE_INVENTORY_TRADING/PROFIT_MANAGEMENT/FINAL_DERISK). Capital Allocation Engine, Opportunity Queue, OpportunityThrottle (replaces 30-min pause), 11-milestone roadmap to Micro Live Pilot.",
       "notes": "DONE. Architecture-only sprint. No code changed. No commit per task spec. Critical path: paper fill verification is Milestone 1 before all execution intelligence work."
+    },
+    {
+      "priority": 1.859,
+      "task_id": "PAPER_FILL_PATH_VERIFICATION_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 5,
+      "description": "30-minute bounded paper session to verify fill path post MAE repair and architecture approval.",
+      "blocked_by": null,
+      "allowed_scope": ["docs/reports/", "docs/operations/"],
+      "report_doc": "docs/reports/PAPER_FILL_PATH_VERIFICATION_001.md",
+      "run_id": "20260630T061207Z_44404_cc56ece6",
+      "fills_confirmed": 3,
+      "fill_path_verdict": "VERIFIED",
+      "post_fill_accounting_verdict": "BROKEN",
+      "primary_blocker": "POST_FILL_ACCOUNTING_BUG: AttributeError: 'PolymarketTrader' object has no attribute 'bankroll_family'",
+      "code_changed": false,
+      "safety_verdict": "SAFE_PAPER_VALIDATION",
+      "notes": "DONE. 3 fills confirmed: ETH NO@0.54, ETH NO@0.57, ETH YES@0.50. Fill path end-to-end verified. Post-fill accounting broken by bankroll_family AttributeError. Next: POST_FILL_ACCOUNTING_BUG_REPAIR_001."
     }
   ]
 }
