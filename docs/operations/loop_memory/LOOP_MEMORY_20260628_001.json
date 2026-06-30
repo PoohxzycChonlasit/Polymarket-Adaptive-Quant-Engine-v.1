@@ -4094,5 +4094,39 @@
     "duration_minutes": 8,
     "final_verdict": "PASS",
     "notes": "Validated repaired MAE across 2 BTC/ETH 5m epoch rollovers. State ACTIVE throughout. Zero live execution. Orderbooks reached TRADABLE in epochs 1782793500 and 1782793800."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
+    "task_class": 2,
+    "scope": [
+      "docs/reports/POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "DESIGN_COMPLETE",
+    "repairs": 0,
+    "evidence_grade": "A",
+    "commits": [],
+    "commit_messages": [
+      "docs: audit executable sizing reality"
+    ],
+    "findings": {
+      "clob_minimum_usd": 0.1,
+      "t0_practical_order_usd": 0.55,
+      "t0_per_market_cap_usd": 2.0,
+      "t0_max_trades_per_hr": 4,
+      "loss_cluster_pause_seconds": 1800,
+      "issue_loss_cluster_pause": "incompatible with always-active scanning",
+      "ladder_designed": true,
+      "no_fixed_cooldown_policy": "size down on loss, not sleep; re-entry allowed when edge returns",
+      "critical_blocker": "zero paper fills \u2014 fill path, accounting loop, position tracking all unverified"
+    },
+    "safety_verdict": "SAFE_DESIGN_AUDIT",
+    "code_changed": false,
+    "notes": "Design-only audit. Read utils/risk_manager.py, polymarket/position_sizing.py, bankroll_tiers.py, risk_modes.py, trade_frequency.py, order_manager.py, order_intent.py, config/settings.py. Designed probe/base/add sizing ladder and opportunity throttle replacing 30-min sleep."
   }
 ]

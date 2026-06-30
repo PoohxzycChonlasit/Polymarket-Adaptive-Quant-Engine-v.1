@@ -1,10 +1,10 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001 complete; 8-minute paper run confirmed MAE ACTIVE across 2 epoch rollovers with TRADABLE orderbooks",
-    "last_completed_task": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
+    "current_phase": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001 complete; sizing ladder, dust zone, bankroll tiers, no-fixed-cooldown policy designed; zero code changes",
+    "last_completed_task": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
     "last_commit": "HEAD",
-    "last_commit_message": "docs: validate market availability post repair paper run",
+    "last_commit_message": "docs: audit executable sizing reality",
     "next_task": "TBD",
     "navigator_state": {
         "module_registry": "docs/operations/repository/module_registry.json",
@@ -102,7 +102,8 @@
             "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_AUDIT_001",
             "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
             "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
-            "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001"
+            "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
+            "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001"
         ],
         "next_batch": "TBD",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
@@ -287,7 +288,7 @@
         "unique_data_preserved": false,
         "commit_required": false
     },
-    "notes": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001 complete. 8-minute paper run (run_id=20260630T042355Z_20576_c2e9e6af) confirmed: MAE state=ACTIVE on all 8 checks, exact_slug_fallback on all 8, 2 epoch rollovers observed (1782793200→1782793500→1782793800), 15 TRADABLE orderbook snapshots, EV/model gates reached, 0 live/order markers. PASS.",
+    "notes": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001 complete. Design-only. Key findings: CLOB minimum $0.10, T0 practical order $0.55 (1 share), max 4 trades/hr, per-market cap $2.00 (10%), loss cluster 30-min pause identified as blocking issue for active scanning. Probe/base/add ladder designed. No-fixed-cooldown policy designed. Critical blocker: zero paper fills — fill path unverified.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -707,6 +708,23 @@
         "code_modified": false,
         "runtime_changed": false,
         "next_task": "CANONICAL_CONTEXT_DATA_QUALITY_REPAIR_001"
+    },
+    "polymarket_executable_sizing_reality_audit": {
+        "status": "COMPLETE",
+        "report_doc": "docs/reports/POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001.md",
+        "clob_minimum_usd": 0.10,
+        "t0_practical_order_usd": 0.55,
+        "t0_bankroll": 20.10,
+        "t0_per_market_cap_usd": 2.00,
+        "t0_portfolio_cap_usd": 4.00,
+        "loss_cluster_pause_issue_documented": true,
+        "no_fixed_cooldown_policy_designed": true,
+        "ladder_designed": true,
+        "dust_zone_defined": true,
+        "code_changed": false,
+        "critical_blocker": "zero paper fills — fill path unverified",
+        "safety_verdict": "SAFE_DESIGN_AUDIT",
+        "next_task": "TBD"
     },
     "market_availability_engine_post_repair_paper_validation": {
         "status": "COMPLETE",

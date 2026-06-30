@@ -3095,6 +3095,23 @@
         "docs/reports/MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001.md"
       ],
       "notes": "DONE. Run ID 20260630T042355Z_20576_c2e9e6af, ~8 min, 9 cycles. 8 MAE checks: all state=ACTIVE, fallback_used=true, availability_source=exact_slug_fallback, active_market_count=4. Two epoch rollovers observed (1782793200→1782793500→1782793800). 15 TRADABLE orderbook snapshots. Model gate and EV gate reached. 0 live/order markers. Final verdict: PASS. Safety verdict: SAFE_PAPER_VALIDATION."
+    },
+    {
+      "priority": 1.857,
+      "task_id": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Design-only audit of executable sizing constraints and bankroll laddering for BTC/ETH 5M paper/live readiness.",
+      "blocked_by": "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/"
+      ],
+      "outputs": [
+        "docs/reports/POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001.md"
+      ],
+      "notes": "DONE. Design-only, zero code changes. Key findings: CLOB minimum $0.10; T0 ($20 bankroll) practical order = $0.55 (1 share); per-market cap $2.00 (10%); portfolio cap $4.00 (20%); 30-min loss cluster pause identified as incompatible with active scanning; probe/base/add ladder designed; no-fixed-cooldown opportunity throttle designed; critical blocker = zero paper fills (fill path unverified). Safety: SAFE_DESIGN_AUDIT."
     }
   ]
 }
