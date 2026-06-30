@@ -4128,5 +4128,45 @@
     "safety_verdict": "SAFE_DESIGN_AUDIT",
     "code_changed": false,
     "notes": "Design-only audit. Read utils/risk_manager.py, polymarket/position_sizing.py, bankroll_tiers.py, risk_modes.py, trade_frequency.py, order_manager.py, order_intent.py, config/settings.py. Designed probe/base/add sizing ladder and opportunity throttle replacing 30-min sleep."
+  },
+  {
+    "$schema": "loop_memory_v1",
+    "date": "2026-06-30",
+    "loop_id": "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001",
+    "task_class": 2,
+    "scope": [
+      "docs/architecture/EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001.md"
+    ],
+    "forbidden_scope_confirmed": true,
+    "result": "DESIGN_COMPLETE",
+    "evidence_grade": "A",
+    "commits": [],
+    "commit_messages": [],
+    "files_changed": 1,
+    "net_lines": 0,
+    "code_changed": false,
+    "architecture_only": true,
+    "key_decisions": {
+      "pipeline_layers": 7,
+      "lifecycle_states": [
+        "PROBE",
+        "BUILD",
+        "ADD",
+        "HOLD",
+        "REDUCE",
+        "MERGE",
+        "REDEEM",
+        "EXIT",
+        "CLOSED"
+      ],
+      "market_window_phases_reconciled": true,
+      "no_fixed_cooldowns": true,
+      "capital_allocation_engine": "portfolio-level replaces single-Kelly-output",
+      "critical_path": "paper_fill_verification_milestone_1",
+      "roadmap_milestones": 11,
+      "live_pilot_approach": "Probe-only, /usr/bin/bash.10, single market, all evidence gates required"
+    },
+    "safety_verdict": "SAFE_ARCHITECTURE_ONLY",
+    "next_task": "TBD"
   }
 ]

@@ -1,9 +1,9 @@
 {
     "$schema": "active_workflow_state_v1",
     "last_updated": "2026-06-30",
-    "current_phase": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001 complete; sizing ladder, dust zone, bankroll tiers, no-fixed-cooldown policy designed; zero code changes",
-    "last_completed_task": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
-    "last_commit": "HEAD",
+    "current_phase": "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001 complete; full 7-layer target architecture designed; 21-section document; prioritized roadmap to Micro Live Pilot; zero code changes; no commit per task spec",
+    "last_completed_task": "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001",
+    "last_commit": "08ae0a70",
     "last_commit_message": "docs: audit executable sizing reality",
     "next_task": "TBD",
     "navigator_state": {
@@ -103,7 +103,8 @@
             "CANONICAL_CONTEXT_SIZE_SHARP_SENTINEL_REPAIR_001",
             "SHADOW_POLICY_SEVERITY_MAP_FIX_001",
             "MARKET_AVAILABILITY_ENGINE_POST_REPAIR_PAPER_VALIDATION_001",
-            "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001"
+            "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001",
+            "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001"
         ],
         "next_batch": "TBD",
         "architecture_master_plan": "docs/architecture/QUANT_ARCHITECTURE_MASTER_PLAN_001.md",
@@ -288,7 +289,7 @@
         "unique_data_preserved": false,
         "commit_required": false
     },
-    "notes": "POLYMARKET_EXECUTABLE_SIZING_REALITY_AUDIT_001 complete. Design-only. Key findings: CLOB minimum $0.10, T0 practical order $0.55 (1 share), max 4 trades/hr, per-market cap $2.00 (10%), loss cluster 30-min pause identified as blocking issue for active scanning. Probe/base/add ladder designed. No-fixed-cooldown policy designed. Critical blocker: zero paper fills — fill path unverified.",
+    "notes": "EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001 complete. Architecture-only sprint. Full 7-layer pipeline designed: Market Intelligence → Opportunity Intelligence → Execution Intelligence → Portfolio Intelligence → Execution → Replay 2.0 → Learning Engine. 21 sections including: Position Lifecycle Engine (PROBE/BUILD/ADD/HOLD/REDUCE/MERGE/REDEEM/EXIT) reconciled with existing OPENING_SCAN vocabulary; Capital Allocation Engine replacing single-Kelly model; Opportunity Queue with cross-market ranking; no fixed cooldowns; adaptive risk only. 11-milestone roadmap to Micro Live Pilot defined. Critical path: paper fill verification first. No code changed. No commit per task spec.",
     "market_availability_engine_observability": {
         "status": "COMPLETE",
         "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -725,6 +726,21 @@
         "critical_blocker": "zero paper fills — fill path unverified",
         "safety_verdict": "SAFE_DESIGN_AUDIT",
         "next_task": "TBD"
+    },
+    "execution_reality_architecture_masterplan": {
+        "status": "COMPLETE",
+        "report_doc": "docs/architecture/EXECUTION_REALITY_ARCHITECTURE_MASTERPLAN_001.md",
+        "task_class": 2,
+        "sections": 21,
+        "pipeline_layers": 7,
+        "lifecycle_states_designed": ["PROBE", "BUILD", "ADD", "HOLD", "REDUCE", "MERGE", "REDEEM", "EXIT", "CLOSED"],
+        "market_window_phases_reconciled": ["OPENING_SCAN", "ACTIVE_INVENTORY_TRADING", "PROFIT_MANAGEMENT", "FINAL_DERISK", "CLOSED_OR_UNSAFE"],
+        "new_modules_designed": ["MarketWindowTracker", "InventoryEngine", "FillTracker", "ExecutionPlanner", "LadderEngine", "PositionLifecycleEngine", "OpportunityQueue", "CapitalAllocationEngine", "OpportunityThrottle", "ExecutionPlanSerializer"],
+        "critical_path_item": "paper_fill_verification",
+        "roadmap_milestones": 11,
+        "code_changed": false,
+        "committed": false,
+        "safety_verdict": "SAFE_ARCHITECTURE_ONLY"
     },
     "market_availability_engine_post_repair_paper_validation": {
         "status": "COMPLETE",
