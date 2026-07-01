@@ -68,6 +68,7 @@ main.py
 | Observability/logging | `utils/quant_event_logger.py`, `polymarket/realtime_logger.py`, `utils/logger.py`, `utils/scan_log_loader.py` |
 | Dashboard/operator visibility | `utils/display.py`, `dashboard/`, `web-dashboard/` |
 | Offline evidence | `tools/`, `tests/`, `runtime/quant_data/`, `tools/canonical_run_evidence_summary_builder.py` |
+| No-entry diagnostics | `utils/no_entry_root_cause_classifier.py`, `utils/no_entry_diagnostics.py`, `tools/research/no_entry_root_cause_report.py` |
 
 ## Large / Risky Files
 
@@ -104,6 +105,7 @@ Future safe docs-only zones:
 Current safe offline tooling:
 
 - `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`, including raw-vs-classified blocker conflict reporting.
+- `utils/no_entry_root_cause_classifier.py` - additive observability classifier for no-entry diagnostics; risk/safety labels must win before lifecycle fallback when raw/model-not-run reasons indicate `risk_off`, lockdown, or hard drawdown.
 
 Loop memory pointer rule:
 

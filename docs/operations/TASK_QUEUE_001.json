@@ -3880,6 +3880,38 @@
       "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
       "tech_lead_review_required": true,
       "notes": "DONE. Canonical summaries now expose raw_runtime_blocker_summary, classified_blocker_summary, and blocker_conflict_summary. Phase B shows raw risk_mode_lockdown:hard_drawdown vs classifier book_warming conflict 46/46."
+    },
+    {
+      "priority": 0.58,
+      "task_id": "NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Repair no-entry classifier risk/safety attribution so risk_off and hard_drawdown rows do not fall through to lifecycle book_warming labels.",
+      "blocked_by": "TECH_LEAD_REVIEW_REQUIRED",
+      "allowed_scope": [
+        "utils/no_entry_root_cause_classifier.py",
+        "tests/tools/test_no_entry_root_cause_classifier.py",
+        "docs/reports/",
+        "docs/operations/",
+        "root Profit Engine docs"
+      ],
+      "outputs": [
+        "docs/reports/NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001.md"
+      ],
+      "status": "DONE",
+      "verdict": "RISK_OFF_ROWS_CLASSIFY_AS_RISK_BEFORE_LIFECYCLE_FALLBACK",
+      "runtime_changed": false,
+      "runtime_trading_behavior_changed": false,
+      "strategy_changed": false,
+      "risk_state_behavior_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+      "tech_lead_review_required": true,
+      "notes": "DONE. Classifier now maps risk_off, runtime safety gate, risk_mode_lockdown, and hard_drawdown to risk labels before lifecycle fallback. Historical JSONL keeps old emitted labels."
     }
   ],
   "tech_lead_review_required": true,

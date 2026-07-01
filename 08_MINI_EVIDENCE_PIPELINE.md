@@ -83,3 +83,4 @@ Current finding:
 - Per-run evidence summaries are now canonicalized offline; the next evidence step should remain offline and consume those summaries before any shadow outcome replay with MFE/MAE, TP-hit, SL-hit, and settlement/path truth joins.
 - Recent CLOB-compliant paper evidence summaries surfaced `book_warming`, but raw decision rows showed `risk_off` / `risk_mode_lockdown:hard_drawdown`. Treat classifier summaries as diagnostic overlays until raw-vs-classified blockers are shown side by side.
 - Canonical summaries now include raw runtime blocker summaries, classified blocker summaries, and conflict summaries so replay/paper review can distinguish safety gates from classifier labels.
+- The no-entry classifier now classifies risk-off, hard-drawdown, and runtime safety gate rows as risk before lifecycle fallback. Historical evidence summaries may still contain old emitted classifier labels and should be read with raw-vs-classified context.

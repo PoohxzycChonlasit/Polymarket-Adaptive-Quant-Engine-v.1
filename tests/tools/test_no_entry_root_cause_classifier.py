@@ -90,9 +90,13 @@ def test_evidence_category_classification(reason: str, expected_primary: str) ->
     ("bankroll_too_small", "bankroll_too_small"),
     ("zero_size",       "zero_size_plan"),
     ("risk_plan_zero",  "zero_size_plan"),
+    ("risk_off",        "risk_mode_defensive"),
+    ("runtime safety gate", "risk_mode_defensive"),
     ("lockdown",        "risk_mode_defensive"),
+    ("risk_mode_lockdown", "risk_mode_defensive"),
     ("defensive",       "risk_mode_defensive"),
     ("micro_recovery",  "risk_mode_defensive"),
+    ("hard_drawdown",   "drawdown_cap"),
     ("drawdown",        "drawdown_cap"),
     ("max_drawdown",    "drawdown_cap"),
 ])
@@ -102,6 +106,56 @@ def test_risk_category_classification(reason: str, expected_primary: str) -> Non
     assert result["skip_reason_category"] == "risk", f"reason={reason!r}"
     assert result["skip_reason_primary"] == expected_primary, f"reason={reason!r}"
     assert result["risk_block_reason"] == expected_primary
+
+
+def test_risk_off_reason_wins_over_nonzero_book_lifecycle_fallback() -> None:
+    payload = {
+        "normalized_skip_reason": "risk_off",
+        "raw_skip_reason": "risk_mode_lockdown:hard_drawdown",
+        "model_activation_block_group": "RUNTIME_SAFETY_GATE",
+        "executable_book_state": "NONZERO_BOOK",
+        "skipped": True,
+    }
+
+    result = classify_no_entry_root_cause(payload)
+
+    assert result["skip_reason_category"] == "risk"
+    assert result["skip_reason_primary"] == "risk_mode_defensive"
+    assert result["risk_block_reason"] == "risk_mode_defensive"
+    assert result["timing_block_reason"] == ""
+
+
+def test_model_not_run_reason_risk_off_wins_over_nonzero_book_lifecycle_fallback() -> None:
+    payload = {
+        "normalized_skip_reason": "",
+        "model_not_run_reason": "risk_off",
+        "model_activation_block_group": "RUNTIME_SAFETY_GATE",
+        "executable_book_state": "NONZERO_BOOK",
+        "skipped": True,
+    }
+
+    result = classify_no_entry_root_cause(payload)
+
+    assert result["skip_reason_category"] == "risk"
+    assert result["skip_reason_primary"] == "risk_mode_defensive"
+    assert result["risk_block_reason"] == "risk_mode_defensive"
+    assert result["timing_block_reason"] == ""
+
+
+def test_hard_drawdown_raw_reason_classifies_as_drawdown_cap() -> None:
+    payload = {
+        "normalized_skip_reason": "",
+        "raw_skip_reason": "risk_mode_lockdown:hard_drawdown",
+        "executable_book_state": "NONZERO_BOOK",
+        "skipped": True,
+    }
+
+    result = classify_no_entry_root_cause(payload)
+
+    assert result["skip_reason_category"] == "risk"
+    assert result["skip_reason_primary"] == "drawdown_cap"
+    assert result["risk_block_reason"] == "drawdown_cap"
+    assert result["timing_block_reason"] == ""
 
 
 # ---------------------------------------------------------------------------

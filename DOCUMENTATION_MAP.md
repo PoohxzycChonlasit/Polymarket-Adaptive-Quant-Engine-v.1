@@ -88,6 +88,7 @@ Recent profit-relevant evidence:
 - `docs/reports/CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001.md`
 - `docs/reports/CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001.md`
 - `docs/reports/CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001.md`
+- `docs/reports/NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001.md`
 - `docs/reports/run_evidence/` - generated canonical per-run evidence summaries.
 
 Recent framework docs are now secondary:

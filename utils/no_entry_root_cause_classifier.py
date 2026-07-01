@@ -15,6 +15,18 @@ from typing import Any
 # Keyword match tables — substring search against normalized_skip_reason
 # ---------------------------------------------------------------------------
 
+# Observability-only reason sources. Provenance:
+# NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001 and
+# BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001 showed that
+# model_not_run_reason=risk_off and raw hard-drawdown reasons must be
+# considered before lifecycle fallback labels such as book_warming.
+_REASON_SOURCE_FIELDS: tuple[str, ...] = (
+    "normalized_skip_reason",
+    "raw_skip_reason",
+    "skip_reason",
+    "model_not_run_reason",
+)
+
 _TIMING_KEYWORDS: tuple[tuple[str, str], ...] = (
     ("time_unsafe",            "cutoff_passed"),
     ("late_entry",             "cutoff_passed"),
@@ -54,6 +66,11 @@ _EVIDENCE_KEYWORDS: tuple[tuple[str, str], ...] = (
 )
 
 _RISK_KEYWORDS: tuple[tuple[str, str], ...] = (
+    ("hard_drawdown",      "drawdown_cap"),
+    ("risk_off",           "risk_mode_defensive"),
+    ("runtime_safety_gate", "risk_mode_defensive"),
+    ("runtime safety gate", "risk_mode_defensive"),
+    ("risk_mode_lockdown", "risk_mode_defensive"),
     ("min_bet",             "bankroll_too_small"),
     ("bankroll_too_small",  "bankroll_too_small"),
     ("insufficient_funds",  "bankroll_too_small"),
@@ -112,6 +129,26 @@ def _first_match(reason_lower: str, table: tuple[tuple[str, str], ...]) -> str |
     return None
 
 
+def _reason_candidates(payload: dict[str, Any]) -> list[str]:
+    candidates: list[str] = []
+    for field in _REASON_SOURCE_FIELDS:
+        text = str(payload.get(field) or "").lower().strip()
+        if text and text not in candidates:
+            candidates.append(text)
+    return candidates
+
+
+def _first_match_from_candidates(
+    candidates: list[str],
+    table: tuple[tuple[str, str], ...],
+) -> str | None:
+    for reason in candidates:
+        match = _first_match(reason, table)
+        if match:
+            return match
+    return None
+
+
 def classify_no_entry_root_cause(payload: dict[str, Any]) -> dict[str, Any]:
     """
     Classify why a market produced no entry.
@@ -127,9 +164,8 @@ def classify_no_entry_root_cause(payload: dict[str, Any]) -> dict[str, Any]:
 def _classify(payload: dict[str, Any]) -> dict[str, Any]:
     # --- gather inputs ---
     raw_reason = str(payload.get("raw_skip_reason") or payload.get("skip_reason") or "")
-    norm_reason = str(payload.get("normalized_skip_reason") or raw_reason).lower().strip()
-    if not norm_reason:
-        norm_reason = raw_reason.lower().strip()
+    reason_candidates = _reason_candidates(payload)
+    norm_reason = reason_candidates[0] if reason_candidates else raw_reason.lower().strip()
 
     book_state = str(payload.get("executable_book_state") or "").upper()
     first_tradable_ts = str(payload.get("first_tradable_ts") or "").strip()
@@ -147,15 +183,15 @@ def _classify(payload: dict[str, Any]) -> dict[str, Any]:
     secondary = ""
     confidence = 0.1
 
-    timing_match = _first_match(norm_reason, _TIMING_KEYWORDS)
-    evidence_match = _first_match(norm_reason, _EVIDENCE_KEYWORDS)
-    risk_match = _first_match(norm_reason, _RISK_KEYWORDS)
-    micro_match = _first_match(norm_reason, _MICROSTRUCTURE_KEYWORDS)
+    timing_match = _first_match_from_candidates(reason_candidates, _TIMING_KEYWORDS)
+    evidence_match = _first_match_from_candidates(reason_candidates, _EVIDENCE_KEYWORDS)
+    risk_match = _first_match_from_candidates(reason_candidates, _RISK_KEYWORDS)
+    micro_match = _first_match_from_candidates(reason_candidates, _MICROSTRUCTURE_KEYWORDS)
 
-    if timing_match:
-        category, primary, confidence = "timing", timing_match, 0.9
-    elif risk_match:
+    if risk_match:
         category, primary, confidence = "risk", risk_match, 0.9
+    elif timing_match:
+        category, primary, confidence = "timing", timing_match, 0.9
     elif micro_match:
         category, primary, confidence = "microstructure", micro_match, 0.9
     elif evidence_match:

@@ -77,6 +77,11 @@
       "task_id": "CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001",
       "status": "COMPLETE_PENDING_COMMIT",
       "summary": "Updated canonical run evidence summaries to report raw runtime blockers and classified no-entry labels side by side. Phase B now shows raw risk_mode_lockdown:hard_drawdown vs classifier book_warming conflict 46/46."
+    },
+    {
+      "task_id": "NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001",
+      "status": "COMPLETE_PENDING_COMMIT",
+      "summary": "Repaired no-entry classifier risk/safety attribution so risk_off, runtime safety gate, risk_mode_lockdown, and hard_drawdown classify as risk before lifecycle fallback."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
@@ -103,7 +108,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T09:45:24Z",
+  "updated_at_utc": "2026-07-01T10:10:00Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -362,6 +367,37 @@
       "runtime_changed": false,
       "strategy_changed": false,
       "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK"
+    },
+    {
+      "task_id": "NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001",
+      "task_class": 3,
+      "status": "COMPLETE_PENDING_COMMIT",
+      "verdict": "RISK_OFF_ROWS_CLASSIFY_AS_RISK_BEFORE_LIFECYCLE_FALLBACK",
+      "updated_at_utc": "2026-07-01T10:10:00Z",
+      "files_changed": [
+        "utils/no_entry_root_cause_classifier.py",
+        "tests/tools/test_no_entry_root_cause_classifier.py",
+        "docs/reports/NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001.md",
+        "docs/operations/execution_contracts/NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001_CONTRACT_001.md",
+        "04_CURRENT_PROJECT_STATUS.md",
+        "07_RUNTIME_SCOREBOARD.md",
+        "08_MINI_EVIDENCE_PIPELINE.md",
+        "DOCUMENTATION_MAP.md",
+        "FILE_INDEX.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "runtime_changed": false,
+      "runtime_trading_behavior_changed": false,
+      "strategy_changed": false,
+      "risk_state_behavior_changed": false,
       "sizing_changed": false,
       "execution_changed": false,
       "config_changed": false,
