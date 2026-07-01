@@ -22,6 +22,7 @@ Paper profit first. Micro live only after evidence.
 - `BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001` found recent CLOB-compliant runs were not directly blocked by orderbook warmup. Raw decisions were `risk_off` / `risk_mode_lockdown:hard_drawdown`; `book_warming` was an additive classifier label over `NONZERO_BOOK` lifecycle evidence.
 - `CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001` updates canonical summaries to show raw runtime blockers and classified no-entry labels side by side, with conflict counts and examples.
 - `NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001` repairs the additive no-entry classifier so `risk_off`, `risk_mode_lockdown`, `hard_drawdown`, and runtime safety gate evidence classify as risk before lifecycle `book_warming` fallback.
+- `ORDER_MANAGER_CONFIDENCE_MAPPING_BUG_FIX_001` resolves a structural block where underdog predictions (win rate < 0.54) were automatically rejected by the risk engine because `win_rate` was conflated with `confidence_score`.
 - Shadow strategy framework work exists, but the mission reset freezes further framework expansion unless it directly supports profit evidence.
 
 ## Current Blockers
@@ -47,4 +48,4 @@ Paper profit first. Micro live only after evidence.
 
 ## Current Next Priority
 
-Tech Lead review is required before any next task. Candidate review topics: paper risk-state preflight, classifier repair runtime observability verification, and raw-vs-classified blocker dashboard feed.
+Tech Lead review is required before any next task. Candidate review topics: CLOB-compliant bounded paper evidence run after the confidence mapping fix.

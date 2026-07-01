@@ -663,6 +663,7 @@ class ExecutionRiskControlTests(unittest.TestCase):
                 side="YES",
                 entry_price=0.50,
                 win_rate=0.75,
+                confidence_score=0.75,
                 reward_risk_ratio=2.0,
                 edge=0.08,
                 spread=0.0,

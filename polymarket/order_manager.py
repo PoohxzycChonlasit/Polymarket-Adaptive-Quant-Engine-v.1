@@ -20,6 +20,7 @@ class OrderRequest:
     side: str
     entry_price: float
     win_rate: float
+    confidence_score: float
     reward_risk_ratio: float
     edge: float = 0.0          # model_prob - entry_price (used for tiered sizing)
     price_to_beat: float = 0.0 # for log display
@@ -99,7 +100,7 @@ class PolymarketOrderManager:
         ev = request.edge if request.edge != 0 else request.win_rate - request.entry_price
         sizing = calculate_position_size(PositionSizingInput(
             bankroll=balance,
-            confidence=request.win_rate,
+            confidence=request.confidence_score if request.confidence_score > 0 else request.win_rate,
             ev=ev,
             entry_price=request.entry_price,
             drawdown_pct=request.drawdown_pct,

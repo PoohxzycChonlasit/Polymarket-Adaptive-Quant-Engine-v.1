@@ -8078,7 +8078,7 @@ class PolymarketTrader:
             bankroll=current_balance,
             entry_price=entry_price,
         )
-        order_request = OrderRequest(market_id=market.market_id, side=model_side, entry_price=entry_price, win_rate=probability.p_yes if model_side == "YES" else probability.p_no, reward_risk_ratio=2.0, edge=model_ev, price_to_beat=ptb_info.price_to_beat, spread=ob_spread, liquidity_usd=ob_liquidity_usd, delta=delta.delta_score, delta_multiplier=delta.delta_multiplier, time_remaining_seconds=ptb_info.seconds_remaining, trades_last_hour=trades_last_hour, drawdown_pct=daily_drawdown_pct, min_position_size_usd=min_position_size_usd, daily_loss_limit_reached=risk_off, hard_drawdown_reached=daily_drawdown_pct >= 0.15)
+        order_request = OrderRequest(market_id=market.market_id, side=model_side, entry_price=entry_price, win_rate=probability.p_yes if model_side == "YES" else probability.p_no, confidence_score=confidence, reward_risk_ratio=2.0, edge=model_ev, price_to_beat=ptb_info.price_to_beat, spread=ob_spread, liquidity_usd=ob_liquidity_usd, delta=delta.delta_score, delta_multiplier=delta.delta_multiplier, time_remaining_seconds=ptb_info.seconds_remaining, trades_last_hour=trades_last_hour, drawdown_pct=daily_drawdown_pct, min_position_size_usd=min_position_size_usd, daily_loss_limit_reached=risk_off, hard_drawdown_reached=daily_drawdown_pct >= 0.15)
         risk_plan = self.order_manager.build_order_plan(order_request)
         risk_plan = self._maybe_apply_micro_survival_plan(
             risk_plan,
