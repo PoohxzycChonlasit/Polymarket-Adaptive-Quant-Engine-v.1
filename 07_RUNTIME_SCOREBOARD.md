@@ -92,3 +92,13 @@ It should answer:
 ## Scoreboard Validity Rule
 
 Scoreboard metrics are not profitability evidence unless time truth, cash/exposure/PnL reconciliation, and execution realism are present.
+
+## Latest Audit Snapshot
+
+`PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001` classifies current scoreboard readiness as PARTIAL.
+
+- Trade funnel evidence exists, but one canonical per-run funnel row is still needed.
+- Gate blocker counts are available and useful.
+- Market/sizing reality is partial because fractional-share and minimum-order live behavior are not proven.
+- Time-truth evidence is partial because current logs have timing proxies, but not all canonical field names from `11_LOGGING_AND_MARKET_TIME_TRUTH.md`.
+- Current data is valid for blocker diagnosis and paper accounting, not for a profitability claim.

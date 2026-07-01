@@ -70,3 +70,13 @@ Outputs:
 ## Anti-Expansion Rule
 
 Do not build a larger research lab until the mini pipeline fails to answer a clearly profit-relevant question.
+
+## Current Pipeline State
+
+Latest audit: `docs/reports/PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001.md`.
+
+Current finding:
+
+- Replay/counterfactual evidence identifies `risk_plan_zero` and `delta_extreme` as the most useful near-miss research targets.
+- Paper runtime evidence proves accounting paths, but entry throughput is too low for profitability inference.
+- The next evidence step should remain offline: shadow outcome replay with MFE/MAE, TP-hit, SL-hit, and settlement/path truth joins.

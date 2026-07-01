@@ -3637,6 +3637,40 @@
       "env_changed": false,
       "safety_verdict": "SAFE_DOCS_ONLY_RESET",
       "notes": "DONE. Mission reset to paper-profit-first Profit Engine. Framework/research expansion moved behind Profit Filter. Defined modular Python standard, loop engineering, time-truth logging standard, runtime scoreboard, dashboard spec, mini evidence pipeline, frozen backlog, and next profit-relevant audit. Next: PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001."
+    },
+    {
+      "priority": 0.51,
+      "task_id": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Audit current Polymarket Crypto 5M paper entry throughput, gate blockers, time truth, market realism, sizing realism, EV/cost gaps, outcome quality, and dashboard data availability.",
+      "blocked_by": "PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "root Profit Engine docs",
+        "historical runtime evidence read-only",
+        "runtime source read-only"
+      ],
+      "outputs": [
+        "docs/reports/PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001.md"
+      ],
+      "verdict": "ENTRY_THROUGHPUT_TOO_LOW_AND_MARKET_REALISM_PARTIAL_NO_TUNING_JUSTIFIED",
+      "baseline_run_id": "20260630T104339Z_52084_999c4023",
+      "tp_evidence_run_id": "20260630T135455Z_6592_5fac8cf4",
+      "baseline_entry_rate_per_hour": 2.0,
+      "tp_run_entry_rate_per_hour": 0.0,
+      "tuning_justified": false,
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "safety_verdict": "SAFE_READ_ONLY_AUDIT",
+      "notes": "DONE. Current paper evidence is valid for blocker diagnosis and accounting checks, but not for profitability, live execution realism, or precise market-time profit attribution. Next: offline Semantic C / risk_plan_zero shadow outcome replay."
     }
   ]
 }
