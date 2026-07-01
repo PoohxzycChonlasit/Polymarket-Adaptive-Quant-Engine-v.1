@@ -330,7 +330,8 @@ class BankrollState:
     capital_basis: str = "LIVE_BANKROLL"
     paper_research_bankroll_usd: float = 0.0
     live_reference_bankroll_usd: float = 0.0
-    valid_for_live_20_bankroll_claim: bool = True
+    valid_for_live_reference_bankroll_claim: bool = True
+    deprecated_valid_for_live_20_bankroll_claim: bool = True
     valid_for_strategy_edge_research: bool = True
 
     def __post_init__(self) -> None:
@@ -527,7 +528,8 @@ class PolymarketTrader:
             capital_basis=capital_basis,
             paper_research_bankroll_usd=paper_research,
             live_reference_bankroll_usd=live_ref,
-            valid_for_live_20_bankroll_claim=valid_for_live,
+            valid_for_live_reference_bankroll_claim=valid_for_live,
+            deprecated_valid_for_live_20_bankroll_claim=(valid_for_live if settings.account_balance == 20.0 else False),
             valid_for_strategy_edge_research=valid_for_research,
         )
         self._bankroll_rank_lock = BankrollRankLock(

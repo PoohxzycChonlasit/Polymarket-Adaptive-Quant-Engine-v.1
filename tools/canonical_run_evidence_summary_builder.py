@@ -604,11 +604,17 @@ def build_trade_funnel_summary(
     capital_basis = next((flat.get("capital_basis") for flat in flat_records if flat.get("capital_basis") is not None), "UNKNOWN")
     paper_research_bankroll_usd = next((flat.get("paper_research_bankroll_usd") for flat in flat_records if flat.get("paper_research_bankroll_usd") is not None), None)
     live_reference_bankroll_usd = next((flat.get("live_reference_bankroll_usd") for flat in flat_records if flat.get("live_reference_bankroll_usd") is not None), None)
-    valid_for_live_20_bankroll_claim = next((flat.get("valid_for_live_20_bankroll_claim") for flat in flat_records if flat.get("valid_for_live_20_bankroll_claim") is not None), None)
+    valid_for_live_reference_bankroll_claim = next((flat.get("valid_for_live_reference_bankroll_claim") for flat in flat_records if "valid_for_live_reference_bankroll_claim" in flat), None)
+    deprecated_valid_for_live_20_bankroll_claim = next((flat.get("deprecated_valid_for_live_20_bankroll_claim") for flat in flat_records if "deprecated_valid_for_live_20_bankroll_claim" in flat), None)
+    
+    if valid_for_live_reference_bankroll_claim is None:
+        # Fallback to older format if present in legacy logs
+        valid_for_live_reference_bankroll_claim = next((flat.get("valid_for_live_20_bankroll_claim") for flat in flat_records if "valid_for_live_20_bankroll_claim" in flat), None)
+        
     valid_for_strategy_edge_research = next((flat.get("valid_for_strategy_edge_research") for flat in flat_records if flat.get("valid_for_strategy_edge_research") is not None), None)
     pnl_denominator_usd = paper_research_bankroll_usd if capital_basis == "PAPER_RESEARCH_BANKROLL" else live_reference_bankroll_usd
 
-    return {
+    out_dict = {
         "schema_version": "trade_funnel_summary_v1",
         "run_id": run_id,
         "mode": next((str(flat.get("mode")) for flat in flat_records if flat.get("mode")), "unknown"),
@@ -640,10 +646,16 @@ def build_trade_funnel_summary(
         "capital_basis": capital_basis,
         "paper_research_bankroll_usd": paper_research_bankroll_usd,
         "live_reference_bankroll_usd": live_reference_bankroll_usd,
-        "valid_for_live_20_bankroll_claim": valid_for_live_20_bankroll_claim,
+        "valid_for_live_reference_bankroll_claim": valid_for_live_reference_bankroll_claim,
+        "deprecated_valid_for_live_20_bankroll_claim": deprecated_valid_for_live_20_bankroll_claim,
         "valid_for_strategy_edge_research": valid_for_strategy_edge_research,
         "pnl_denominator_usd": pnl_denominator_usd,
     }
+
+    if live_reference_bankroll_usd is not None and live_reference_bankroll_usd != 20.0 and deprecated_valid_for_live_20_bankroll_claim is not None:
+        out_dict["capital_reference_warning"] = f"live_reference_bankroll_usd is {live_reference_bankroll_usd}, but deprecated live_20_bankroll claim field exists."
+
+    return out_dict
 
 
 def build_canonical_run_evidence_summary(

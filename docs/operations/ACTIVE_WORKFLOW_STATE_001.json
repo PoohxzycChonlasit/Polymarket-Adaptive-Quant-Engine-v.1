@@ -1673,5 +1673,10 @@
     "status": "COMPLETE",
     "report_doc": "docs/reports/CLOB_COMPLIANT_PAPER_EVIDENCE_SMOKE_001.md",
     "next_task": null
+  },
+  "live_reference_bankroll_label_normalization": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/LIVE_REFERENCE_BANKROLL_LABEL_NORMALIZATION_001.md",
+    "next_task": null
   }
 }
