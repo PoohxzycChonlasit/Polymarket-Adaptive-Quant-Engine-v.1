@@ -95,9 +95,9 @@ Scoreboard metrics are not profitability evidence unless time truth, cash/exposu
 
 ## Latest Audit Snapshot
 
-`PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001` classifies current scoreboard readiness as PARTIAL.
+`CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001` now generates per-run evidence summaries under `docs/reports/run_evidence/`.
 
-- Trade funnel evidence exists, but one canonical per-run funnel row is still needed.
+- Trade funnel evidence exists as `trade_funnel_summary_v1`.
 - Gate blocker counts are available and useful.
 - Market/sizing reality is partial because fractional-share and minimum-order live behavior are not proven.
 - Time-truth evidence is partial because current logs have timing proxies, but not all canonical field names from `11_LOGGING_AND_MARKET_TIME_TRUTH.md`.
@@ -105,11 +105,11 @@ Scoreboard metrics are not profitability evidence unless time truth, cash/exposu
 
 ## Canonical Evidence Requirement
 
-Before the scoreboard is treated as a profit surface, it should consume a per-run evidence summary with:
+Before the scoreboard is treated as a profit surface, it must consume a per-run evidence summary with:
 
 - `trade_funnel_summary_v1`
 - `market_time_truth_field_map_v1`
 - `dashboard_data_availability_v1`
 - `evidence_validity_v1`
 
-Until those are available, dashboard values are operational diagnostics, not profitability proof.
+Those summaries are now available offline, but dashboard values remain operational diagnostics until time truth, sizing realism, costs, and settlement truth are complete.

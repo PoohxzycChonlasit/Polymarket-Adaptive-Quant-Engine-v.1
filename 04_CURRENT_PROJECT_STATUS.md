@@ -18,6 +18,7 @@ Paper profit first. Micro live only after evidence.
 - Entry blocker analysis showed the strongest design question is `risk_plan_zero` side-confidence semantics.
 - Entry throughput and market-realism audit now confirms current evidence is valid for blocker diagnosis and paper accounting, but not valid for a profit claim or live sizing realism.
 - Canonical evidence and market-time truth review now defines the per-run funnel, alias map, evidence-validity classes, and dashboard availability needed before more replay/tuning work.
+- Offline canonical run evidence summary builder now emits per-run `trade_funnel_summary_v1`, market-time truth maps, dashboard availability, and conservative evidence validity JSON under `docs/reports/run_evidence/`.
 - Shadow strategy framework work exists, but the mission reset freezes further framework expansion unless it directly supports profit evidence.
 
 ## Current Blockers
@@ -30,7 +31,7 @@ Paper profit first. Micro live only after evidence.
 | Market-realistic sizing | Needs explicit validation | Paper fractional sizing may not match live CLOB mechanics. |
 | Time truth | Needs strict governance | Profit evidence is invalid if timing is ambiguous. |
 | Market/live sizing realism | Not proven | Current paper opens can use `$0.10` fractional shares; live CLOB fractional/minimum-order behavior is unresolved. |
-| Canonical evidence summary | Needed | Future replay and dashboard work should consume one per-run evidence summary instead of re-deriving aliases ad hoc. |
+| Canonical evidence summary | Implemented offline | Future replay and dashboard work can consume generated per-run evidence summaries instead of re-deriving aliases ad hoc. |
 | Live execution | Not validated | Micro live remains blocked. |
 
 ## Active Safety Position
@@ -42,4 +43,4 @@ Paper profit first. Micro live only after evidence.
 
 ## Current Next Priority
 
-Build an offline canonical run evidence summary helper before further shadow replay or threshold discussion.
+Use the offline canonical run evidence summaries as the input layer for the next profit-relevant dashboard or replay evidence task.

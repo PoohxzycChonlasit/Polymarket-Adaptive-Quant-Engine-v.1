@@ -3705,6 +3705,38 @@
       "env_changed": false,
       "safety_verdict": "SAFE_DOCS_AND_EVIDENCE_CONTRACT_ONLY",
       "notes": "DONE. Defined canonical per-run evidence layer and field mapping. Current evidence is valid for blocker diagnosis and baseline accounting but invalid for profit claims. Next: CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001."
+    },
+    {
+      "priority": 0.53,
+      "task_id": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Build offline canonical per-run evidence summaries from existing paper/replay/runtime JSONL logs.",
+      "blocked_by": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001",
+      "allowed_scope": [
+        "tools/canonical_run_evidence_summary_builder.py",
+        "tests/tools/",
+        "docs/reports/",
+        "docs/operations/",
+        "root Profit Engine docs"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001.md",
+        "docs/reports/run_evidence/20260630T104339Z_52084_999c4023_canonical_evidence_summary.json",
+        "docs/reports/run_evidence/20260630T135455Z_6592_5fac8cf4_canonical_evidence_summary.json"
+      ],
+      "status": "DONE",
+      "verdict": "PASS_OFFLINE_BUILDER_IMPLEMENTED",
+      "tool": "tools/canonical_run_evidence_summary_builder.py",
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
+      "notes": "DONE. Added stdlib-only canonical run evidence summary builder with focused tests and two generated sample summaries. Evidence remains invalid for profit claims because timing, sizing realism, cost, and settlement truth are incomplete. Next: CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001."
     }
   ]
 }

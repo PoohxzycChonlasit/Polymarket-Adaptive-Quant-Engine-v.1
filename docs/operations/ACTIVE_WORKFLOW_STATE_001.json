@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-07-01",
-  "current_phase": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001 complete; canonical per-run evidence layer defined, no runtime tuning justified",
-  "last_completed_task": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001",
-  "last_commit": "b95fc7d4",
-  "last_commit_message": "docs: audit entry throughput and market realism",
-  "next_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
+  "current_phase": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001 complete; offline per-run evidence summaries generated, no runtime tuning justified",
+  "last_completed_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
+  "last_commit": "pending",
+  "last_commit_message": "tools: add canonical run evidence summary builder",
+  "next_task": "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1520,5 +1520,57 @@
     "env_changed": false,
     "safety_verdict": "SAFE_DOCS_AND_EVIDENCE_CONTRACT_ONLY",
     "next_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001"
+  },
+  "canonical_run_evidence_summary_builder": {
+    "status": "COMPLETE",
+    "task_class": 3,
+    "report_doc": "docs/reports/CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001.md",
+    "tool": "tools/canonical_run_evidence_summary_builder.py",
+    "test_suite": "tests/tools/test_canonical_run_evidence_summary_builder.py",
+    "schema_version": "canonical_run_evidence_summary.v1",
+    "outputs": [
+      "trade_funnel_summary_v1",
+      "market_time_truth_field_map_v1",
+      "dashboard_data_availability_v1",
+      "evidence_validity_v1"
+    ],
+    "sample_summaries": [
+      "docs/reports/run_evidence/20260630T104339Z_52084_999c4023_canonical_evidence_summary.json",
+      "docs/reports/run_evidence/20260630T135455Z_6592_5fac8cf4_canonical_evidence_summary.json"
+    ],
+    "baseline_run": {
+      "run_id": "20260630T104339Z_52084_999c4023",
+      "decisions": 120,
+      "opens": 2,
+      "closes": 2,
+      "net_pnl": -0.042647,
+      "evidence_validity": [
+        "VALID_FOR_BLOCKER_DIAGNOSIS",
+        "VALID_FOR_ACCOUNTING_CHECK",
+        "PARTIAL_FOR_MARKET_REALISM",
+        "INVALID_FOR_PROFIT_CLAIM"
+      ]
+    },
+    "zero_entry_run": {
+      "run_id": "20260630T135455Z_6592_5fac8cf4",
+      "decisions": 120,
+      "opens": 0,
+      "closes": 0,
+      "net_pnl": 0,
+      "evidence_validity": [
+        "VALID_FOR_BLOCKER_DIAGNOSIS",
+        "PARTIAL_FOR_MARKET_REALISM",
+        "INVALID_FOR_PROFIT_CLAIM"
+      ]
+    },
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "sizing_changed": false,
+    "risk_changed": false,
+    "execution_changed": false,
+    "config_changed": false,
+    "env_changed": false,
+    "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
+    "next_task": "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001"
   }
 }

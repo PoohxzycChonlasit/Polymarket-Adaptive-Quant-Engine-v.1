@@ -1,0 +1,268 @@
+{
+  "dashboard_data_availability_v1": {
+    "Gate Blocker Board": "AVAILABLE",
+    "Market/Sizing Reality Board": "PARTIAL",
+    "Operator Action Panel": "AVAILABLE",
+    "Profit Engine Header": "PARTIAL",
+    "Quant Metrics Board": "PARTIAL",
+    "Time Truth Board": "PARTIAL",
+    "Trade Funnel": "AVAILABLE"
+  },
+  "evidence_validity_v1": {
+    "labels": [
+      "VALID_FOR_BLOCKER_DIAGNOSIS",
+      "VALID_FOR_ACCOUNTING_CHECK",
+      "PARTIAL_FOR_MARKET_REALISM",
+      "INVALID_FOR_PROFIT_CLAIM"
+    ],
+    "rules": {
+      "fee_slippage_latency_costs_missing": true,
+      "profit_claim_allowed": false,
+      "settlement_truth_missing": true,
+      "sizing_realism_missing": true,
+      "timing_truth_missing_or_ambiguous": true
+    },
+    "schema_version": "evidence_validity_v1"
+  },
+  "generated_at_utc": "2026-07-01T03:33:59Z",
+  "market_time_truth_field_map_v1": {
+    "chainlink_reference_ts_utc": {
+      "aliases": [
+        "price_to_beat_timestamp_utc",
+        "ptb_timestamp_utc",
+        "oracle_timestamp_utc",
+        "chainlink_ts_utc"
+      ],
+      "observed_keys": [],
+      "status": "MISSING"
+    },
+    "clock_drift_status": {
+      "aliases": [
+        "clock_status"
+      ],
+      "observed_keys": [],
+      "status": "MISSING"
+    },
+    "close_ts_utc": {
+      "aliases": [
+        "exit_timestamp",
+        "timestamp_utc"
+      ],
+      "observed_keys": [
+        "exit_timestamp",
+        "timestamp_utc"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "data_age_ms": {
+      "aliases": [
+        "orderbook_age_ms"
+      ],
+      "observed_keys": [
+        "orderbook_age_ms"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "decision_latency_ms": {
+      "aliases": [],
+      "observed_keys": [
+        "decision_latency_ms"
+      ],
+      "status": "PRESENT"
+    },
+    "decision_ts_utc": {
+      "aliases": [
+        "decision_cycle_started_at",
+        "timestamp_utc"
+      ],
+      "observed_keys": [
+        "decision_cycle_started_at",
+        "timestamp_utc"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "fill_latency_ms": {
+      "aliases": [
+        "paper_fill_latency_ms"
+      ],
+      "observed_keys": [],
+      "status": "MISSING"
+    },
+    "fill_ts_utc": {
+      "aliases": [
+        "fill_ts",
+        "timestamp_utc"
+      ],
+      "observed_keys": [
+        "fill_ts",
+        "timestamp_utc"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "local_receive_ts_utc": {
+      "aliases": [
+        "timestamp_utc"
+      ],
+      "observed_keys": [
+        "timestamp_utc"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "market_window_end_utc": {
+      "aliases": [
+        "market_epoch_end"
+      ],
+      "observed_keys": [
+        "market_epoch_end"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "market_window_start_utc": {
+      "aliases": [
+        "epoch_start_ts",
+        "market_epoch_start"
+      ],
+      "observed_keys": [
+        "epoch_start_ts",
+        "market_epoch_start"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "order_ack_ts_utc": {
+      "aliases": [
+        "order_ack_ts"
+      ],
+      "observed_keys": [
+        "order_ack_ts"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "order_submit_ts_utc": {
+      "aliases": [
+        "order_submit_ts",
+        "timestamp_utc"
+      ],
+      "observed_keys": [
+        "order_submit_ts",
+        "timestamp_utc"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "seconds_since_open": {
+      "aliases": [],
+      "observed_keys": [
+        "seconds_since_open"
+      ],
+      "status": "PRESENT"
+    },
+    "seconds_to_expiry": {
+      "aliases": [
+        "seconds_remaining"
+      ],
+      "observed_keys": [
+        "seconds_remaining"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "settlement_ts_utc": {
+      "aliases": [
+        "resolution_timestamp_utc",
+        "settled_at_utc",
+        "settlement_timestamp_utc"
+      ],
+      "observed_keys": [],
+      "status": "MISSING"
+    },
+    "source_orderbook_ts_utc": {
+      "aliases": [
+        "candidate_seen_ts",
+        "last_orderbook_refresh_at"
+      ],
+      "observed_keys": [
+        "candidate_seen_ts",
+        "last_orderbook_refresh_at"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "submit_latency_ms": {
+      "aliases": [
+        "order_submit_latency_ms"
+      ],
+      "observed_keys": [],
+      "status": "MISSING"
+    }
+  },
+  "record_count": 2168,
+  "run_id": "20260630T104339Z_52084_999c4023",
+  "schema_version": "canonical_run_evidence_summary.v1",
+  "source_streams": [
+    "decision_log",
+    "execution_log",
+    "market_snapshots",
+    "path_truth",
+    "research_log",
+    "risk_log",
+    "system_health",
+    "trade_journal"
+  ],
+  "trade_funnel_summary_v1": {
+    "active_markets_seen": 30,
+    "candidates": 105,
+    "close_rate_per_hour": 1.996,
+    "closes": 2,
+    "decisions": 120,
+    "duration_minutes": 60.117,
+    "end_time_utc": "2026-06-30T11:43:46Z",
+    "entry_rate_per_hour": 1.996,
+    "ev_pass_count": 63,
+    "evidence_validity": [
+      "VALID_FOR_BLOCKER_DIAGNOSIS",
+      "VALID_FOR_ACCOUNTING_CHECK",
+      "PARTIAL_FOR_MARKET_REALISM",
+      "INVALID_FOR_PROFIT_CLAIM"
+    ],
+    "fills": 4,
+    "mode": "paper",
+    "net_pnl": -0.042647,
+    "opens": 2,
+    "order_intents": 12,
+    "orders_sent": 4,
+    "risk_approved_count": 6,
+    "run_id": "20260630T104339Z_52084_999c4023",
+    "schema_version": "trade_funnel_summary_v1",
+    "sl_count": 2,
+    "start_time_utc": "2026-06-30T10:43:39Z",
+    "top_no_trade_reasons": [
+      {
+        "count": 45,
+        "reason": "imbalance_extreme"
+      },
+      {
+        "count": 33,
+        "reason": "cutoff_passed"
+      },
+      {
+        "count": 23,
+        "reason": "confidence_below_threshold"
+      },
+      {
+        "count": 9,
+        "reason": "first_executable_too_late"
+      },
+      {
+        "count": 4,
+        "reason": "unclassified"
+      },
+      {
+        "count": 3,
+        "reason": "zero_size_plan"
+      },
+      {
+        "count": 3,
+        "reason": "ev_negative"
+      }
+    ],
+    "tp_count": 0,
+    "tradable_markets": 15
+  }
+}

@@ -21,6 +21,7 @@ Question:
 
 Outputs:
 
+- Canonical per-run evidence summary JSON from `tools/canonical_run_evidence_summary_builder.py`.
 - Entry counts.
 - Gate blockers.
 - EV and confidence distributions.
@@ -73,10 +74,10 @@ Do not build a larger research lab until the mini pipeline fails to answer a cle
 
 ## Current Pipeline State
 
-Latest audit: `docs/reports/PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001.md`.
+Latest tooling report: `docs/reports/CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001.md`.
 
 Current finding:
 
 - Replay/counterfactual evidence identifies `risk_plan_zero` and `delta_extreme` as the most useful near-miss research targets.
 - Paper runtime evidence proves accounting paths, but entry throughput is too low for profitability inference.
-- The next evidence step should remain offline: first canonicalize per-run evidence summaries, then run shadow outcome replay with MFE/MAE, TP-hit, SL-hit, and settlement/path truth joins.
+- Per-run evidence summaries are now canonicalized offline; the next evidence step should remain offline and consume those summaries before any shadow outcome replay with MFE/MAE, TP-hit, SL-hit, and settlement/path truth joins.

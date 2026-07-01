@@ -67,7 +67,7 @@ main.py
 | Execution/reconciliation | `polymarket/order_intent.py`, `polymarket/client.py`, `polymarket/position_manager.py`, `utils/position_tracker.py` |
 | Observability/logging | `utils/quant_event_logger.py`, `polymarket/realtime_logger.py`, `utils/logger.py`, `utils/scan_log_loader.py` |
 | Dashboard/operator visibility | `utils/display.py`, `dashboard/`, `web-dashboard/` |
-| Offline evidence | `tools/`, `tests/`, `runtime/quant_data/` |
+| Offline evidence | `tools/`, `tests/`, `runtime/quant_data/`, `tools/canonical_run_evidence_summary_builder.py` |
 
 ## Large / Risky Files
 
@@ -98,6 +98,10 @@ Future safe docs-only zones:
 - `docs/audits/`.
 - `docs/research/`.
 - `docs/operations/`.
+
+Current safe offline tooling:
+
+- `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`.
 
 ## Dangerous Edit Zones
 
