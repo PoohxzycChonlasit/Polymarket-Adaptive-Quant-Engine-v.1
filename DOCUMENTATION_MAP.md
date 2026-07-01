@@ -57,6 +57,8 @@
 | `docs/operations/TASK_QUEUE_001.json` | Task queue. |
 | `docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json` | Active workday loop memory file. |
 | `docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json` | Archived loop memory file; read-only by policy. |
+| `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md` | Loop mode behavior rules. |
+| `docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md` | Audit template for standard loops. |
 
 ## Task Authorization Policy
 

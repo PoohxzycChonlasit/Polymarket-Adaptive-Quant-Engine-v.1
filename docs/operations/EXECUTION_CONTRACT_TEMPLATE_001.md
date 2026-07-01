@@ -358,7 +358,15 @@ At loop completion, declare:
 ```
 FINAL_VERDICT:     [COMMITTED | STOPPED | ESCALATED]
 TASK:              [task_id]
-COMMITS:           [sha] — [message]
+GIT_PREFLIGHT_STATUS: [CLEAN | DIRTY | UNTRACKED]
+FILES_STAGED:      [N] ([detail])
+VALIDATION_RESULT: [PASS | FAIL]
+COMMIT_HASH:       [sha or NONE]
+PUSH_STATUS:       [SUCCESS | FAILED | NOT_ATTEMPTED]
+BRANCH_SYNC_STATUS:[SYNCED | BEHIND | AHEAD]
+WORKING_TREE_STATUS: [CLEAN | DIRTY]
+UNTRACKED_FILES_REMAINING: [N] ([detail])
+RECOVERY_ACTIONS_IF_ANY: [NONE or describe]
 FILES_CHANGED:     [N] ([detail])
 TESTS:             [N/N pass] or N/A
 RUNTIME:           [cycles, exit, JSONL counts] or N/A

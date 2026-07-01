@@ -90,6 +90,8 @@ For this governance reset:
 - `docs/operations/ACTIVE_WORKFLOW_STATE_001.json`.
 - `docs/operations/TASK_QUEUE_001.json`.
 - Current active workday loop memory file.
+- `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md`.
+- `docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md`.
 
 Future safe docs-only zones:
 

@@ -361,7 +361,60 @@ No loop shortcut permitted. Each stage produces its own document.
 
 ---
 
-## 14. When Loop Mode Is Forbidden
+## 14. Git Operations Are Part of the Loop
+
+Rules:
+1. The AI agent must perform git pre-flight checks before every task:
+   - `git status --short`
+   - `git branch --show-current`
+   - `git log --oneline -5`
+   - `git status -sb`
+
+2. The AI agent must stage only task-owned files.
+
+3. The AI agent must never stage unrelated untracked files.
+
+4. The AI agent must run validation before commit:
+   - `git diff --check`
+   - JSON validation if JSON touched
+   - targeted tests if code touched
+
+5. The AI agent must commit only after validation passes.
+
+6. The AI agent must push after commit unless explicitly blocked.
+
+7. The AI agent must run post-flight checks:
+   - `git status --short`
+   - `git status -sb`
+   - `git log --oneline -3`
+
+8. The AI agent must report:
+   - commit hash
+   - push status
+   - branch sync status
+   - remaining untracked files
+   - whether working tree is clean
+
+9. The human operator should not be asked to perform git commands manually unless:
+   - credentials/tool permission are unavailable
+   - remote push requires human authentication
+   - conflict requires explicit human decision
+   - destructive recovery is needed
+
+10. Never force push without explicit operator authorization.
+
+### Stop Conditions
+- merge conflict
+- branch behind origin
+- push rejected
+- unknown untracked files
+- validation failure
+- accidental staging of unrelated files
+- runtime files changed outside scope
+
+---
+
+## 15. When Loop Mode Is Forbidden
 
 Loop mode is **explicitly forbidden** for:
 - Any task touching `_risk_plan_zero_diagnostics`, `_diagnostic_float`, `_diagnostic_int`
