@@ -529,7 +529,7 @@ class PolymarketTrader:
             paper_research_bankroll_usd=paper_research,
             live_reference_bankroll_usd=live_ref,
             valid_for_live_reference_bankroll_claim=valid_for_live,
-            deprecated_valid_for_live_20_bankroll_claim=(valid_for_live if settings.account_balance == 20.0 else False),
+            deprecated_valid_for_live_20_bankroll_claim=(valid_for_live if self.settings.account_balance == 20.0 else False),
             valid_for_strategy_edge_research=valid_for_research,
         )
         self._bankroll_rank_lock = BankrollRankLock(
