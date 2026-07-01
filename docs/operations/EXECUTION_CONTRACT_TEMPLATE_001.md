@@ -364,7 +364,9 @@ TESTS:             [N/N pass] or N/A
 RUNTIME:           [cycles, exit, JSONL counts] or N/A
 FORBIDDEN_SCOPE:   confirmed [or VIOLATION: file]
 STATE_QUEUE_MEMORY: [what was updated]
-NEXT:              [next_task_id] — [one line]
+TECH_LEAD_REVIEW_CANDIDATES: [candidate task ids, or NONE]
+BLOCKERS:          [authorization/data/state blockers, or NONE]
+RECOMMENDED_REVIEW_TOPICS: [topics for Tech Lead review, or NONE]
 ```
 
 ---

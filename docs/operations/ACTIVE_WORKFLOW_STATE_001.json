@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-07-01",
-  "current_phase": "WORKDAY_LOOP_MEMORY_ROTATED_20260701; Tech Lead review required before next executable task",
-  "last_completed_task": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
+  "current_phase": "NO_AUTOMATIC_NEXT_TASK_POLICY_ACTIVE; Tech Lead review required before every new task",
+  "last_completed_task": "DISABLE_AUTOMATIC_NEXT_TASK_POLICY_001",
   "last_commit": "pending",
-  "last_commit_message": "ops: rotate active loop memory for workday",
-  "next_task": "TECH_LEAD_REVIEW_REQUIRED",
+  "last_commit_message": "ops: disable automatic next task promotion",
+  "next_task": null,
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -129,7 +129,12 @@
     "no_blind_next_task": true,
     "archived_loop_memory_files": [
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
-    ]
+    ],
+    "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+    "automatic_next_task_disabled": true,
+    "promotion_requires_tech_lead_review": true,
+    "candidate_tasks_only": true,
+    "updated_at_utc": "2026-07-01T04:22:01Z"
   },
   "recommended_first_reads": [
     "docs/operations/AI_REPO_BOOTSTRAP_001.md",
@@ -1609,5 +1614,26 @@
     "env_changed": false,
     "updated_at_utc": "2026-07-01T04:03:05Z",
     "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+  },
+  "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+  "disable_automatic_next_task_policy": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "next_task": null,
+    "next_authorized_task": "TECH_LEAD_REVIEW_REQUIRED",
+    "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+    "automatic_next_task_disabled": true,
+    "promotion_requires_tech_lead_review": true,
+    "candidate_tasks_only": true,
+    "tech_lead_review_required": true,
+    "no_blind_next_task": true,
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "risk_changed": false,
+    "sizing_changed": false,
+    "execution_changed": false,
+    "config_changed": false,
+    "env_changed": false,
+    "updated_at_utc": "2026-07-01T04:22:01Z"
   }
 }

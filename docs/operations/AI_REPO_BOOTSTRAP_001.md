@@ -47,9 +47,10 @@ For AIROS-aware work also read:
 Use this order:
 
 1. The user's latest explicit task wins.
-2. If no latest explicit task, read `ACTIVE_WORKFLOW_STATE_001.json.next_task`.
-3. Confirm the task exists in `TASK_QUEUE_001.json`.
-4. If task queue and active workflow disagree, report the mismatch and ask for operator direction unless the user's latest task resolves it.
+2. If no latest explicit task exists, stop and request Tech Lead authorization.
+3. Read `ACTIVE_WORKFLOW_STATE_001.json.next_task_policy`; if it is `NO_AUTOMATIC_NEXT_TASK`, do not promote candidates automatically.
+4. Candidate tasks in `TASK_QUEUE_001.json`, reports, handoffs, or loop memory are review material only.
+5. If task queue and active workflow disagree, report the mismatch and ask for operator direction unless the user's latest task resolves it.
 
 ## Find Active Loop Memory
 

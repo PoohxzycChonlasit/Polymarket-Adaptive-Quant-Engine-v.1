@@ -52,13 +52,20 @@ This rule applies to every `.py` file in the repository.
 
 ## Task Routing Rule
 
-Do not follow old `NEXT_TASK` blindly. Before work starts:
+Do not follow old `NEXT_TASK` values. `NEXT_TASK` is not authorization.
+
+Before work starts:
 
 1. Read `00_MISSION.md`.
 2. Apply the Profit Filter.
 3. Lock scope.
 4. Define acceptance criteria.
 5. Validate evidence before claiming success.
+6. Confirm Tech Lead authorization for the specific task.
+
+Agents may propose candidate tasks, blockers, and review topics. They must not auto-start recommended tasks from reports, queue entries, loop memory, or workflow state.
+
+If authorization is unclear, stop and ask for Tech Lead review.
 
 ## Backlog Rule
 

@@ -3771,10 +3771,50 @@
       "config_changed": false,
       "env_changed": false,
       "notes": "DONE. Active workflow state now points to 2026-07-01 loop memory. 2026-06-28 loop memory has archive marker with read_only=true and superseded_by current file. Next task selection requires Tech Lead review."
+    },
+    {
+      "priority": 0.55,
+      "task_id": "DISABLE_AUTOMATIC_NEXT_TASK_POLICY_001",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Disable automatic NEXT_TASK promotion and require Tech Lead review before every new task.",
+      "blocked_by": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
+      "allowed_scope": [
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+        "10_LOOP_ENGINEERING.md",
+        "02_PROJECT_RULES.md",
+        "03_MASTER_AGENT_ROUTER.md",
+        "DOCUMENTATION_MAP.md",
+        "FILE_INDEX.md"
+      ],
+      "outputs": [],
+      "status": "DONE",
+      "verdict": "NO_AUTOMATIC_NEXT_TASK_POLICY_ACTIVE",
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+      "automatic_next_task_disabled": true,
+      "promotion_requires_tech_lead_review": true,
+      "candidate_tasks_only": true,
+      "tech_lead_review_required": true,
+      "no_blind_next_task": true,
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "notes": "DONE. Queue recommendations are candidate tasks only. No task may be auto-promoted from next_task; Tech Lead review is required before every new task."
     }
   ],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
   "next_authorized_task": "TECH_LEAD_REVIEW_REQUIRED",
-  "next_task_selection_policy": "Tech Lead review required before promoting any queued next_task."
+  "next_task_selection_policy": "NO_AUTOMATIC_NEXT_TASK; recommendations are candidates only and require Tech Lead review.",
+  "next_task": null,
+  "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+  "automatic_next_task_disabled": true,
+  "promotion_requires_tech_lead_review": true,
+  "candidate_tasks_only": true
 }

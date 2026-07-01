@@ -5,7 +5,7 @@
   "read_only": false,
   "mission": "Polymarket Crypto 5M Quant Profit Engine",
   "mode": "profit_first",
-  "current_phase": "WORKDAY_LOOP_MEMORY_ROTATED_20260701; Tech Lead review required before next executable task",
+  "current_phase": "NO_AUTOMATIC_NEXT_TASK_POLICY_ACTIVE; Tech Lead review required before every new task",
   "completed_today": [
     {
       "task_id": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
@@ -22,13 +22,20 @@
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
       "status": "COMPLETE_PENDING_COMMIT",
       "summary": "Rotated active loop memory pointer to 2026-07-01 and blocked blind next-task promotion."
+    },
+    {
+      "task_id": "DISABLE_AUTOMATIC_NEXT_TASK_POLICY_001",
+      "status": "COMPLETE_PENDING_COMMIT",
+      "summary": "Disabled automatic NEXT_TASK promotion and required Tech Lead review for future task authorization."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
   "blocked_items": [
     "No blind NEXT_TASK execution after workday rotation.",
     "Runtime, strategy, risk, sizing, execution, config, and live behavior changes remain out of scope.",
-    "Unrelated untracked shadow framework files must remain unstaged unless explicitly routed."
+    "Unrelated untracked shadow framework files must remain unstaged unless explicitly routed.",
+    "Automatic NEXT_TASK promotion is disabled.",
+    "Candidate tasks require Tech Lead review before execution."
   ],
   "do_not_do": [
     "Do not change strategy thresholds.",
@@ -38,16 +45,15 @@
     "Do not edit config/settings.py or .env.",
     "Do not run live trading.",
     "Do not stage unrelated untracked shadow framework files.",
-    "Do not follow stale NEXT_TASK without Tech Lead review."
+    "Do not follow stale NEXT_TASK without Tech Lead review.",
+    "Do not auto-start NEXT_TASK.",
+    "Do not treat candidate tasks as authorization.",
+    "If unsure, stop and ask for Tech Lead authorization."
   ],
-  "next_task_candidates": [
-    "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001",
-    "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001",
-    "CANONICAL_MARKET_TIME_TRUTH_FIELD_EMISSION_PLAN_001"
-  ],
+  "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T04:03:05Z",
+  "updated_at_utc": "2026-07-01T04:22:01Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -71,6 +77,25 @@
       "config_changed": false,
       "env_changed": false,
       "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+    },
+    {
+      "task_id": "DISABLE_AUTOMATIC_NEXT_TASK_POLICY_001",
+      "task_class": 2,
+      "status": "COMPLETE_PENDING_COMMIT",
+      "updated_at_utc": "2026-07-01T04:22:01Z",
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+      "tech_lead_review_required": true,
+      "no_blind_next_task": true,
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false
     }
-  ]
+  ],
+  "next_task": null,
+  "next_task_policy": "NO_AUTOMATIC_NEXT_TASK"
 }

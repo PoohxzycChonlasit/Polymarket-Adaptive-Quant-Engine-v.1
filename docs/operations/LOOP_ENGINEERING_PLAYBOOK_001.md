@@ -197,22 +197,24 @@ If any required contract field is missing → STOP_AND_ESCALATE before execution
 
 ## 9a. Active Workflow State and Task Queue
 
-Two machine-readable files track the current project state and next tasks:
+Two machine-readable files track the current project state and candidate tasks:
 
-- **`docs/operations/ACTIVE_WORKFLOW_STATE_001.json`** — current truth: last completed task, next task, workflow tier, blocked status, refactor state, recommended read order
-- **`docs/operations/TASK_QUEUE_001.json`** — prioritized queue of next tasks with status, tier, blocked_by, and scope
+- **`docs/operations/ACTIVE_WORKFLOW_STATE_001.json`** - current truth: last completed task, authorization policy, workflow tier, blocked status, refactor state, recommended read order.
+- **`docs/operations/TASK_QUEUE_001.json`** - prioritized queue of candidate tasks with status, tier, blocked_by, and scope.
 
 **Session startup read order (AWE Context Resolver):**
 1. `PROJECT_RULES.md`
 2. `MASTER_AGENT_ROUTER.md`
-3. `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` ← next task lives here
-4. `docs/operations/TASK_QUEUE_001.json` ← queue with priorities
-5. `docs/operations/loop_memory/LOOP_MEMORY_*.json` ← historical evidence
+3. `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` - authorization policy lives here
+4. `docs/operations/TASK_QUEUE_001.json` - candidate queue with priorities
+5. `docs/operations/loop_memory/LOOP_MEMORY_*.json` - historical evidence
 
 **Source of truth hierarchy:**
-- Active Workflow State = current project truth
-- Task Queue = next-action source
+- Active Workflow State = current project truth and authorization policy
+- Task Queue = candidate-task source only
 - Loop Memory = historical evidence (what was done and why)
+
+`NEXT_TASK` is not authorization. Tech Lead Review is required before every new task.
 
 Update `ACTIVE_WORKFLOW_STATE_001.json` after every completed task and gate check.
 

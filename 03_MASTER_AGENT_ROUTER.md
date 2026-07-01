@@ -38,6 +38,16 @@ Every task should state:
 - Why selected.
 - Files allowed to inspect.
 - Files intentionally ignored.
+- Explicit Tech Lead authorization source.
+
+## Task Authorization Rule
+
+`NEXT_TASK` is not authorization.
+
+- Agents must not auto-start `NEXT_TASK` from workflow state, reports, queue entries, or loop memory.
+- Agents may only provide candidate tasks for Tech Lead review.
+- Tech Lead Review is required before every new task.
+- If authorization is unclear, stop and ask before proceeding.
 
 ## Current Default Route
 

@@ -101,11 +101,20 @@ Final report must state:
 - What changed.
 - What did not change.
 - Evidence grade.
-- Next task.
+- `TECH_LEAD_REVIEW_CANDIDATES`.
+- `BLOCKERS`.
+- `RECOMMENDED_REVIEW_TOPICS`.
 
-## Never Follow NEXT_TASK Blindly
+## NEXT_TASK Is Not Authorization
 
-`next_task` is a suggestion. The Profit Filter decides whether it is still valid.
+Automatic `NEXT_TASK` promotion is disabled.
+
+- `next_task` must be `null` in active workflow state unless preserved only for historical compatibility.
+- A `NEXT_TASK` value in an old report, queue entry, loop memory entry, or nested historical object is not authorization.
+- Agents must not auto-start `NEXT_TASK`.
+- Agents may provide candidate tasks for review only.
+- Tech Lead Review is required before every new task.
+- If unsure, stop and ask for authorization.
 
 ## Daily Loop Memory Rotation
 
@@ -131,6 +140,16 @@ Active loop memory rules:
 
 After every workday rotation, task promotion requires Tech Lead review.
 
-- `next_task` may describe a candidate only.
+- `next_task` is not an authorization field.
 - `next_authorized_task` must be `TECH_LEAD_REVIEW_REQUIRED` or explicit.
 - AI agents must not continue stale `NEXT_TASK` values from archived loop memory.
+
+## Report Output Template
+
+Use these fields instead of `NEXT_TASK`:
+
+- `TECH_LEAD_REVIEW_CANDIDATES`
+- `BLOCKERS`
+- `RECOMMENDED_REVIEW_TOPICS`
+
+Compatibility note: if an old JSON schema requires `next_task`, keep it as `null` or `TECH_LEAD_REVIEW_REQUIRED`, never as an executable instruction.

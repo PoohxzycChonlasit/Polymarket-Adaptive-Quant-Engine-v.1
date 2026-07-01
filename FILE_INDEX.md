@@ -107,7 +107,9 @@ Loop memory pointer rule:
 
 - `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` must point to the current workday loop memory file.
 - Archived loop memory files are read-only by policy and must not receive new task entries.
-- `next_task` must not be followed blindly; Tech Lead review is required after workday rotation.
+- `next_task` is not authorization and should remain `null` in active workflow state.
+- Candidate tasks are review material only.
+- Tech Lead Review is required before every new task.
 
 ## Dangerous Edit Zones
 

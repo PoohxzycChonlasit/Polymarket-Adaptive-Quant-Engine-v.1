@@ -367,8 +367,14 @@ Every AI task — regardless of class — must end with this block:
 ### Batch 2 Authorization
 - NOT AUTHORIZED (unless explicitly stated by user in this session)
 
-### Recommended Next Task
-- [specific task name and class]
+### Tech Lead Review Candidates
+- [candidate task names/classes for review, or NONE]
+
+### Blockers
+- [authorization/data/state blockers, or NONE]
+
+### Recommended Review Topics
+- [topics the Tech Lead should review before authorizing more work, or NONE]
 ```
 
 A task without this block is treated as **incomplete** by the next AI. Do not skip it.
@@ -386,12 +392,12 @@ Every AI session must produce a handoff document before the user closes the conv
 - Verified claims (Grade A/B/C) vs unverified assumptions (Grade D/E)
 - Active question status
 - Batch 2 authorization status (default: NOT AUTHORIZED)
-- Explicitly authorized next task
+- Tech Lead Review candidates, blockers, and recommended review topics
 
 **Incoming AI:** Before doing any work:
 1. Find most recent `AI_HANDOFF_*.md`
 2. Run `git status` and `git log -n 3 --oneline` to verify claimed state
-3. If state matches: proceed from the handoff's authorized next task
+3. If state matches: review handoff candidates, but do not start new work without explicit Tech Lead authorization
 4. If state does not match or no handoff exists: run a CLASS 0 health check first
 5. State at start of response: `Handoff verified / Handoff not found / Handoff mismatch`
 

@@ -58,6 +58,15 @@
 | `docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json` | Active workday loop memory file. |
 | `docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json` | Archived loop memory file; read-only by policy. |
 
+## Task Authorization Policy
+
+`NEXT_TASK` is not authorization.
+
+- Active workflow state must keep `next_task` as `null` unless an old schema requires a compatibility value.
+- Candidate tasks may be recorded for review, but agents must not auto-start them.
+- Tech Lead Review is required before every new task.
+- If authorization is unclear, stop and ask for review.
+
 ## Active Evidence Docs
 
 Recent profit-relevant evidence:
