@@ -66,7 +66,7 @@
     "statistical_significance": "NOT_SIGNIFICANT_AT_95PCT",
     "note": "Edge candidate confirmed but needs 2000+ trades for statistical significance"
   },
-  "next_workflow_tier": "LOOP",
+  "next_workflow_tier": "STANDARD",
   "working_tree_expected": "clean",
   "github_status": "CURRENT_AFTER_COMMIT_AND_PUSH",
   "resource_governance": "ACTIVE - see docs/operations/AI_RESOURCE_GOVERNANCE_001.md",
@@ -305,7 +305,7 @@
     "unique_data_preserved": false,
     "commit_required": false
   },
-  "notes": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete. Fixed trader.py:8321: self.bankroll_family → self._last_bankroll_family (1-line fix). bankroll_family AttributeError eliminated (0 errors vs 3/session before). position_id now populated in fill receipts (f6d2a324 confirmed). 958 focused tests pass. 22 paper fills in validation run, 0 errors. Remaining downstream issues: trade_open event not emitting, paper_virtual_cash not deducting, current_exposure stays 0 — these are separate bugs in the post-position-open path. 29 pre-existing test failures unchanged (missing files, unrelated to fix). Next: TRADE_OPEN_CASH_DEDUCTION_REPAIR_001.",
+  "notes": "POST_FILL_ACCOUNTING_BUG_REPAIR_001 complete. Fixed trader.py:8321: self.bankroll_family \u00e2\u2020\u2019 self._last_bankroll_family (1-line fix). bankroll_family AttributeError eliminated (0 errors vs 3/session before). position_id now populated in fill receipts (f6d2a324 confirmed). 958 focused tests pass. 22 paper fills in validation run, 0 errors. Remaining downstream issues: trade_open event not emitting, paper_virtual_cash not deducting, current_exposure stays 0 \u00e2\u20ac\u201d these are separate bugs in the post-position-open path. 29 pre-existing test failures unchanged (missing files, unrelated to fix). Next: TRADE_OPEN_CASH_DEDUCTION_REPAIR_001.",
   "market_availability_engine_observability": {
     "status": "COMPLETE",
     "report_doc": "docs/reports/MARKET_AVAILABILITY_ENGINE_OBSERVABILITY_IMPLEMENTATION_001.md",
@@ -664,7 +664,7 @@
     ],
     "schema_source": "polymarket/observability/contracts.py SizeSharpMetadata TypedDict",
     "empirical_data": "1794 rows across 4 canonical JSONL files; all 5 SizeSharp collection fields 100% empty; size_sharp_schema_version=missing_legacy_metadata 100%",
-    "shadow_policy_severity_gap": "shadow_policy_* fields not in any severity set in decision engine; unknown fields → MEDIUM → REVIEW_REQUIRED; latent in existing JSONL, active on next builder run",
+    "shadow_policy_severity_gap": "shadow_policy_* fields not in any severity set in decision engine; unknown fields \u00e2\u2020\u2019 MEDIUM \u00e2\u2020\u2019 REVIEW_REQUIRED; latent in existing JSONL, active on next builder run",
     "code_modified": false,
     "safety_verdict": "SAFE_OFFLINE_AUDIT",
     "next_tasks": [
@@ -739,7 +739,7 @@
     "ladder_designed": true,
     "dust_zone_defined": true,
     "code_changed": false,
-    "critical_blocker": "zero paper fills — fill path unverified",
+    "critical_blocker": "zero paper fills \u00e2\u20ac\u201d fill path unverified",
     "safety_verdict": "SAFE_DESIGN_AUDIT",
     "next_task": "TBD"
   },
@@ -907,7 +907,7 @@
     ],
     "root_cause": "self.bankroll_family does not exist on PolymarketTrader; correct attr is self._last_bankroll_family",
     "fix_location": "polymarket/trader.py:8321",
-    "fix_summary": "self.bankroll_family → self._last_bankroll_family (1 line)",
+    "fix_summary": "self.bankroll_family \u00e2\u2020\u2019 self._last_bankroll_family (1 line)",
     "regression_test_added": "test_build_trade_position_metadata_reads_last_bankroll_family_not_direct_attr",
     "tests_focused": "958 passed",
     "tests_broader_pre_existing_failures": 29,
@@ -1635,5 +1635,6 @@
     "config_changed": false,
     "env_changed": false,
     "updated_at_utc": "2026-07-01T04:22:01Z"
-  }
+  },
+  "active_task": "MARKET_TIME_TRUTH_FIELD_EMISSION_IMPLEMENTATION_001"
 }

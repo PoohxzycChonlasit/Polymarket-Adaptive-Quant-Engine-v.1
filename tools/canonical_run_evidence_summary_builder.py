@@ -261,26 +261,47 @@ def load_run_records(
 
 def field_presence(records: Sequence[Mapping[str, Any]], field: str, aliases: Sequence[str]) -> dict[str, Any]:
     exact_examples: list[str] = []
+    exact_unknown: list[str] = []
     alias_examples: list[str] = []
+    alias_unknown: list[str] = []
     for record in records:
         values = nested_values(record)
-        value = values.get(field)
-        if value not in (None, ""):
-            exact_examples.append(field)
-            continue
+        if field in values:
+            value = values[field]
+            if value not in (None, "", "UNKNOWN", "unknown"):
+                exact_examples.append(field)
+                continue
+            else:
+                exact_unknown.append(field)
+        
+        found_alias = False
         for alias in aliases:
-            alias_value = values.get(alias)
-            if alias_value not in (None, ""):
-                alias_examples.append(alias)
-                break
+            if alias in values:
+                alias_value = values[alias]
+                if alias_value not in (None, "", "UNKNOWN", "unknown"):
+                    alias_examples.append(alias)
+                    found_alias = True
+                    break
+                else:
+                    alias_unknown.append(alias)
+        if found_alias:
+            continue
 
     if exact_examples:
-        return {"status": "PRESENT", "aliases": [], "observed_keys": sorted(set(exact_examples))}
+        return {"status": "KNOWN_PRESENT", "aliases": [], "observed_keys": sorted(set(exact_examples))}
+    if exact_unknown:
+        return {"status": "PRESENT_UNKNOWN", "aliases": [], "observed_keys": sorted(set(exact_unknown))}
     if alias_examples:
         return {
             "status": "ALIAS_PRESENT",
             "aliases": sorted(set(alias_examples)),
             "observed_keys": sorted(set(alias_examples)),
+        }
+    if alias_unknown:
+        return {
+            "status": "PRESENT_UNKNOWN",
+            "aliases": sorted(set(alias_unknown)),
+            "observed_keys": sorted(set(alias_unknown)),
         }
     return {"status": "MISSING", "aliases": list(aliases), "observed_keys": []}
 

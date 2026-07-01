@@ -492,7 +492,9 @@ def build_snapshot(pretty: bool = False, diagnose: bool = False) -> int:
     validate_task_queue(queue)
 
     # Resolve next task ID and workflow tier
-    next_task_id: str = state.get("next_task", "UNKNOWN")
+    next_task_id = state.get("next_task")
+    if next_task_id is None:
+        next_task_id = state.get("active_task") or state.get("current_authorized_task") or "UNKNOWN"
     workflow_tier: str = state.get("next_workflow_tier", "LOOP")
     blocked: bool = bool(state.get("blocked", False))
 

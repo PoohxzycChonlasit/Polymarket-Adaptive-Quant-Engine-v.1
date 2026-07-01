@@ -1399,6 +1399,10 @@ class PolymarketTrader:
                 raw_payload.setdefault("observability_event_type", "log_size_sharp_evaluation")
             raw_payload.setdefault("producer_event_type", producer_label)
             raw_payload.setdefault("producer", producer_label)
+
+            from polymarket.observability.market_time_truth import enrich_market_time_truth
+            raw_payload = enrich_market_time_truth(raw_payload, self)
+
             if event_method == "log_execution":
                 raw_payload = self._execution_payload_with_parent_context(raw_payload)
             if event_method in {"log_market_snapshot", "log_decision", "log_execution", "log_trade_open", "log_trade_close"}:

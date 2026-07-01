@@ -84,7 +84,7 @@ def test_builds_trade_funnel_and_conservative_validity_from_minimal_records():
     field_map = summary["market_time_truth_field_map_v1"]
     assert field_map["market_window_start_utc"]["status"] == "ALIAS_PRESENT"
     assert field_map["market_window_end_utc"]["status"] == "ALIAS_PRESENT"
-    assert field_map["decision_latency_ms"]["status"] == "PRESENT"
+    assert field_map["decision_latency_ms"]["status"] == "KNOWN_PRESENT"
     assert field_map["source_orderbook_ts_utc"]["status"] == "ALIAS_PRESENT"
     assert field_map["chainlink_reference_ts_utc"]["status"] == "MISSING"
 
