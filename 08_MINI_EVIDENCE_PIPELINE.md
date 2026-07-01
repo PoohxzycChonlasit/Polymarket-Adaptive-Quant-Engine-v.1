@@ -82,3 +82,4 @@ Current finding:
 - Paper runtime evidence proves accounting paths, but entry throughput is too low for profitability inference.
 - Per-run evidence summaries are now canonicalized offline; the next evidence step should remain offline and consume those summaries before any shadow outcome replay with MFE/MAE, TP-hit, SL-hit, and settlement/path truth joins.
 - Recent CLOB-compliant paper evidence summaries surfaced `book_warming`, but raw decision rows showed `risk_off` / `risk_mode_lockdown:hard_drawdown`. Treat classifier summaries as diagnostic overlays until raw-vs-classified blockers are shown side by side.
+- Canonical summaries now include raw runtime blocker summaries, classified blocker summaries, and conflict summaries so replay/paper review can distinguish safety gates from classifier labels.

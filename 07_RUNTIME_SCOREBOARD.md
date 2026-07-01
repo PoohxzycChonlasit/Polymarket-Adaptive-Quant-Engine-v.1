@@ -119,3 +119,5 @@ Those summaries are now available offline, but dashboard values remain operation
 `BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001` found that the recent `book_warming` top blocker in canonical summaries was not the raw runtime blocker. Raw decision rows for the inspected runs showed `skip_reason=risk_off` and `raw_skip_reason=risk_mode_lockdown:hard_drawdown`; `book_warming` came from additive no-entry classifier fields.
 
 Scoreboard rule: show raw runtime blocker and classified root cause separately. Classified labels are diagnostic context, not proof that the runtime gate with the same name blocked entry.
+
+`CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001` implements this rule in generated canonical summaries. Scoreboards should prefer `primary_runtime_blocker` for current bottleneck and show `primary_classifier_blocker` as diagnostic context when `raw_vs_classified_blocker_conflict=true`.

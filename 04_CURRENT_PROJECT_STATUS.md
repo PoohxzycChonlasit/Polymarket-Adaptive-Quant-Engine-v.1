@@ -20,6 +20,7 @@ Paper profit first. Micro live only after evidence.
 - Canonical evidence and market-time truth review now defines the per-run funnel, alias map, evidence-validity classes, and dashboard availability needed before more replay/tuning work.
 - Offline canonical run evidence summary builder now emits per-run `trade_funnel_summary_v1`, market-time truth maps, dashboard availability, and conservative evidence validity JSON under `docs/reports/run_evidence/`.
 - `BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001` found recent CLOB-compliant runs were not directly blocked by orderbook warmup. Raw decisions were `risk_off` / `risk_mode_lockdown:hard_drawdown`; `book_warming` was an additive classifier label over `NONZERO_BOOK` lifecycle evidence.
+- `CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001` updates canonical summaries to show raw runtime blockers and classified no-entry labels side by side, with conflict counts and examples.
 - Shadow strategy framework work exists, but the mission reset freezes further framework expansion unless it directly supports profit evidence.
 
 ## Current Blockers
@@ -33,7 +34,7 @@ Paper profit first. Micro live only after evidence.
 | Time truth | Needs strict governance | Profit evidence is invalid if timing is ambiguous. |
 | Market/live sizing realism | Not proven | Current paper opens can use `$0.10` fractional shares; live CLOB fractional/minimum-order behavior is unresolved. |
 | Canonical evidence summary | Implemented offline | Future replay and dashboard work can consume generated per-run evidence summaries instead of re-deriving aliases ad hoc. |
-| No-entry blocker attribution | Needs repair/review | Current summaries can surface classifier `book_warming` even when raw runtime skip reason is `risk_off`. |
+| No-entry blocker attribution | Reporting repaired; classifier still needs review | Canonical summaries now show raw and classified blockers side by side, but classifier output can still label risk-off rows as `book_warming`. |
 | Live execution | Not validated | Micro live remains blocked. |
 
 ## Active Safety Position
@@ -45,4 +46,4 @@ Paper profit first. Micro live only after evidence.
 
 ## Current Next Priority
 
-Tech Lead review is required before any next task. Candidate review topics: no-entry classifier risk-off labeling, raw-vs-classified blocker reporting, and paper risk-state preflight before the next evidence run.
+Tech Lead review is required before any next task. Candidate review topics: no-entry classifier risk-off label repair, paper risk-state preflight, and raw-vs-classified blocker dashboard feed.

@@ -106,15 +106,48 @@ CANONICAL_TIME_FIELD_ALIASES: dict[str, tuple[str, ...]] = {
 }
 
 NO_TRADE_REASON_KEYS = (
-    "skip_reason_primary",
-    "normalized_skip_reason",
     "skip_reason",
+    "normalized_skip_reason",
+    "raw_skip_reason",
+    "model_not_run_reason",
     "risk_plan_zero_reason",
     "risk_block_reason",
-    "model_not_run_reason",
+    "skip_reason_primary",
     "candidate_block_reason",
     "reason",
 )
+
+# Report-only blocker lineage constants. Provenance:
+# BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001 found that raw
+# runtime blockers must remain visible before classifier-derived labels.
+RAW_RUNTIME_BLOCKER_KEYS = (
+    "skip_reason",
+    "normalized_skip_reason",
+    "raw_skip_reason",
+    "model_not_run_reason",
+)
+CLASSIFIED_BLOCKER_KEYS = (
+    "skip_reason_primary",
+    "timing_block_reason",
+    "skip_reason_category",
+)
+RISK_SAFETY_BLOCKER_PRIORITY_KEYS = (
+    "raw_skip_reason",
+    "skip_reason",
+    "normalized_skip_reason",
+    "model_not_run_reason",
+)
+RUNTIME_SAFETY_HINTS = ("risk", "drawdown", "lockdown", "safety")
+RUNTIME_SAFETY_GATE_BLOCK_GROUP = "RUNTIME_SAFETY_GATE"
+CLASSIFIER_TIMING_CATEGORY = "timing"
+BLOCKER_SOURCE_PRIORITY = "raw_runtime_first"
+CONFLICT_WARNING_CLASSIFIER_DIFFERS = "classifier_primary_differs_from_raw_runtime_blocker"
+CONFLICT_WARNING_SAFETY_GATE_TIMING = "runtime_safety_gate_with_classifier_timing_blocker"
+EVIDENCE_BLOCKER_CONFLICT = "RAW_CLASSIFIED_CONFLICT"
+EVIDENCE_BLOCKER_ALIGNED = "RAW_RUNTIME_ALIGNED"
+EVIDENCE_BLOCKER_MISSING = "NO_RUNTIME_BLOCKER_OBSERVED"
+MAX_REASON_COUNT_ITEMS = 10
+MAX_BLOCKER_CONFLICT_EXAMPLES = 5
 
 IGNORED_REASON_VALUES = {
     "",
@@ -126,6 +159,60 @@ IGNORED_REASON_VALUES = {
     "none",
     "n/a",
 }
+
+
+def normalized_reason(value: Any) -> str:
+    if value is None:
+        return ""
+    reason = str(value).strip()
+    if reason.lower() in IGNORED_REASON_VALUES:
+        return ""
+    return reason
+
+
+def reason_count_items(counter: Counter[str], *, limit: int = MAX_REASON_COUNT_ITEMS) -> list[dict[str, Any]]:
+    return [{"reason": reason, "count": count} for reason, count in counter.most_common(limit)]
+
+
+def first_reason(flat: Mapping[str, Any], keys: Sequence[str]) -> str:
+    for key in keys:
+        reason = normalized_reason(flat.get(key))
+        if reason:
+            return reason
+    return ""
+
+
+def reason_field_counts(records: Sequence[Mapping[str, Any]], key: str) -> list[dict[str, Any]]:
+    counter: Counter[str] = Counter()
+    for record in records:
+        if not is_decision(record):
+            continue
+        reason = normalized_reason(flattened_record(record).get(key))
+        if reason:
+            counter[reason] += 1
+    return reason_count_items(counter)
+
+
+def confidence_field_counts(records: Sequence[Mapping[str, Any]], key: str) -> list[dict[str, Any]]:
+    counter: Counter[str] = Counter()
+    for record in records:
+        if not is_decision(record):
+            continue
+        value = flattened_record(record).get(key)
+        if value in (None, ""):
+            continue
+        counter[str(value)] += 1
+    return [{"value": value, "count": count} for value, count in counter.most_common(MAX_REASON_COUNT_ITEMS)]
+
+
+def is_risk_safety_reason(reason: str) -> bool:
+    lowered = reason.lower()
+    return any(hint in lowered for hint in RUNTIME_SAFETY_HINTS)
+
+
+def add_warning_once(warnings: list[str], warning: str) -> None:
+    if warning not in warnings:
+        warnings.append(warning)
 
 
 def utc_now_iso() -> str:
@@ -434,15 +521,96 @@ def top_no_trade_reasons(records: Sequence[Mapping[str, Any]]) -> list[dict[str,
             continue
         flat = flattened_record(record)
         for key in NO_TRADE_REASON_KEYS:
-            reason = flat.get(key)
-            if reason is None:
-                continue
-            normalized = str(reason).strip()
-            if normalized.lower() in IGNORED_REASON_VALUES:
+            normalized = normalized_reason(flat.get(key))
+            if not normalized:
                 continue
             counter[normalized] += 1
             break
-    return [{"reason": reason, "count": count} for reason, count in counter.most_common(10)]
+    return reason_count_items(counter)
+
+
+def build_raw_runtime_blocker_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    risk_safety_counter: Counter[str] = Counter()
+    for record in records:
+        if not is_decision(record):
+            continue
+        flat = flattened_record(record)
+        reason = first_reason(flat, RISK_SAFETY_BLOCKER_PRIORITY_KEYS)
+        if reason and is_risk_safety_reason(reason):
+            risk_safety_counter[reason] += 1
+
+    return {
+        "skip_reason_counts": reason_field_counts(records, "skip_reason"),
+        "normalized_skip_reason_counts": reason_field_counts(records, "normalized_skip_reason"),
+        "raw_skip_reason_counts": reason_field_counts(records, "raw_skip_reason"),
+        "model_not_run_reason_counts": reason_field_counts(records, "model_not_run_reason"),
+        "risk_safety_blocker_counts": reason_count_items(risk_safety_counter),
+    }
+
+
+def build_classified_blocker_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    return {
+        "skip_reason_primary_counts": reason_field_counts(records, "skip_reason_primary"),
+        "timing_block_reason_counts": reason_field_counts(records, "timing_block_reason"),
+        "skip_reason_category_counts": reason_field_counts(records, "skip_reason_category"),
+        "no_entry_root_cause_confidence_counts": confidence_field_counts(
+            records,
+            "no_entry_root_cause_confidence",
+        ),
+    }
+
+
+def build_blocker_conflict_summary(records: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    conflict_count = 0
+    warnings: list[str] = []
+    examples: list[dict[str, Any]] = []
+    decision_count = 0
+
+    for record in records:
+        if not is_decision(record):
+            continue
+        decision_count += 1
+        flat = flattened_record(record)
+        raw_blocker = first_reason(flat, RAW_RUNTIME_BLOCKER_KEYS)
+        classifier_blocker = first_reason(flat, ("skip_reason_primary",))
+        classifier_category = normalized_reason(flat.get("skip_reason_category"))
+        timing_blocker = normalized_reason(flat.get("timing_block_reason"))
+
+        if raw_blocker and classifier_blocker and raw_blocker != classifier_blocker:
+            conflict_count += 1
+            add_warning_once(warnings, CONFLICT_WARNING_CLASSIFIER_DIFFERS)
+            if len(examples) < MAX_BLOCKER_CONFLICT_EXAMPLES:
+                examples.append(
+                    {
+                        "timestamp_utc": flat.get("timestamp_utc"),
+                        "ticker": flat.get("ticker") or flat.get("asset"),
+                        "market_slug": flat.get("market_slug") or flat.get("slug"),
+                        "raw_runtime_blocker": raw_blocker,
+                        "skip_reason": flat.get("skip_reason"),
+                        "normalized_skip_reason": flat.get("normalized_skip_reason"),
+                        "raw_skip_reason": flat.get("raw_skip_reason"),
+                        "model_not_run_reason": flat.get("model_not_run_reason"),
+                        "classifier_blocker": classifier_blocker,
+                        "timing_block_reason": flat.get("timing_block_reason"),
+                        "skip_reason_category": flat.get("skip_reason_category"),
+                        "no_entry_root_cause_confidence": flat.get("no_entry_root_cause_confidence"),
+                    }
+                )
+
+        if (
+            normalized_reason(flat.get("model_activation_block_group")) == RUNTIME_SAFETY_GATE_BLOCK_GROUP
+            and (classifier_category == CLASSIFIER_TIMING_CATEGORY or timing_blocker)
+        ):
+            add_warning_once(warnings, CONFLICT_WARNING_SAFETY_GATE_TIMING)
+
+    conflict_rate = round(conflict_count / decision_count, 3) if decision_count else 0.0
+    return {
+        "conflict_count": conflict_count,
+        "decision_count": decision_count,
+        "conflict_rate": conflict_rate,
+        "warnings": warnings,
+        "examples": examples,
+    }
 
 
 def duration_minutes(start: datetime | None, end: datetime | None) -> float | None:
@@ -586,6 +754,27 @@ def build_trade_funnel_summary(
     sl_count = sum(1 for flat in close_flats if close_reason(flat) == "stop_loss")
     net_pnl = round(sum(pnl_value(flat) for flat in close_flats), 6)
     top_reasons = top_no_trade_reasons(records)
+    raw_runtime_blockers = build_raw_runtime_blocker_summary(records)
+    classified_blockers = build_classified_blocker_summary(records)
+    blocker_conflicts = build_blocker_conflict_summary(records)
+    primary_runtime_blocker = (
+        raw_runtime_blockers["skip_reason_counts"][0]["reason"]
+        if raw_runtime_blockers["skip_reason_counts"]
+        else ""
+    )
+    primary_classifier_blocker = (
+        classified_blockers["skip_reason_primary_counts"][0]["reason"]
+        if classified_blockers["skip_reason_primary_counts"]
+        else ""
+    )
+    raw_vs_classified_conflict = bool(blocker_conflicts["conflict_count"])
+    evidence_blocker_truth_status = (
+        EVIDENCE_BLOCKER_CONFLICT
+        if raw_vs_classified_conflict
+        else EVIDENCE_BLOCKER_ALIGNED
+        if primary_runtime_blocker
+        else EVIDENCE_BLOCKER_MISSING
+    )
     paper_dust_rejected_count = sum(1 for flat in flat_records if flat.get("event") == "paper_order_rejected" and flat.get("paper_reject_reason") == "dust_unexecutable_min_order")
     min_order_rejected_count = sum(1 for flat in flat_records if flat.get("event") == "paper_order_rejected")
     paper_executable_candidate_count = sum(1 for flat in flat_records if flat.get("clob_size_valid") is True and flat.get("clob_tick_valid") is True)
@@ -642,6 +831,16 @@ def build_trade_funnel_summary(
         "paper_executable_candidate_count": paper_executable_candidate_count,
         "paper_opened_after_clob_constraints_count": paper_opened_after_clob_constraints_count,
         "top_no_trade_reasons": top_reasons,
+        "primary_runtime_blocker": primary_runtime_blocker,
+        "primary_classifier_blocker": primary_classifier_blocker,
+        "blocker_source_priority": BLOCKER_SOURCE_PRIORITY,
+        "raw_vs_classified_blocker_conflict": raw_vs_classified_conflict,
+        "raw_vs_classified_conflict_count": blocker_conflicts["conflict_count"],
+        "raw_vs_classified_conflict_rate": blocker_conflicts["conflict_rate"],
+        "evidence_blocker_truth_status": evidence_blocker_truth_status,
+        "raw_runtime_blocker_summary": raw_runtime_blockers,
+        "classified_blocker_summary": classified_blockers,
+        "blocker_conflict_summary": blocker_conflicts,
         "evidence_validity": validity["labels"],
         "capital_basis": capital_basis,
         "paper_research_bankroll_usd": paper_research_bankroll_usd,

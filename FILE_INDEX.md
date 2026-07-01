@@ -103,7 +103,7 @@ Future safe docs-only zones:
 
 Current safe offline tooling:
 
-- `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`.
+- `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`, including raw-vs-classified blocker conflict reporting.
 
 Loop memory pointer rule:
 

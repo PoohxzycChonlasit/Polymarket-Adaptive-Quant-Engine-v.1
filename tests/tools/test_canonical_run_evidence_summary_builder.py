@@ -119,6 +119,103 @@ def test_missing_fields_do_not_crash_and_profit_claim_remains_invalid():
     ]
 
 
+def test_reports_raw_and_classified_blockers_side_by_side_when_they_conflict():
+    records = [
+        {
+            "run_id": "run-conflict",
+            "timestamp_utc": "2026-06-30T10:00:00Z",
+            "event_type": "decision",
+            "payload": {
+                "market_id": "m-1",
+                "skip_reason": "risk_off",
+                "normalized_skip_reason": "risk_off",
+                "raw_skip_reason": "risk_mode_lockdown:hard_drawdown",
+                "model_not_run_reason": "risk_off",
+                "model_activation_block_group": "RUNTIME_SAFETY_GATE",
+                "skip_reason_primary": "book_warming",
+                "skip_reason_category": "timing",
+                "timing_block_reason": "book_warming",
+                "no_entry_root_cause_confidence": 0.6,
+                "executable_book_state": "NONZERO_BOOK",
+            },
+        }
+    ]
+
+    summary = build_canonical_run_evidence_summary(records, run_id="run-conflict")
+    funnel = summary["trade_funnel_summary_v1"]
+
+    assert funnel["primary_runtime_blocker"] == "risk_off"
+    assert funnel["primary_classifier_blocker"] == "book_warming"
+    assert funnel["blocker_source_priority"] == "raw_runtime_first"
+    assert funnel["raw_vs_classified_blocker_conflict"] is True
+    assert funnel["raw_vs_classified_conflict_count"] == 1
+    assert funnel["raw_vs_classified_conflict_rate"] == 1.0
+    assert funnel["evidence_blocker_truth_status"] == "RAW_CLASSIFIED_CONFLICT"
+
+    raw_summary = funnel["raw_runtime_blocker_summary"]
+    assert raw_summary["skip_reason_counts"] == [{"reason": "risk_off", "count": 1}]
+    assert raw_summary["raw_skip_reason_counts"] == [
+        {"reason": "risk_mode_lockdown:hard_drawdown", "count": 1}
+    ]
+    assert raw_summary["model_not_run_reason_counts"] == [{"reason": "risk_off", "count": 1}]
+    assert raw_summary["risk_safety_blocker_counts"] == [
+        {"reason": "risk_mode_lockdown:hard_drawdown", "count": 1}
+    ]
+
+    classified_summary = funnel["classified_blocker_summary"]
+    assert classified_summary["skip_reason_primary_counts"] == [{"reason": "book_warming", "count": 1}]
+    assert classified_summary["timing_block_reason_counts"] == [{"reason": "book_warming", "count": 1}]
+    assert classified_summary["skip_reason_category_counts"] == [{"reason": "timing", "count": 1}]
+
+    conflict_summary = funnel["blocker_conflict_summary"]
+    assert conflict_summary["conflict_count"] == 1
+    assert conflict_summary["warnings"] == [
+        "classifier_primary_differs_from_raw_runtime_blocker",
+        "runtime_safety_gate_with_classifier_timing_blocker",
+    ]
+    assert conflict_summary["examples"][0]["raw_runtime_blocker"] == "risk_off"
+    assert conflict_summary["examples"][0]["raw_skip_reason"] == "risk_mode_lockdown:hard_drawdown"
+    assert conflict_summary["examples"][0]["classifier_blocker"] == "book_warming"
+
+
+def test_legacy_top_no_trade_reasons_prefers_raw_runtime_blocker_over_classifier_label():
+    records = [
+        {
+            "run_id": "run-raw-first",
+            "timestamp_utc": "2026-06-30T10:00:00Z",
+            "event_type": "decision",
+            "payload": {
+                "skip_reason": "risk_off",
+                "raw_skip_reason": "risk_mode_lockdown:hard_drawdown",
+                "model_not_run_reason": "risk_off",
+                "skip_reason_primary": "book_warming",
+                "timing_block_reason": "book_warming",
+            },
+        },
+        {
+            "run_id": "run-raw-first",
+            "timestamp_utc": "2026-06-30T10:01:00Z",
+            "event_type": "decision",
+            "payload": {
+                "skip_reason": "risk_off",
+                "raw_skip_reason": "risk_mode_lockdown:hard_drawdown",
+                "model_not_run_reason": "risk_off",
+                "skip_reason_primary": "book_warming",
+                "timing_block_reason": "book_warming",
+            },
+        },
+    ]
+
+    summary = build_canonical_run_evidence_summary(records, run_id="run-raw-first")
+    funnel = summary["trade_funnel_summary_v1"]
+
+    assert funnel["top_no_trade_reasons"] == [{"reason": "risk_off", "count": 2}]
+    assert funnel["classified_blocker_summary"]["skip_reason_primary_counts"] == [
+        {"reason": "book_warming", "count": 2}
+    ]
+    assert funnel["raw_vs_classified_conflict_count"] == 2
+
+
 def test_load_run_records_filters_by_run_id_and_tags_source_stream(tmp_path):
     quant_data = tmp_path / "runtime" / "quant_data"
     decision_dir = quant_data / "decision_log"

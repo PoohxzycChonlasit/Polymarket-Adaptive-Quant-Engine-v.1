@@ -3847,6 +3847,39 @@
       "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
       "tech_lead_review_required": true,
       "notes": "DONE. Raw decision rows showed risk_off / risk_mode_lockdown:hard_drawdown. book_warming was an additive no-entry classifier label over NONZERO_BOOK lifecycle evidence, not the direct runtime blocker."
+    },
+    {
+      "priority": 0.57,
+      "task_id": "CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001",
+      "workflow_tier": "LOOP",
+      "task_class": 3,
+      "description": "Update canonical evidence summaries so raw runtime blockers and classified no-entry diagnostic labels are reported side by side.",
+      "blocked_by": "TECH_LEAD_REVIEW_REQUIRED",
+      "allowed_scope": [
+        "tools/canonical_run_evidence_summary_builder.py",
+        "tests/tools/test_canonical_run_evidence_summary_builder.py",
+        "docs/reports/",
+        "docs/operations/",
+        "root Profit Engine docs"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001.md",
+        "docs/reports/run_evidence/20260701T075916Z_45556_5818ec95_canonical_evidence_summary.json",
+        "docs/reports/run_evidence/20260701T075106Z_54212_3734c20c_canonical_evidence_summary.json"
+      ],
+      "status": "DONE",
+      "verdict": "RAW_AND_CLASSIFIED_BLOCKERS_REPORTED_SEPARATELY",
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+      "tech_lead_review_required": true,
+      "notes": "DONE. Canonical summaries now expose raw_runtime_blocker_summary, classified_blocker_summary, and blocker_conflict_summary. Phase B shows raw risk_mode_lockdown:hard_drawdown vs classifier book_warming conflict 46/46."
     }
   ],
   "tech_lead_review_required": true,
