@@ -1,0 +1,551 @@
+{
+  "dashboard_data_availability_v1": {
+    "Gate Blocker Board": "AVAILABLE",
+    "Market/Sizing Reality Board": "PARTIAL",
+    "Operator Action Panel": "AVAILABLE",
+    "Profit Engine Header": "PARTIAL",
+    "Quant Metrics Board": "PARTIAL",
+    "Time Truth Board": "AVAILABLE",
+    "Trade Funnel": "AVAILABLE"
+  },
+  "evidence_validity_v1": {
+    "labels": [
+      "VALID_FOR_BLOCKER_DIAGNOSIS",
+      "VALID_FOR_ACCOUNTING_CHECK",
+      "PARTIAL_FOR_MARKET_REALISM",
+      "INVALID_FOR_PROFIT_CLAIM"
+    ],
+    "rules": {
+      "fee_slippage_latency_costs_missing": true,
+      "profit_claim_allowed": false,
+      "settlement_truth_missing": false,
+      "sizing_realism_missing": true,
+      "timing_truth_missing_or_ambiguous": true
+    },
+    "schema_version": "evidence_validity_v1"
+  },
+  "generated_at_utc": "2026-07-01T14:17:06Z",
+  "market_time_truth_field_map_v1": {
+    "chainlink_reference_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "chainlink_reference_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "clock_drift_status": {
+      "aliases": [],
+      "observed_keys": [
+        "clock_drift_status"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "close_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "close_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "data_age_ms": {
+      "aliases": [
+        "orderbook_age_ms"
+      ],
+      "observed_keys": [
+        "orderbook_age_ms"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "decision_latency_ms": {
+      "aliases": [],
+      "observed_keys": [
+        "decision_latency_ms"
+      ],
+      "status": "KNOWN_PRESENT"
+    },
+    "decision_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "decision_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "fill_latency_ms": {
+      "aliases": [],
+      "observed_keys": [
+        "fill_latency_ms"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "fill_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "fill_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "local_receive_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "local_receive_ts_utc"
+      ],
+      "status": "KNOWN_PRESENT"
+    },
+    "market_window_end_utc": {
+      "aliases": [
+        "market_epoch_end"
+      ],
+      "observed_keys": [
+        "market_epoch_end"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "market_window_start_utc": {
+      "aliases": [
+        "epoch_start_ts",
+        "market_epoch_start"
+      ],
+      "observed_keys": [
+        "epoch_start_ts",
+        "market_epoch_start"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "order_ack_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "order_ack_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "order_submit_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "order_submit_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "seconds_since_open": {
+      "aliases": [],
+      "observed_keys": [
+        "seconds_since_open"
+      ],
+      "status": "KNOWN_PRESENT"
+    },
+    "seconds_to_expiry": {
+      "aliases": [
+        "seconds_remaining"
+      ],
+      "observed_keys": [
+        "seconds_remaining"
+      ],
+      "status": "ALIAS_PRESENT"
+    },
+    "settlement_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "settlement_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "source_orderbook_ts_utc": {
+      "aliases": [],
+      "observed_keys": [
+        "source_orderbook_ts_utc"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    },
+    "submit_latency_ms": {
+      "aliases": [],
+      "observed_keys": [
+        "submit_latency_ms"
+      ],
+      "status": "PRESENT_UNKNOWN"
+    }
+  },
+  "record_count": 619,
+  "run_id": "20260701T135758Z_5036_ab465094",
+  "schema_version": "canonical_run_evidence_summary.v1",
+  "source_streams": [
+    "decision_log",
+    "execution_log",
+    "market_snapshots",
+    "path_truth",
+    "research_log",
+    "risk_log",
+    "system_health",
+    "trade_journal"
+  ],
+  "trade_funnel_summary_v1": {
+    "active_markets_seen": 12,
+    "blocker_conflict_summary": {
+      "conflict_count": 32,
+      "conflict_rate": 1.0,
+      "decision_count": 32,
+      "examples": [
+        {
+          "classifier_blocker": "imbalance_extreme",
+          "market_slug": "btc-updown-5m-1782914100",
+          "model_not_run_reason": "",
+          "no_entry_root_cause_confidence": 0.9,
+          "normalized_skip_reason": "delta_extreme",
+          "raw_runtime_blocker": "delta_extreme",
+          "raw_skip_reason": "delta_extreme",
+          "skip_reason": "delta_extreme",
+          "skip_reason_category": "microstructure",
+          "ticker": "BTC",
+          "timestamp_utc": "2026-07-01T13:58:10.281350Z",
+          "timing_block_reason": ""
+        },
+        {
+          "classifier_blocker": "imbalance_extreme",
+          "market_slug": "eth-updown-5m-1782914100",
+          "model_not_run_reason": "",
+          "no_entry_root_cause_confidence": 0.9,
+          "normalized_skip_reason": "delta_extreme",
+          "raw_runtime_blocker": "delta_extreme",
+          "raw_skip_reason": "delta_extreme",
+          "skip_reason": "delta_extreme",
+          "skip_reason_category": "microstructure",
+          "ticker": "ETH",
+          "timestamp_utc": "2026-07-01T13:58:10.868523Z",
+          "timing_block_reason": ""
+        },
+        {
+          "classifier_blocker": "cutoff_passed",
+          "market_slug": "btc-updown-5m-1782914100",
+          "model_not_run_reason": "",
+          "no_entry_root_cause_confidence": 0.9,
+          "normalized_skip_reason": "time_unsafe",
+          "raw_runtime_blocker": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)",
+          "raw_skip_reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)",
+          "skip_reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)",
+          "skip_reason_category": "timing",
+          "ticker": "BTC",
+          "timestamp_utc": "2026-07-01T13:59:09.809959Z",
+          "timing_block_reason": "cutoff_passed"
+        },
+        {
+          "classifier_blocker": "cutoff_passed",
+          "market_slug": "eth-updown-5m-1782914100",
+          "model_not_run_reason": "",
+          "no_entry_root_cause_confidence": 0.9,
+          "normalized_skip_reason": "time_unsafe",
+          "raw_runtime_blocker": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)",
+          "raw_skip_reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)",
+          "skip_reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)",
+          "skip_reason_category": "timing",
+          "ticker": "ETH",
+          "timestamp_utc": "2026-07-01T13:59:10.331452Z",
+          "timing_block_reason": "cutoff_passed"
+        },
+        {
+          "classifier_blocker": "confidence_below_threshold",
+          "market_slug": "btc-updown-5m-1782914400",
+          "model_not_run_reason": "",
+          "no_entry_root_cause_confidence": 0.85,
+          "normalized_skip_reason": "confidence_too_low",
+          "raw_runtime_blocker": "confidence_too_low",
+          "raw_skip_reason": "confidence_too_low",
+          "skip_reason": "confidence_too_low",
+          "skip_reason_category": "evidence",
+          "ticker": "BTC",
+          "timestamp_utc": "2026-07-01T14:00:12.655354Z",
+          "timing_block_reason": ""
+        }
+      ],
+      "warnings": [
+        "classifier_primary_differs_from_raw_runtime_blocker"
+      ]
+    },
+    "blocker_source_priority": "raw_runtime_first",
+    "candidates": 38,
+    "capital_basis": "PAPER_RESEARCH_BANKROLL",
+    "capital_reference_warning": "live_reference_bankroll_usd is 20.09901, but deprecated live_20_bankroll claim field exists.",
+    "classified_blocker_summary": {
+      "no_entry_root_cause_confidence_counts": [
+        {
+          "count": 22,
+          "value": "0.9"
+        },
+        {
+          "count": 5,
+          "value": "0.85"
+        },
+        {
+          "count": 3,
+          "value": "0.1"
+        },
+        {
+          "count": 2,
+          "value": "0.4"
+        }
+      ],
+      "skip_reason_category_counts": [
+        {
+          "count": 12,
+          "reason": "timing"
+        },
+        {
+          "count": 8,
+          "reason": "microstructure"
+        },
+        {
+          "count": 5,
+          "reason": "evidence"
+        },
+        {
+          "count": 4,
+          "reason": "risk"
+        },
+        {
+          "count": 3,
+          "reason": "system_or_unknown"
+        }
+      ],
+      "skip_reason_primary_counts": [
+        {
+          "count": 10,
+          "reason": "cutoff_passed"
+        },
+        {
+          "count": 8,
+          "reason": "imbalance_extreme"
+        },
+        {
+          "count": 5,
+          "reason": "confidence_below_threshold"
+        },
+        {
+          "count": 3,
+          "reason": "zero_size_plan"
+        },
+        {
+          "count": 3,
+          "reason": "unclassified"
+        },
+        {
+          "count": 2,
+          "reason": "first_executable_too_late"
+        },
+        {
+          "count": 1,
+          "reason": "risk_mode_defensive"
+        }
+      ],
+      "timing_block_reason_counts": [
+        {
+          "count": 10,
+          "reason": "cutoff_passed"
+        },
+        {
+          "count": 2,
+          "reason": "first_executable_too_late"
+        }
+      ]
+    },
+    "close_rate_per_hour": 7.722,
+    "closes": 2,
+    "decisions": 32,
+    "deprecated_valid_for_live_20_bankroll_claim": false,
+    "duration_minutes": 15.54,
+    "end_time_utc": "2026-07-01T14:13:33Z",
+    "entry_rate_per_hour": 7.722,
+    "ev_pass_count": 17,
+    "evidence_blocker_truth_status": "RAW_CLASSIFIED_CONFLICT",
+    "evidence_validity": [
+      "VALID_FOR_BLOCKER_DIAGNOSIS",
+      "VALID_FOR_ACCOUNTING_CHECK",
+      "PARTIAL_FOR_MARKET_REALISM",
+      "INVALID_FOR_PROFIT_CLAIM"
+    ],
+    "fills": 4,
+    "live_reference_bankroll_usd": 20.09901,
+    "min_order_rejected_count": 1,
+    "mode": "paper",
+    "net_pnl": -1.058725,
+    "opens": 2,
+    "order_intents": 15,
+    "orders_sent": 5,
+    "paper_dust_rejected_count": 1,
+    "paper_executable_candidate_count": 4,
+    "paper_opened_after_clob_constraints_count": 4,
+    "paper_research_bankroll_usd": 200.0,
+    "pnl_denominator_usd": 200.0,
+    "primary_classifier_blocker": "cutoff_passed",
+    "primary_runtime_blocker": "delta_extreme",
+    "raw_runtime_blocker_summary": {
+      "model_not_run_reason_counts": [],
+      "normalized_skip_reason_counts": [
+        {
+          "count": 10,
+          "reason": "time_unsafe"
+        },
+        {
+          "count": 8,
+          "reason": "delta_extreme"
+        },
+        {
+          "count": 6,
+          "reason": "confidence_too_low"
+        },
+        {
+          "count": 4,
+          "reason": "frequency_cooldown"
+        },
+        {
+          "count": 3,
+          "reason": "risk_plan_zero"
+        },
+        {
+          "count": 1,
+          "reason": "clob_empty_response"
+        }
+      ],
+      "raw_skip_reason_counts": [
+        {
+          "count": 6,
+          "reason": "delta_extreme"
+        },
+        {
+          "count": 5,
+          "reason": "confidence_too_low"
+        },
+        {
+          "count": 3,
+          "reason": "risk_plan_zero"
+        },
+        {
+          "count": 3,
+          "reason": "Max entries per market reached"
+        },
+        {
+          "count": 2,
+          "reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)"
+        },
+        {
+          "count": 2,
+          "reason": "Min shares: 0.3 < 1"
+        },
+        {
+          "count": 2,
+          "reason": "Entry cutoff: 31s <= 45s (hard block: hard_close_zone)"
+        },
+        {
+          "count": 1,
+          "reason": "Entry cutoff: 49s <= 45s (adaptive denied: decision_latency_high)"
+        },
+        {
+          "count": 1,
+          "reason": "Entry cutoff: 86s <= 45s (adaptive denied: decision_latency_high)"
+        },
+        {
+          "count": 1,
+          "reason": "Entry cutoff: 85s <= 45s (adaptive denied: decision_latency_high)"
+        }
+      ],
+      "risk_safety_blocker_counts": [
+        {
+          "count": 3,
+          "reason": "risk_plan_zero"
+        }
+      ],
+      "skip_reason_counts": [
+        {
+          "count": 6,
+          "reason": "delta_extreme"
+        },
+        {
+          "count": 5,
+          "reason": "confidence_too_low"
+        },
+        {
+          "count": 3,
+          "reason": "Risk plan returned zero position size -- skipping."
+        },
+        {
+          "count": 3,
+          "reason": "Max entries per market reached"
+        },
+        {
+          "count": 2,
+          "reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)"
+        },
+        {
+          "count": 2,
+          "reason": "Min shares: 0.3 < 1"
+        },
+        {
+          "count": 2,
+          "reason": "Entry cutoff: 31s <= 45s (hard block: hard_close_zone)"
+        },
+        {
+          "count": 1,
+          "reason": "Entry cutoff: 49s <= 45s (adaptive denied: decision_latency_high)"
+        },
+        {
+          "count": 1,
+          "reason": "Entry cutoff: 86s <= 45s (adaptive denied: decision_latency_high)"
+        },
+        {
+          "count": 1,
+          "reason": "Entry cutoff: 85s <= 45s (adaptive denied: decision_latency_high)"
+        }
+      ]
+    },
+    "raw_vs_classified_blocker_conflict": true,
+    "raw_vs_classified_conflict_count": 32,
+    "raw_vs_classified_conflict_rate": 1.0,
+    "risk_approved_count": 8,
+    "run_id": "20260701T135758Z_5036_ab465094",
+    "schema_version": "trade_funnel_summary_v1",
+    "sl_count": 2,
+    "start_time_utc": "2026-07-01T13:58:00Z",
+    "top_no_trade_reasons": [
+      {
+        "count": 8,
+        "reason": "delta_extreme"
+      },
+      {
+        "count": 5,
+        "reason": "confidence_too_low"
+      },
+      {
+        "count": 3,
+        "reason": "Risk plan returned zero position size -- skipping."
+      },
+      {
+        "count": 3,
+        "reason": "Max entries per market reached"
+      },
+      {
+        "count": 2,
+        "reason": "Entry cutoff: 51s <= 45s (adaptive denied: decision_latency_high)"
+      },
+      {
+        "count": 2,
+        "reason": "Min shares: 0.3 < 1"
+      },
+      {
+        "count": 2,
+        "reason": "Entry cutoff: 31s <= 45s (hard block: hard_close_zone)"
+      },
+      {
+        "count": 1,
+        "reason": "Entry cutoff: 49s <= 45s (adaptive denied: decision_latency_high)"
+      },
+      {
+        "count": 1,
+        "reason": "Entry cutoff: 86s <= 45s (adaptive denied: decision_latency_high)"
+      },
+      {
+        "count": 1,
+        "reason": "Entry cutoff: 85s <= 45s (adaptive denied: decision_latency_high)"
+      }
+    ],
+    "tp_count": 0,
+    "tradable_markets": 7,
+    "valid_for_live_reference_bankroll_claim": false,
+    "valid_for_strategy_edge_research": true
+  }
+}
