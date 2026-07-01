@@ -32,6 +32,11 @@
       "task_id": "POST_MARKET_TIME_TRUTH_IMPLEMENTATION_VERIFICATION_001",
       "status": "COMPLETE",
       "summary": "Verified market-time truth field implementation via canonical builder, cleaned stale runtime owner, and confirmed clean repo state."
+    },
+    {
+      "task_id": "FRACTIONAL_SHARE_MIN_ORDER_CLOB_VALIDATION_001",
+      "status": "COMPLETE",
+      "summary": "Validated CLOB minimum order constraints against micro-survival fractional share sizes."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
@@ -58,7 +63,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T06:07:50Z",
+  "updated_at_utc": "2026-07-01T06:17:16Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -107,6 +112,25 @@
       "updated_at_utc": "2026-07-01T06:07:50Z",
       "files_changed": [
         "docs/reports/POST_MARKET_TIME_TRUTH_IMPLEMENTATION_VERIFICATION_001.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+    },
+    {
+      "task_id": "FRACTIONAL_SHARE_MIN_ORDER_CLOB_VALIDATION_001",
+      "task_class": 3,
+      "status": "COMPLETE",
+      "updated_at_utc": "2026-07-01T06:17:16Z",
+      "files_changed": [
+        "docs/reports/FRACTIONAL_SHARE_MIN_ORDER_CLOB_VALIDATION_001.md",
+        "tools/clob_min_order_validation.py",
         "docs/operations/ACTIVE_WORKFLOW_STATE_001.json"
       ],
       "runtime_changed": false,
