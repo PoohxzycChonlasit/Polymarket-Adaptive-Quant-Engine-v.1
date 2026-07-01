@@ -4170,15 +4170,24 @@ class PolymarketTrader:
 
     def _apply_paper_reference_balance(self, reference_balance: float, *, reset_starting_balance: bool = False) -> None:
         reference_balance = max(float(reference_balance), 0.0)
-        self._paper_virtual_cash_initial = reference_balance
         state = self.bankroll_state
-        if reset_starting_balance:
-            state.starting_bankroll = reference_balance
-            state.daily_start_bankroll = reference_balance
-            state.peak_bankroll = max(state.peak_bankroll, reference_balance)
-            self._bankroll_rank_lock.reset(reference_balance)
+        
+        if getattr(state, "capital_basis", "") == "PAPER_RESEARCH_BANKROLL":
+            # For separated paper research bankroll, live wallet balance updates metadata only.
+            # Do NOT overwrite paper initial cash or starting bankroll with live wallet amount.
+            state.live_reference_bankroll_usd = reference_balance
+            base_balance = state.starting_bankroll
+        else:
+            self._paper_virtual_cash_initial = reference_balance
+            if reset_starting_balance:
+                state.starting_bankroll = reference_balance
+                state.daily_start_bankroll = reference_balance
+                state.peak_bankroll = max(state.peak_bankroll, reference_balance)
+                self._bankroll_rank_lock.reset(reference_balance)
+            base_balance = reference_balance
+            
         invested_cost = self._paper_open_position_entry_cost()
-        state.current_cash_balance = max(0.0, reference_balance + state.realized_pnl - invested_cost)
+        state.current_cash_balance = max(0.0, base_balance + state.realized_pnl - invested_cost)
         self._update_bankroll_state(refresh_wallet_reference=False)
 
     def _set_wallet_reference_snapshot(self, snapshot: BalanceSnapshot, *, reset_starting_balance: bool = False) -> None:
