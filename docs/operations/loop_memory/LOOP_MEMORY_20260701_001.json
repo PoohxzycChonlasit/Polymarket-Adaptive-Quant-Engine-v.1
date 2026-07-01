@@ -82,6 +82,11 @@
       "task_id": "NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001",
       "status": "COMPLETE_PENDING_COMMIT",
       "summary": "Repaired no-entry classifier risk/safety attribution so risk_off, runtime safety gate, risk_mode_lockdown, and hard_drawdown classify as risk before lifecycle fallback."
+    },
+    {
+      "task_id": "CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001",
+      "status": "COMPLETE_PENDING_COMMIT",
+      "summary": "Reconciled run 20260701T135758Z_5036_ab465094: legacy CLOB-valid paper-fill count was 4, while actual lifecycle truth was 2 opens and 2 closes."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
@@ -108,7 +113,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T10:10:00Z",
+  "updated_at_utc": "2026-07-01T14:45:00Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -402,6 +407,40 @@
       "execution_changed": false,
       "config_changed": false,
       "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK"
+    },
+    {
+      "task_id": "CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001",
+      "task_class": 2,
+      "status": "COMPLETE_PENDING_COMMIT",
+      "verdict": "CLOB_CLEARED_FILLS_SEPARATED_FROM_ACTUAL_PAPER_OPENS",
+      "updated_at_utc": "2026-07-01T14:45:00Z",
+      "files_changed": [
+        "tools/canonical_run_evidence_summary_builder.py",
+        "tests/tools/test_canonical_run_evidence_summary_builder.py",
+        "docs/reports/CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001.md",
+        "docs/reports/run_evidence/20260701T135758Z_5036_ab465094_canonical_evidence_summary.json",
+        "docs/operations/execution_contracts/CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001_CONTRACT_001.md",
+        "04_CURRENT_PROJECT_STATUS.md",
+        "07_RUNTIME_SCOREBOARD.md",
+        "08_MINI_EVIDENCE_PIPELINE.md",
+        "DOCUMENTATION_MAP.md",
+        "FILE_INDEX.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "actual_position_opened_count": 2,
+      "actual_position_closed_count": 2,
+      "legacy_paper_opened_after_clob_constraints_count": 4,
       "next_task": null,
       "next_task_policy": "NO_AUTOMATIC_NEXT_TASK"
     }

@@ -24,7 +24,7 @@
     },
     "schema_version": "evidence_validity_v1"
   },
-  "generated_at_utc": "2026-07-01T14:17:06Z",
+  "generated_at_utc": "2026-07-01T14:32:37Z",
   "market_time_truth_field_map_v1": {
     "chainlink_reference_ts_utc": {
       "aliases": [],
@@ -49,10 +49,12 @@
     },
     "data_age_ms": {
       "aliases": [
-        "orderbook_age_ms"
+        "orderbook_age_ms",
+        "quote_age_ms"
       ],
       "observed_keys": [
-        "orderbook_age_ms"
+        "orderbook_age_ms",
+        "quote_age_ms"
       ],
       "status": "ALIAS_PRESENT"
     },
@@ -163,11 +165,12 @@
       "status": "PRESENT_UNKNOWN"
     }
   },
-  "record_count": 619,
+  "record_count": 1518,
   "run_id": "20260701T135758Z_5036_ab465094",
   "schema_version": "canonical_run_evidence_summary.v1",
   "source_streams": [
     "decision_log",
+    "event_stream",
     "execution_log",
     "market_snapshots",
     "path_truth",
@@ -178,6 +181,8 @@
   ],
   "trade_funnel_summary_v1": {
     "active_markets_seen": 12,
+    "actual_position_closed_count": 2,
+    "actual_position_opened_count": 2,
     "blocker_conflict_summary": {
       "conflict_count": 32,
       "conflict_rate": 1.0,
@@ -259,7 +264,7 @@
       ]
     },
     "blocker_source_priority": "raw_runtime_first",
-    "candidates": 38,
+    "candidates": 82,
     "capital_basis": "PAPER_RESEARCH_BANKROLL",
     "capital_reference_warning": "live_reference_bankroll_usd is 20.09901, but deprecated live_20_bankroll claim field exists.",
     "classified_blocker_summary": {
@@ -344,14 +349,18 @@
         }
       ]
     },
-    "close_rate_per_hour": 7.722,
+    "clob_cleared_candidate_count": 4,
+    "clob_cleared_fill_count": 4,
+    "close_rate_per_hour": 7.544,
     "closes": 2,
     "decisions": 32,
     "deprecated_valid_for_live_20_bankroll_claim": false,
-    "duration_minutes": 15.54,
-    "end_time_utc": "2026-07-01T14:13:33Z",
-    "entry_rate_per_hour": 7.722,
+    "duration_minutes": 15.906,
+    "end_time_utc": "2026-07-01T14:13:55Z",
+    "entry_rate_per_hour": 7.544,
     "ev_pass_count": 17,
+    "event_stream_position_closed_count": 2,
+    "event_stream_position_opened_count": 2,
     "evidence_blocker_truth_status": "RAW_CLASSIFIED_CONFLICT",
     "evidence_validity": [
       "VALID_FOR_BLOCKER_DIAGNOSIS",
@@ -359,16 +368,34 @@
       "PARTIAL_FOR_MARKET_REALISM",
       "INVALID_FOR_PROFIT_CLAIM"
     ],
-    "fills": 4,
+    "fills": 8,
     "live_reference_bankroll_usd": 20.09901,
-    "min_order_rejected_count": 1,
+    "min_order_rejected_count": 2,
     "mode": "paper",
     "net_pnl": -1.058725,
     "opens": 2,
-    "order_intents": 15,
-    "orders_sent": 5,
-    "paper_dust_rejected_count": 1,
+    "order_intents": 30,
+    "orders_sent": 10,
+    "paper_dust_rejected_count": 2,
+    "paper_entry_fill_count": 2,
     "paper_executable_candidate_count": 4,
+    "paper_exit_fill_count": 2,
+    "paper_open_count_reconciliation": {
+      "actual_position_closed_count": 2,
+      "actual_position_opened_count": 2,
+      "clob_cleared_candidate_count": 4,
+      "clob_cleared_fill_count": 4,
+      "clob_cleared_minus_actual_opened": 2,
+      "event_stream_position_closed_count": 2,
+      "event_stream_position_opened_count": 2,
+      "schema_version": "paper_open_count_reconciliation_v1",
+      "status": "MISMATCH",
+      "trade_journal_closed_count": 2,
+      "trade_journal_opened_count": 2,
+      "warnings": [
+        "clob_cleared_count_differs_from_actual_position_opened_count"
+      ]
+    },
     "paper_opened_after_clob_constraints_count": 4,
     "paper_research_bankroll_usd": 200.0,
     "pnl_denominator_usd": 200.0,
@@ -496,7 +523,7 @@
     "raw_vs_classified_blocker_conflict": true,
     "raw_vs_classified_conflict_count": 32,
     "raw_vs_classified_conflict_rate": 1.0,
-    "risk_approved_count": 8,
+    "risk_approved_count": 16,
     "run_id": "20260701T135758Z_5036_ab465094",
     "schema_version": "trade_funnel_summary_v1",
     "sl_count": 2,
@@ -545,6 +572,8 @@
     ],
     "tp_count": 0,
     "tradable_markets": 7,
+    "trade_journal_closed_count": 2,
+    "trade_journal_opened_count": 2,
     "valid_for_live_reference_bankroll_claim": false,
     "valid_for_strategy_edge_research": true
   }

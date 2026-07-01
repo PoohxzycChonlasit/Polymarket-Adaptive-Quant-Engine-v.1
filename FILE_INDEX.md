@@ -104,7 +104,7 @@ Future safe docs-only zones:
 
 Current safe offline tooling:
 
-- `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`, including raw-vs-classified blocker conflict reporting.
+- `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`, including raw-vs-classified blocker conflict reporting and explicit separation between CLOB-cleared paper-fill counts and actual paper-open lifecycle truth.
 - `utils/no_entry_root_cause_classifier.py` - additive observability classifier for no-entry diagnostics; risk/safety labels must win before lifecycle fallback when raw/model-not-run reasons indicate `risk_off`, lockdown, or hard drawdown.
 
 Loop memory pointer rule:

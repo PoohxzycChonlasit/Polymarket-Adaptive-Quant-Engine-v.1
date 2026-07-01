@@ -3912,6 +3912,41 @@
       "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
       "tech_lead_review_required": true,
       "notes": "DONE. Classifier now maps risk_off, runtime safety gate, risk_mode_lockdown, and hard_drawdown to risk labels before lifecycle fallback. Historical JSONL keeps old emitted labels."
+    },
+    {
+      "priority": 0.59,
+      "task_id": "CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Reconcile canonical CLOB-cleared paper-fill counts against actual paper-open lifecycle truth for run 20260701T135758Z_5036_ab465094.",
+      "blocked_by": "TECH_LEAD_REVIEW_REQUIRED",
+      "allowed_scope": [
+        "tools/canonical_run_evidence_summary_builder.py",
+        "tests/tools/test_canonical_run_evidence_summary_builder.py",
+        "docs/reports/",
+        "docs/operations/",
+        "root Profit Engine docs"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001.md",
+        "docs/reports/run_evidence/20260701T135758Z_5036_ab465094_canonical_evidence_summary.json"
+      ],
+      "status": "DONE",
+      "verdict": "CLOB_CLEARED_FILLS_SEPARATED_FROM_ACTUAL_PAPER_OPENS",
+      "legacy_paper_opened_after_clob_constraints_count": 4,
+      "actual_position_opened_count": 2,
+      "actual_position_closed_count": 2,
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+      "tech_lead_review_required": true,
+      "notes": "DONE. Canonical summaries now expose actual_position_opened_count and actual_position_closed_count for lifecycle truth. Legacy paper_opened_after_clob_constraints_count remains compatibility CLOB-valid paper_fill evidence and counted 2 entry fills plus 2 exit fills in the analyzed run."
     }
   ],
   "tech_lead_review_required": true,

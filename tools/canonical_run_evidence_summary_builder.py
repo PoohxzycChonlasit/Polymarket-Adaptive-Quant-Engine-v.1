@@ -149,6 +149,27 @@ EVIDENCE_BLOCKER_MISSING = "NO_RUNTIME_BLOCKER_OBSERVED"
 MAX_REASON_COUNT_ITEMS = 10
 MAX_BLOCKER_CONFLICT_EXAMPLES = 5
 
+# Report-only paper open reconciliation constants. Provenance:
+# CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001 found that CLOB-valid
+# paper_fill rows can include both ENTRY and EXIT fills, so they must not be
+# treated as actual opened-position truth.
+PAPER_FILL_EVENT = "paper_fill"
+POSITION_OPENED_EVENT = "position_opened_v1"
+POSITION_CLOSED_EVENT = "position_closed_v1"
+ENTRY_INTENT = "ENTRY"
+EXIT_INTENT = "EXIT"
+OPEN_RECONCILIATION_MATCH = "MATCH"
+OPEN_RECONCILIATION_MISMATCH = "MISMATCH"
+OPEN_COUNT_WARNING_CLOB_DIFFERS_FROM_ACTUAL = (
+    "clob_cleared_count_differs_from_actual_position_opened_count"
+)
+OPEN_COUNT_WARNING_TRADE_JOURNAL_DIFFERS_FROM_EVENT_STREAM = (
+    "trade_journal_open_count_differs_from_event_stream_position_opened_count"
+)
+CLOSE_COUNT_WARNING_TRADE_JOURNAL_DIFFERS_FROM_EVENT_STREAM = (
+    "trade_journal_close_count_differs_from_event_stream_position_closed_count"
+)
+
 IGNORED_REASON_VALUES = {
     "",
     "normal",
@@ -279,7 +300,7 @@ def flattened_record(record: Mapping[str, Any]) -> dict[str, Any]:
 
 def record_run_id(record: Mapping[str, Any]) -> Any:
     flat = flattened_record(record)
-    return flat.get("run_id")
+    return flat.get("run_id") or flat.get("runtime_session_id")
 
 
 def record_event_type(record: Mapping[str, Any]) -> str:
@@ -416,6 +437,14 @@ def is_trade_close(record: Mapping[str, Any]) -> bool:
     return record_event_type(record) == "trade_close"
 
 
+def is_position_opened_event(record: Mapping[str, Any]) -> bool:
+    return record_event_type(record) == POSITION_OPENED_EVENT
+
+
+def is_position_closed_event(record: Mapping[str, Any]) -> bool:
+    return record_event_type(record) == POSITION_CLOSED_EVENT
+
+
 def truthy_ready(value: Any) -> bool:
     return isinstance(value, str) and value.strip().lower() in {
         "ready",
@@ -502,6 +531,20 @@ def is_fill(flat: Mapping[str, Any]) -> bool:
     return "fill" in event or event_type in {"paper_fill", "fill"}
 
 
+def is_paper_fill(flat: Mapping[str, Any]) -> bool:
+    event = str(flat.get("event", "")).strip().lower()
+    event_type = str(flat.get("event_type", "")).strip().lower()
+    return event == PAPER_FILL_EVENT or event_type == PAPER_FILL_EVENT
+
+
+def paper_fill_intent(flat: Mapping[str, Any]) -> str:
+    return str(flat.get("intent") or flat.get("order_intent") or "").strip().upper()
+
+
+def clob_cleared(flat: Mapping[str, Any]) -> bool:
+    return flat.get("clob_size_valid") is True and flat.get("clob_tick_valid") is True
+
+
 def close_reason(flat: Mapping[str, Any]) -> str:
     return str(flat.get("exit_reason") or flat.get("reason") or "").strip().lower()
 
@@ -512,6 +555,47 @@ def pnl_value(flat: Mapping[str, Any]) -> float:
         if value is not None:
             return value
     return 0.0
+
+
+def build_paper_open_count_reconciliation(
+    *,
+    clob_cleared_candidate_count: int,
+    clob_cleared_fill_count: int,
+    actual_position_opened_count: int,
+    actual_position_closed_count: int,
+    trade_journal_opened_count: int,
+    trade_journal_closed_count: int,
+    event_stream_position_opened_count: int,
+    event_stream_position_closed_count: int,
+) -> dict[str, Any]:
+    warnings: list[str] = []
+    if clob_cleared_candidate_count != actual_position_opened_count:
+        add_warning_once(warnings, OPEN_COUNT_WARNING_CLOB_DIFFERS_FROM_ACTUAL)
+    if (
+        event_stream_position_opened_count
+        and trade_journal_opened_count != event_stream_position_opened_count
+    ):
+        add_warning_once(warnings, OPEN_COUNT_WARNING_TRADE_JOURNAL_DIFFERS_FROM_EVENT_STREAM)
+    if (
+        event_stream_position_closed_count
+        and trade_journal_closed_count != event_stream_position_closed_count
+    ):
+        add_warning_once(warnings, CLOSE_COUNT_WARNING_TRADE_JOURNAL_DIFFERS_FROM_EVENT_STREAM)
+
+    return {
+        "schema_version": "paper_open_count_reconciliation_v1",
+        "status": OPEN_RECONCILIATION_MISMATCH if warnings else OPEN_RECONCILIATION_MATCH,
+        "clob_cleared_candidate_count": clob_cleared_candidate_count,
+        "clob_cleared_fill_count": clob_cleared_fill_count,
+        "actual_position_opened_count": actual_position_opened_count,
+        "actual_position_closed_count": actual_position_closed_count,
+        "trade_journal_opened_count": trade_journal_opened_count,
+        "trade_journal_closed_count": trade_journal_closed_count,
+        "event_stream_position_opened_count": event_stream_position_opened_count,
+        "event_stream_position_closed_count": event_stream_position_closed_count,
+        "clob_cleared_minus_actual_opened": clob_cleared_candidate_count - actual_position_opened_count,
+        "warnings": warnings,
+    }
 
 
 def top_no_trade_reasons(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
@@ -777,8 +861,52 @@ def build_trade_funnel_summary(
     )
     paper_dust_rejected_count = sum(1 for flat in flat_records if flat.get("event") == "paper_order_rejected" and flat.get("paper_reject_reason") == "dust_unexecutable_min_order")
     min_order_rejected_count = sum(1 for flat in flat_records if flat.get("event") == "paper_order_rejected")
-    paper_executable_candidate_count = sum(1 for flat in flat_records if flat.get("clob_size_valid") is True and flat.get("clob_tick_valid") is True)
-    paper_opened_after_clob_constraints_count = sum(1 for flat in flat_records if is_fill(flat) and flat.get("clob_size_valid") is True)
+    clob_cleared_candidate_count = sum(
+        1
+        for record in records
+        if (is_decision(record) or is_execution(record)) and clob_cleared(flattened_record(record))
+    )
+    paper_executable_candidate_count = clob_cleared_candidate_count
+    clob_cleared_fill_count = sum(
+        1
+        for record in records
+        if is_execution(record)
+        and is_paper_fill(flattened_record(record))
+        and clob_cleared(flattened_record(record))
+    )
+    paper_entry_fill_count = sum(
+        1
+        for record in records
+        if is_execution(record)
+        and is_paper_fill(flattened_record(record))
+        and clob_cleared(flattened_record(record))
+        and paper_fill_intent(flattened_record(record)) == ENTRY_INTENT
+    )
+    paper_exit_fill_count = sum(
+        1
+        for record in records
+        if is_execution(record)
+        and is_paper_fill(flattened_record(record))
+        and clob_cleared(flattened_record(record))
+        and paper_fill_intent(flattened_record(record)) == EXIT_INTENT
+    )
+    paper_opened_after_clob_constraints_count = clob_cleared_fill_count
+    trade_journal_opened_count = opens
+    trade_journal_closed_count = closes
+    event_stream_position_opened_count = sum(1 for record in records if is_position_opened_event(record))
+    event_stream_position_closed_count = sum(1 for record in records if is_position_closed_event(record))
+    actual_position_opened_count = event_stream_position_opened_count or trade_journal_opened_count
+    actual_position_closed_count = event_stream_position_closed_count or trade_journal_closed_count
+    paper_open_count_reconciliation = build_paper_open_count_reconciliation(
+        clob_cleared_candidate_count=clob_cleared_candidate_count,
+        clob_cleared_fill_count=clob_cleared_fill_count,
+        actual_position_opened_count=actual_position_opened_count,
+        actual_position_closed_count=actual_position_closed_count,
+        trade_journal_opened_count=trade_journal_opened_count,
+        trade_journal_closed_count=trade_journal_closed_count,
+        event_stream_position_opened_count=event_stream_position_opened_count,
+        event_stream_position_closed_count=event_stream_position_closed_count,
+    )
     
     validity = build_evidence_validity(
         records,
@@ -830,6 +958,17 @@ def build_trade_funnel_summary(
         "min_order_rejected_count": min_order_rejected_count,
         "paper_executable_candidate_count": paper_executable_candidate_count,
         "paper_opened_after_clob_constraints_count": paper_opened_after_clob_constraints_count,
+        "clob_cleared_candidate_count": clob_cleared_candidate_count,
+        "clob_cleared_fill_count": clob_cleared_fill_count,
+        "paper_entry_fill_count": paper_entry_fill_count,
+        "paper_exit_fill_count": paper_exit_fill_count,
+        "actual_position_opened_count": actual_position_opened_count,
+        "actual_position_closed_count": actual_position_closed_count,
+        "trade_journal_opened_count": trade_journal_opened_count,
+        "trade_journal_closed_count": trade_journal_closed_count,
+        "event_stream_position_opened_count": event_stream_position_opened_count,
+        "event_stream_position_closed_count": event_stream_position_closed_count,
+        "paper_open_count_reconciliation": paper_open_count_reconciliation,
         "top_no_trade_reasons": top_reasons,
         "primary_runtime_blocker": primary_runtime_blocker,
         "primary_classifier_blocker": primary_classifier_blocker,

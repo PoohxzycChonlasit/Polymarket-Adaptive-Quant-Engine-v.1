@@ -23,6 +23,7 @@ Paper profit first. Micro live only after evidence.
 - `CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001` updates canonical summaries to show raw runtime blockers and classified no-entry labels side by side, with conflict counts and examples.
 - `NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001` repairs the additive no-entry classifier so `risk_off`, `risk_mode_lockdown`, `hard_drawdown`, and runtime safety gate evidence classify as risk before lifecycle `book_warming` fallback.
 - `ORDER_MANAGER_CONFIDENCE_MAPPING_BUG_FIX_001` resolves a structural block where underdog predictions (win rate < 0.54) were automatically rejected by the risk engine because `win_rate` was conflated with `confidence_score`.
+- `CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001` reconciles CLOB-cleared paper-fill counts versus actual paper-open truth. Use `actual_position_opened_count`, not legacy `paper_opened_after_clob_constraints_count`, for lifecycle open counts.
 - Shadow strategy framework work exists, but the mission reset freezes further framework expansion unless it directly supports profit evidence.
 
 ## Current Blockers
@@ -36,6 +37,7 @@ Paper profit first. Micro live only after evidence.
 | Time truth | Needs strict governance | Profit evidence is invalid if timing is ambiguous. |
 | Market/live sizing realism | Not proven | Current paper opens can use `$0.10` fractional shares; live CLOB fractional/minimum-order behavior is unresolved. |
 | Canonical evidence summary | Implemented offline | Future replay and dashboard work can consume generated per-run evidence summaries instead of re-deriving aliases ad hoc. |
+| Paper open count attribution | Reconciled in canonical summary | CLOB-cleared fills and actual opened positions are now separate; latest run had 4 CLOB-valid fills but 2 actual opens. |
 | No-entry blocker attribution | Classifier repaired; future runtime evidence needed | Canonical summaries show raw and classified blockers side by side, and the classifier now maps risk-off rows to risk labels before lifecycle fallback. Historical JSONL still preserves old emitted labels. |
 | Live execution | Not validated | Micro live remains blocked. |
 
@@ -48,4 +50,4 @@ Paper profit first. Micro live only after evidence.
 
 ## Current Next Priority
 
-Tech Lead review is required before any next task. Candidate review topics: CLOB-compliant bounded paper evidence run after the confidence mapping fix.
+Tech Lead review is required before any next task. Candidate review topics: event-stream JSONL integrity audit and CLOB-compliant bounded paper evidence run after the confidence mapping fix.

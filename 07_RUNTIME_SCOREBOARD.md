@@ -123,3 +123,5 @@ Scoreboard rule: show raw runtime blocker and classified root cause separately. 
 `CANONICAL_SUMMARY_RAW_VS_CLASSIFIED_BLOCKER_REPORTING_001` implements this rule in generated canonical summaries. Scoreboards should prefer `primary_runtime_blocker` for current bottleneck and show `primary_classifier_blocker` as diagnostic context when `raw_vs_classified_blocker_conflict=true`.
 
 `NO_ENTRY_CLASSIFIER_RISK_OFF_LABEL_REPAIR_001` repairs future no-entry classifier output so `risk_off`, `risk_mode_lockdown`, `hard_drawdown`, and runtime safety gate rows classify as risk before lifecycle `book_warming` fallback. Scoreboards should still preserve historical raw-vs-classified conflicts for old emitted logs.
+
+`CANONICAL_PAPER_OPEN_COUNT_RECONCILIATION_001` adds explicit lifecycle truth fields for paper opens and closes. Scoreboards should use `actual_position_opened_count` and `actual_position_closed_count` for lifecycle counts, while treating `clob_cleared_candidate_count`, `clob_cleared_fill_count`, and legacy `paper_opened_after_clob_constraints_count` as execution-realism / CLOB-cleared evidence only.

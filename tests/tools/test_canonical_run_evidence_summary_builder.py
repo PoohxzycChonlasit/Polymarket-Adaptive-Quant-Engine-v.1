@@ -216,6 +216,150 @@ def test_legacy_top_no_trade_reasons_prefers_raw_runtime_blocker_over_classifier
     assert funnel["raw_vs_classified_conflict_count"] == 2
 
 
+def test_separates_clob_cleared_fills_from_actual_position_opens():
+    records = [
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:01Z",
+            "event_type": "execution",
+            "payload": {
+                "event": "paper_fill",
+                "intent": "ENTRY",
+                "clob_size_valid": True,
+                "clob_tick_valid": True,
+            },
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:02Z",
+            "event_type": "execution",
+            "payload": {
+                "event": "paper_fill",
+                "intent": "EXIT",
+                "clob_size_valid": True,
+                "clob_tick_valid": True,
+                "position_id": "p-1",
+            },
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:03Z",
+            "event_type": "execution",
+            "payload": {
+                "event": "paper_fill",
+                "intent": "ENTRY",
+                "clob_size_valid": True,
+                "clob_tick_valid": True,
+            },
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:04Z",
+            "event_type": "execution",
+            "payload": {
+                "event": "paper_fill",
+                "intent": "EXIT",
+                "clob_size_valid": True,
+                "clob_tick_valid": True,
+                "position_id": "p-2",
+            },
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:05Z",
+            "event_type": "trade_open",
+            "payload": {"position_id": "p-1"},
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:06Z",
+            "event_type": "trade_open",
+            "payload": {"position_id": "p-2"},
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:07Z",
+            "event_type": "trade_close",
+            "payload": {"position_id": "p-1", "exit_reason": "stop_loss"},
+        },
+        {
+            "run_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:08Z",
+            "event_type": "trade_close",
+            "payload": {"position_id": "p-2", "exit_reason": "stop_loss"},
+        },
+        {
+            "runtime_session_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:05Z",
+            "event_type": "position_opened_v1",
+            "payload": {"position_id": "p-1", "clob_size_valid": True, "clob_tick_valid": True},
+        },
+        {
+            "runtime_session_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:06Z",
+            "event_type": "position_opened_v1",
+            "payload": {"position_id": "p-2", "clob_size_valid": True, "clob_tick_valid": True},
+        },
+        {
+            "runtime_session_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:07Z",
+            "event_type": "position_closed_v1",
+            "payload": {"position_id": "p-1"},
+        },
+        {
+            "runtime_session_id": "run-open-reconcile",
+            "timestamp_utc": "2026-06-30T10:00:08Z",
+            "event_type": "position_closed_v1",
+            "payload": {"position_id": "p-2"},
+        },
+    ]
+
+    summary = build_canonical_run_evidence_summary(records, run_id="run-open-reconcile")
+    funnel = summary["trade_funnel_summary_v1"]
+
+    assert funnel["paper_executable_candidate_count"] == 4
+    assert funnel["paper_opened_after_clob_constraints_count"] == 4
+    assert funnel["clob_cleared_candidate_count"] == 4
+    assert funnel["clob_cleared_fill_count"] == 4
+    assert funnel["paper_entry_fill_count"] == 2
+    assert funnel["paper_exit_fill_count"] == 2
+    assert funnel["actual_position_opened_count"] == 2
+    assert funnel["actual_position_closed_count"] == 2
+    assert funnel["trade_journal_opened_count"] == 2
+    assert funnel["trade_journal_closed_count"] == 2
+    assert funnel["event_stream_position_opened_count"] == 2
+    assert funnel["event_stream_position_closed_count"] == 2
+    assert funnel["paper_open_count_reconciliation"]["status"] == "MISMATCH"
+    assert funnel["paper_open_count_reconciliation"]["clob_cleared_minus_actual_opened"] == 2
+    assert "clob_cleared_count_differs_from_actual_position_opened_count" in funnel[
+        "paper_open_count_reconciliation"
+    ]["warnings"]
+
+
+def test_actual_position_open_count_is_not_inferred_from_candidate_rows_only():
+    records = [
+        {
+            "run_id": "run-candidates-only",
+            "timestamp_utc": "2026-06-30T10:00:01Z",
+            "event_type": "decision",
+            "payload": {
+                "candidate_id": f"candidate-{index}",
+                "clob_size_valid": True,
+                "clob_tick_valid": True,
+            },
+        }
+        for index in range(4)
+    ]
+
+    summary = build_canonical_run_evidence_summary(records, run_id="run-candidates-only")
+    funnel = summary["trade_funnel_summary_v1"]
+
+    assert funnel["clob_cleared_candidate_count"] == 4
+    assert funnel["actual_position_opened_count"] == 0
+    assert funnel["actual_position_closed_count"] == 0
+    assert funnel["paper_open_count_reconciliation"]["status"] == "MISMATCH"
+
+
 def test_load_run_records_filters_by_run_id_and_tags_source_stream(tmp_path):
     quant_data = tmp_path / "runtime" / "quant_data"
     decision_dir = quant_data / "decision_log"
@@ -266,6 +410,45 @@ def test_load_run_records_filters_by_run_id_and_tags_source_stream(tmp_path):
         "trade_journal",
     }
     assert {record["run_id"] for record in records} == {"wanted"}
+
+
+def test_load_run_records_filters_event_stream_by_runtime_session_id(tmp_path):
+    event_dir = tmp_path / "runtime" / "event_stream"
+    event_dir.mkdir(parents=True)
+    event_path = event_dir / "runtime_events_sample.jsonl"
+    event_path.write_text(
+        "\n".join(
+            [
+                json.dumps(
+                    {
+                        "runtime_session_id": "wanted-session",
+                        "timestamp_utc": "2026-06-30T10:00:00Z",
+                        "event_type": "position_opened_v1",
+                    }
+                ),
+                json.dumps(
+                    {
+                        "runtime_session_id": "other-session",
+                        "timestamp_utc": "2026-06-30T10:01:00Z",
+                        "event_type": "position_opened_v1",
+                    }
+                ),
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    records = load_run_records(
+        tmp_path / "runtime" / "quant_data",
+        date="2026-06-30",
+        run_id="wanted-session",
+        input_paths=[event_path],
+    )
+
+    assert len(records) == 1
+    assert records[0]["_source_stream"] == "event_stream"
+    assert records[0]["runtime_session_id"] == "wanted-session"
 
 
 def test_write_summary_emits_valid_json(tmp_path):
