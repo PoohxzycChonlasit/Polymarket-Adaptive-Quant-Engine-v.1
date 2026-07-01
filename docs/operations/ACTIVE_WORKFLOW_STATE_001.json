@@ -1651,5 +1651,11 @@
     "report_doc": "docs/reports/FRACTIONAL_SHARE_MIN_ORDER_CLOB_VALIDATION_001.md",
     "paper_dust_invalidated": true,
     "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+  },
+  "paper_sizer_clob_constraints": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/UPDATE_PAPER_SIZER_WITH_LIVE_CLOB_CONSTRAINTS_001.md",
+    "paper_dust_invalidated": true,
+    "next_task": "TECH_LEAD_REVIEW_REQUIRED"
   }
 }

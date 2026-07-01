@@ -20,6 +20,7 @@ from polymarket.expected_value import ExpectedValueTier
 from polymarket.gamma_fetcher import GammaFetcher, GammaMarket, ActiveFiveMinMarket
 from polymarket.lucky_shot import LuckyShotInput, evaluate_lucky_shot
 from polymarket.order_manager import OrderRequest, PolymarketOrderManager
+from polymarket.execution.clob_constraints import validate_paper_order
 from polymarket.order_intent import OrderIntent, OrderIntentType, validate_order_intent
 from polymarket.opportunity_scanner import (
     OpportunityCandidate,
@@ -10415,6 +10416,31 @@ class PolymarketTrader:
                 "[PAPER ORDER] side=%s type=LIMIT market=%s tier=%s price=%.4f size=%.6f live_orders=OFF",
                 side, market_id, tier_label, live_limit_price, size,
             )
+            
+            # Realism enforcement
+            validation_result = validate_paper_order(shares=size, price=live_limit_price)
+            if not validation_result["clob_size_valid"] or not validation_result["clob_tick_valid"]:
+                LOGGER.warning(
+                    "[PAPER ORDER REJECTED] %s - size=%.6f, price=%.4f",
+                    validation_result["paper_reject_reason"], size, live_limit_price
+                )
+                self._emit_quant_event(
+                    "log_execution",
+                    {
+                        "event": "paper_order_rejected",
+                        "intent": intent_name,
+                        "token_id": market_id,
+                        "side": side,
+                        "signal_price": float(price),
+                        "limit_price": float(live_limit_price),
+                        "size": float(size),
+                        **validation_result,
+                        "mode": self._runtime_mode(),
+                        "timestamp_source": "paper_order_rejected",
+                    },
+                )
+                return None
+                
             order_ack_ts = self._utc_timestamp()
             receipt = OrderReceipt(
                 order_id="paper-" + market_id[:8],
@@ -10464,6 +10490,7 @@ class PolymarketTrader:
                     "position_id": position_id,
                     "receipt": asdict(receipt),
                     **execution_risk_context,
+                    **validation_result,
                     "mode": self._runtime_mode(),
                     "order_ack_ts": order_ack_ts,
                     "fill_ts": fill_ts,

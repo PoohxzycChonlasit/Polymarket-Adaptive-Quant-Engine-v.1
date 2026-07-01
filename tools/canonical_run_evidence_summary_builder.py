@@ -464,6 +464,7 @@ def build_evidence_validity(
     decisions: int,
     opens: int,
     closes: int,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     labels: list[str] = []
     timing_missing = any(
@@ -481,6 +482,13 @@ def build_evidence_validity(
     settlement_missing = field_map["settlement_ts_utc"]["status"] == "MISSING"
     sizing_realism_missing = True
     cost_truth_missing = True
+    
+    # Analyze realism metrics
+    paper_executable = kwargs.get("paper_executable_candidate_count", 0)
+    paper_dust_rejected = kwargs.get("paper_dust_rejected_count", 0)
+    if paper_dust_rejected > 0 or paper_executable > 0:
+        sizing_realism_missing = False
+
 
     if decisions > 0:
         labels.append("VALID_FOR_BLOCKER_DIAGNOSIS")
@@ -492,6 +500,10 @@ def build_evidence_validity(
         labels.append("UNKNOWN")
     if timing_missing or sizing_realism_missing or cost_truth_missing or settlement_missing:
         labels.append("INVALID_FOR_PROFIT_CLAIM")
+    elif paper_executable == 0:
+        # User requirement 6: If no executable paper trades exist, keep INVALID_FOR_PROFIT_CLAIM.
+        labels.append("INVALID_FOR_PROFIT_CLAIM")
+
 
     return {
         "schema_version": "evidence_validity_v1",
@@ -574,13 +586,21 @@ def build_trade_funnel_summary(
     sl_count = sum(1 for flat in close_flats if close_reason(flat) == "stop_loss")
     net_pnl = round(sum(pnl_value(flat) for flat in close_flats), 6)
     top_reasons = top_no_trade_reasons(records)
+    paper_dust_rejected_count = sum(1 for flat in flat_records if flat.get("event") == "paper_order_rejected" and flat.get("paper_reject_reason") == "dust_unexecutable_min_order")
+    min_order_rejected_count = sum(1 for flat in flat_records if flat.get("event") == "paper_order_rejected")
+    paper_executable_candidate_count = sum(1 for flat in flat_records if flat.get("clob_size_valid") is True and flat.get("clob_tick_valid") is True)
+    paper_opened_after_clob_constraints_count = sum(1 for flat in flat_records if is_fill(flat) and flat.get("clob_size_valid") is True)
+    
     validity = build_evidence_validity(
         records,
         field_map,
         decisions=decisions,
         opens=opens,
         closes=closes,
+        paper_executable_candidate_count=paper_executable_candidate_count,
+        paper_dust_rejected_count=paper_dust_rejected_count,
     )
+
 
     return {
         "schema_version": "trade_funnel_summary_v1",
@@ -605,6 +625,10 @@ def build_trade_funnel_summary(
         "net_pnl": net_pnl,
         "entry_rate_per_hour": rate_per_hour(opens, duration),
         "close_rate_per_hour": rate_per_hour(closes, duration),
+        "paper_dust_rejected_count": paper_dust_rejected_count,
+        "min_order_rejected_count": min_order_rejected_count,
+        "paper_executable_candidate_count": paper_executable_candidate_count,
+        "paper_opened_after_clob_constraints_count": paper_opened_after_clob_constraints_count,
         "top_no_trade_reasons": top_reasons,
         "evidence_validity": validity["labels"],
     }

@@ -1,0 +1,17 @@
+- [ ] Trace caller of `_submit_order` to prove it handles `None` safely.
+- [ ] Create `polymarket/execution/clob_constraints.py` with `ClobConstraint`, defaults, and `validate_paper_order` logic.
+- [ ] Update `polymarket/trader.py`'s `_submit_order` to use `validate_paper_order`.
+  - [ ] Reject dust/fractional paper orders if they fail validation.
+  - [ ] Log rejection with `paper_order_rejected` and provenance fields.
+  - [ ] Do NOT log as `paper_fill`.
+  - [ ] Add `live_executable_evidence_supported` tracking for valid paper orders.
+- [ ] Update `tools/canonical_run_evidence_summary_builder.py` to parse paper rejection metrics.
+  - [ ] Add `paper_dust_rejected_count`, `min_order_rejected_count`, `paper_executable_candidate_count`, `paper_opened_after_clob_constraints_count`.
+  - [ ] Update valid logic for live execution claims.
+- [ ] Write tests in `tests/execution/test_clob_constraints.py`.
+- [ ] Fill Execution Contract template for CLASS 3.
+- [ ] Do bounded paper smoke test.
+- [ ] Run canonical builder on new run.
+- [ ] Create final report `docs/reports/UPDATE_PAPER_SIZER_WITH_LIVE_CLOB_CONSTRAINTS_001.md`.
+- [ ] Update state json files.
+- [ ] Git commit and push.
