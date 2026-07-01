@@ -131,3 +131,19 @@ Example next actions:
 ## Dashboard Boundary
 
 The dashboard must not contain trading decision logic. It may display decisions, blockers, and metrics, but it must not approve trades.
+
+## Current Data Availability
+
+As of `CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001`, dashboard readiness is:
+
+| Board | Status |
+|---|---|
+| Profit Engine Header | PARTIAL |
+| Trade Funnel | PARTIAL |
+| Gate Blocker Board | AVAILABLE |
+| Quant Metrics Board | PARTIAL |
+| Market Reality / Sizing Reality | PARTIAL |
+| Time Truth / Data Freshness | PARTIAL |
+| Operator Action Panel | AVAILABLE |
+
+The dashboard should show an evidence-validity warning until canonical per-run summaries provide normalized time truth, market/sizing realism, and cost realism.

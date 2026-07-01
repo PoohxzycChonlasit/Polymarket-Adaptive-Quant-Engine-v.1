@@ -74,3 +74,30 @@ Dashboard and reports should warn when:
 ## Design Boundary
 
 This document is a logging truth standard only. It does not authorize code changes, schema changes, or runtime behavior changes without a separate scoped task.
+
+## Current Field Mapping Status
+
+`CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001` found that current JSONL evidence has useful aliases, but many exact canonical fields are missing.
+
+| Canonical field | Current status |
+|---|---|
+| `market_window_start_utc` | ALIAS_PRESENT |
+| `market_window_end_utc` | ALIAS_PRESENT |
+| `chainlink_reference_ts_utc` | MISSING |
+| `source_orderbook_ts_utc` | ALIAS_PRESENT |
+| `local_receive_ts_utc` | ALIAS_PRESENT |
+| `decision_ts_utc` | ALIAS_PRESENT |
+| `order_submit_ts_utc` | ALIAS_PRESENT |
+| `order_ack_ts_utc` | MISSING |
+| `fill_ts_utc` | ALIAS_PRESENT |
+| `close_ts_utc` | ALIAS_PRESENT |
+| `settlement_ts_utc` | MISSING |
+| `data_age_ms` | ALIAS_PRESENT |
+| `decision_latency_ms` | PRESENT |
+| `submit_latency_ms` | MISSING |
+| `fill_latency_ms` | MISSING |
+| `clock_drift_status` | MISSING |
+| `seconds_since_open` | PRESENT |
+| `seconds_to_expiry` | ALIAS_PRESENT |
+
+Until exact fields are normalized, evidence remains valid for blocker diagnosis and some accounting checks, but not for profitability claims.

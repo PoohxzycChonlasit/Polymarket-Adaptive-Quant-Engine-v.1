@@ -67,6 +67,7 @@ Recent profit-relevant evidence:
 - `docs/reports/ENTRY_GATE_COUNTERFACTUAL_REPLAY_001.md`
 - `docs/reports/RISK_PLAN_ZERO_SIDE_CONFIDENCE_SEMANTICS_AUDIT_001.md`
 - `docs/reports/PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001.md`
+- `docs/reports/CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001.md`
 
 Recent framework docs are now secondary:
 

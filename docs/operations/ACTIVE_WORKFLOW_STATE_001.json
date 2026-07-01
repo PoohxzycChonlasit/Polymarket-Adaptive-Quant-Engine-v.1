@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-07-01",
-  "current_phase": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001 complete; entry throughput and market realism are partial, no runtime tuning justified",
-  "last_completed_task": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001",
-  "last_commit": "a2f20d34",
+  "current_phase": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001 complete; canonical per-run evidence layer defined, no runtime tuning justified",
+  "last_completed_task": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001",
+  "last_commit": "b95fc7d4",
   "last_commit_message": "docs: audit entry throughput and market realism",
-  "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001",
+  "next_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1464,5 +1464,61 @@
     "env_changed": false,
     "safety_verdict": "SAFE_READ_ONLY_AUDIT",
     "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001"
+  },
+  "canonical_evidence_and_market_time_truth_instrumentation": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "report_doc": "docs/reports/CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001.md",
+    "verdict": "CANONICAL_EVIDENCE_LAYER_DEFINED_NO_RUNTIME_BEHAVIOR_CHANGED",
+    "evidence_sources_found": [
+      "decision_log",
+      "market_snapshots",
+      "risk_log",
+      "execution_log",
+      "trade_journal",
+      "path_truth",
+      "system_health"
+    ],
+    "canonical_outputs_defined": [
+      "trade_funnel_summary_v1",
+      "market_time_truth_field_map_v1",
+      "dashboard_data_availability_v1",
+      "evidence_validity_v1"
+    ],
+    "field_map_summary": {
+      "present": [
+        "decision_latency_ms",
+        "seconds_since_open"
+      ],
+      "alias_present": [
+        "market_window_start_utc",
+        "market_window_end_utc",
+        "source_orderbook_ts_utc",
+        "local_receive_ts_utc",
+        "decision_ts_utc",
+        "order_submit_ts_utc",
+        "fill_ts_utc",
+        "close_ts_utc",
+        "data_age_ms",
+        "seconds_to_expiry"
+      ],
+      "missing": [
+        "chainlink_reference_ts_utc",
+        "order_ack_ts_utc",
+        "settlement_ts_utc",
+        "submit_latency_ms",
+        "fill_latency_ms",
+        "clock_drift_status"
+      ]
+    },
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "sizing_changed": false,
+    "risk_changed": false,
+    "execution_changed": false,
+    "config_changed": false,
+    "env_changed": false,
+    "safety_verdict": "SAFE_DOCS_AND_EVIDENCE_CONTRACT_ONLY",
+    "next_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001"
   }
 }

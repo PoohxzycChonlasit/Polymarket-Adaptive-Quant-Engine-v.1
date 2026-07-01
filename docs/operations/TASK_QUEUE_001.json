@@ -3671,6 +3671,40 @@
       "env_changed": false,
       "safety_verdict": "SAFE_READ_ONLY_AUDIT",
       "notes": "DONE. Current paper evidence is valid for blocker diagnosis and accounting checks, but not for profitability, live execution realism, or precise market-time profit attribution. Next: offline Semantic C / risk_plan_zero shadow outcome replay."
+    },
+    {
+      "priority": 0.52,
+      "task_id": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001",
+      "status": "DONE",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Define canonical per-run evidence summaries, market-time truth field mapping, evidence validity classes, and dashboard data availability for Polymarket Crypto 5M paper runs.",
+      "blocked_by": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001",
+      "allowed_scope": [
+        "docs/reports/",
+        "root Profit Engine docs",
+        "docs/operations/",
+        "historical runtime evidence read-only"
+      ],
+      "outputs": [
+        "docs/reports/CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001.md"
+      ],
+      "verdict": "CANONICAL_EVIDENCE_LAYER_DEFINED_NO_RUNTIME_BEHAVIOR_CHANGED",
+      "canonical_outputs_defined": [
+        "trade_funnel_summary_v1",
+        "market_time_truth_field_map_v1",
+        "dashboard_data_availability_v1",
+        "evidence_validity_v1"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "safety_verdict": "SAFE_DOCS_AND_EVIDENCE_CONTRACT_ONLY",
+      "notes": "DONE. Defined canonical per-run evidence layer and field mapping. Current evidence is valid for blocker diagnosis and baseline accounting but invalid for profit claims. Next: CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001."
     }
   ]
 }

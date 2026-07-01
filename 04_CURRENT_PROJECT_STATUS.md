@@ -17,6 +17,7 @@ Paper profit first. Micro live only after evidence.
 - A later 60-minute TP-evidence run produced zero entries, so no take-profit sample was observed.
 - Entry blocker analysis showed the strongest design question is `risk_plan_zero` side-confidence semantics.
 - Entry throughput and market-realism audit now confirms current evidence is valid for blocker diagnosis and paper accounting, but not valid for a profit claim or live sizing realism.
+- Canonical evidence and market-time truth review now defines the per-run funnel, alias map, evidence-validity classes, and dashboard availability needed before more replay/tuning work.
 - Shadow strategy framework work exists, but the mission reset freezes further framework expansion unless it directly supports profit evidence.
 
 ## Current Blockers
@@ -29,6 +30,7 @@ Paper profit first. Micro live only after evidence.
 | Market-realistic sizing | Needs explicit validation | Paper fractional sizing may not match live CLOB mechanics. |
 | Time truth | Needs strict governance | Profit evidence is invalid if timing is ambiguous. |
 | Market/live sizing realism | Not proven | Current paper opens can use `$0.10` fractional shares; live CLOB fractional/minimum-order behavior is unresolved. |
+| Canonical evidence summary | Needed | Future replay and dashboard work should consume one per-run evidence summary instead of re-deriving aliases ad hoc. |
 | Live execution | Not validated | Micro live remains blocked. |
 
 ## Active Safety Position
@@ -40,4 +42,4 @@ Paper profit first. Micro live only after evidence.
 
 ## Current Next Priority
 
-Run offline shadow outcome replay for `risk_plan_zero` / Semantic C near-misses before any threshold, risk, sizing, strategy, execution, or live behavior change.
+Build an offline canonical run evidence summary helper before further shadow replay or threshold discussion.

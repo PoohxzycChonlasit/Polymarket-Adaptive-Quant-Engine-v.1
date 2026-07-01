@@ -4844,5 +4844,54 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "next_task": "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001"
+  },
+  {
+    "task_id": "CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001",
+    "task_class": 2,
+    "completed_at": "2026-07-01",
+    "status": "COMPLETE",
+    "verdict": "CANONICAL_EVIDENCE_LAYER_DEFINED_NO_RUNTIME_BEHAVIOR_CHANGED",
+    "report_doc": "docs/reports/CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001.md",
+    "summary": "Defined the canonical per-run evidence layer for paper Profit Engine work: trade_funnel_summary_v1, market_time_truth_field_map_v1, dashboard_data_availability_v1, and evidence_validity_v1. Current logs contain useful aliases but not enough exact canonical market-time truth fields for profitability claims.",
+    "evidence": {
+      "source_runs": [
+        "20260630T104339Z_52084_999c4023",
+        "20260630T135455Z_6592_5fac8cf4"
+      ],
+      "baseline_trade_open_count": 2,
+      "tp_run_trade_open_count": 0,
+      "field_map_present": [
+        "decision_latency_ms",
+        "seconds_since_open"
+      ],
+      "field_map_missing": [
+        "chainlink_reference_ts_utc",
+        "order_ack_ts_utc",
+        "settlement_ts_utc",
+        "submit_latency_ms",
+        "fill_latency_ms",
+        "clock_drift_status"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false
+    },
+    "files_changed": [
+      "docs/reports/CANONICAL_EVIDENCE_AND_MARKET_TIME_TRUTH_INSTRUMENTATION_001.md",
+      "04_CURRENT_PROJECT_STATUS.md",
+      "07_RUNTIME_SCOREBOARD.md",
+      "08_MINI_EVIDENCE_PIPELINE.md",
+      "09_OPERATOR_DASHBOARD_SPEC.md",
+      "11_LOGGING_AND_MARKET_TIME_TRUTH.md",
+      "DOCUMENTATION_MAP.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "next_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001"
   }
 ]

@@ -102,3 +102,14 @@ Scoreboard metrics are not profitability evidence unless time truth, cash/exposu
 - Market/sizing reality is partial because fractional-share and minimum-order live behavior are not proven.
 - Time-truth evidence is partial because current logs have timing proxies, but not all canonical field names from `11_LOGGING_AND_MARKET_TIME_TRUTH.md`.
 - Current data is valid for blocker diagnosis and paper accounting, not for a profitability claim.
+
+## Canonical Evidence Requirement
+
+Before the scoreboard is treated as a profit surface, it should consume a per-run evidence summary with:
+
+- `trade_funnel_summary_v1`
+- `market_time_truth_field_map_v1`
+- `dashboard_data_availability_v1`
+- `evidence_validity_v1`
+
+Until those are available, dashboard values are operational diagnostics, not profitability proof.
