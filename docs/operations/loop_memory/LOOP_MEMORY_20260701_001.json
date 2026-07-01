@@ -62,6 +62,11 @@
       "task_id": "LIVE_REFERENCE_BANKROLL_LABEL_NORMALIZATION_001",
       "status": "COMPLETE",
       "summary": "Normalized telemetry bankroll validation flags away from hardcoded 20."
+    },
+    {
+      "task_id": "CLOB_COMPLIANT_EXTENDED_PAPER_EVIDENCE_RUN_001",
+      "status": "COMPLETE",
+      "summary": "Extended paper run. book_warming blocked all 46 decisions. Also fixed self.settings bug."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
@@ -88,7 +93,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T07:38:34Z",
+  "updated_at_utc": "2026-07-01T08:24:28Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -264,6 +269,27 @@
         "tools/canonical_run_evidence_summary_builder.py",
         "tests/observability/test_paper_accounting_telemetry.py",
         "docs/reports/LIVE_REFERENCE_BANKROLL_LABEL_NORMALIZATION_001.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null
+    },
+    {
+      "task_id": "CLOB_COMPLIANT_EXTENDED_PAPER_EVIDENCE_RUN_001",
+      "task_class": 3,
+      "status": "COMPLETE",
+      "verdict": "INSUFFICIENT_EXECUTABLE_THROUGHPUT_SHORT_RUN",
+      "updated_at_utc": "2026-07-01T08:24:28Z",
+      "files_changed": [
+        "polymarket/trader.py",
+        "docs/reports/CLOB_COMPLIANT_EXTENDED_PAPER_EVIDENCE_RUN_001.md",
         "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
         "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
       ],
