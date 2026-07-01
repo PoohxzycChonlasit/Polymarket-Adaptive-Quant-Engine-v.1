@@ -3813,6 +3813,40 @@
       "config_changed": false,
       "env_changed": false,
       "notes": "DONE. Queue recommendations are candidate tasks only. No task may be auto-promoted from next_task; Tech Lead review is required before every new task."
+    },
+    {
+      "priority": 0.56,
+      "task_id": "BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Audit why book_warming appeared to block 100% of recent CLOB-compliant paper decisions and determine whether it is runtime warmup, market lifecycle incompatibility, or classifier attribution.",
+      "blocked_by": "TECH_LEAD_REVIEW_REQUIRED",
+      "allowed_scope": [
+        "docs/reports/",
+        "docs/operations/",
+        "root Profit Engine docs",
+        "historical runtime evidence read-only",
+        "runtime source read-only"
+      ],
+      "outputs": [
+        "docs/reports/BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001.md"
+      ],
+      "status": "DONE",
+      "verdict": "CLASSIFIER_ATTRIBUTION_FALSE_POSITIVE_OVER_RUNTIME_RISK_OFF",
+      "runtime_or_classifier_status": "CLASSIFIER_LABEL_IN_RUNTIME_OBSERVABILITY_NOT_DIRECT_RUNTIME_BLOCKER",
+      "raw_runtime_blocker": "risk_off / risk_mode_lockdown:hard_drawdown",
+      "classified_blocker": "book_warming",
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK",
+      "tech_lead_review_required": true,
+      "notes": "DONE. Raw decision rows showed risk_off / risk_mode_lockdown:hard_drawdown. book_warming was an additive no-entry classifier label over NONZERO_BOOK lifecycle evidence, not the direct runtime blocker."
     }
   ],
   "tech_lead_review_required": true,

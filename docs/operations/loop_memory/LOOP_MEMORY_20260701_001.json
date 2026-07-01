@@ -66,7 +66,12 @@
     {
       "task_id": "CLOB_COMPLIANT_EXTENDED_PAPER_EVIDENCE_RUN_001",
       "status": "COMPLETE",
-      "summary": "Extended paper run. book_warming blocked all 46 decisions. Also fixed self.settings bug."
+      "summary": "Extended paper run. Canonical summary surfaced book_warming for all 46 decisions, later audited as classifier attribution over raw risk_off / hard_drawdown rows. Also fixed self.settings bug."
+    },
+    {
+      "task_id": "BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001",
+      "status": "COMPLETE_PENDING_COMMIT",
+      "summary": "Audited recent book_warming blocker attribution. Raw decisions were risk_off / risk_mode_lockdown:hard_drawdown; book_warming was an additive no-entry classifier label over NONZERO_BOOK lifecycle evidence."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
@@ -93,7 +98,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T08:24:28Z",
+  "updated_at_utc": "2026-07-01T09:07:03Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -301,6 +306,31 @@
       "config_changed": false,
       "env_changed": false,
       "next_task": null
+    },
+    {
+      "task_id": "BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001",
+      "task_class": 2,
+      "status": "COMPLETE_PENDING_COMMIT",
+      "verdict": "CLASSIFIER_ATTRIBUTION_FALSE_POSITIVE_OVER_RUNTIME_RISK_OFF",
+      "updated_at_utc": "2026-07-01T09:07:03Z",
+      "files_changed": [
+        "docs/reports/BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001.md",
+        "04_CURRENT_PROJECT_STATUS.md",
+        "07_RUNTIME_SCOREBOARD.md",
+        "08_MINI_EVIDENCE_PIPELINE.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null,
+      "next_task_policy": "NO_AUTOMATIC_NEXT_TASK"
     }
   ],
   "next_task": null,

@@ -113,3 +113,9 @@ Before the scoreboard is treated as a profit surface, it must consume a per-run 
 - `evidence_validity_v1`
 
 Those summaries are now available offline, but dashboard values remain operational diagnostics until time truth, sizing realism, costs, and settlement truth are complete.
+
+## Latest Blocker Attribution Audit
+
+`BOOK_WARMING_ROOT_CAUSE_AND_MARKET_LIFECYCLE_AUDIT_001` found that the recent `book_warming` top blocker in canonical summaries was not the raw runtime blocker. Raw decision rows for the inspected runs showed `skip_reason=risk_off` and `raw_skip_reason=risk_mode_lockdown:hard_drawdown`; `book_warming` came from additive no-entry classifier fields.
+
+Scoreboard rule: show raw runtime blocker and classified root cause separately. Classified labels are diagnostic context, not proof that the runtime gate with the same name blocked entry.

@@ -81,3 +81,4 @@ Current finding:
 - Replay/counterfactual evidence identifies `risk_plan_zero` and `delta_extreme` as the most useful near-miss research targets.
 - Paper runtime evidence proves accounting paths, but entry throughput is too low for profitability inference.
 - Per-run evidence summaries are now canonicalized offline; the next evidence step should remain offline and consume those summaries before any shadow outcome replay with MFE/MAE, TP-hit, SL-hit, and settlement/path truth joins.
+- Recent CLOB-compliant paper evidence summaries surfaced `book_warming`, but raw decision rows showed `risk_off` / `risk_mode_lockdown:hard_drawdown`. Treat classifier summaries as diagnostic overlays until raw-vs-classified blockers are shown side by side.
