@@ -98,6 +98,7 @@ The loop must stop immediately (before repair limit) if:
 - Execution / risk / sizing / reconciliation code is modified
 - A `.md` file is created in the repository root
 - The AI cannot reproduce the failure without expanding scope
+- A code task introduces unexplained hardcoded runtime values, thresholds, paths, dates, run IDs, bankroll assumptions, market constants, API URLs, or semantic labels
 
 ---
 
@@ -268,6 +269,64 @@ Evidence grades in loop mode follow the same standard as single-task mode:
 | E | AI inferred | **Never sufficient alone** |
 
 A loop may not declare success with only Grade D/E evidence for any safety-relevant claim.
+
+---
+
+## 11b. No Hardcode Engineering Standard
+
+For every code task, the AI must audit for hardcoded values before commit.
+
+Forbidden unless explicitly justified and documented:
+
+- Magic numbers.
+- Magic strings.
+- Hardcoded file paths.
+- Hardcoded dates or run IDs.
+- Hardcoded bankroll values.
+- Hardcoded API URLs.
+- Hardcoded market constants.
+- Hardcoded strategy, risk, EV, sizing, lifecycle, or warmup thresholds.
+- Hidden semantic labels that change evidence classification.
+
+Preferred source order:
+
+1. Validated source metadata.
+2. Config or schema value.
+3. Named constant in a focused module.
+4. Explicit function parameter.
+5. Documented default with provenance.
+
+Every default constant must have a clear name, source/provenance, scope, reason, tests, and report or documentation reference.
+
+Review checklist:
+
+- Are there new numeric literals?
+- Are there new string labels?
+- Are there new file paths?
+- Are there new dates or run IDs?
+- Are there new bankroll assumptions?
+- Are there new market constants?
+- Are there new threshold values?
+- Are all defaults named, documented, scoped, and tested?
+- Is behavior controlled by config or metadata rather than hidden literals?
+
+If hardcoding is detected:
+
+1. STOP.
+2. Do not commit until resolved.
+3. Report exact file, line, and value.
+4. Recommend extraction to config, constant, schema, or helper.
+
+Final task output for code tasks must include:
+
+- `HARDCODE_AUDIT_STATUS`
+- `NEW_CONSTANTS_ADDED`
+- `CONSTANT_PROVENANCE`
+- `CONFIG_VALUES_USED`
+- `MAGIC_VALUES_FOUND`
+- `MAGIC_VALUES_JUSTIFIED`
+- `MAGIC_VALUES_REJECTED`
+- `NO_HARDCODE_PROOF`
 
 ---
 

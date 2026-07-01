@@ -355,6 +355,16 @@ Every AI task — regardless of class — must end with this block:
 ### Evidence
 - [Grade A/B/C/D/E] [claim]
 
+### No-Hardcode Audit
+- HARDCODE_AUDIT_STATUS: [PASS / FAIL / N/A_DOCS_ONLY]
+- NEW_CONSTANTS_ADDED: [list or NONE]
+- CONSTANT_PROVENANCE: [list or NONE]
+- CONFIG_VALUES_USED: [list or NONE]
+- MAGIC_VALUES_FOUND: [list or NONE]
+- MAGIC_VALUES_JUSTIFIED: [list or NONE]
+- MAGIC_VALUES_REJECTED: [list or NONE]
+- NO_HARDCODE_PROOF: [diff audit summary]
+
 ### Remaining Uncertainty
 - [what was not independently verified]
 
@@ -412,6 +422,38 @@ Every AI session must produce a handoff document before the user closes the conv
 - Do not change live size unless explicitly requested.
 - Do not alter strategy logic during documentation, observability, cleanup, or UI tasks.
 - For docs-only agent work, do not change Python runtime behavior.
+
+## No Hardcode Engineering Standard
+
+Runtime code must not contain unexplained magic numbers, magic strings, hardcoded paths, hardcoded dates, hardcoded run IDs, hardcoded bankroll values, hardcoded API URLs, hardcoded market constants, or hardcoded strategy thresholds.
+
+When a value is required, prefer in order:
+
+1. Validated source metadata.
+2. Config or schema value.
+3. Named constant in a focused module.
+4. Explicit function parameter.
+5. Documented default with provenance.
+
+Any default constant must include a clear name, source/provenance, scope, reason, tests, and report or documentation reference.
+
+Hardcoded values are forbidden in `polymarket/trader.py`, position sizing, risk logic, execution logic, canonical builder evidence classification, bankroll/accounting logic, market lifecycle/warmup logic, path routing, and live/paper mode decisions.
+
+Allowed exceptions: test fixtures, sample data, documented constants in focused modules, protocol constants with source provenance, and migration/backward compatibility fields clearly marked deprecated.
+
+Required code review checklist for any code task:
+
+- Are there new numeric literals?
+- Are there new string labels?
+- Are there new file paths?
+- Are there new dates or run IDs?
+- Are there new bankroll assumptions?
+- Are there new market constants?
+- Are there new threshold values?
+- Are all defaults named, documented, scoped, and tested?
+- Is behavior controlled by config or metadata rather than hidden literals?
+
+If hardcoding is detected, STOP, do not commit, report exact file/line/value, and recommend extraction to config, constant, schema, or helper.
 
 ## Agent Selection Workflow
 

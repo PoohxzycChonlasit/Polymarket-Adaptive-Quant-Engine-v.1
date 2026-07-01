@@ -44,6 +44,12 @@
 | `FILE_INDEX.md` | Code navigation source of truth. |
 | `DOCUMENTATION_MAP.md` | Documentation navigation source of truth. |
 
+## Engineering Guardrails
+
+The `NO HARDCODE ENGINEERING STANDARD` is defined in `02_PROJECT_RULES.md` and mirrored in `AGENTS.md`, `10_LOOP_ENGINEERING.md`, `docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md`, and `docs/operations/EXECUTION_CONTRACT_TEMPLATE_001.md`.
+
+Future code tasks must audit new constants, literals, paths, dates, run IDs, bankroll assumptions, market constants, labels, and thresholds before commit. Runtime behavior must use metadata, config/schema values, named constants, explicit parameters, or documented defaults with provenance.
+
 ## Active Operational Docs
 
 | File | Use |

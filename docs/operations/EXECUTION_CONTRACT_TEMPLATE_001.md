@@ -247,6 +247,7 @@ evidence_plan:
 - [ ] Runtime data deletion detected
 - [ ] Wallet/bankroll/allowance changes in diff
 - [ ] Unrelated tracked dirty files at commit time
+- [ ] Unexplained hardcoded runtime value, threshold, path, date, run ID, bankroll assumption, market constant, API URL, or semantic label introduced
 - [ ] `repair_count == max_repairs` AND still failing
 
 **Task-specific stop conditions:**
@@ -347,7 +348,43 @@ Before commit, confirm ALL:
 [ ] JSONL fields present (if Grade A required)
 [ ] Safety memory still loaded (bootstrap --diagnose)
 [ ] working_tree contains only allowed staged files
+[ ] HARDCODE_AUDIT_STATUS recorded for code tasks
+[ ] No new unexplained numeric literals
+[ ] No new unexplained string labels
+[ ] No new hardcoded file paths
+[ ] No new hardcoded dates or run IDs
+[ ] No new hardcoded bankroll assumptions
+[ ] No new hardcoded market constants
+[ ] No new hardcoded threshold values
+[ ] All defaults are named, documented, scoped, and tested
+[ ] Behavior is controlled by config or metadata rather than hidden literals
 ```
+
+---
+
+## SECTION 18b — NO HARDCODE AUDIT
+
+Complete for any code task. For docs-only tasks, set each field to `N/A`.
+
+```
+HARDCODE_AUDIT_STATUS: [PASS | FAIL | N/A_DOCS_ONLY]
+NEW_CONSTANTS_ADDED:
+  - [constant name, file, value, or NONE]
+CONSTANT_PROVENANCE:
+  - [constant name -> source/provenance/report/test, or NONE]
+CONFIG_VALUES_USED:
+  - [config/schema/metadata source, or NONE]
+MAGIC_VALUES_FOUND:
+  - [file:line value reason, or NONE]
+MAGIC_VALUES_JUSTIFIED:
+  - [file:line value justification/provenance, or NONE]
+MAGIC_VALUES_REJECTED:
+  - [file:line value extraction required, or NONE]
+NO_HARDCODE_PROOF:
+  - [diff audit summary and command evidence]
+```
+
+**STOP if:** `MAGIC_VALUES_REJECTED` is not `NONE`.
 
 ---
 
@@ -372,6 +409,14 @@ TESTS:             [N/N pass] or N/A
 RUNTIME:           [cycles, exit, JSONL counts] or N/A
 FORBIDDEN_SCOPE:   confirmed [or VIOLATION: file]
 STATE_QUEUE_MEMORY: [what was updated]
+HARDCODE_AUDIT_STATUS: [PASS | FAIL | N/A_DOCS_ONLY]
+NEW_CONSTANTS_ADDED: [list or NONE]
+CONSTANT_PROVENANCE: [list or NONE]
+CONFIG_VALUES_USED: [list or NONE]
+MAGIC_VALUES_FOUND: [list or NONE]
+MAGIC_VALUES_JUSTIFIED: [list or NONE]
+MAGIC_VALUES_REJECTED: [list or NONE]
+NO_HARDCODE_PROOF: [summary]
 TECH_LEAD_REVIEW_CANDIDATES: [candidate task ids, or NONE]
 BLOCKERS:          [authorization/data/state blockers, or NONE]
 RECOMMENDED_REVIEW_TOPICS: [topics for Tech Lead review, or NONE]

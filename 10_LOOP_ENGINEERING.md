@@ -46,6 +46,7 @@ Define:
 - Files forbidden.
 - Runtime behavior unchanged or explicitly scoped.
 - Tests/validation required.
+- Hardcode audit required for any code task.
 
 ## Step 4 - Acceptance Criteria
 
@@ -77,6 +78,12 @@ Docs-only:
 Runtime/risk/sizing/execution:
 
 - Stronger test and paper/runtime evidence required.
+
+Code tasks:
+
+- Run the no-hardcode checklist from `02_PROJECT_RULES.md`.
+- Stop if unexplained magic values, hardcoded paths, dates, run IDs, bankroll values, market constants, or thresholds are introduced.
+- Prefer metadata, config/schema values, named constants, explicit parameters, or documented defaults with provenance.
 
 ## Step 8 - Repair
 
@@ -204,3 +211,21 @@ Rules:
 - validation failure
 - accidental staging of unrelated files
 - runtime files changed outside scope
+- unexplained hardcoded runtime value, threshold, path, date, bankroll, market constant, API URL, or semantic label
+
+## No Hardcode Engineering Standard
+
+All loop tasks that touch code must apply the no-hardcode engineering standard in `02_PROJECT_RULES.md`.
+
+Final task output for code tasks must include:
+
+- `HARDCODE_AUDIT_STATUS`
+- `NEW_CONSTANTS_ADDED`
+- `CONSTANT_PROVENANCE`
+- `CONFIG_VALUES_USED`
+- `MAGIC_VALUES_FOUND`
+- `MAGIC_VALUES_JUSTIFIED`
+- `MAGIC_VALUES_REJECTED`
+- `NO_HARDCODE_PROOF`
+
+If hardcoding is found, stop before commit and report the file, line, value, and recommended extraction path.

@@ -39,6 +39,66 @@ This rule applies to every `.py` file in the repository.
 - No behavior change during pure extraction.
 - Tests are required after extraction.
 
+## No Hardcode Engineering Standard
+
+Runtime code must not contain unexplained magic numbers, magic strings, hardcoded paths, hardcoded dates, hardcoded run IDs, hardcoded bankroll values, hardcoded API URLs, hardcoded market constants, or hardcoded strategy thresholds.
+
+If a value is required, prefer sources in this order:
+
+1. Validated source metadata.
+2. Config or schema value.
+3. Named constant in a focused module.
+4. Explicit function parameter.
+5. Documented default with provenance.
+
+Any default constant must have:
+
+- Clear name.
+- Source or provenance.
+- Scope.
+- Reason.
+- Tests.
+- Report or documentation reference.
+
+Hardcoded values are forbidden in:
+
+- `polymarket/trader.py`.
+- Position sizing.
+- Risk logic.
+- Execution logic.
+- Canonical builder evidence classification.
+- Bankroll/accounting logic.
+- Market lifecycle/warmup logic.
+- Path routing.
+- Live/paper mode decisions.
+
+Allowed exceptions:
+
+- Test fixtures.
+- Sample data.
+- Documented constants in focused modules.
+- Protocol constants with source provenance.
+- Migration or backward compatibility fields clearly marked deprecated.
+
+Required review checklist for any code task:
+
+- Are there new numeric literals?
+- Are there new string labels?
+- Are there new file paths?
+- Are there new dates or run IDs?
+- Are there new bankroll assumptions?
+- Are there new market constants?
+- Are there new threshold values?
+- Are all defaults named, documented, scoped, and tested?
+- Is behavior controlled by config or metadata rather than hidden literals?
+
+If hardcoding is detected:
+
+1. STOP.
+2. Do not commit until resolved.
+3. Report exact file, line, and value.
+4. Recommend extraction to config, constant, schema, or helper.
+
 ## Runtime Safety Rules
 
 - Paper mode is the default.

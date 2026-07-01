@@ -140,6 +140,19 @@ Use the global modular standard in `02_PROJECT_RULES.md`:
 - No behavior change during pure extraction.
 - Tests after extraction.
 
+## No-Hardcode Navigation Rule
+
+Use the no-hardcode engineering standard in `02_PROJECT_RULES.md` and `AGENTS.md` before editing any code.
+
+Do not introduce unexplained hardcoded values in dangerous or runtime-critical paths. This includes magic numbers, string labels, file paths, dates, run IDs, bankroll values, API URLs, market constants, and strategy/risk/EV/sizing/lifecycle/warmup thresholds.
+
+Preferred locations for required constants:
+
+- Config or schema when operator/runtime controlled.
+- Focused module-level named constants when protocol or domain controlled.
+- Explicit function parameters when context-specific.
+- Test fixtures or sample data only when clearly non-runtime.
+
 ## Update Rules
 
 Update this file when:
