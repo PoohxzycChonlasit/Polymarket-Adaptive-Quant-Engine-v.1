@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-07-01",
-  "current_phase": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001 complete; 13 TypedDict contracts, 4 enums, 3 helpers in tools/shadow_strategy_framework/contracts.py",
-  "last_completed_task": "SHADOW_STRATEGY_FRAMEWORK_REPLAYROW_SCHEMA_IMPLEMENTATION_001",
+  "current_phase": "PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001 complete; mission reset to paper-profit-first Profit Engine governance",
+  "last_completed_task": "PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001",
   "last_commit": "72da3e67",
   "last_commit_message": "fix: refresh bot status after paper close",
-  "next_task": "SHADOW_STRATEGY_FRAMEWORK_ADAPTER_INTERFACE_001",
+  "next_task": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -1392,5 +1392,48 @@
     "risk_changed": false,
     "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
     "next_task": "SHADOW_STRATEGY_FRAMEWORK_ADAPTER_INTERFACE_001"
+  },
+  "profit_engine_day_1_governance_modularity_time_truth_reset": {
+    "status": "COMPLETE",
+    "task_class": 3,
+    "report_doc": "docs/reports/PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001.md",
+    "verdict": "PROFIT_ENGINE_GOVERNANCE_RESET_COMPLETE",
+    "mission": "Build a profitable Polymarket Crypto 5-Minute Quant Profit Engine; paper profit first; micro live only after evidence.",
+    "root_docs_created": [
+      "00_MISSION.md",
+      "01_SUCCESS_CRITERIA.md",
+      "02_PROJECT_RULES.md",
+      "03_MASTER_AGENT_ROUTER.md",
+      "04_CURRENT_PROJECT_STATUS.md",
+      "05_PROFIT_ROADMAP.md",
+      "06_BACKLOG.md",
+      "07_RUNTIME_SCOREBOARD.md",
+      "08_MINI_EVIDENCE_PIPELINE.md",
+      "09_OPERATOR_DASHBOARD_SPEC.md",
+      "10_LOOP_ENGINEERING.md",
+      "11_LOGGING_AND_MARKET_TIME_TRUTH.md"
+    ],
+    "navigator_docs_updated": [
+      "FILE_INDEX.md",
+      "DOCUMENTATION_MAP.md"
+    ],
+    "frozen_backlog": [
+      "shadow framework expansion",
+      "strategy plugin expansion",
+      "inventory ladder runtime",
+      "new markets",
+      "threshold tuning",
+      "live pilot",
+      "big-bang trader refactor"
+    ],
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "sizing_changed": false,
+    "risk_changed": false,
+    "execution_changed": false,
+    "config_changed": false,
+    "env_changed": false,
+    "safety_verdict": "SAFE_DOCS_ONLY_RESET",
+    "next_task": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001"
   }
 }

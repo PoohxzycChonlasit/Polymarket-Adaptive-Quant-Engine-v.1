@@ -4757,5 +4757,50 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "next_task": "SHADOW_STRATEGY_FRAMEWORK_ADAPTER_INTERFACE_001"
+  },
+  {
+    "task_id": "PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001",
+    "task_class": 3,
+    "completed_at": "2026-07-01",
+    "status": "COMPLETE",
+    "verdict": "PROFIT_ENGINE_GOVERNANCE_RESET_COMPLETE",
+    "report_doc": "docs/reports/PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001.md",
+    "summary": "Reset repository governance around the paper-profit-first Polymarket Crypto 5M Profit Engine mission. Created numbered root entrypoint docs, updated FILE_INDEX.md and DOCUMENTATION_MAP.md, and froze non-profit framework/research expansion behind a Profit Filter.",
+    "evidence": {
+      "root_docs_created": 12,
+      "navigator_docs_updated": 2,
+      "profit_filter_defined": true,
+      "loop_engineering_defined": true,
+      "time_truth_standard_defined": true,
+      "dashboard_spec_defined": true,
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "sizing_changed": false,
+      "risk_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false
+    },
+    "files_changed": [
+      "00_MISSION.md",
+      "01_SUCCESS_CRITERIA.md",
+      "02_PROJECT_RULES.md",
+      "03_MASTER_AGENT_ROUTER.md",
+      "04_CURRENT_PROJECT_STATUS.md",
+      "05_PROFIT_ROADMAP.md",
+      "06_BACKLOG.md",
+      "07_RUNTIME_SCOREBOARD.md",
+      "08_MINI_EVIDENCE_PIPELINE.md",
+      "09_OPERATOR_DASHBOARD_SPEC.md",
+      "10_LOOP_ENGINEERING.md",
+      "11_LOGGING_AND_MARKET_TIME_TRUTH.md",
+      "FILE_INDEX.md",
+      "DOCUMENTATION_MAP.md",
+      "docs/reports/PROFIT_ENGINE_DAY_1_GOVERNANCE_MODULARITY_TIME_TRUTH_RESET_001.md",
+      "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+      "docs/operations/TASK_QUEUE_001.json",
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "next_task": "PROFIT_ENGINE_ENTRY_THROUGHPUT_MARKET_REALISM_AUDIT_001"
   }
 ]
