@@ -42,6 +42,11 @@
       "task_id": "UPDATE_PAPER_SIZER_WITH_LIVE_CLOB_CONSTRAINTS_001",
       "status": "COMPLETE",
       "summary": "Updated paper-mode sizing execution realism with live CLOB minimum order and tick constraints."
+    },
+    {
+      "task_id": "CLOB_COMPLIANT_PAPER_SIZING_RISK_DESIGN_001",
+      "status": "COMPLETE",
+      "summary": "Designed CLOB-compliant paper sizing risk policy and documented recommended implementation options."
     }
   ],
   "active_task": "TECH_LEAD_REVIEW_REQUIRED",
@@ -68,7 +73,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T06:34:43Z",
+  "updated_at_utc": "2026-07-01T06:52:16Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -167,6 +172,25 @@
       "risk_changed": false,
       "sizing_changed": false,
       "execution_changed": true,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+    },
+    {
+      "task_id": "CLOB_COMPLIANT_PAPER_SIZING_RISK_DESIGN_001",
+      "task_class": 2,
+      "status": "COMPLETE",
+      "updated_at_utc": "2026-07-01T06:52:16Z",
+      "files_changed": [
+        "docs/reports/CLOB_COMPLIANT_PAPER_SIZING_RISK_DESIGN_001.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
       "config_changed": false,
       "env_changed": false,
       "next_task": "TECH_LEAD_REVIEW_REQUIRED"

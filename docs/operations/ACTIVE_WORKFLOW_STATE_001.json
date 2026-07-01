@@ -1657,5 +1657,11 @@
     "report_doc": "docs/reports/UPDATE_PAPER_SIZER_WITH_LIVE_CLOB_CONSTRAINTS_001.md",
     "paper_dust_invalidated": true,
     "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+  },
+  "clob_compliant_paper_sizing_risk_design": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/CLOB_COMPLIANT_PAPER_SIZING_RISK_DESIGN_001.md",
+    "risk_design_completed": true,
+    "next_task": "TECH_LEAD_REVIEW_REQUIRED"
   }
 }
