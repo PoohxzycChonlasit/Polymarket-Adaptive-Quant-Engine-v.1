@@ -47,9 +47,14 @@
       "task_id": "CLOB_COMPLIANT_PAPER_SIZING_RISK_DESIGN_001",
       "status": "COMPLETE",
       "summary": "Designed CLOB-compliant paper sizing risk policy and documented recommended implementation options."
+    },
+    {
+      "task_id": "PAPER_RESEARCH_BANKROLL_SEPARATION_IMPLEMENTATION_001",
+      "status": "COMPLETE",
+      "summary": "Implemented paper research bankroll separation with full observability and testing."
     }
   ],
-  "active_task": "TECH_LEAD_REVIEW_REQUIRED",
+  "active_task": null,
   "blocked_items": [
     "No blind NEXT_TASK execution after workday rotation.",
     "Runtime, strategy, risk, sizing, execution, config, and live behavior changes remain out of scope.",
@@ -73,7 +78,7 @@
   "next_task_candidates": [],
   "tech_lead_review_required": true,
   "no_blind_next_task": true,
-  "updated_at_utc": "2026-07-01T06:52:16Z",
+  "updated_at_utc": "2026-07-01T07:02:26Z",
   "entries": [
     {
       "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
@@ -194,6 +199,30 @@
       "config_changed": false,
       "env_changed": false,
       "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+    },
+    {
+      "task_id": "PAPER_RESEARCH_BANKROLL_SEPARATION_IMPLEMENTATION_001",
+      "task_class": 3,
+      "status": "COMPLETE",
+      "updated_at_utc": "2026-07-01T07:02:26Z",
+      "files_changed": [
+        "polymarket/trader.py",
+        "polymarket/execution/paper_accounting.py",
+        "polymarket/observability/paper_accounting_telemetry.py",
+        "tools/canonical_run_evidence_summary_builder.py",
+        "tests/observability/test_paper_accounting_telemetry.py",
+        "docs/reports/PAPER_RESEARCH_BANKROLL_SEPARATION_IMPLEMENTATION_001.md",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "runtime_changed": true,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": null
     }
   ],
   "next_task": null,

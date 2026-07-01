@@ -327,6 +327,11 @@ class BankrollState:
     promotion_candidate: bool = False
     demotion_candidate: bool = False
     expected_risk_profile: str = "MODERATE"
+    capital_basis: str = "LIVE_BANKROLL"
+    paper_research_bankroll_usd: float = 0.0
+    live_reference_bankroll_usd: float = 0.0
+    valid_for_live_20_bankroll_claim: bool = True
+    valid_for_strategy_edge_research: bool = True
 
     def __post_init__(self) -> None:
         if self.equity <= 0:
@@ -500,10 +505,30 @@ class PolymarketTrader:
         self._last_risk_mode_decision = None
         self._last_funnel_stage = "candidates"
         self.runtime_owner = None
-        initial_bankroll = float(self.settings.account_balance)
+        if self.settings.paper_trading:
+            from polymarket.execution.paper_accounting import PAPER_RESEARCH_BANKROLL_USD
+            initial_bankroll = PAPER_RESEARCH_BANKROLL_USD
+            capital_basis = "PAPER_RESEARCH_BANKROLL"
+            paper_research = PAPER_RESEARCH_BANKROLL_USD
+            live_ref = float(self.settings.account_balance)
+            valid_for_live = False
+            valid_for_research = True
+        else:
+            initial_bankroll = float(self.settings.account_balance)
+            capital_basis = "LIVE_BANKROLL"
+            paper_research = 0.0
+            live_ref = float(self.settings.account_balance)
+            valid_for_live = True
+            valid_for_research = True
+
         self.bankroll_state = BankrollState(
             starting_bankroll=initial_bankroll,
             current_cash_balance=initial_bankroll,
+            capital_basis=capital_basis,
+            paper_research_bankroll_usd=paper_research,
+            live_reference_bankroll_usd=live_ref,
+            valid_for_live_20_bankroll_claim=valid_for_live,
+            valid_for_strategy_edge_research=valid_for_research,
         )
         self._bankroll_rank_lock = BankrollRankLock(
             initial_tier=initial_bankroll,
@@ -1402,7 +1427,9 @@ class PolymarketTrader:
             raw_payload.setdefault("producer", producer_label)
 
             from polymarket.observability.market_time_truth import enrich_market_time_truth
+            from polymarket.observability.paper_accounting_telemetry import enrich_paper_accounting_telemetry
             raw_payload = enrich_market_time_truth(raw_payload, self)
+            raw_payload = enrich_paper_accounting_telemetry(raw_payload, self)
 
             if event_method == "log_execution":
                 raw_payload = self._execution_payload_with_parent_context(raw_payload)

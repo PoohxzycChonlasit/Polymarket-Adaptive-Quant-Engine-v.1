@@ -601,6 +601,12 @@ def build_trade_funnel_summary(
         paper_dust_rejected_count=paper_dust_rejected_count,
     )
 
+    capital_basis = next((flat.get("capital_basis") for flat in flat_records if flat.get("capital_basis") is not None), "UNKNOWN")
+    paper_research_bankroll_usd = next((flat.get("paper_research_bankroll_usd") for flat in flat_records if flat.get("paper_research_bankroll_usd") is not None), None)
+    live_reference_bankroll_usd = next((flat.get("live_reference_bankroll_usd") for flat in flat_records if flat.get("live_reference_bankroll_usd") is not None), None)
+    valid_for_live_20_bankroll_claim = next((flat.get("valid_for_live_20_bankroll_claim") for flat in flat_records if flat.get("valid_for_live_20_bankroll_claim") is not None), None)
+    valid_for_strategy_edge_research = next((flat.get("valid_for_strategy_edge_research") for flat in flat_records if flat.get("valid_for_strategy_edge_research") is not None), None)
+    pnl_denominator_usd = paper_research_bankroll_usd if capital_basis == "PAPER_RESEARCH_BANKROLL" else live_reference_bankroll_usd
 
     return {
         "schema_version": "trade_funnel_summary_v1",
@@ -631,6 +637,12 @@ def build_trade_funnel_summary(
         "paper_opened_after_clob_constraints_count": paper_opened_after_clob_constraints_count,
         "top_no_trade_reasons": top_reasons,
         "evidence_validity": validity["labels"],
+        "capital_basis": capital_basis,
+        "paper_research_bankroll_usd": paper_research_bankroll_usd,
+        "live_reference_bankroll_usd": live_reference_bankroll_usd,
+        "valid_for_live_20_bankroll_claim": valid_for_live_20_bankroll_claim,
+        "valid_for_strategy_edge_research": valid_for_strategy_edge_research,
+        "pnl_denominator_usd": pnl_denominator_usd,
     }
 
 

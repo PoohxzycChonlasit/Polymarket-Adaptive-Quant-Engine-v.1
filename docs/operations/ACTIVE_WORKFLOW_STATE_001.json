@@ -1645,7 +1645,7 @@
     "stale_owner_file_archived": true,
     "next_task": "TECH_LEAD_REVIEW_REQUIRED"
   },
-  "active_task": "TECH_LEAD_REVIEW_REQUIRED",
+  "active_task": "None",
   "fractional_share_clob_validation": {
     "status": "COMPLETE",
     "report_doc": "docs/reports/FRACTIONAL_SHARE_MIN_ORDER_CLOB_VALIDATION_001.md",
@@ -1663,5 +1663,10 @@
     "report_doc": "docs/reports/CLOB_COMPLIANT_PAPER_SIZING_RISK_DESIGN_001.md",
     "risk_design_completed": true,
     "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+  },
+  "paper_research_bankroll_separation": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/PAPER_RESEARCH_BANKROLL_SEPARATION_IMPLEMENTATION_001.md",
+    "next_task": null
   }
 }
