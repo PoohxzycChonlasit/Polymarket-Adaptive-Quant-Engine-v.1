@@ -89,7 +89,7 @@ For this governance reset:
 - `docs/reports/`.
 - `docs/operations/ACTIVE_WORKFLOW_STATE_001.json`.
 - `docs/operations/TASK_QUEUE_001.json`.
-- Active loop memory file.
+- Current active workday loop memory file.
 
 Future safe docs-only zones:
 
@@ -102,6 +102,12 @@ Future safe docs-only zones:
 Current safe offline tooling:
 
 - `tools/canonical_run_evidence_summary_builder.py` - reads existing JSONL logs and emits conservative per-run evidence summaries under `docs/reports/run_evidence/`.
+
+Loop memory pointer rule:
+
+- `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` must point to the current workday loop memory file.
+- Archived loop memory files are read-only by policy and must not receive new task entries.
+- `next_task` must not be followed blindly; Tech Lead review is required after workday rotation.
 
 ## Dangerous Edit Zones
 

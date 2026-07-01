@@ -1,11 +1,11 @@
 {
   "$schema": "active_workflow_state_v1",
   "last_updated": "2026-07-01",
-  "current_phase": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001 complete; offline per-run evidence summaries generated, no runtime tuning justified",
-  "last_completed_task": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
+  "current_phase": "WORKDAY_LOOP_MEMORY_ROTATED_20260701; Tech Lead review required before next executable task",
+  "last_completed_task": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
   "last_commit": "pending",
-  "last_commit_message": "tools: add canonical run evidence summary builder",
-  "next_task": "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001",
+  "last_commit_message": "ops: rotate active loop memory for workday",
+  "next_task": "TECH_LEAD_REVIEW_REQUIRED",
   "navigator_state": {
     "module_registry": "docs/operations/repository/module_registry.json",
     "symbol_index": "docs/operations/repository/symbol_index.json",
@@ -115,12 +115,21 @@
   "workflow_governance": {
     "loop_engineering_enabled": true,
     "loop_memory_operational": true,
-    "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
-    "loop_memory_policy": "append_only_to_active",
-    "last_loop_memory_rollover_utc": "2026-06-28T08:28:41Z",
+    "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+    "loop_memory_policy": "daily_active_file_append_only; archived files read_only",
+    "last_loop_memory_rollover_utc": "2026-07-01T04:03:05Z",
     "awe_design_committed": true,
     "awe_implemented": false,
-    "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md"
+    "loop_playbook": "docs/operations/LOOP_ENGINEERING_PLAYBOOK_001.md",
+    "active_work_date": "2026-07-01",
+    "stale_loop_memory_files": [
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ],
+    "tech_lead_review_required": true,
+    "no_blind_next_task": true,
+    "archived_loop_memory_files": [
+      "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+    ]
   },
   "recommended_first_reads": [
     "docs/operations/AI_REPO_BOOTSTRAP_001.md",
@@ -1572,5 +1581,33 @@
     "env_changed": false,
     "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
     "next_task": "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001"
+  },
+  "active_work_date": "2026-07-01",
+  "active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+  "stale_loop_memory_files": [
+    "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
+  ],
+  "current_mission": "Polymarket Crypto 5M Quant Profit Engine",
+  "tech_lead_review_required": true,
+  "no_blind_next_task": true,
+  "next_authorized_task": "TECH_LEAD_REVIEW_REQUIRED",
+  "loop_memory_rotation_and_workday_state_reset": {
+    "status": "COMPLETE",
+    "task_class": 2,
+    "old_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+    "old_loop_memory_status": "ARCHIVED",
+    "new_active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+    "active_work_date": "2026-07-01",
+    "tech_lead_review_required": true,
+    "no_blind_next_task": true,
+    "runtime_changed": false,
+    "strategy_changed": false,
+    "risk_changed": false,
+    "sizing_changed": false,
+    "execution_changed": false,
+    "config_changed": false,
+    "env_changed": false,
+    "updated_at_utc": "2026-07-01T04:03:05Z",
+    "next_task": "TECH_LEAD_REVIEW_REQUIRED"
   }
 }

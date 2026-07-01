@@ -4937,5 +4937,14 @@
       "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json"
     ],
     "next_task": "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001"
+  },
+  {
+    "task_id": "LOOP_MEMORY_ARCHIVE_MARKER_20260701",
+    "status": "ARCHIVED",
+    "read_only": true,
+    "superseded_by": "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+    "archived_at_utc": "2026-07-01T04:03:05Z",
+    "archive_reason": "Active workday pointer rotated to 2026-07-01 loop memory.",
+    "no_stale_loop_writes": true
   }
 ]

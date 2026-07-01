@@ -106,3 +106,31 @@ Final report must state:
 ## Never Follow NEXT_TASK Blindly
 
 `next_task` is a suggestion. The Profit Filter decides whether it is still valid.
+
+## Daily Loop Memory Rotation
+
+At the start of each workday, `docs/operations/ACTIVE_WORKFLOW_STATE_001.json` must point to the current dated loop memory file.
+
+Required active pointer fields:
+
+- `active_work_date`
+- `active_loop_memory_file`
+- `workflow_governance.active_loop_memory_file`
+- `tech_lead_review_required`
+- `no_blind_next_task`
+
+Active loop memory rules:
+
+- There must be exactly one active workday loop memory file.
+- Active loop memory files use the current work date in the filename.
+- Archived loop memory files must not receive new task entries.
+- Old loop memory files must record `status=ARCHIVED`, `read_only=true`, and `superseded_by`.
+- If the active pointer date does not match the workday, stop and rotate before continuing.
+
+## No Blind Next Task
+
+After every workday rotation, task promotion requires Tech Lead review.
+
+- `next_task` may describe a candidate only.
+- `next_authorized_task` must be `TECH_LEAD_REVIEW_REQUIRED` or explicit.
+- AI agents must not continue stale `NEXT_TASK` values from archived loop memory.

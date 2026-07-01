@@ -1,0 +1,76 @@
+{
+  "$schema": "loop_memory_workday_v1",
+  "loop_date": "2026-07-01",
+  "status": "ACTIVE",
+  "read_only": false,
+  "mission": "Polymarket Crypto 5M Quant Profit Engine",
+  "mode": "profit_first",
+  "current_phase": "WORKDAY_LOOP_MEMORY_ROTATED_20260701; Tech Lead review required before next executable task",
+  "completed_today": [
+    {
+      "task_id": "CANONICAL_RUN_EVIDENCE_SUMMARY_BUILDER_001",
+      "status": "COMPLETE",
+      "commit": "a2fe761c",
+      "summary": "Offline canonical per-run evidence summary builder added and pushed."
+    },
+    {
+      "task_id": "LOOP_MEMORY_ACTIVE_POINTER_CHECK_001",
+      "status": "COMPLETE_READ_ONLY",
+      "summary": "Confirmed stale active loop pointer to 2026-06-28 memory."
+    },
+    {
+      "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
+      "status": "COMPLETE_PENDING_COMMIT",
+      "summary": "Rotated active loop memory pointer to 2026-07-01 and blocked blind next-task promotion."
+    }
+  ],
+  "active_task": "TECH_LEAD_REVIEW_REQUIRED",
+  "blocked_items": [
+    "No blind NEXT_TASK execution after workday rotation.",
+    "Runtime, strategy, risk, sizing, execution, config, and live behavior changes remain out of scope.",
+    "Unrelated untracked shadow framework files must remain unstaged unless explicitly routed."
+  ],
+  "do_not_do": [
+    "Do not change strategy thresholds.",
+    "Do not change risk behavior.",
+    "Do not change sizing behavior.",
+    "Do not change execution or paper/live behavior.",
+    "Do not edit config/settings.py or .env.",
+    "Do not run live trading.",
+    "Do not stage unrelated untracked shadow framework files.",
+    "Do not follow stale NEXT_TASK without Tech Lead review."
+  ],
+  "next_task_candidates": [
+    "CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001",
+    "RISK_PLAN_ZERO_SEMANTIC_C_SHADOW_REPLAY_001",
+    "CANONICAL_MARKET_TIME_TRUTH_FIELD_EMISSION_PLAN_001"
+  ],
+  "tech_lead_review_required": true,
+  "no_blind_next_task": true,
+  "updated_at_utc": "2026-07-01T04:03:05Z",
+  "entries": [
+    {
+      "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
+      "task_class": 2,
+      "status": "COMPLETE_PENDING_COMMIT",
+      "updated_at_utc": "2026-07-01T04:03:05Z",
+      "files_changed": [
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+        "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "10_LOOP_ENGINEERING.md",
+        "DOCUMENTATION_MAP.md",
+        "FILE_INDEX.md"
+      ],
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "next_task": "TECH_LEAD_REVIEW_REQUIRED"
+    }
+  ]
+}

@@ -3737,6 +3737,44 @@
       "env_changed": false,
       "safety_verdict": "SAFE_OFFLINE_TOOLING_ONLY",
       "notes": "DONE. Added stdlib-only canonical run evidence summary builder with focused tests and two generated sample summaries. Evidence remains invalid for profit claims because timing, sizing realism, cost, and settlement truth are incomplete. Next: CANONICAL_RUN_EVIDENCE_DASHBOARD_FEED_001."
+    },
+    {
+      "priority": 0.54,
+      "task_id": "LOOP_MEMORY_ROTATION_AND_WORKDAY_STATE_RESET_001",
+      "workflow_tier": "LOOP",
+      "task_class": 2,
+      "description": "Rotate active loop memory pointer to current 2026-07-01 workday and block blind NEXT_TASK promotion.",
+      "blocked_by": "LOOP_MEMORY_ACTIVE_POINTER_CHECK_001",
+      "allowed_scope": [
+        "docs/operations/ACTIVE_WORKFLOW_STATE_001.json",
+        "docs/operations/TASK_QUEUE_001.json",
+        "docs/operations/loop_memory/",
+        "10_LOOP_ENGINEERING.md",
+        "DOCUMENTATION_MAP.md",
+        "FILE_INDEX.md"
+      ],
+      "outputs": [
+        "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json"
+      ],
+      "status": "DONE",
+      "verdict": "ACTIVE_LOOP_MEMORY_ROTATED",
+      "old_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260628_001.json",
+      "old_loop_memory_status": "ARCHIVED",
+      "new_active_loop_memory_file": "docs/operations/loop_memory/LOOP_MEMORY_20260701_001.json",
+      "tech_lead_review_required": true,
+      "no_blind_next_task": true,
+      "runtime_changed": false,
+      "strategy_changed": false,
+      "risk_changed": false,
+      "sizing_changed": false,
+      "execution_changed": false,
+      "config_changed": false,
+      "env_changed": false,
+      "notes": "DONE. Active workflow state now points to 2026-07-01 loop memory. 2026-06-28 loop memory has archive marker with read_only=true and superseded_by current file. Next task selection requires Tech Lead review."
     }
-  ]
+  ],
+  "tech_lead_review_required": true,
+  "no_blind_next_task": true,
+  "next_authorized_task": "TECH_LEAD_REVIEW_REQUIRED",
+  "next_task_selection_policy": "Tech Lead review required before promoting any queued next_task."
 }
