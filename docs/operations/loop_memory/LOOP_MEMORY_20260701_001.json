@@ -54,7 +54,7 @@
       "summary": "Implemented paper research bankroll separation with full observability and testing."
     }
   ],
-  "active_task": null,
+  "active_task": "TECH_LEAD_REVIEW_REQUIRED",
   "blocked_items": [
     "No blind NEXT_TASK execution after workday rotation.",
     "Runtime, strategy, risk, sizing, execution, config, and live behavior changes remain out of scope.",

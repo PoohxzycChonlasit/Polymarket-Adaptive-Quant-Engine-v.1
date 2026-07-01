@@ -1645,7 +1645,7 @@
     "stale_owner_file_archived": true,
     "next_task": "TECH_LEAD_REVIEW_REQUIRED"
   },
-  "active_task": "None",
+  "active_task": "TECH_LEAD_REVIEW_REQUIRED",
   "fractional_share_clob_validation": {
     "status": "COMPLETE",
     "report_doc": "docs/reports/FRACTIONAL_SHARE_MIN_ORDER_CLOB_VALIDATION_001.md",
