@@ -1668,5 +1668,10 @@
     "status": "COMPLETE",
     "report_doc": "docs/reports/PAPER_RESEARCH_BANKROLL_SEPARATION_IMPLEMENTATION_001.md",
     "next_task": null
+  },
+  "clob_compliant_paper_smoke": {
+    "status": "COMPLETE",
+    "report_doc": "docs/reports/CLOB_COMPLIANT_PAPER_EVIDENCE_SMOKE_001.md",
+    "next_task": null
   }
 }
